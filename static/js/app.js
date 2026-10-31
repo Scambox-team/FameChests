@@ -9,7 +9,7 @@ const fmt = n => Math.round(n).toLocaleString("pl-PL") + " gr";   // waluta gry:
 
 const COUNT_CHIPS = [1, 2, 3, 5, 10, 15, 20];
 const INV_PAGE = 120;
-const VARIANT_TAGS = { claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { anime: "🌸 ANIME", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 const GEMS = ["emerald", "amethyst", "ruby", "sapphire", "diamond", "blackdiamond"];  // warianty z kamieniami szlachetnymi - wspólny wygląd, inne kolory
 
 const S = {
@@ -132,6 +132,16 @@ function possibleVariants(p) {
 // Warstwy wariantu: flaga leży na osobnej warstwie, więc karta może być np. "flag+gold" (Flagowa + Złota)
 function variantParts(v) { return S.cfg.variants[v || "normal"]?.layers || [v || "normal"]; }
 function isCombo(v) { return !!S.cfg.variants[v]?.combo; }
+// warianty do filtrów (ekwipunek, rynek): tylko te, które są albo były w grze (połączenie - gdy każda warstwa była),
+// plus te, które gracz ma (np. karta od admina w niewydanym wariancie); bez połączeń z wariantami "noCombo"
+// (Lampionowa, Diabelska - zawsze same) i z wariantami konkretnych kart (Rzulty)
+function filterVariants(owned = S.items) {
+  const mine = new Set(owned.map(i => i.variant));
+  const combo = v => S.cfg.variants[v]?.combo;
+  const lone = x => S.cfg.variants[x]?.noCombo || S.cfg.variants[x]?.cards;
+  return S.cfg.variantOrder.filter(v => mine.has(v) || (!S.cfg.variants[v]?.special && variantParts(v).every(variantReleased) &&
+    !(combo(v) && variantParts(v).some(lone))));
+}
 // wariant z warstwy zwykłych wariantów (bez flagi) - od niego zależy zdjęcie i kolor plakietki
 function baseVariant(v) { const parts = variantParts(v); return parts[parts.length - 1]; }
 // klasy wyglądu: "v-flag v-gold v-combo" (prefix "avv-" dla ikon graczy)
@@ -308,7 +318,8 @@ function variantLayers(v, p = null, sub = null) {
     if (x === "jeans") html += jeansDeco();
     if (x === "ufo") html += ufoDeco(p);
     if (GEMS.includes(x)) html += '<div class="diamond-layer"></div><div class="diamond-glints"><i></i><i></i><i></i><i></i><i></i></div>';
-    if (S.cfg.variants[x]?.stickers !== "under") html += stickersHTML(x, stickerList(x, p));   // "under" - pod zdjęciem (underStickersHTML)
+    const mode = S.cfg.variants[x]?.stickers;   // "under" - pod zdjęciem (underStickersHTML), "both" - każda naklejka osobno
+    if (mode !== "under") html += stickersHTML(x, mode === "both" ? stickerList(x, p)?.filter(s => !s.under) : stickerList(x, p));
   }
   parts.forEach((x, i) => {
     const cls = `var-tag vt-${x}${i ? " vt-second" : ""}`;
@@ -408,7 +419,7 @@ function variantBG(variant) {
   for (const x of parts) if (cvOf(x)) html += cvBG(x);
   return html ? `<div class="vx-bg">${html}</div>` : "";
 }
-function variantPhoto(variant, p) {
+function variantPhoto(variant, p, uid = null) {
   const parts = variantParts(variant);
   let html = "";
   if (parts.includes("popart")) html += ["#ff4fa0", "#ffe13b", "#2fd0ff", "#7cff4a"].map((c, k) =>
@@ -420,7 +431,7 @@ function variantPhoto(variant, p) {
   if (parts.includes("vintage")) html += '<i class="vx-photo vp-grain"></i><i class="vx-photo vp-scratch"></i><i class="vx-photo vp-vignette"></i>';
   if (parts.includes("marble")) html += '<i class="vx-photo mr-statue"></i>';
   if (parts.includes("toxic")) html += '<i class="vx-photo tx-photo"></i>';
-  for (const x of parts) if (VX_PHOTO[x]) html += typeof VX_PHOTO[x] === "function" ? VX_PHOTO[x]() : VX_PHOTO[x];
+  for (const x of parts) if (VX_PHOTO[x]) html += typeof VX_PHOTO[x] === "function" ? VX_PHOTO[x](uid) : VX_PHOTO[x];
   for (const x of parts) {   // wariant z kreatora: zabarwienie zdjęcia
     const Ph = cvOf(x)?.photo;
     if (Ph && Ph.tintMode !== "none") html += `<i class="vx-photo cvx-tint" style="background:${Ph.tint};mix-blend-mode:${Ph.tintMode};opacity:${Ph.tintOp}"></i>`;
@@ -1057,7 +1068,7 @@ const VX_BG = {
   cheese: () => `${chHoles(15)}<i class="ch-mold"></i>`,
 };
 const VX_PHOTO = {
-  scratch: zdFoil,
+  scratch: uid => scratchPhoto(uid),   // scratch.js: folia do zdrapania / zdrapana / pokaz (bez numeru egzemplarza)
   receipt: '<i class="vx-photo rc-dots"></i>',
   muertos: '<i class="vx-photo dm-f1"></i>',
   komuna: '<i class="vx-photo kv-ink"></i><i class="vx-photo kv-offset"></i>',
@@ -1332,11 +1343,16 @@ function stickerList(v, p) { return (p && S.cfg.cardStickers?.[v]?.[p.imgAs || p
 function stickersHTML(v, list = S.cfg.variantStickers?.[v], cls = "") {
   return list?.length ? `<div class="v-stickers${cls}">${list.map(stickerHTML).join("")}</div>` : "";
 }
-// Warianty z "stickers": "under" (np. Grecka, Afrykańska): naklejki leżą na tle karty - pod zdjęciem i napisami
-// (w .card-inner zaraz po tle wariantu; na tajnej karcie nad zdjęciem, które zajmuje całą kartę)
+// Warianty z "stickers": "under" (np. Chińska): naklejki leżą na tle karty - pod zdjęciem i napisami
+// (w .card-inner zaraz po tle wariantu; na tajnej karcie nad zdjęciem, które zajmuje całą kartę);
+// "both" (np. Anime) - tu tylko naklejki z "under", reszta nad kartą jak zwykle
 function underStickersHTML(variant, p) {
-  return variantParts(variant).filter(x => S.cfg.variants[x]?.stickers === "under")
-    .map(x => stickersHTML(x, stickerList(x, p), " under")).join("");
+  return variantParts(variant).map(x => {
+    const mode = S.cfg.variants[x]?.stickers;
+    if (mode !== "under" && mode !== "both") return "";
+    const list = stickerList(x, p);
+    return stickersHTML(x, mode === "both" ? list?.filter(s => s.under) : list, " under");
+  }).join("");
 }
 function stickerHTML(s) {
   return `<i class="v-sticker${s.anim && s.anim !== "none" ? " vsa-" + s.anim : ""}" data-sid="${s.id}" style="${stickerStyle(s)}">` +
@@ -1382,7 +1398,7 @@ function cardHTML(pid, variant = "normal", uid = null) {
         <span class="card-hp"><small>${T("hpLabel", "HP")}</small>${T("hp", p.hp)}</span>
         <span class="card-type">${T("type", type.icon)}</span>
       </div>
-      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p)}</div>
+      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}</div>
       <div class="card-sub${p.subtitle || p.texts?.sub ? " has-subtitle" : ""}">${T("sub", p.subtitle ? esc(p.subtitle)
         : bs ? esc(bs.label) : variantSub(variant, pid) ?? `${type.name} · ${esc(crate.short)}`)}</div>
       ${abils.map((a, i) => `<div class="card-attack${i ? " atk2" : ""}${a.kind !== "off" ? " " + a.kind : ""}">
@@ -1414,7 +1430,7 @@ function secretCardHTML(p, variant, uid = null) {
   <div class="card r-secret ${vClass(variant)}" data-pid="${p.id}" data-variant="${variant}"${flagStyle(p, variant)}>
     <div class="sc">
       ${drawingBG(variant, uid)}
-      <div class="sc-art"><img src="${imgUrl(p.id, variant)}" alt="${esc(p.name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${variantPhoto(variant, p)}</div>
+      <div class="sc-art"><img src="${imgUrl(p.id, variant)}" alt="${esc(p.name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${variantPhoto(variant, p, uid)}</div>
       ${galaxyBG(variant)}${devilBG(variant)}${halloweenPhoto(variant)}${mlgBG(variant)}${mlgPhoto(variant)}${variantBG(variant)}${underStickersHTML(variant, p)}
       <div class="sc-halo"></div>
       <div class="sc-stars"></div>
@@ -1510,7 +1526,7 @@ document.documentElement.addEventListener("pointerleave", () => { tiltEvent = nu
 // Pełnoekranowa nakładka (otwieranie skrzynek, wielkie odsłonięcie, kuźnia, podgląd karty, skrzynka z pieniędzmi...)
 // zasłania całą stronę - wtedy body.covered chowa stronę pod spodem (style.css: WYDAJNOŚĆ), żeby przeglądarka nie liczyła
 // animacji setek niewidocznych kart. Wszystkie te nakładki są dodawane bezpośrednio do <body>.
-const COVERS = ["body > #stage:not([hidden])", "body > .epic", "body > .sreveal", "body > .dr-editor", "body > .forge-anim", "body > .money-stage",
+const COVERS = ["body > #stage:not([hidden])", "body > .epic", "body > .sreveal", "body > .dr-editor", "body > .scr-editor", "body > .forge-anim", "body > .money-stage",
                 "body > .jp-anim", "body > .viewer", "body > .vr-zoom"].join(", ");
 function updateCovered() { document.body.classList.toggle("covered", !!document.querySelector(COVERS)); }
 function watchCovers() {
@@ -1585,6 +1601,7 @@ async function syncInventory(me = null, force = false) {
   S.items = st.items;
   S.showcase = st.showcase || [];
   S.drawn = new Set(st.drawn || []);
+  S.scratched = new Set(st.scratched || []);
   S.chests = st.chests || S.chests;
   noteCollected(S.items);
   if (S.items.some(i => !person(i.person) || person(i.person).masked)) await refreshConfig();   // nowe (tajne) karty
@@ -2266,6 +2283,8 @@ function showResults(afterEpic = false) {
   }
 
   bibiPlay();
+  o.shown = true;   // wyniki na ekranie - czekające osiągnięcia mogą się już pokazać (animBusy w achievements.js)
+  achPump();
   updateStageBar();
   autoNext(o);
 }
@@ -2579,7 +2598,7 @@ function renderInventory() {
   $("#invRarity").innerHTML = S.cfg.rarityOrder.map(r =>
     `<button class="rf rf-${r}${f.rarities.has(r) ? " active" : ""}" data-r="${r}" style="--rc:${S.cfg.rarities[r].color}"><i></i>${S.cfg.rarities[r].name}</button>`).join("");
   $("#invVariant").innerHTML = [["all", "Wszystkie warianty"], ["fav", "⭐ Tylko ulubione"], ["special", "✨ Tylko specjalne"],
-    ...S.cfg.variantOrder.map(v => [v, variantName(v)])].map(([v, n]) =>
+    ...filterVariants().map(v => [v, variantName(v)])].map(([v, n]) =>
     `<option value="${v}"${f.variant === v ? " selected" : ""}>${n}</option>`).join("");
   $("#invSort").value = f.sort;
 
@@ -2930,7 +2949,11 @@ function bind() {
   $("#invVariant").addEventListener("change", e => { S.inv.variant = e.target.value; S.inv.limit = INV_PAGE; renderInventory(); });
   // wyszukiwanie po nazwie (też po wariancie i rzadkości, bez polskich znaków - cardMatches)
   $("#invSearch").addEventListener("input", e => { S.inv.q = e.target.value; S.inv.limit = INV_PAGE; renderInventory(); });
-  $("#invSort").addEventListener("change", e => { S.inv.sort = e.target.value; renderInventory(); });
+  $("#invSort").addEventListener("change", e => {
+    S.inv.sort = e.target.value;
+    try { localStorage.setItem("invSort", S.inv.sort); } catch (_) {}
+    renderInventory();
+  });
   $("#invMore").addEventListener("click", () => { S.inv.limit += INV_PAGE; renderInventory(); });
   $("#invGrid").addEventListener("click", async e => {
     const ufo = e.target.closest(".ufo-item");
@@ -3032,10 +3055,15 @@ function bind() {
   S.items = st.items;
   S.showcase = st.showcase || [];
   S.drawn = new Set(st.drawn || []);
+  S.scratched = new Set(st.scratched || []);
   S.chests = st.chests || {};
   S.collected = new Set((st.collected || []).map(([p, v]) => `${p}|${v}`));
   S.crate = S.binderCrate = cfg.crateOrder[0];
   try { S.fast = localStorage.getItem("fast") === "1"; } catch (_) {}
+  try {   // zapamiętane sortowanie ekwipunku (tylko jeśli taka opcja nadal jest na liście)
+    const sort = localStorage.getItem("invSort");
+    if (sort && [...$("#invSort").options].some(o => o.value === sort)) S.inv.sort = sort;
+  } catch (_) {}
   // ?embed=1 - strona osadzona w panelu admina (podgląd karty): bez paska, okienek na start i odpytywania serwera
   const embed = new URLSearchParams(location.search).has("embed");
   if (embed) document.body.classList.add("embed");

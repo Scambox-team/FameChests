@@ -125,6 +125,7 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
         arena: Arc::default(),
         login: Arc::default(),
         cookie_key: auth::cookie_key(&cfg.secret_key),
+        online: Default::default(),
     };
 
     // zdjęcia kart i miniatury - w tle

@@ -854,7 +854,8 @@ pub async fn ranking(State(st): State<AppState>, Me(me): Me) -> Res {
             me: u.id == me.id,
         })
         .collect();
-    ok(json!({"players": players, "totalCards": cat.people.len()}))
+    let accounts = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM users"#).fetch_one(&mut *c).await?;
+    ok(json!({"players": players, "totalCards": cat.people.len(), "online": st.online.count(), "accounts": accounts}))
 }
 
 #[derive(Serialize)]

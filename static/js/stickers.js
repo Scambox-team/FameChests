@@ -82,7 +82,7 @@ async function renderStickers() {
     $("#stickersBody").innerHTML = `<div class="mock-head"><h2>🎨 Naklejki wariantów</h2><p class="muted">Wczytywanie…</p></div>`;
     try { await stkLoad(STK.variant); } catch (e) { toast(e.message, true); return; }
   }
-  const lib = S.cfg.stickerLibrary, cardMode = stkCardMode(), p = person(STK.pid), under = stkUnder();
+  const lib = S.cfg.stickerLibrary, cardMode = stkCardMode(), p = person(STK.pid), under = stkUnder() || stkBoth();
   const custom = Object.keys(STK.cards).filter(id => person(id)).sort((a, b) => person(a).name.localeCompare(person(b).name, "pl"));
   $("#stickersBody").innerHTML = `
     <div class="mock-head">
@@ -109,7 +109,8 @@ async function renderStickers() {
         ${custom.length ? `<div class="stk-custom muted small">Karty z własnymi naklejkami: ${custom.map(id =>
           `<button type="button" class="stk-chip${cardMode && id === STK.pid ? " active" : ""}" data-goto="${id}">✎ ${esc(person(id).name)}</button>`).join("")}</div>` : ""}
         ${!cardMode && STK.cards[STK.pid] ? `<p class="stk-note small">Ta karta ma własne naklejki — tu widzisz i zmieniasz sam standard.</p>` : ""}
-        ${under ? `<p class="stk-note small">Naklejki tego wariantu leżą na tle karty - pod zdjęciem i napisami.</p>` : ""}
+        ${stkUnder() ? `<p class="stk-note small">Naklejki tego wariantu leżą na tle karty - pod zdjęciem i napisami.</p>` : ""}
+        ${stkBoth() ? `<p class="stk-note small">Każda naklejka może leżeć nad kartą albo pod zdjęciem i napisami - przełącznik „Pod zdjęciem” przy naklejce.</p>` : ""}
         <div class="stk-stage${cardMode ? " card-mode" : ""}${under ? " under-mode" : ""}${under && STK.peek ? " peek" : ""}" id="stkStage"><div class="stk-cardbox">${cardHTML(STK.pid, STK.variant)}</div></div>
         <p class="muted small stk-help">Przeciągnij naklejkę myszą · kółko myszy nad naklejką = rozmiar · Shift + kółko = obrót ·
           strzałki = przesuń (Shift - szybciej) · Delete = usuń${cardMode ? " (standardową - ukryj na tej karcie)" : ""}</p>
@@ -142,14 +143,19 @@ async function renderStickers() {
 
 // przerysowanie samych naklejek (bez całej karty - losowe ozdoby MLG zostają na miejscu)
 // naklejki "under" (pod zdjęciem) - w tle karty zaraz po tle wariantu, jak underStickersHTML w app.js
+// "both" (np. Anime): każda naklejka sama wybiera warstwę (pole under) - nad kartą albo pod zdjęciem
 function stkUnder() { return S.cfg.variants[STK.variant]?.stickers === "under"; }
+function stkBoth() { return S.cfg.variants[STK.variant]?.stickers === "both"; }
 function stkDrawStickers() {
   const card = $("#stkStage .card");
   if (!card) return;
   card.querySelectorAll(".v-stickers").forEach(el => el.remove());
-  const html = `<div class="v-stickers${stkUnder() ? " under" : ""}">${stkVisible().map(stickerHTML).join("")}</div>`;
-  if (!stkUnder()) card.insertAdjacentHTML("beforeend", html);
-  else {
+  const all = stkVisible(), both = stkBoth();
+  const over = stkUnder() ? [] : both ? all.filter(s => !s.under) : all;
+  const under = stkUnder() ? all : both ? all.filter(s => s.under) : [];
+  if (over.length || !under.length) card.insertAdjacentHTML("beforeend", `<div class="v-stickers">${over.map(stickerHTML).join("")}</div>`);
+  if (under.length || stkUnder()) {
+    const html = `<div class="v-stickers under">${under.map(stickerHTML).join("")}</div>`;
     const inner = card.querySelector(".card-inner, .sc"), bg = [...inner.children].filter(el => el.matches(".vx-bg, .mlg-bg, .galaxy-bg, .dv-bg, .sc-art")).pop();
     if (bg) bg.insertAdjacentHTML("afterend", html); else inner.insertAdjacentHTML("afterbegin", html);
   }
@@ -182,6 +188,7 @@ function stkDrawList() {
     <label>Poziomo <input type="range" min="-25" max="125" step="0.5" data-prop="x" value="${s.x}"><output>${s.x}%</output></label>
     <label>Pionowo <input type="range" min="-25" max="125" step="0.5" data-prop="y" value="${s.y}"><output>${s.y}%</output></label>
     <label class="chk"><input type="checkbox" data-prop="flip"${s.flip ? " checked" : ""}> Odbij w poziomie</label>
+    ${stkBoth() ? `<label class="chk"${cardMode && it.kind !== "extra" ? ' title="Warstwę standardowej naklejki zmienia się w standardzie"' : ""}><input type="checkbox" data-prop="under"${s.under ? " checked" : ""}${cardMode && it.kind !== "extra" ? " disabled" : ""}> Pod zdjęciem i napisami</label>` : ""}
     <label>Ruch <select class="sort-sel" data-prop="anim">${Object.entries(S.cfg.stickerAnims).map(([k, n]) =>
       `<option value="${k}"${k === s.anim ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
     : `<p class="muted small">${it?.kind === "hidden" ? "Ta naklejka jest ukryta na tej karcie — 👁 na liście ją pokaże."
@@ -319,6 +326,7 @@ function stkBind() {
     if (t.dataset.stk === "upload") { if (t.files[0]) stkUpload(t.files[0]); t.value = ""; return; }
     if (t.dataset.stk === "peek") { STK.peek = t.checked; $("#stkStage").classList.toggle("peek", t.checked); return; }
     if (t.dataset.prop === "flip") { stkMutate(STK.sel, x => { x.flip = t.checked; }); stkChanged(); }
+    if (t.dataset.prop === "under") { stkMutate(STK.sel, x => { x.under = t.checked; }); stkDrawStickers(); stkChanged(); }
     if (t.dataset.prop === "anim") { stkMutate(STK.sel, x => { x.anim = t.value; }); stkDrawStickers(); stkChanged(); }
   };
   body.oninput = e => {

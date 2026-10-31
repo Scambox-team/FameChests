@@ -2824,6 +2824,11 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 @keyframes zdCoin { 0%, 8% { left: -4%; top: 7%; opacity: 1; } 12.5% { left: 104%; top: 7.0%; } 12.6% { left: 104%; top: 21.3%; } 17.1% { left: -4%; top: 21.3%; } 17.2% { left: -4%; top: 35.6%; } 21.7% { left: 104%; top: 35.6%; } 21.8% { left: 104%; top: 49.9%; } 26.3% { left: -4%; top: 49.9%; } 26.4% { left: -4%; top: 64.2%; } 30.9% { left: 104%; top: 64.2%; } 31.0% { left: 104%; top: 78.5%; } 35.5% { left: -4%; top: 78.5%; } 35.6% { left: -4%; top: 92.8%; } 40.1% { left: 104%; top: 92.8%; } 41%, 100% { left: 104%; top: 93%; opacity: 0; } }
 .var-tag.vt-scratch, .ph.vt-scratch { background: #ffd21a; color: #2a1040; border: 1px solid #2a1040; font-family: Bungee, sans-serif; text-shadow: none; }
 .vdot.vt-scratch { background: linear-gradient(135deg, #ffd21a 50%, #aab0ba 50%); }
+/* Anime i COVID (wygląd jeszcze do wybrania na /variants - makiety), na razie plakietki i kropki */
+.var-tag.vt-anime, .ph.vt-anime { background: linear-gradient(135deg, #ff9cc6, #a87cff); color: #fff; border: 1px solid #fff8; text-shadow: 0 1px 2px #6a2a8a; }
+.vdot.vt-anime { background: linear-gradient(135deg, #ff9cc6, #a87cff); }
+.var-tag.vt-covid, .ph.vt-covid { background: #eaf6ff; color: #1a4a7a; border: 1px solid #6ab8f0; text-shadow: none; }
+.vdot.vt-covid { background: linear-gradient(135deg, #8fd0ff 50%, #fff 50%); }
 .odd.odd-v.vt-scratch { border-left-color: #ffd21a; }
 .r-secret.v-scratch .sc-border { background: linear-gradient(135deg, #ffd21a, #7a2ae0 55%, #ffd21a); animation: none; }
 .pick.v-scratch { box-shadow: inset 0 0 0 2px #ffd21a, inset 0 0 0 4px #7a2ae0, inset 0 -26px 26px -18px var(--rc); }

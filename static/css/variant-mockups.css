@@ -20,3 +20,240 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
 @keyframes vmBlink { 50% { opacity: .15; } }
 @keyframes vmSpin { to { transform: rotate(360deg); } }
 
+/* naklejki pod zdjęciem w makietach ("stickers": "under" / "both") - jak .v-stickers.under w cards2.css */
+.card.vm .card-inner > .v-stickers.under { position: absolute; z-index: 0; }
+
+/* ============================================================ ANIME (an-) - zdjęcia anime z tools/anime_photos.py */
+.card.vm-anime .card-photo > img { object-position: 50% 20%; }
+.an-clip { overflow: hidden; border-radius: inherit; }
+b.an-sfx { position: absolute; translate: -50% -50%; rotate: var(--r); font: 400 7cqw/1 "Dela Gothic One", Bangers, sans-serif; color: #fff;
+  -webkit-text-stroke: .5cqw #111; paint-order: stroke; text-shadow: .5cqw .5cqw 0 #111; letter-spacing: -.05em; animation: anShake .35s steps(2) infinite; }
+b.an-sfx.b { color: #ffd21a; }
+@keyframes anShake { 50% { translate: calc(-50% + .4cqw) calc(-50% - .3cqw); } }
+.an-petal { width: calc(2.6cqw * var(--s)); aspect-ratio: 1; border-radius: 80% 0 80% 0; background: linear-gradient(135deg, #ffd6e8, #ff9cc6); opacity: .9; animation: anFall linear infinite; }
+@keyframes anFall { to { transform: translate(var(--dx), 120cqw) rotate(540deg); } }
+.an-spark { width: calc(2cqw * var(--s)); aspect-ratio: 1; background: #fff; clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  animation: vmBlink 1.8s ease-in-out infinite; filter: drop-shadow(0 0 .6cqw #fff); }
+
+/* 1. Shōnen - linie szybkości */
+.card.vm-anime-1 { --frame: linear-gradient(135deg, #ff7a00, #ffd21a 40%, #1f6bff 60%, #0a2a8a); }
+.card.vm-anime-1 .card-inner { background: radial-gradient(60% 45% at 50% 38%, #fff3c4, #ff9a1f 45%, #1f4fd8 100%); }
+.an1-bg .an-speed { opacity: .85; animation: vmPulse .9s steps(3) infinite; }
+.card.vm-anime-1 .card-name { font: 400 1.05em/1 Bangers, sans-serif; letter-spacing: .04em; color: #fff; -webkit-text-stroke: .35cqw #111; paint-order: stroke; text-shadow: .5cqw .5cqw 0 #111; }
+.card.vm-anime-1 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #fff; border: .5cqw solid #111; border-radius: .2em; box-shadow: .8cqw .8cqw 0 #111; }
+.card.vm-anime-1 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #111; text-shadow: none; }
+.card.vm-anime-1 .card-photo { border: .7cqw solid #111; box-shadow: 1cqw 1cqw 0 #111; }
+
+/* 2. Shōjo - pastelowy róż */
+.card.vm-anime-2 { --frame: linear-gradient(135deg, #ffd6ec, #fff 30%, #e3c8ff 60%, #ffb3d9); }
+.card.vm-anime-2 .card-inner { background: radial-gradient(90% 60% at 50% 30%, #fff5fb, #ffd3ea 60%, #e8c8ff); }
+.an2-bubbles { inset: 0; background: radial-gradient(circle at 15% 70%, #fff9 0 3%, transparent 3.3%), radial-gradient(circle at 80% 20%, #fff8 0 4%, transparent 4.3%),
+  radial-gradient(circle at 70% 85%, #fff7 0 2.5%, transparent 2.8%), radial-gradient(circle at 30% 15%, #fff6 0 2%, transparent 2.3%); animation: vmPulse 4s ease-in-out infinite; }
+.an2-glow { inset: 0; box-shadow: inset 0 0 4cqw 1cqw #fff, inset 0 0 0 .6cqw #ffb3d9; border-radius: inherit; }
+.card.vm-anime-2 .card-photo { border-radius: 1.2em; border: .4cqw solid #fff; box-shadow: 0 0 3cqw #ff9cc6; }
+.card.vm-anime-2 .card-photo > img { filter: saturate(1.1) brightness(1.06); }
+.card.vm-anime-2 .card-name { font: 700 1em/1 Caveat, cursive; color: #d6337a; text-shadow: 0 0 1cqw #fff, 0 0 2cqw #fff; }
+.card.vm-anime-2 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffffb0; border: none; border-radius: 1em; }
+.card.vm-anime-2 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #8a2a5a; text-shadow: none; }
+
+/* 3. Mecha - kokpit */
+.card.vm-anime-3 { --frame: linear-gradient(135deg, #6a7480, #c8d0d8 30%, #3a4250 60%, #a0a8b4); }
+.card.vm-anime-3 .card-inner { background: linear-gradient(180deg, #0a1430, #101e48 60%, #060c1c); }
+.an3-hex { inset: 0; opacity: .25; background:
+  radial-gradient(circle at 50% 0, transparent 2.6cqw, #38e1ff 2.7cqw, transparent 2.9cqw) 0 0 / 6cqw 5.2cqw,
+  radial-gradient(circle at 0 50%, transparent 2.6cqw, #38e1ff 2.7cqw, transparent 2.9cqw) 3cqw 2.6cqw / 6cqw 5.2cqw; }
+.an3-warn { left: 0; right: 0; bottom: 0; height: 3cqw; background: repeating-linear-gradient(45deg, #ffd21a 0 2cqw, #111 2cqw 4cqw); opacity: .9; }
+.an3-bar { display: flex; justify-content: space-between; font: 400 .5em/1.4 "Share Tech Mono", monospace; color: #38e1ff; border: .3cqw solid #38e1ff; padding: 0 .4em; margin-bottom: 1%; }
+.an3-sync { color: #ff3b5c; animation: vmBlink 1s steps(1) infinite; }
+.an3-lock b { position: absolute; width: 14%; aspect-ratio: 1; border: .6cqw solid #ff3b5c; }
+.an3-lock .a { left: 4%; top: 4%; border-right: none; border-bottom: none; } .an3-lock .b { right: 4%; top: 4%; border-left: none; border-bottom: none; }
+.an3-lock .c { left: 4%; bottom: 4%; border-right: none; border-top: none; } .an3-lock .d { right: 4%; bottom: 4%; border-left: none; border-top: none; }
+.an3-lock u { position: absolute; left: 40%; top: 30%; width: 20%; aspect-ratio: 1; border: .4cqw dashed #ff3b5c; border-radius: 50%; animation: vmSpin 6s linear infinite; }
+.card.vm-anime-3 .card-photo { border: .4cqw solid #38e1ff; box-shadow: 0 0 2cqw #38e1ff88; }
+.card.vm-anime-3 .card-name { font: 900 .85em/1.1 Orbitron, sans-serif; color: #e8f6ff; text-shadow: 0 0 1.5cqw #38e1ff; }
+.card.vm-anime-3 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #0a1a3ad0; border: .3cqw solid #38e1ff88; clip-path: polygon(0 0, 96% 0, 100% 30%, 100% 100%, 4% 100%, 0 70%); }
+.card.vm-anime-3 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #9fe8ff; text-shadow: none; }
+
+/* 4. Manga - czarno-biała strona */
+.card.vm-anime-4 { --frame: linear-gradient(#111, #111); }
+.card.vm-anime-4 .card-inner { background: #fff; }
+.an5-tone { inset: 0; background: radial-gradient(circle, #111 28%, transparent 30%) 0 0 / 1.6cqw 1.6cqw; opacity: .35; mask: linear-gradient(160deg, #000 0 30%, transparent 70%); }
+.card.vm-anime-4 .card-photo { border: 1cqw solid #111; border-radius: 0; }
+.card.vm-anime-4 .card-photo > img { filter: grayscale(1) contrast(1.6) brightness(1.08); }
+.an5-ink { inset: 0; background: radial-gradient(circle, #0006 22%, transparent 24%) 0 0 / 1.2cqw 1.2cqw; mix-blend-mode: multiply; mask: linear-gradient(0deg, #000, transparent 45%); }
+.vm-deco > span.an5-bubble { right: 4%; top: 15%; padding: .6em .8em; background: #fff; color: #111; border: .5cqw solid #111; border-radius: 50%;
+  font: 700 3.2cqw/1.1 "Comic Neue", sans-serif; text-align: center; rotate: 6deg; }
+.card.vm-anime-4 .card-name { font: 400 1.05em/1 "Dela Gothic One", Bangers, sans-serif; color: #111; text-shadow: none; }
+.card.vm-anime-4 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #fff; border: .45cqw solid #111; border-radius: 0; }
+.card.vm-anime-4 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #111; text-shadow: none; }
+
+/* 5. Isekai - okno statusu i magiczny krąg */
+.card.vm-anime-5 { --frame: linear-gradient(135deg, #9fe8ff, #2a6bd8 50%, #c8f4ff); }
+.card.vm-anime-5 .card-inner { background: radial-gradient(80% 60% at 50% 40%, #2a4ab8, #0f1d5a 70%, #070c2a); }
+.an4-bg .an-circle { opacity: .55; animation: vmSpin 40s linear infinite; filter: drop-shadow(0 0 .8cqw #38e1ff); }
+.an4-status { display: flex; align-items: center; gap: .4em; padding: .15em .4em; margin-bottom: 1%; background: #0a2a6ad0; border: .3cqw solid #9fe8ff; border-radius: .3em;
+  font: 400 .45em/1.3 "Press Start 2P", monospace; color: #fff; }
+.an4-status span { flex: 1; height: .8em; background: #0008; border-radius: .2em; overflow: hidden; }
+.an4-status span i { display: block; height: 100%; width: 86%; background: linear-gradient(90deg, #3ddc84, #b6ff5a); }
+.an4-status .mp i { width: 64%; background: linear-gradient(90deg, #1f9bff, #9fe8ff); }
+.card.vm-anime-5 .card-name { font: 700 .95em/1.1 Cinzel, serif; color: #fff; text-shadow: 0 0 1.5cqw #38e1ff; }
+.card.vm-anime-5 .card-photo { border: .4cqw solid #9fe8ff; border-radius: .4em; box-shadow: 0 0 3cqw #38e1ff99; }
+.card.vm-anime-5 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #0a2a6ab8; border: .3cqw solid #9fe8ffaa; border-radius: .4em; }
+.card.vm-anime-5 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #e8f6ff; text-shadow: none; }
+
+/* 6. Neo-Tokio - miasto nocą */
+.card.vm-anime-6 { --frame: linear-gradient(135deg, #ff4fb5, #7a3dff 50%, #38e1ff); }
+.card.vm-anime-6 .card-inner { background: linear-gradient(180deg, #1a0a3a, #3a0f5a 55%, #ff4fb555); }
+.an6-bg .an-city { top: auto; height: 60%; bottom: 0; }
+.an6-rain { inset: -10%; background: repeating-linear-gradient(105deg, transparent 0 2.4cqw, #9fe8ff33 2.4cqw 2.6cqw); animation: an6Rain .6s linear infinite; }
+@keyframes an6Rain { to { transform: translate(-2cqw, 6cqw); } }
+.vm-deco > span.an6-sign { right: 3%; top: 26%; writing-mode: vertical-rl; padding: .3em .1em; font: 400 5cqw/1 "Dela Gothic One", sans-serif; color: #fff;
+  border: .4cqw solid #ff4fb5; border-radius: .2em; background: #1a0a3acc; text-shadow: 0 0 1cqw #ff4fb5, 0 0 3cqw #ff4fb5; box-shadow: 0 0 2cqw #ff4fb5; animation: vmBlink 3s steps(1) infinite 1s; }
+.an6-rim { inset: 0; box-shadow: inset 0 0 0 .5cqw #ff4fb5, inset 0 0 3cqw #ff4fb5aa; border-radius: inherit; }
+.card.vm-anime-6 .card-name { font: 400 1em/1 Monoton, sans-serif; color: #ffd6f0; text-shadow: 0 0 1cqw #ff4fb5, 0 0 3cqw #ff4fb5; }
+.card.vm-anime-6 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #1a0a3ac8; border: .3cqw solid #38e1ff88; border-radius: .3em; }
+.card.vm-anime-6 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #ffe6f6; text-shadow: none; }
+
+/* 7. Letnie niebo - chmury i wzgórza */
+.card.vm-anime-7 { --frame: linear-gradient(135deg, #fff6e0, #f2e2c0 50%, #fffaf0); }
+.card.vm-anime-7 .card-inner { background: linear-gradient(180deg, #4aa8f0, #8fd0ff 55%, #d8f0ff); }
+.an7-cloud { width: 46%; aspect-ratio: 2.2; background: radial-gradient(circle at 30% 60%, #fff 0 30%, transparent 31%), radial-gradient(circle at 55% 40%, #fff 0 34%, transparent 35%),
+  radial-gradient(circle at 78% 62%, #fff 0 26%, transparent 27%), radial-gradient(ellipse at 50% 80%, #fff 0 45%, transparent 46%); filter: drop-shadow(0 .6cqw 0 #c8e4fa); animation: an7Drift 30s linear infinite alternate; }
+.an7-cloud.c1 { left: -8%; top: 4%; } .an7-cloud.c2 { left: 58%; top: 12%; width: 38%; animation-duration: 40s; } .an7-cloud.c3 { left: 20%; top: 50%; width: 30%; opacity: .8; }
+@keyframes an7Drift { to { transform: translateX(8cqw); } }
+.an7-hill { left: -10%; right: -10%; bottom: -6%; height: 34%; border-radius: 50% 50% 0 0; background: linear-gradient(#7ccc5a, #4a9a3a); box-shadow: -20cqw 3cqw 0 -2cqw #5aac44; }
+.an7-wash { inset: 0; box-shadow: inset 0 0 2.5cqw 1.2cqw #fffaf0; }
+.card.vm-anime-7 .card-photo { border-radius: .5em; }
+.card.vm-anime-7 .card-photo > img { filter: saturate(1.15) sepia(.12); }
+.card.vm-anime-7 .card-name { font: 700 .95em/1.1 "Comic Neue", sans-serif; color: #fff; text-shadow: 0 .3cqw 0 #2a6aa8, 0 0 2cqw #2a6aa8; }
+.card.vm-anime-7 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #fffaf0d8; border: none; border-radius: .5em; }
+.card.vm-anime-7 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #2a4a3a; text-shadow: none; }
+
+/* 8. Idol - scena */
+.card.vm-anime-8 { --frame: linear-gradient(135deg, #ff4fb5, #ffd21a, #3ddc84, #38e1ff, #7a3dff, #ff4fb5); }
+.card.vm-anime-8 .card-inner { background: radial-gradient(90% 60% at 50% 100%, #ff4fb5aa, transparent 70%), linear-gradient(180deg, #2a0a4a, #5a1a7a); }
+.an8-beam { top: -10%; width: 30%; height: 120%; background: linear-gradient(180deg, #fff8, transparent 80%); clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%); transform-origin: 50% 0; mix-blend-mode: screen; }
+.an8-beam.l { left: 5%; animation: an8Sweep 4s ease-in-out infinite alternate; }
+.an8-beam.r { right: 5%; animation: an8Sweep 4s ease-in-out infinite alternate-reverse; background: linear-gradient(180deg, #ff9cd6aa, transparent 80%); }
+@keyframes an8Sweep { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+.an8-heart { width: calc(3cqw * var(--s)); aspect-ratio: 1; background: #ff4fb5; clip-path: polygon(50% 90%, 8% 48%, 10% 24%, 28% 12%, 50% 28%, 72% 12%, 90% 24%, 92% 48%); animation: vmPulse 2s ease-in-out infinite; }
+.an8-live { text-align: center; font: 400 .6em/1.3 Bungee, sans-serif; color: #fff; background: #ff2f5c; border-radius: 1em; padding: 0 .8em; margin: 0 auto 1%; width: max-content;
+  box-shadow: 0 0 2cqw #ff2f5c; animation: vmBlink 1.4s steps(1) infinite; }
+.card.vm-anime-8 .card-name { font: 400 1em/1 Shrikhand, cursive; color: #fff; text-shadow: 0 0 1cqw #ff4fb5, .3cqw .3cqw 0 #7a3dff; }
+.card.vm-anime-8 .card-photo { border: .5cqw solid #fff; border-radius: .6em; box-shadow: 0 0 3cqw #ff4fb5; }
+.card.vm-anime-8 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: linear-gradient(90deg, #ff4fb5cc, #7a3dffcc); border: .3cqw solid #fff8; border-radius: .6em; }
+.card.vm-anime-8 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #fff; text-shadow: none; }
+
+/* ============================================================ COVID (cvd-) - naklejki z /stickers na zdjęciu */
+.cvd-clip { overflow: hidden; border-radius: inherit; }
+.vm-bg > span.cvd-float { width: calc(10cqw * var(--s)); aspect-ratio: 1; animation: cvdDrift 8s ease-in-out infinite alternate; }
+.cvd-float svg { position: static; }
+@keyframes cvdDrift { to { transform: translate(3cqw, -4cqw) rotate(60deg); } }
+.cvd-virus { display: block; width: 100%; height: 100%; color: #e8445a; }
+.vm-deco > i.cvd-tape { left: -20%; right: -20%; height: 7cqw; background: repeating-linear-gradient(45deg, #ffd21a 0 3cqw, #111 3cqw 6cqw); box-shadow: 0 .6cqw 1.2cqw #0008; display: grid; place-items: center; overflow: hidden; }
+.cvd-tape span { white-space: nowrap; padding: 0 .4em; font: 400 3.4cqw/1 Bungee, sans-serif; color: #111; background: #ffd21a; }
+.cvd-tape.a { top: 32%; rotate: -14deg; } .cvd-tape.b { top: 68%; rotate: 9deg; }
+
+/* 1. Maseczka */
+.card.vm-covid-1 { --frame: repeating-linear-gradient(180deg, #8fd0ff 0 1.4cqw, #6ab8f0 1.4cqw 2.8cqw); }
+.card.vm-covid-1 .card-inner { background: linear-gradient(180deg, #eaf6ff, #cfe8fa); }
+.cvd1-pattern { inset: 0; opacity: .18; background:
+  radial-gradient(ellipse 40% 26% at 50% 50%, #3a8ad8 98%, transparent) 0 0 / 14cqw 10cqw,
+  linear-gradient(90deg, transparent 10%, #3a8ad8 10% 12%, transparent 12% 88%, #3a8ad8 88% 90%, transparent 90%) 0 0 / 14cqw 10cqw; }
+.cvd1-loop { top: 36%; width: 9cqw; height: 18cqw; border: .7cqw solid #f4f8fc; border-radius: 50%; box-shadow: 0 0 0 .2cqw #9ab8d0; }
+.cvd1-loop.l { left: -5cqw; border-right-color: transparent; } .cvd1-loop.r { right: -5cqw; border-left-color: transparent; }
+.card.vm-covid-1 .card-photo { border: .5cqw solid #fff; box-shadow: 0 0 0 .3cqw #6ab8f0; border-radius: .4em; }
+.card.vm-covid-1 .card-name { font: 700 .9em/1.1 Rubik, sans-serif; color: #1a4a7a; text-shadow: none; }
+.card.vm-covid-1 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: repeating-linear-gradient(180deg, #fff 0 .9cqw, #f0f6fc .9cqw 1.8cqw); border: .25cqw solid #b8d8f0; border-radius: .3em; }
+.card.vm-covid-1 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #1a3a5a; text-shadow: none; }
+
+/* 2. Kwarantanna */
+.card.vm-covid-2 { --frame: repeating-linear-gradient(45deg, #ffd21a 0 2cqw, #111 2cqw 4cqw); }
+.card.vm-covid-2 .card-inner { background: repeating-linear-gradient(-45deg, #2a2a2a 0 3cqw, #222 3cqw 6cqw); }
+.cvd2-bio { left: 50%; top: 38%; translate: -50% -50%; font: 400 46cqw/1 sans-serif; color: #ffd21a; opacity: .18; }
+.card.vm-covid-2 .card-name { font: 400 .85em/1.1 "Black Ops One", sans-serif; color: #ffd21a; text-shadow: .3cqw .3cqw 0 #000; }
+.card.vm-covid-2 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #111d; border: .3cqw solid #ffd21a; border-radius: 0; }
+.card.vm-covid-2 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #ffd21a; text-shadow: none; }
+
+/* 3. Laboratorium */
+.card.vm-covid-3 { --frame: linear-gradient(135deg, #3ddcb0, #0f6a5a 50%, #9fffe0); }
+.card.vm-covid-3 .card-inner { background: radial-gradient(circle at 50% 40%, #0f4a44, #062824 70%); }
+.cvd3-lens { left: 50%; top: 40%; width: 110%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle, #3ddcb022, transparent 60%); box-shadow: 0 0 0 30cqw #031412aa; }
+.card.vm-covid-3 .cvd-virus { color: #ff6a7a; opacity: .7; }
+.cvd3-scale { left: 6%; bottom: 6%; top: auto; right: auto; width: 30%; height: 1.4cqw; border: .3cqw solid #c8fff0; border-top: none; }
+.cvd3-scale b { position: absolute; left: 0; bottom: 1.4cqw; font: 400 2.6cqw/1 "Share Tech Mono", monospace; color: #c8fff0; text-shadow: 0 0 .6cqw #000; }
+.card.vm-covid-3 .card-photo { border-radius: .4em; border: .4cqw solid #3ddcb0; }
+.card.vm-covid-3 .card-photo > img { filter: hue-rotate(-12deg) saturate(.8) contrast(1.1); }
+.card.vm-covid-3 .card-name { font: 500 .85em/1.1 "Share Tech Mono", monospace; color: #c8fff0; text-shadow: 0 0 1cqw #3ddcb0; }
+.card.vm-covid-3 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #062824c8; border: .25cqw solid #3ddcb088; border-radius: .2em; font-family: "Share Tech Mono", monospace; }
+.card.vm-covid-3 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #c8fff0; text-shadow: none; }
+
+/* 4. Wiadomości */
+.card.vm-covid-4 { --frame: linear-gradient(135deg, #c81e2e, #8a0f1a 50%, #e8445a); }
+.card.vm-covid-4 .card-inner { background: linear-gradient(180deg, #0a1a3a, #142a5a 60%, #0a1430); }
+.cvd4-glow { inset: 0; background: radial-gradient(60% 40% at 50% 30%, #2a6bd855, transparent 70%); }
+.cvd4-breaking { display: flex; margin-bottom: 1%; font: 400 .5em/1.6 Bungee, sans-serif; }
+.cvd4-breaking b { background: #c81e2e; color: #fff; padding: 0 .5em; font-weight: 400; animation: vmBlink 1.2s steps(1) infinite; }
+.cvd4-breaking span { flex: 1; background: #fff; color: #0a1a3a; padding: 0 .5em; }
+.vm-photo.cvd4-live { inset: 4% 4% auto auto; padding: .1em .4em; background: #c81e2e; color: #fff; font: 700 2.4cqw/1.4 Rubik, sans-serif; font-style: normal; border-radius: .2em; }
+.cvd4-ticker { position: absolute; left: 0; right: 0; bottom: 3.5%; height: 4.6cqw; background: #c81e2e; overflow: hidden; display: flex; align-items: center; }
+.cvd4-ticker span { white-space: nowrap; font: 700 2.6cqw/1 Rubik, sans-serif; color: #fff; animation: cvdTicker 14s linear infinite; padding-left: 100%; }
+@keyframes cvdTicker { to { transform: translateX(-100%); } }
+.card.vm-covid-4 .card-name { font: 900 .9em/1.1 Rubik, sans-serif; color: #fff; }
+.card.vm-covid-4 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffffe8; border: none; border-left: 1cqw solid #c81e2e; border-radius: 0; }
+.card.vm-covid-4 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #0a1a3a; text-shadow: none; }
+
+/* 5. Test antygenowy */
+.card.vm-covid-5 { --frame: linear-gradient(135deg, #e8eaee, #fff 40%, #c8ccd4); }
+.card.vm-covid-5 .card-inner { background: linear-gradient(160deg, #fff, #eef0f4 60%, #dfe2e8); }
+.cvd5-strip { right: 4%; top: 60%; width: 9%; height: 20%; border-radius: 1cqw; background: #f4f4f6; box-shadow: inset 0 .4cqw .8cqw #0003; }
+.cvd5-strip b { position: absolute; left: 10%; right: 10%; height: .9cqw; background: #c81e5a; font-size: 0; }
+.cvd5-strip .c { top: 28%; } .cvd5-strip .t { top: 62%; animation: cvdT 6s ease-in infinite; }
+@keyframes cvdT { 0%, 20% { opacity: 0; } 70%, 100% { opacity: .9; } }
+.card.vm-covid-5 .card-photo { border: .7cqw solid #dfe2e8; border-radius: 1.4em; box-shadow: inset 0 0 1cqw #0004; }
+.card.vm-covid-5 .card-name { font: 700 .85em/1.1 Rubik, sans-serif; color: #2a2a33; text-shadow: none; }
+.card.vm-covid-5 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffffd8; border: .25cqw solid #d0d4da; border-radius: .6em; }
+.card.vm-covid-5 :is(.card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #2a2a33; text-shadow: none; }
+.card.vm-covid-5 .card-sub { color: #c81e5a; text-shadow: none; font-weight: 900; letter-spacing: .05em; }
+
+/* 6. Zapasy - papier toaletowy */
+.card.vm-covid-6 { --frame: linear-gradient(135deg, #e8202f, #b8101f 50%, #ff5a5a); }
+.card.vm-covid-6 .card-inner { background: linear-gradient(180deg, #f4f0e8, #e2dccf); }
+.cvd6-shelf { left: 0; right: 0; height: 2.4cqw; background: linear-gradient(#c8c0b0, #9a9080); box-shadow: 0 .8cqw 1cqw #0003; }
+.cvd6-shelf::after { content: "0,00 zł"; position: absolute; left: 12%; top: 100%; padding: 0 .4em; background: #ffd21a; font: 700 2cqw/1.4 Rubik, sans-serif; color: #111; }
+.cvd6-shelf.a { top: 30%; } .cvd6-shelf.b { top: 62%; }
+.cvd6-shelf.b::after { content: "BRAK"; left: 60%; background: #e8202f; color: #fff; }
+.vm-bg > i.cvd-roll { width: 13cqw; aspect-ratio: .9; border-radius: 1.4cqw; background: radial-gradient(ellipse 20% 12% at 50% 14%, #b8a890 60%, transparent 62%),
+  radial-gradient(ellipse 50% 16% at 50% 14%, #fff 96%, transparent), linear-gradient(90deg, #e8e4dc, #fff 40%, #e0dcd2); box-shadow: 0 .6cqw .8cqw #0003; }
+.vm-photo.cvd6-limit { inset: 4% 3% auto auto; width: 20%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  background: #e8202f; color: #fff; font: 400 2.4cqw/1 Bungee, sans-serif; font-style: normal; rotate: 12deg; box-shadow: 0 .4cqw .8cqw #0006; }
+.card.vm-covid-6 .card-name { font: 900 .9em/1.1 Rubik, sans-serif; color: #e8202f; text-shadow: none; }
+.card.vm-covid-6 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #fffffff0; border: .25cqw solid #e8202f55; border-radius: .2em; }
+.card.vm-covid-6 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #3a2a1a; text-shadow: none; }
+
+/* 7. Zdalne lekcje */
+.card.vm-covid-7 { --frame: linear-gradient(#2a2d36, #2a2d36); }
+.card.vm-covid-7 .card-inner { background: #1c1e24; }
+.vm-bg > i.cvd7-tile { top: auto; width: 28%; aspect-ratio: 1.4; display: grid; place-items: center; border-radius: 1cqw; color: #fff; font: 700 4cqw/1 Rubik, sans-serif; }
+.cvd7-tile.a { left: 3%; bottom: 3%; background: #3a5ad8; } .cvd7-tile.b { left: 36%; bottom: 3%; background: #2aa86a; } .cvd7-tile.c { right: 3%; bottom: 3%; background: #c8642a; }
+.cvd7-bar { text-align: center; font: 500 .5em/1.6 Rubik, sans-serif; color: #fff; background: #e8445a; border-radius: .4em; margin-bottom: 1%; }
+.vm-photo.cvd7-name { inset: auto auto 3% 3%; padding: .1em .4em; background: #000a; border-radius: .3em; font: 500 2.6cqw/1.3 Rubik, sans-serif; font-style: normal; color: #fff; }
+.cvd7-name b { position: static; color: #ff5a6a; }
+.card.vm-covid-7 .card-photo { border: .5cqw solid #3ddc84; border-radius: .6em; }
+.card.vm-covid-7 .card-name { font: 500 .85em/1.1 Rubik, sans-serif; color: #fff; }
+.card.vm-covid-7 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #2a2d36; border: none; border-radius: .5em; }
+.card.vm-covid-7 :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #e8eaf0; text-shadow: none; }
+
+/* 8. Certyfikat */
+.card.vm-covid-8 { --frame: linear-gradient(135deg, #1a8a4a, #3ddc84 50%, #0f5a2e); }
+.card.vm-covid-8 .card-inner { background: linear-gradient(180deg, #1a8a4a 0 9%, #fbfdfb 9%); }
+.cvd8-guilloche { inset: 0; opacity: .12; background: repeating-radial-gradient(circle at 50% 50%, transparent 0 1.2cqw, #1a8a4a 1.2cqw 1.4cqw),
+  repeating-radial-gradient(circle at 20% 80%, transparent 0 1.6cqw, #1a8a4a 1.6cqw 1.75cqw); }
+.vm-photo.cvd8-qr { inset: auto 3% 3% auto; width: 26%; aspect-ratio: 1; padding: 1cqw; background: #fff; border-radius: .6cqw; box-shadow: 0 .3cqw .8cqw #0005; }
+.cvd8-qr svg { position: static; }
+.vm-photo.cvd8-ok { inset: 3% auto auto 3%; width: 14%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: #1a8a4a; color: #fff; font: 900 6cqw/1 Rubik, sans-serif; font-style: normal; box-shadow: 0 0 0 .6cqw #fff; }
+.card.vm-covid-8 .card-name { font: 700 .85em/1.1 Rubik, sans-serif; color: #fff; }
+.card.vm-covid-8 .card-photo { border: .3cqw solid #1a8a4a; border-radius: .3em; }
+.card.vm-covid-8 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffffe8; border: .25cqw solid #1a8a4a55; border-radius: .3em; }
+.card.vm-covid-8 :is(.card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #1a3a2a; text-shadow: none; }
+.card.vm-covid-8 .card-sub { color: #1a8a4a; text-shadow: none; font-weight: 900; }

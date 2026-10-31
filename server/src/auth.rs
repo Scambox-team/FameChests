@@ -267,7 +267,10 @@ impl FromRequestParts<AppState> for Me {
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
         let (user, jar) = load_user(parts, st).await?;
         match user {
-            Some(u) => Ok(Me(u)),
+            Some(u) => {
+                st.online.touch(u.id);
+                Ok(Me(u))
+            }
             None if parts.uri.path().starts_with("/api/") => Err(AuthReject::Api(jar)),
             None => Err(AuthReject::Page(jar, parts.uri.path().to_owned())),
         }

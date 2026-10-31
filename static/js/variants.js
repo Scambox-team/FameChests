@@ -350,9 +350,15 @@ function vrProposalCard(g, i, pid = person(g.pid) && !person(g.pid).masked ? g.p
   card.classList.remove("v-normal");
   card.classList.add("vm", `vm-${g.key}`, `vm-${g.key}-${i + 1}`, ...(l.cls ? l.cls.split(" ") : []));   // cls: wygląd pożyczony z wariantu
   const p = person(pid);
-  const stk = g.stickers ? stickersHTML(g.stickers, stickerList(g.stickers, p)) : "";   // naklejki prawdziwego wariantu (/stickers)
-  card.querySelector(".shine")?.insertAdjacentHTML("beforebegin", `${l.deco ? l.deco(p) : ""}${stk}<div class="var-tag vm-tag">${l.tag || g.tag}</div>`);
+  // naklejki prawdziwego wariantu (/stickers): nad kartą, a w wariantach "under" / "both" także pod zdjęciem
+  const mode = g.stickers && S.cfg.variants[g.stickers]?.stickers, list = g.stickers ? stickerList(g.stickers, p) || [] : [];
+  const over = mode === "under" ? [] : mode === "both" ? list.filter(s => !s.under) : list;
+  const under = mode === "under" ? list : mode === "both" ? list.filter(s => s.under) : [];
+  card.querySelector(".shine")?.insertAdjacentHTML("beforebegin", `${l.deco ? l.deco(p) : ""}${stickersHTML(g.stickers, over)}<div class="var-tag vm-tag">${l.tag || g.tag}</div>`);
+  if (under.length) card.querySelector(".card-inner").insertAdjacentHTML("afterbegin", stickersHTML(g.stickers, under, " under"));
   if (l.bg) card.querySelector(".card-inner").insertAdjacentHTML("afterbegin", l.bg(p));
+  // własne zdjęcie wariantu (np. zdjęcia anime) - gdy karta go nie ma, zostaje zwykłe
+  if (g.photoVariant) { const img = card.querySelector(".card-photo > img"); if (img) img.src = imgUrl(pid, g.photoVariant); }
   if (l.photo) card.querySelector(".card-photo").insertAdjacentHTML("beforeend", l.photo(p));
   if (l.sub) card.querySelector(".card-sub").innerHTML = l.sub(p);
   if (l.top) card.querySelector(".card-head").insertAdjacentHTML("beforebegin", l.top(p));   // np. napis WANTED nad nazwą   // np. pieczątka atelier zamiast "typ · skrzynka"

@@ -172,6 +172,11 @@ CREATE TABLE IF NOT EXISTS card_drawings (
     flat BYTEA,
     updated_at DOUBLE PRECISION NOT NULL
 );
+-- Zdrapka: egzemplarz zdrapany do końca przez właściciela (idzie za kartą, znika razem z nią)
+CREATE TABLE IF NOT EXISTS card_scratched (
+    item_id BIGINT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+    at DOUBLE PRECISION NOT NULL
+);
 -- codzienny quest: person_id albo variant = cel; winner_id = kto pierwszy go wypełnił
 CREATE TABLE IF NOT EXISTS daily_quests (
     day TEXT PRIMARY KEY,

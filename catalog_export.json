@@ -1,6 +1,53 @@
 {
  "crates": [
   {
+   "id": "halloween",
+   "data": {
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "halloween",
+     "lantern",
+     "devil",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative"
+    ],
+    "variantsAll": true
+   },
+   "deleted": false
+  },
+  {
+   "id": "pl",
+   "data": {
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative"
+    ],
+    "variantsAll": true
+   },
+   "deleted": false
+  },
+  {
    "id": "prl",
    "data": {
     "name": "Skrzynka PRL",
@@ -20,7 +67,24 @@
      "red": 9.0,
      "gold": 3.0,
      "ultra": 0.5
-    }
+    },
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative",
+     "komuna"
+    ],
+    "variantsAll": true
    },
    "deleted": false
   },
@@ -37,7 +101,23 @@
     "desc": "",
     "shop": true,
     "restricted": false,
-    "weights": {}
+    "weights": {},
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative"
+    ],
+    "variantsAll": true
    },
    "deleted": false
   },
@@ -54,7 +134,24 @@
     "desc": "",
     "shop": true,
     "restricted": false,
-    "weights": {}
+    "weights": {},
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "royal",
+     "diamond",
+     "galaxy",
+     "negative"
+    ],
+    "variantsAll": true
    },
    "deleted": false
   },
@@ -71,7 +168,23 @@
     "desc": "światowe gwiazdy i politycy",
     "shop": true,
     "restricted": false,
-    "weights": {}
+    "weights": {},
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative"
+    ],
+    "variantsAll": true
    },
    "deleted": false
   }

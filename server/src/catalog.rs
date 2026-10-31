@@ -942,13 +942,14 @@ impl Catalog {
     }
 
     /// Warianty, dla których ta karta może mieć własne zdjęcie: przypisane do karty (np. Rzulty JP2) i wyjątkowe
-    /// warianty z polem "photo" (np. Halloweenowa), jeśli są włączone w którejś skrzynce karty
+    /// warianty z polem "photo" (np. Halloweenowa), jeśli są włączone w którejś skrzynce karty; z "photoAll" (Anime) - zawsze
     pub fn photo_variants(&self, pid: &str) -> Vec<String> {
         let g = g();
         let mut out: IndexSet<String> = g.card_variants(pid).into_iter().collect();
         if let Some(p) = self.people.get(pid) {
             let from_crates = p.crates.iter().filter_map(|c| self.crates.get(c)).flat_map(|cr| cr.variants.iter());
             out.extend(from_crates.filter(|v| g.variants[*v].photo).cloned());
+            out.extend(g.variants.iter().filter(|(_, x)| x.photo && x.photo_all).map(|(v, _)| v.clone()));
         }
         out.into_iter().collect()
     }

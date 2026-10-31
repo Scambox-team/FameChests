@@ -136,7 +136,7 @@ function mkFiltersHTML({ listings = true } = {}) {
       `<option value="${v}"${f.kind === v ? " selected" : ""}>${n}</option>`).join("")}</select>` : ""}
     <select data-mf="rarity"><option value="all">Każda rzadkość</option>${S.cfg.rarityOrder.map(r =>
       `<option value="${r}"${f.rarity === r ? " selected" : ""}>${S.cfg.rarities[r].name}</option>`).join("")}</select>
-    <select data-mf="variant">${[["all", "Każdy wariant"], ["special", "✨ Tylko specjalne"], ...S.cfg.variantOrder.map(v => [v, variantName(v)])].map(([v, n]) =>
+    <select data-mf="variant">${[["all", "Każdy wariant"], ["special", "✨ Tylko specjalne"], ...filterVariants().map(v => [v, variantName(v)])].map(([v, n]) =>
       `<option value="${v}"${f.variant === v ? " selected" : ""}>${n}</option>`).join("")}</select>
     <select data-mf="crate"><option value="all">Każda skrzynka</option>${crateList().map(c =>
       `<option value="${c.id}"${f.crate === c.id ? " selected" : ""}>${esc(c.emoji)} ${esc(c.short)}</option>`).join("")}</select>

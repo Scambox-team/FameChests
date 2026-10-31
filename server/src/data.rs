@@ -36,7 +36,7 @@ pub fn set_game(gd: GameData) {
 pub struct VariantDef {
     pub name: String,
     pub desc: String,
-    /// naklejki od admina (strona /stickers): true albo "under" (pod zdjęciem)
+    /// naklejki od admina (strona /stickers): true, "under" (pod zdjęciem) albo "both" (każda naklejka nad albo pod zdjęciem)
     pub stickers: Value,
     /// wariant z kreatora (/designer)
     pub custom: bool,
@@ -48,6 +48,8 @@ pub struct VariantDef {
     pub always: bool,
     pub weight: Option<f64>,
     pub photo: bool,
+    /// z "photo": każda karta może mieć własne zdjęcie w tym wariancie, bez względu na skrzynki (np. Anime)
+    pub photo_all: bool,
     pub photo_fallback: Option<String>,
     pub no_combo: bool,
     pub cards: Vec<String>,
@@ -686,6 +688,29 @@ mod tests {
                 assert_eq!(Value::Object(p.clone()), f["people"][id], "karta {id}");
             }
         }
+    }
+
+    /// Zapisuje tests/fixtures/derived.json od nowa z obecnego game.json - po celowej zmianie wariantów, rzadkości
+    /// albo wbudowanych kart (sprawdź wynik w `git diff`):  cargo test dump_derived -- --ignored
+    #[test]
+    #[ignore]
+    fn dump_derived() {
+        let g = base_game();
+        let mut f = fixture();
+        f["variants"] = g.variants_json.clone();
+        f["variantOrder"] = json!(g.variant_order);
+        f["crateVariants"] = json!(g.crate_variants);
+        f["specialVariants"] = json!(g.special_variants);
+        f["casinoVariants"] = json!(g.casino_variants);
+        f["rarities"] = g.rarities_json.clone();
+        f["types"] = g.types_json.clone();
+        for c in g.crates.values() {
+            for p in &c.people {
+                f["people"][p["id"].as_str().unwrap()] = Value::Object(p.clone());
+            }
+        }
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/derived.json");
+        std::fs::write(path, serde_json::to_string(&f).unwrap()).unwrap();
     }
 
     #[test]

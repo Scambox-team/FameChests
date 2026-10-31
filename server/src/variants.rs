@@ -199,11 +199,14 @@ pub fn clean_variant_settings(v: &str, raw: &Value) -> VariantSettings {
 // ---------------------------------------------------------------- naklejki (strona /stickers)
 
 /// Naklejka wariantu: "src" = "upload" (plik od admina) albo grafika z biblioteki; x / y = środek w % karty,
-/// w = szerokość w % karty, rot = obrót w stopniach, flip = odbicie, anim = ruch, v = wersja pliku
+/// w = szerokość w % karty, rot = obrót w stopniach, flip = odbicie, anim = ruch, v = wersja pliku,
+/// under = pod zdjęciem (tylko w wariantach z "stickers": "both" - naklejki nad i pod zdjęciem)
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct Sticker {
     pub id: String,
     pub src: String,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub under: bool,
     #[serde(flatten)]
     pub at: Placement,
     pub v: i64,
@@ -271,6 +274,7 @@ pub fn clean_stickers(raw: Option<&Value>) -> Vec<Sticker> {
         out.push(Sticker {
             id,
             src: src.to_owned(),
+            under: s.get("under").is_some_and(truthy),
             at: placement(s),
             v: int_in(s.get("v"), 0, 1_000_000_000).unwrap_or(0),
         });

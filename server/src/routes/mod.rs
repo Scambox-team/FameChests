@@ -6,6 +6,7 @@ pub mod admin;
 pub mod arena;
 pub mod casino;
 pub mod drawings;
+pub mod scratch;
 pub mod horses;
 pub mod market;
 pub mod pages;
@@ -152,6 +153,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/horses", get(horses::admin_horses).post(horses::admin_horses_save))
         .route("/api/admin/quests", get(quests::admin_quests).post(quests::admin_quests_save))
         .route("/api/items/{id}/drawing", get(drawings::drawing_info).post(drawings::drawing_save))
+        .route("/api/items/{id}/scratch", post(scratch::scratch_item))
         // arena (tylko admini)
         .route("/api/arena/inbox", get(arena_inbox))
         .route("/api/arena/start", post(arena_start))

@@ -565,7 +565,27 @@
    "chance": 0.006,
    "mult": 10.0,
    "off": true,
-   "desc": "Los na loterię: fiolet ze złotem, moneta zdziera srebrną folię ze zdjęcia, a dookoła wybuchy z kwotami i pula nagród."
+   "desc": "Los na loterię: fiolet ze złotem, srebrną folię ze zdjęcia zdrapujesz sam monetą, a dookoła wybuchy z kwotami i pula nagród."
+  },
+  "anime": {
+   "name": "Anime",
+   "chance": 0.005,
+   "mult": 11.0,
+   "off": true,
+   "exclusive": true,
+   "stickers": "both",
+   "photo": true,
+   "photoAll": true,
+   "desc": "Postać jak z anime: zdjęcie przerysowane w stylu japońskiej animacji, naklejki nad i pod zdjęciem."
+  },
+  "covid": {
+   "name": "COVID",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "exclusive": true,
+   "stickers": true,
+   "desc": "Rok 2020: maseczka, dezynfekcja i kwarantanna - naklejki prosto na zdjęciu."
   },
   "blank": {
    "name": "Czysta kartka",

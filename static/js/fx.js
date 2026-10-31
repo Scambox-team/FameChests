@@ -299,6 +299,7 @@ function openViewer(pid, variant = "normal", uid = null) {
           <button class="btn primary" data-act="share">📣 Pokaż znajomym</button>
           <button class="btn" data-act="pin">${showcaseHas(pid, variant) ? "📌 Zdejmij z gabloty" : "📌 Do gabloty"}</button>
           ${isBlank(variant) && S.items.some(i => i.id === +uid) ? '<button class="btn primary" data-act="draw">🖌️ Rysuj na karcie</button>' : ""}
+          ${scratchable(variant, uid) ? '<button class="btn primary" data-act="scratch">🪙 Zdrap kartę</button>' : ""}
         </div>` : ""}
         <div class="muted small">Porusz kursorem nad kartą, aby ją przechylić. Kliknij kartę, aby ją obrócić.</div>
       </div>`;
@@ -314,6 +315,7 @@ function openViewer(pid, variant = "normal", uid = null) {
     if (act === "share") return openShowDialog(pid, variant);
     if (act === "pin") return toggleShowcase(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "draw") return openDrawing(+uid);
+    if (act === "scratch") return openScratch(+uid);
     if (act === "flip" || e.target.closest(".viewer-flipper")) {
       el.querySelector(".viewer-flipper").classList.toggle("flipped");
       Sound.page();

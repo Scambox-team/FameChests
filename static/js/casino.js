@@ -554,9 +554,12 @@ async function showJackpotResult(t) {
   if (!t || !t.side || jp.shown.has(t.id)) return;
   if (S.opening || epicOpen() || dialogOpen() || document.querySelector(".jp-anim")) return;   // spróbujemy przy następnym odświeżeniu
   jp.shown.add(t.id);
-  api(`/api/casino/jackpot/${t.id}/seen`, {}).catch(() => {});
-  await syncInventory(null, true);
-  await jackpotAnim(t);
+  S.animHold = (S.animHold || 0) + 1;   // osiągnięcia z tej gry dopiero po animacji
+  try {
+    api(`/api/casino/jackpot/${t.id}/seen`, {}).catch(() => {});
+    await syncInventory(null, true);
+    await jackpotAnim(t);
+  } finally { S.animHold--; }
   if (currentView() === "casino" && CS.tab === "jackpot") renderJackpot();
 }
 

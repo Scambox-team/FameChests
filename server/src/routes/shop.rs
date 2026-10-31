@@ -184,6 +184,8 @@ struct StateResponse {
     collected: Vec<(String, String)>,
     /// moje czyste kartki z rysunkiem (nie są duplikatami)
     drawn: Vec<i64>,
+    /// moje Zdrapki zdrapane do końca
+    scratched: Vec<i64>,
 }
 
 pub async fn state(State(st): State<AppState>, Me(me): Me) -> Res {
@@ -196,6 +198,7 @@ pub async fn state(State(st): State<AppState>, Me(me): Me) -> Res {
         chests: get_chests(&mut c, &cat, me.id).await?,
         collected: collected_list(&mut c, &cat, me.id).await?,
         drawn: super::drawings::drawn_items(&mut c, me.id).await?,
+        scratched: super::scratch::scratched_items(&mut c, me.id).await?,
     })
 }
 

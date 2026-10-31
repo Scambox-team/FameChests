@@ -2,14 +2,24 @@
 // Osiągnięcia (gracz): powiadomienie wysuwane z boku (achPoll - serwer dopisuje nagłówek X-Ach, gdy gracz coś zdobył)
 // i panel "🏆 Osiągnięcia" na profilu (achProfile, wołane z renderProfile w social.js). Warunki liczy serwer (achievements.py).
 
-const ACH = { queue: [], showing: 0, polling: false };
+const ACH = { queue: [], showing: 0, polling: false, wait: 0 };
+const ACH_GRACE = 700;        // ms po odpowiedzi serwera - wynik zaczyna się animować tuż po niej (np. jackpot po syncInventory)
+const ACH_MAX_WAIT = 90000;   // dłużej nie czekamy (zawieszona animacja nie może zjeść osiągnięcia)
+
+// Trwa animacja wyniku (bęben skrzynki, odsłonięcie, kasyno, skrzynka z pieniędzmi, jackpot) - osiągnięcie zdradziłoby
+// wynik, więc czeka w kolejce. Nowa animacja z wynikiem: ustaw flagę sprawdzaną tutaj albo S.animHold++ / S.animHold--.
+function animBusy() {
+  return (S.opening && !S.opening.shown) || epicOpen() || (typeof CS !== "undefined" && CS.spinning) || S.animHold > 0 ||
+    !!document.querySelector(".jp-anim, .money-stage .ms-result[hidden]");
+}
 
 async function achPoll() {
   if (ACH.polling) return;
   ACH.polling = true;
   try {
     const d = await api("/api/achievements/pop", {});
-    d.list.forEach(a => ACH.queue.push(a));
+    const at = Date.now();
+    d.list.forEach(a => ACH.queue.push({ ...a, at }));
     achPump();
     if (d.list.length) achResync(0);
   } catch (_) { /* powiadomienie to dodatek - błąd nie przeszkadza w grze */ }
@@ -26,6 +36,12 @@ async function achResync(n) {
 }
 
 function achPump() {
+  if (!ACH.queue.length) return;
+  const first = ACH.queue[0], now = Date.now();
+  if (now - first.at < ACH_MAX_WAIT && (now - first.at < ACH_GRACE || animBusy())) {
+    if (!ACH.wait) ACH.wait = setTimeout(() => { ACH.wait = 0; achPump(); }, 400);
+    return;
+  }
   while (ACH.queue.length && ACH.showing < 3) achPopup(ACH.queue.shift());
 }
 
