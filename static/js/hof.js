@@ -39,7 +39,7 @@ async function renderHallOfFame() {
   const rows = HOF.data.rows;
   const known = rows.filter(r => S.cfg.people[r.p]);
   const recent = known.slice().sort((a, b) => b.t - a.t).slice(0, 8);
-  const cards = new Set(known.map(r => r.p)).size, total = Object.keys(S.cfg.people).length;
+  const cards = new Set(known.map(r => r.p)).size, total = Object.values(S.cfg.people).filter(p => p.source !== "ufo").length;
   box.innerHTML = `
     <div class="panel hof-head">
       <h2>🏆 Hall of Fame</h2>
@@ -75,6 +75,7 @@ function renderHofList() {
   let ids = (HOF.crate === "all" ? crateList().flatMap(c => c.people) : crateOf(HOF.crate).people).filter((id, i, a) => a.indexOf(id) === i);
   ids = ids.filter(id => {
     const p = person(id), got = !!by[id];
+    if (p.source === "ufo") return false;   // karta z UFO - niespodzianka, nie w Hall of Fame
     if (HOF.show === "got" && !got) return false;
     if (HOF.show === "none" && got) return false;
     return !q || (!p.masked && p.name.toLowerCase().includes(q));

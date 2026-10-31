@@ -24,4 +24,3 @@ server/.env
 
 # paczka na Azure (build_azure.bat)
 dist/
-.venv-anime/

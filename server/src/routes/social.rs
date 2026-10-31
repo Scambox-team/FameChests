@@ -1010,7 +1010,8 @@ pub async fn hall_of_fame(State(st): State<AppState>, Me(_): Me) -> Res {
     let all_users = sqlx::query_as!(User, "SELECT * FROM users").fetch_all(&mut *c).await?;
     let hidden: HashSet<i64> = all_users.iter().filter(|u| u.hidden_from_ranking()).map(|u| u.id).collect();
     let mut out = vec![];
-    for r in rows.into_iter().filter(|r| cat.has(&r.person_id)) {
+    // karta z wizyty UFO to niespodzianka - nie ma jej w Hall of Fame
+    for r in rows.into_iter().filter(|r| cat.has(&r.person_id) && cat.people[&r.person_id].source.as_deref() != Some("ufo")) {
         let (mut u, mut t, mut s) = (r.first_user_id, r.first_at, r.source);
         if u.is_some_and(|u| hidden.contains(&u)) {
             // gracz poza rankingiem - pokazujemy pierwszego widocznego (albo nikogo)

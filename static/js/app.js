@@ -954,6 +954,21 @@ const zdFoil = () => `<i class="vx-photo zd-foil">${Array.from({ length: 7 }, (_
 const zdBurst = (t, x, y, r, w, c, ink) => `<b class="zd-burst" style="left:${x}%;top:${y}%;width:${w}%;--r:${r}deg;--c:${c};color:${ink}"><u>${t}</u></b>`;
 const zdStars = n => Array.from({ length: n }, () => `<i class="zd-star" style="left:${vxN(2, 96)}%;top:${vxN(2, 96)}%;--s:${vxN(.6, 1.6, 2)};animation-delay:-${vxN(0, 2.4, 1)}s"></i>`).join("");
 
+// Anime: linie szybkości z mangi - rysowane raz, ten sam obrazek na każdej karcie
+let anSpeedSvg = "";
+function anSpeed() {
+  if (anSpeedSvg) return anSpeedSvg;
+  const n = 54, p = (ang, r) => `${(31.5 + Math.cos(ang) * r).toFixed(2)} ${(44 + Math.sin(ang) * r * 1.3).toFixed(2)}`;
+  return anSpeedSvg = vxSvg(Array.from({ length: n }, (_, k) => {
+    const a = k / n * Math.PI * 2 + rand(-.03, .03), w = rand(.008, .03), r0 = rand(16, 26);
+    return `<path d="M${p(a - w, 80)} L${p(a, r0)} L${p(a + w, 80)}Z" fill="#ffffffcc"/>`;
+  }).join(""), "0 0 63 88", "an-speed");
+}
+const anSfx = (t, x, y, r, cls = "") => `<b class="an-sfx ${cls}" style="left:${x}%;top:${y}%;--r:${r}deg">${t}</b>`;
+
+// COVID: cząsteczki wirusa w świetle kogutów (trzy obrazki w CSS: --cvd-v1...3)
+const cvdFloats = n => Array.from({ length: n }, (_, k) => `<i class="cvd-float v${k % 3 + 1}" style="left:${vxN(4, 92)}%;top:${vxN(2, 78)}%;--s:${vxN(.8, 2.4, 2)};animation-delay:-${vxN(0, 12, 1)}s"></i>`).join("");
+
 function dmImages() {
   if (dmImages.done) return;
   dmImages.done = true;
@@ -1027,6 +1042,8 @@ const apTick = () => '<span class="ap-tick"><i>0<br>1<br>2<br>3<br>4<br>5<br>6<b
 const apScratches = n => Array.from({ length: n }, () =>
   `<i class="ap-scratch" style="left:${vxN(2, 96)}%;animation-delay:-${vxN(0, 6, 1)}s;animation-duration:${vxN(1.2, 3, 1)}s"></i>`).join("");
 const VX_BG = {
+  anime: anSpeed,
+  covid: () => `<i class="cvd-beam"></i>${cvdFloats(11)}`,
   scratch: () => `${zdStars(26)}<i class="zd-line a">5 ZŁ ★ 50 ZŁ ★ 500 ZŁ ★ 5 000 ZŁ</i><i class="zd-line b">CENA LOSU 500 GR ★ SZANSA 1:4,2</i>`,
   teletext: () => '<i class="tt-bars"></i><i class="tt-grid"></i><i class="tt-ticker"><b>PRZEPRASZAMY ZA USTERKI +++ AWARIA NADAJNIKA +++ ZARAZ WRACAMY +++ NIE REGULUJ ODBIORNIKA +++ </b></i>',
   receipt: () => `<i class="rc-bars">${rcBars()}</i>`,
@@ -1069,6 +1086,7 @@ const VX_BG = {
 };
 const VX_PHOTO = {
   scratch: uid => scratchPhoto(uid),   // scratch.js: folia do zdrapania / zdrapana / pokaz (bez numeru egzemplarza)
+  covid: '<i class="vx-photo cvd-tint"></i><b class="cvd-scale"><u></u>100 nm</b>',
   receipt: '<i class="vx-photo rc-dots"></i>',
   muertos: '<i class="vx-photo dm-f1"></i>',
   komuna: '<i class="vx-photo kv-ink"></i><i class="vx-photo kv-offset"></i>',
@@ -1097,6 +1115,8 @@ const VX_DECO = {
   // Día de Muertos: płatki i konfetti, motyle, zygzak, chorągiewki, pas aksamitek
   tarot: () => `<div class="vx-deco">${trCorners()}<i class="tr-frame"></i></div>`,
   retroos: () => `<div class="vx-deco vx-clip">${w9Dialogs()}</div>`,
+  covid: () => '<div class="vx-deco"><i class="cvd-sms"><b>⚠ KOMUNIKAT · TERAZ</b>Zostań w domu. Wychodź tylko, gdy to konieczne.</i></div>',
+  anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
   scratch: () => `<div class="vx-deco">${zdBurst("DO<br>100 000<br>ZŁ", 16, 30, -12, 31, "#ffd21a", "#c81e1e")}${zdBurst("x20!", 86, 52, 10, 22, "#ff2f92", "#fff")}</div>`,
   muertos: () => `<div class="vx-deco vx-clip">${dmPetals(6)}${dmConfetti(8)}${dmButterfly(3, 30, 1, 0)}${dmButterfly(84, 46, .85, 3)}</div>
@@ -1234,6 +1254,7 @@ function cvDeco(k) {
 // pasek nad nazwą: okno terminala (Cyfrowa), napis WANTED
 function variantTop(variant, p) {
   const parts = variantParts(variant);
+  if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
   if (parts.includes("claude")) return '<div class="cl-app"><i class="cl-logo"></i><b>Claude</b><span><u></u>online</span></div>';
   if (parts.includes("scratch")) return '<div class="zd-title">ZDRAP I WYGRAJ!</div>';
   if (parts.includes("teletext")) return `<div class="tt-head"><b>P888</b><span>TELEGAZETA</span><i>12:34:${ttDigits("012345", "t")}${ttDigits("0123456789", "u")}</i></div>`;
@@ -1267,6 +1288,8 @@ function variantSub(variant, pid) {
   if (parts.includes("muertos")) return "CALAVERAS · ¡VIVA LA VIDA!";
   if (parts.includes("receipt")) return "*** PARAGON FISKALNY ***";
   if (parts.includes("teletext")) return "PRZERWA W EMISJI";
+  if (parts.includes("anime")) return "SEZON 1 · ODCINEK 12";
+  if (parts.includes("covid")) return "SARS-CoV-2 · SYTUACJA NADZWYCZAJNA";
   if (parts.includes("claude")) return "Claude pisze…";
   if (parts.includes("scratch")) return "GŁÓWNA WYGRANA 100 000 ZŁ";
   if (parts.includes("retroos")) return "Nieprawidłowa operacja";
@@ -2269,7 +2292,7 @@ function showResults(afterEpic = false) {
       electric: ["#9fdcff", "#ffffff", "#4fb8ff"],
       synthwave: ["#ff2bd6", "#00e5ff", "#ffe14a", "#6a1fb8"], motor: ["#e8202f", "#f2f2f2", "#1b1b1b"],
       chocolate: ["#6b3a1f", "#d4a12a", "#ffe6c8", "#3a1a08"], candy: ["#ff5aa8", "#3ddc84", "#ffffff", "#ffd23f", "#4fb8ff"], hollywood: ["#ffd08a", "#e0683a", "#8a3a5a", "#1a2048"], cobalt: ["#3ab0ff", "#bfe6ff", "#1e4fd8", "#ffffff"], banana: ["#ffe14a", "#9ab82a", "#7a5414", "#fff6b0"],
-      claude: ["#e88a55", "#f1e9db", "#1a1614"], scratch: ["#ffd21a", "#7a2ae0", "#c8ccd4"], teletext: ["#ffff00", "#00ffff", "#ff00ff", "#00ff00"], retroos: ["#008080", "#c0c0c0", "#000080"], receipt: ["#ffffff", "#d8d4cc", "#1a1a1a"], tarot: ["#e8c8ff", "#ffe8a8", "#6a2aa8"], muertos: ["#ff2f92", "#ffb81a", "#19d3c5", "#8a3dff", "#ff7a00"], uranium: ["#5dff1f", "#b6ff5a", "#d8ff8a"], mercury: ["#ffffff", "#c8d0d8", "#6a7480"], californium: ["#ffffff", "#dfe6f2", "#9aa2b0"], files: ["#e2c88a", "#b8201a", "#f8f4ea"], copper: ["#e8945a", "#c87533", "#5ab89e", "#8fd8c0"], reflective: ["#e6ff2a", "#d8dde2", "#ffffff"], usa: ["#f2f2f2", "#141414", "#8a8a8a"], apollo: ["#f2d27a", "#c8ccd4", "#f4f6f9"], komuna: ["#d4161f", "#111111", "#f6d77a"],
+      covid: ["#e8101e", "#ffd21a", "#120304"], anime: ["#ff7a00", "#ffd21a", "#1f6bff", "#ffffff"], claude: ["#e88a55", "#f1e9db", "#1a1614"], scratch: ["#ffd21a", "#7a2ae0", "#c8ccd4"], teletext: ["#ffff00", "#00ffff", "#ff00ff", "#00ff00"], retroos: ["#008080", "#c0c0c0", "#000080"], receipt: ["#ffffff", "#d8d4cc", "#1a1a1a"], tarot: ["#e8c8ff", "#ffe8a8", "#6a2aa8"], muertos: ["#ff2f92", "#ffb81a", "#19d3c5", "#8a3dff", "#ff7a00"], uranium: ["#5dff1f", "#b6ff5a", "#d8ff8a"], mercury: ["#ffffff", "#c8d0d8", "#6a7480"], californium: ["#ffffff", "#dfe6f2", "#9aa2b0"], files: ["#e2c88a", "#b8201a", "#f8f4ea"], copper: ["#e8945a", "#c87533", "#5ab89e", "#8fd8c0"], reflective: ["#e6ff2a", "#d8dde2", "#ffffff"], usa: ["#f2f2f2", "#141414", "#8a8a8a"], apollo: ["#f2d27a", "#c8ccd4", "#f4f6f9"], komuna: ["#d4161f", "#111111", "#f6d77a"],
       vintage: ["#efe4cb", "#b8913d", "#6b4c22"], marble: ["#ffffff", "#d9d4c8", "#d4af37"], toxic: ["#5dff1f", "#b6ff3a", "#ffd400", "#0c1407"], reverse: ["#c9d6ff", "#ffffff", "#9ff6ff"], bw: ["#ffffff", "#111111", "#888888"],
       rzulty: ["#ffe600", "#fff6a0", "#ffffff"], flag: ["#ffffff", "#dc143c", "#ffcf3f"], halloween: ["#ff7a00", "#1a0a12", "#8a2be2", "#ffd84a"],
       lantern: ["#ffb347", "#ff7a00", "#fff1c1", "#3a1a06"], devil: ["#ff1a1a", "#b3001b", "#ffcf5a", "#120002"],

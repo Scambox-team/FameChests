@@ -2740,6 +2740,62 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 .r-secret.v-retroos .sc-border { background: linear-gradient(135deg, #c0c0c0, #008080 55%, #000080); animation: none; }
 .pick.v-retroos { box-shadow: inset 0 0 0 2px #c0c0c0, inset 0 0 0 4px #008080, inset 0 -26px 26px -18px var(--rc); }
 
+/* COVID - alarm pod mikroskopem: koguty cvd-beam, cząsteczki cvd-float, czarno-białe zdjęcie pod czerwoną nakładką cvd-tint, podziałka cvd-scale, pasek ALERT w variantTop, komunikat cvd-sms w VX_DECO (bez niego przy kilku zdolnościach). Naklejki na zdjęciu z /stickers */
+.card.v-covid .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-covid { --frame: #e8101e; --spin: initial; --panel: #120406d8; --cvd-v1: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff8a5a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff8a5a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff8a5a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff8a5a'/><circle cx='20' cy='20' r='11.5' fill='%23ff8a5a'/></svg>"); --cvd-v2: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff2a3e'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff2a3e'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff2a3e'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff2a3e'/><circle cx='20' cy='20' r='11.5' fill='%23ff2a3e'/></svg>"); --cvd-v3: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ffd21a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ffd21a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ffd21a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ffd21a'/><circle cx='20' cy='20' r='11.5' fill='%23ffd21a'/></svg>"); box-shadow: 0 6px 18px #0009; animation: cvdAlert 1.6s steps(1) infinite; }
+@keyframes cvdAlert { 50% { --frame: #3a0408; filter: brightness(.86); } }
+.card.v-covid .card-inner { background: repeating-linear-gradient(135deg, #2a0608 0 7cqw, #120304 7cqw 14cqw); color: #e8edf4; }
+.card.v-covid :is(.card-attack, .card-stats, .card-foot, .card-head, .card-sub) { background: var(--panel); border: none; border-radius: .25em; }
+.card.v-covid .card-attack { padding-inline: .35em; margin-top: 1.5%; }
+.card.v-covid .card-foot { padding: .1em .35em; }
+.card.v-covid .card-head { padding: 0 .3em; }
+.card.v-covid :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp, .card-name) { color: #e8edf4; text-shadow: none; }
+.card.v-covid .card-name { font-family: "Share Tech Mono", monospace; font-weight: 400; font-size: 1.02em; }
+.card.v-covid .card-sub { font-family: "Share Tech Mono", monospace; font-style: normal; letter-spacing: .04em; }
+.card.v-covid .card-photo { border: .1em solid #ff5a6a; border-image: none; border-radius: .2em; }
+.card.v-covid:not(.two-atk, .atk-3, .atk-4) .card-photo { aspect-ratio: 1.32; flex: none; }
+.card.v-covid:not(.two-atk, .atk-3, .atk-4) .card-sub { margin-bottom: auto; }
+.card.v-covid .card-photo > img, .r-secret.v-covid .sc-art img { filter: grayscale(1) contrast(1.3) brightness(.95); object-position: 50% 18%; }
+.vx-photo.cvd-tint { inset: 0; background: linear-gradient(180deg, #ff2a2a, #d80a1e); mix-blend-mode: multiply; }
+.vx-bg .cvd-beam { left: 50%; top: 36%; width: 240%; aspect-ratio: 1; translate: -50% -50%; background: conic-gradient(#ff1a2a88 0 40deg, transparent 80deg 180deg, #ff1a2a88 180deg 220deg, transparent 260deg); will-change: transform; animation: cvdSpin 2.4s linear infinite; }
+@keyframes cvdSpin { to { transform: rotate(360deg); } }
+.vx-bg .cvd-float { width: calc(11cqw * var(--s)); aspect-ratio: 1; background: var(--cvd-v1) center / contain no-repeat; will-change: transform; animation: cvdDrift 12s ease-in-out infinite alternate; }
+.vx-bg .cvd-float.v2 { background-image: var(--cvd-v2); } .vx-bg .cvd-float.v3 { background-image: var(--cvd-v3); }
+@keyframes cvdDrift { to { transform: translate(4cqw, -5cqw) rotate(70deg); } }
+.cvd-bar { display: flex; align-items: center; justify-content: center; padding: .22em .5em; margin: 0 0 1.5%; border-radius: .2em; background: #ffd21a; color: #111; font: 400 .5em/1.2 Bungee, sans-serif; white-space: nowrap; overflow: hidden; }
+.vx-deco .cvd-sms { left: 6%; right: 6%; top: 66%; padding: 1cqw 1.6cqw; border-radius: 1.6cqw; background: #f2f4f8; color: #111; font: 400 2.5cqw/1.2 Rubik, sans-serif; font-style: normal; box-shadow: 0 .6cqw 1.6cqw #000a; animation: cvdSms 8s ease-out infinite; animation-delay: -2s; }
+.cvd-sms b { display: block; color: #c8101e; font-weight: 800; font-size: 2.2cqw; }
+@keyframes cvdSms { 0% { transform: translateY(16cqw); opacity: 0; } 6%, 92% { transform: none; opacity: 1; } 100% { transform: translateY(16cqw); opacity: 0; } }
+.card:is(.two-atk, .atk-3, .atk-4) .vx-deco .cvd-sms { display: none; }
+.cvd-scale { position: absolute; z-index: 2; right: 3%; bottom: 4%; padding: .4cqw .8cqw; background: #000a; color: #ffd21a; font: 400 2.4cqw/1 "Share Tech Mono", monospace; text-align: center; }
+.cvd-scale u { display: block; width: 15cqw; height: .5cqw; margin-bottom: .5cqw; background: #ffd21a; }
+.var-tag.vt-covid, .ph.vt-covid { background: #111; color: #ffd21a; border: 1px solid #e8101e; font-family: "Share Tech Mono", monospace; text-shadow: none; }
+.vdot.vt-covid { background: radial-gradient(circle, #ffd21a 30%, #e8101e 35%); }
+.odd.odd-v.vt-covid { border-left-color: #e8101e; }
+.r-secret.v-covid .sc-border { background: linear-gradient(135deg, #e8101e, #120304 55%, #ffd21a); animation: none; }
+.pick.v-covid img { filter: grayscale(1) contrast(1.3) sepia(1) hue-rotate(-50deg) saturate(5); }
+.pick.v-covid { box-shadow: inset 0 0 0 2px #ffd21a, inset 0 0 0 4px #e8101e, inset 0 -26px 26px -18px var(--rc); }
+
+/* Anime - kadr z bijatyki shōnen: linie szybkości an-speed, odgłosy z mangi an-sfx, grube czarne obrysy. Zdjęcie rysuje admin ręcznie ("photo" + "photoAll": pole w edycji każdej karty, /img/<id>/anime) */
+.card.v-anime .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-anime { --frame: linear-gradient(135deg, #ff7a00, #ffd21a 40%, #1f6bff 60%, #0a2a8a); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-anime .card-inner { background: radial-gradient(60% 45% at 50% 38%, #fff3c4, #ff9a1f 45%, #1f4fd8 100%); }
+.vx-bg .an-speed { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .85; animation: anPulse .9s steps(3) infinite; }
+@keyframes anPulse { 50% { opacity: .55; } }
+.card.v-anime .card-name { font: 400 1.05em/1 Bangers, sans-serif; letter-spacing: .04em; color: #fff; -webkit-text-stroke: .35cqw #111; paint-order: stroke; text-shadow: .5cqw .5cqw 0 #111; }
+.card.v-anime :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #fff; border: .5cqw solid #111; border-radius: .2em; box-shadow: .8cqw .8cqw 0 #111; }
+.card.v-anime :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #111; text-shadow: none; }
+.card.v-anime .card-photo { border: .7cqw solid #111; border-image: none; box-shadow: 1cqw 1cqw 0 #111; }
+.card.v-anime .card-photo > img { object-position: 50% 20%; }
+b.an-sfx { position: absolute; translate: -50% -50%; rotate: var(--r); font: 400 7cqw/1 "Dela Gothic One", Bangers, sans-serif; color: #fff; -webkit-text-stroke: .5cqw #111; paint-order: stroke; text-shadow: .5cqw .5cqw 0 #111; letter-spacing: -.05em; animation: anShake .35s steps(2) infinite; }
+b.an-sfx.b { color: #ffd21a; }
+@keyframes anShake { 50% { translate: calc(-50% + .4cqw) calc(-50% - .3cqw); } }
+.var-tag.vt-anime, .ph.vt-anime { background: #fff; color: #111; border: 1px solid #111; font-family: Bangers, sans-serif; letter-spacing: .04em; text-shadow: none; }
+.vdot.vt-anime { background: conic-gradient(#ff7a00, #ffd21a, #1f6bff, #ff7a00); }
+.odd.odd-v.vt-anime { border-left-color: #ff7a00; }
+.r-secret.v-anime .sc-border { background: linear-gradient(135deg, #ff7a00, #ffd21a 40%, #1f6bff 60%, #0a2a8a); animation: none; }
+.pick.v-anime { box-shadow: inset 0 0 0 2px #ffd21a, inset 0 0 0 4px #1f6bff, inset 0 -26px 26px -18px var(--rc); }
+
 /* Claude - czat w ciemnym trybie: pasek aplikacji z logo w variantTop, okno rozmowy cl-window w VX_DECO, zdjęcie bez filtra, naklejki od admina.
    Kolumna 16 wierszy jedzie skokami co 2,5 s (clFeed), wiersz odpowiedzi ma --idx, a okno --rows: kropki startują 0,5 s przed wjazdem wiersza, tekst dopiero po nich */
 .card.v-claude .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
@@ -2825,10 +2881,6 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 .var-tag.vt-scratch, .ph.vt-scratch { background: #ffd21a; color: #2a1040; border: 1px solid #2a1040; font-family: Bungee, sans-serif; text-shadow: none; }
 .vdot.vt-scratch { background: linear-gradient(135deg, #ffd21a 50%, #aab0ba 50%); }
 /* Anime i COVID (wygląd jeszcze do wybrania na /variants - makiety), na razie plakietki i kropki */
-.var-tag.vt-anime, .ph.vt-anime { background: linear-gradient(135deg, #ff9cc6, #a87cff); color: #fff; border: 1px solid #fff8; text-shadow: 0 1px 2px #6a2a8a; }
-.vdot.vt-anime { background: linear-gradient(135deg, #ff9cc6, #a87cff); }
-.var-tag.vt-covid, .ph.vt-covid { background: #eaf6ff; color: #1a4a7a; border: 1px solid #6ab8f0; text-shadow: none; }
-.vdot.vt-covid { background: linear-gradient(135deg, #8fd0ff 50%, #fff 50%); }
 .odd.odd-v.vt-scratch { border-left-color: #ffd21a; }
 .r-secret.v-scratch .sc-border { background: linear-gradient(135deg, #ffd21a, #7a2ae0 55%, #ffd21a); animation: none; }
 .pick.v-scratch { box-shadow: inset 0 0 0 2px #ffd21a, inset 0 0 0 4px #7a2ae0, inset 0 -26px 26px -18px var(--rc); }
