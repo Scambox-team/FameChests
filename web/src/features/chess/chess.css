@@ -1,0 +1,96 @@
+/* ZAKŁADKA GRY i SZACHY (chess.js): czarno-biało i oszczędnie, kolor wnoszą tylko skiny */
+#view-games { --muted: #989898; --good: #f2f2f2; }
+.ch-lobby { display: flex; flex-direction: column; gap: 14px; }
+.ch-lobby > p { margin: 0; }
+.ch-form input { height: 40px; padding: 0 12px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; }
+.ch-grid { margin: 0; }
+.ch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+.ch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ch-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.ch-form .wide { grid-column: 1 / -1; }
+.ch-bots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ch-resume { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.ch-list { display: flex; flex-direction: column; }
+.ch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.ch-row:last-child { border-bottom: 0; }
+/* partia: plansza zajmuje całą wysokość ekranu, gracze i ruchy są obok */
+.ch-game { position: relative; display: flex; gap: 20px; align-items: stretch; justify-content: center; }
+.ch-left { flex: 0 1 auto; width: min(calc(100% - 300px), calc(100vh - 176px)); min-width: 320px; }
+.ch-side { flex: 0 0 280px; display: flex; flex-direction: column; gap: 12px; }
+.ch-player { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); color: #8a8a8a; }
+.ch-side > .ch-player:last-child { margin-top: auto; border-top: 1px solid var(--rule); border-bottom: 0; }
+.ch-player.on { color: #fff; }
+.ch-who { display: flex; align-items: center; gap: 8px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-dot { flex: none; width: 11px; height: 11px; border-radius: 50%; border: 1px solid #8a8a8a; }
+.ch-dot.w { background: #f6f6f6; } .ch-dot.b { background: #0c0c0c; }
+.ch-clock { font: 400 24px/1.2 "Share Tech Mono", monospace; color: inherit; }
+.ch-board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; outline: 1px solid #5a5a5a; outline-offset: 3px; user-select: none; touch-action: manipulation; }
+.ch-board.wait { pointer-events: none; }
+.ch-sq { position: relative; display: grid; place-items: center; aspect-ratio: 1; container-type: inline-size; cursor: pointer; }
+.ch-sq.lt, .sk-sq.lt { background: #efefed; } .ch-sq.dk, .sk-sq.dk { background: #1c1c1c; }
+.ch-sq.last.lt { background: #cfcfcd; } .ch-sq.last.dk { background: #3e3e3e; }
+.ch-sq.sel.lt { background: #b0b0ae; } .ch-sq.sel.dk { background: #5c5c5c; }
+.ch-sq.check { box-shadow: inset 0 0 0 5cqw #8a8a8a; }
+.ch-sq.move::after { content: ""; position: absolute; width: 24%; aspect-ratio: 1; border-radius: 50%; background: #8a8a8a; }
+.ch-sq.take::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; border: 4cqw solid #8a8a8a; }
+.ch-pc { display: block; width: 94%; height: 94%; pointer-events: none; }
+.ch-pc svg { display: block; width: 100%; height: 100%; overflow: visible; shape-rendering: geometricPrecision; }
+.ch-pc.w { --f: #fafafa; --l: #141414; } .ch-pc.b { --f: #151515; --l: #efefef; }
+.pc-body > * { fill: var(--f); stroke: var(--l); stroke-width: 2.2; stroke-linejoin: round; }
+.pc-line { fill: none; stroke: var(--l); stroke-width: 2.2; stroke-linecap: round; }
+.pc-eye { fill: var(--l); }
+.pc-plate { fill: var(--f); stroke: var(--l); stroke-width: 2.4; }
+.dk > .ch-pc.sk { filter: drop-shadow(0 0 .7px #ffffffb0); }
+.ch-co { position: absolute; font: 400 13cqw/1 Rubik, sans-serif; font-style: normal; pointer-events: none; }
+.ch-sq.lt .ch-co { color: #0009; } .ch-sq.dk .ch-co { color: #fff9; }
+.ch-co.f { left: 5%; bottom: 4%; } .ch-co.r { right: 5%; top: 4%; }
+.ch-status { font: 700 17px/1.3 Cinzel, Georgia, serif; letter-spacing: .03em; color: #f2f2f2; }
+.ch-alert { padding: 4px 10px; border: 1px solid #f2f2f2; font-weight: 500; text-align: center; letter-spacing: .08em; text-transform: uppercase; color: #f2f2f2; }
+.ch-reward { padding: 8px 10px; border: 1px solid #f2f2f2; color: #f2f2f2; }
+.ch-offer { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; }
+.ch-moves { flex: 1 1 200px; min-height: 120px; overflow-y: auto; font: 400 14px/1.6 "Share Tech Mono", monospace; color: #cfcfcf; }
+.ch-mv { display: grid; grid-template-columns: 34px 1fr 1fr; }
+.ch-mv i { font-style: normal; color: var(--muted); } .ch-mv b { font-weight: 400; }
+.ch-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-promo { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #000a; }
+.ch-pick { width: 84px; height: 84px; margin: 4px; padding: 6px; border: 1px solid #5a5a5a; background: #7a7a7a; cursor: pointer; }
+.ch-pick:hover { background: #9a9a9a; }
+@media (max-width: 1000px) { .ch-game { flex-direction: column; align-items: center; } .ch-left { width: min(100%, calc(100vh - 176px)); } .ch-side { flex: none; width: min(100%, 640px); } .ch-moves { flex: none; max-height: 160px; } }
+@media (max-width: 760px) { .ch-grid { grid-template-columns: 1fr; } }
+
+/* skiny figur: rysunek może mieć dowolny kształt i kolor, stronę pokazuje zawsze podstawka .pc-plate (--f / --l) */
+.sk-prev { display: flex; justify-content: center; gap: 0; }
+.sk-sq { display: grid; place-items: center; width: 96px; height: 96px; }
+.sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.sk-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 12px; background: var(--raised); text-align: center; }
+.sk-tile.on { box-shadow: inset 0 0 0 2px var(--hue); }
+.sk-tile.off .sk-prev { opacity: .45; filter: grayscale(1); }
+.sk-tile p { margin: 2px 0; min-height: 2.6em; }
+.sk-n { position: absolute; top: 8px; right: 10px; font-style: normal; font-weight: 800; }
+.sk-rar { color: var(--rc); font-weight: 700; }
+.sk-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.sk-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.sk-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 500; }
+.sk-slot select { width: 100%; }
+/* bęben figur i wyniki */
+.mini-sk .sk-art { display: grid; place-items: center; aspect-ratio: 1 / 1.05; }
+.mini-sk .sk-art.lt { background: #efefed; } .mini-sk .sk-art.dk { background: #1c1c1c; }
+.mini-sk .sk-art .ch-pc { width: 88%; height: 88%; }
+.sk-res-head { grid-column: 1 / -1; text-align: center; font: 800 16px var(--display); letter-spacing: .1em; text-transform: uppercase; }
+.result.sk-res { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-radius: 14px; background: #121722; box-shadow: 0 0 0 2px var(--rc), 0 0 22px var(--rc); }
+
+/* skrzynki szachów: nie skrzynie, tylko wieże szachowe (biała i czarna). Blanki zdejmują się przy otwieraniu (wieko = głowa wieży),
+   pas z szachownicy zamiast kłódki, figura w środku. Działa w każdym rozmiarze (procenty, reguły mocniejsze niż .ms-chest itp.) */
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) { --t1: #f7f7f2; --t2: #d6d6d0; --t3: #141414; filter: drop-shadow(0 0 1px #fffa) drop-shadow(0 7px 8px #000b); }
+.crate-art.crate-szachy_czarne { --t1: #1a1a1a; --t2: #333; --t3: #f7f7f2; filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 7px 8px #000b); }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-box { inset: 27% 15% 0 15%; border: none; border-radius: 0; box-shadow: none; overflow: visible;
+  background: linear-gradient(90deg, var(--t1) 0 50%, var(--t2) 50%);
+  clip-path: polygon(24% 0, 76% 0, 82% 74%, 100% 84%, 100% 100%, 0 100%, 0 84%, 18% 74%); }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-box::before { content: ""; position: absolute; inset: auto 0 0 0; height: 16%; background: conic-gradient(var(--t3) 25%, var(--t1) 0 50%, var(--t3) 0 75%, var(--t1) 0) 0 0 / 22% 100%; border: none; border-radius: 0; box-shadow: none; }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-box::after { content: none; }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lid { left: 13%; right: 13%; top: 2%; height: 31%; border: none; border-radius: 0; box-shadow: none;
+  background: linear-gradient(90deg, var(--t1) 0 50%, var(--t2) 50%);
+  clip-path: polygon(0 0, 21% 0, 21% 34%, 40% 34%, 40% 0, 60% 0, 60% 34%, 79% 34%, 79% 0, 100% 0, 100% 66%, 84% 100%, 16% 100%, 0 66%); }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock { left: 50%; top: 31%; width: 42%; height: 5%; border: none; border-radius: 0; box-shadow: none; background: conic-gradient(var(--t3) 25%, var(--t1) 0 50%, var(--t3) 0 75%, var(--t1) 0) 0 0 / 14% 100%; }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock::before, .crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock::after { content: none; }
+.crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-emblem { top: 36%; left: 50%; color: var(--t3); filter: none; text-shadow: none; -webkit-text-stroke: 0; animation: none; }

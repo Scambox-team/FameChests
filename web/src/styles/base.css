@@ -19,3 +19,11 @@ img { max-width: 100%; }
 .card svg.tp { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.12em; }
 .card-stats b { display: flex; align-items: center; justify-content: center; gap: .15em; }
 .atk-cost { display: inline-flex; align-items: center; gap: .1em; }
+
+/* Panel ekranów gry: kasyno, szachy, Arena */
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 0; border-radius: var(--radius); background: var(--surface); box-shadow: none; min-width: 0; }
+.panel h3 { margin: 0; font: 800 18px/24px var(--display); letter-spacing: -.02em; }
+.panel h3 small { font: 400 13px var(--body); letter-spacing: 0; }
+.panel p { margin: 0; }
+.pos-txt { color: var(--good); }
+.neg-txt { color: var(--bad); }

@@ -11,6 +11,7 @@ import { ProfilePage } from '../features/social/ProfilePage';
 import { RankingPage } from '../features/social/RankingPage';
 import { ShareDialog } from '../features/social/ShareDialog';
 import { installViewerActions } from '../features/social/showcase';
+import { ChessPage } from '../features/chess/ChessPage';
 import { CasinoPage } from '../features/casino/CasinoPage';
 import { showJackpotResult } from '../features/casino/jackpotResult';
 import { hrNews } from '../features/casino/horsesEngine';
@@ -78,6 +79,7 @@ function Game() {
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/casino" element={<CasinoPage />} />
+          <Route path="/games" element={<ChessPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />

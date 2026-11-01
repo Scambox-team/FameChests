@@ -1,8 +1,4 @@
 /* Gry zachowują układ i animacje z casino.css, a tu dostają wygląd Gabloty */
-.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 0; border-radius: var(--radius); background: var(--surface); box-shadow: none; min-width: 0; }
-.panel h3 { margin: 0; font: 800 18px/24px var(--display); letter-spacing: -.02em; }
-.panel h3 small { font: 400 13px var(--body); letter-spacing: 0; }
-.pos-txt { color: var(--good); } .neg-txt { color: var(--bad); }
 .cs-pick-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
 .rl-won { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }

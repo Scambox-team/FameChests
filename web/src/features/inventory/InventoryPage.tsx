@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
+import { Figures } from '../chess/Figures';
 import { dupesOf, ownedMap, sellIds, setFavorite } from '../../game/actions';
 import { cardMatches, filterVariants, isSpecial, isSpecialCard, person, plural, rarityIdx, seenCrateList, sortCards, varRank, variantName } from '../../game/rules';
 import { S, touch, useGame } from '../../game/store';
@@ -161,6 +162,7 @@ function MyCards() {
 export function InventoryPage() {
   const { pathname } = useLocation();
   const hof = pathname.endsWith('/hall-of-fame');
+  const figures = pathname.endsWith('/figures');
   useEffect(() => {
     document.title = 'Ekwipunek · ScamBox';
     ufoArrive();
@@ -170,10 +172,11 @@ export function InventoryPage() {
   return (
     <>
       <nav className={styles.modes} aria-label="Ekwipunek">
-        <Link to="/inventory" aria-current={!hof ? 'page' : undefined}>Moje karty</Link>
+        <Link to="/inventory" aria-current={!hof && !figures ? 'page' : undefined}>Moje karty</Link>
+        <Link to="/inventory/figures" aria-current={figures ? 'page' : undefined}>Figury</Link>
         <Link to="/inventory/hall-of-fame" aria-current={hof ? 'page' : undefined}>Hall of Fame</Link>
       </nav>
-      {hof ? <HallOfFame /> : <MyCards />}
+      {hof ? <HallOfFame /> : figures ? <Figures /> : <MyCards />}
     </>
   );
 }

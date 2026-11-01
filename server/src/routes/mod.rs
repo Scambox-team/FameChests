@@ -67,6 +67,7 @@ pub fn router(st: AppState) -> Router {
         .route("/login", get(login_page))
         .route("/", get(index))
         .route("/inventory/hall-of-fame", get(index))
+        .route("/inventory/figures", get(index))
         .route("/player/{name}", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))
