@@ -14,6 +14,8 @@ import { installViewerActions } from '../features/social/showcase';
 import { ChessPage } from '../features/chess/ChessPage';
 import { ArenaPage } from '../features/arena/ArenaPage';
 import { startArena } from '../features/arena/arena';
+import { bibiPlay, bibiQueue } from '../features/achievements/bibi';
+import { openingHooks } from '../features/crates/opening';
 import { CasinoPage } from '../features/casino/CasinoPage';
 import { showJackpotResult } from '../features/casino/jackpotResult';
 import { hrNews } from '../features/casino/horsesEngine';
@@ -33,7 +35,6 @@ import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
 import styles from './App.module.css';
 
-const NotMoved = lazy(() => import('./NotMoved'));
 
 // odpowiedź /api/me co 30 s: to, co mogło się zmienić bez udziału gracza
 function onMe(me: any) {
@@ -55,7 +56,8 @@ function Game() {
 
   useEffect(() => {
     let stop: undefined | (() => void), alive = true;
-    onResponseHeaders({ achievements: achPoll });
+    openingHooks.bibiPlay = bibiPlay;
+    onResponseHeaders({ achievements: achPoll, bibi: bibiQueue });
     boot().then(me => {
       if (!alive) return;
       noteQuest(me.quest);
@@ -90,7 +92,7 @@ function Game() {
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
           <Route path="/link/:token" element={<LinkClaim />} />
-          <Route path="*" element={<NotMoved />} />
+          <Route path="*" element={<Navigate to="/crates" replace />} />
         </Routes>
       </Suspense>
       <Stage />

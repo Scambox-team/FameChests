@@ -1,6 +1,6 @@
 # ScamBox – serwer w Rust
 
-Serwer gry (axum + tokio + sqlx/PostgreSQL). Przeglądarka (`static/`, `templates/`) i `data/game.json` są
+Serwer gry (axum + tokio + sqlx/PostgreSQL). Przeglądarka (`web/`, `static/`) i `data/game.json` są
 wbudowane w plik wykonywalny - do działania wystarczy `scambox.exe` i baza.
 
 ## Uruchomienie

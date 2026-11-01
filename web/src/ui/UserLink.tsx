@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { vClass } from '../game/rules';
 import { S } from '../game/store';
-import { isReactPath } from '../app/nav';
 import styles from './UserLink.module.css';
 
 export interface UserRef { username: string; avatarCard?: string | null; avatarRarity?: string | null; avatarVariant?: string | null }
@@ -22,5 +21,5 @@ export function Avatar({ user, size = 26 }: { user: UserRef; size?: number }) {
 export function UserLink({ user }: { user: UserRef }) {
   const to = `/player/${encodeURIComponent(user.username)}`;
   const inner = <><Avatar user={user} /><span>{user.username}</span></>;
-  return isReactPath('/player') ? <Link className={styles.link} to={to}>{inner}</Link> : <a className={styles.link} href={to}>{inner}</a>;
+  return <Link className={styles.link} to={to}>{inner}</Link>;
 }

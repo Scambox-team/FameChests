@@ -6,7 +6,7 @@
 //!   DB_POOL_SIZE   10
 //!   SECRET_KEY     długi losowy tekst         klucz ciasteczek logowania (bez niego: DATA_DIR/secret_key.txt)
 //!   DATA_DIR       /home/data                 zdjęcia i klucz poza folderem gry (domyślnie folder gry)
-//!   GAME_DIR       folder z static/ i templates/ (domyślnie wykrywany)
+//!   GAME_DIR       folder z static/ i web/ (domyślnie wykrywany)
 //!   PORT, BIND     port i adres (domyślnie 5000 / 5001 z --test, 127.0.0.1 / 0.0.0.0 z --lan)
 //!   COOKIE_SECURE  1 = ciasteczko tylko po HTTPS (hosting)
 //!   TRUST_PROXY    1 = adres gracza z X-Forwarded-For (hosting za proxy)
@@ -88,14 +88,14 @@ fn on_azure() -> bool {
     env("WEBSITE_SITE_NAME").is_some() || env("HTTP_PLATFORM_PORT").is_some()
 }
 
-/// Folder gry (static/, templates/, catalog_export.json, custom_images/)
+/// Folder gry (static/, web/, catalog_export.json, custom_images/)
 fn detect_base_dir() -> PathBuf {
     if let Some(dir) = env("GAME_DIR") {
         return PathBuf::from(dir);
     }
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     for dir in [cwd.clone(), cwd.join("..")] {
-        if dir.join("static").is_dir() && dir.join("templates").is_dir() {
+        if dir.join("static").is_dir() && dir.join("web").is_dir() {
             return dir.canonicalize().unwrap_or(dir);
         }
     }

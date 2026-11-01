@@ -6,7 +6,8 @@ import { S, useGame } from '../game/store';
 import { Sound } from '../sound/sound';
 import { Avatar } from '../ui/UserLink';
 import { Money } from '../ui/Money';
-import { isReactPath, NAV, type NavItem } from './nav';
+import { InstallButton } from './InstallButton';
+import { NAV, type NavItem } from './nav';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
 
@@ -23,7 +24,6 @@ function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
     </>
   );
   // adresy ze starej wersji gry muszą przeładować stronę
-  if (!isReactPath(item.path)) return <a className={styles.link} href={item.path} onClick={e => leave(e, () => { location.href = item.path; })}>{inner}</a>;
   return (
     <NavLink to={item.path} onClick={e => { leave(e, () => navigate(item.path)); onPick?.(); }} className={({ isActive }) => `${styles.link}${isActive ? ` ${styles.on}` : ''}`}>
       {inner}
@@ -55,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className={styles.foot}>
           <Link className={styles.user} to={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><MyAvatar /><span>{game.me?.username}</span></Link>
+          <InstallButton className={styles.icon} />
           <button className={styles.icon} type="button" onClick={toggleSound} aria-label={sound ? 'Wyłącz dźwięk' : 'Włącz dźwięk'}>
             {sound ? <Volume2 size={17} strokeWidth={1.6} /> : <VolumeX size={17} strokeWidth={1.6} />}
           </button>

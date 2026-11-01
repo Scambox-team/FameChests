@@ -1,7 +1,17 @@
 # ScamBox (repo: FameChests, folder: Skrzynki)
 
 ScamBox – gra webowa w otwieranie skrzynek (jak w CS) z kartami znanych osób. UI po polsku, bez monetyzacji.
-Serwer w Rust (`server/`: axum + tokio + sqlx, PostgreSQL) + vanilla JS; strony i pliki statyczne są wbudowane w `scambox.exe`. Repo: https://github.com/CebularzPawel/FameChests
+Serwer w Rust (`server/`: axum + tokio + sqlx, PostgreSQL) + frontend w React (`web/`: React, Vite, TypeScript); aplikacja i pliki statyczne są wbudowane w `scambox.exe`. Repo: https://github.com/CebularzPawel/FameChests
+
+## Frontend (`web/`)
+- React 19, Vite, TypeScript, React Router, TanStack Query, Lucide (ikony zamiast emotek), Three.js (skrzynka 3D). Komponenty React Bits (`src/ui/reactbits/`, kopiowane do projektu): Counter, SpotlightCard, Galaxy. Każdą nową bibliotekę, także z React Bits, uzgodnić z użytkownikiem.
+- Wygląd „Gablota”: tokeny w `src/styles/tokens.css`, prawie czarne tło, Hanken Grotesk + Bricolage Grotesque, karty w Rubik, kolor `--hue` z wybranej skrzynki. Bez emotek w interfejsie: Lucide albo tekst. Wyjątek: duszki na torze wyścigów (`horsesEngine.ts`) i symbole wewnątrz wyglądów kart.
+- Budowanie: `npm run build` w `web/` (`tsc --noEmit` + `vite build`, wynik `web/dist`, serwer podaje go pod `/app/` i jako stronę startową). Pliki .bat, `build_azure.bat` i Dockerfile robią to same. Tryb deweloperski: `npx vite` w `web/`, zapytania idą do serwera na porcie 5002.
+- Moduły: `src/app` (trasy, pasek), `src/api`, `src/game` (stan `S` + `useGame`, zasady `rules.ts`, sesja), `src/cards` (`cardHTML`, `<Card>`, `<PickTile>`, CSS wariantów), `src/fx` (efekty, podgląd karty), `src/ui` (kontrolki), `src/features/<ekran>`.
+- Stary kod `static/js`, `static/css`, `templates/` został usunięty (jest w historii git). Nazwy z notatek poniżej: `app.js` = `cards/cardHtml.ts` (karty, warianty, naklejki), `game/rules.ts`, `game/actions.ts`; `fx.js` = `fx/effects.ts`; `cards2.css`, `special.css` = `cards/css/`; `casino.js`, `slots.js`, `upgrade.js`, `horses.js` = `features/casino/`; `market.js` = `features/market/`; `forge.js` = `features/forge/`; `social.js` = `features/social/`, `features/daily/`; `hof.js` = `features/inventory/HallOfFame.tsx`; `achievements.js` = `features/achievements/`; `chess.js`, `chess-skins.js` = `features/chess/`; `arena.js` = `features/arena/arena.ts`; `drawing.js`, `scratch.js` = `features/editors/`; `admin.js`, `achievements-admin.js` = `features/admin/panel.ts`; `variants.js`, `stickers.js`, `designer.js` = `features/admin/`.
+- Arena, panel admina, edytory i silnik wyścigów to gotowy HTML i canvas przeniesiony ze starego kodu (`// @ts-nocheck`), osadzony w komponentach Reacta. Typy nie wykryją tam nieznanej nazwy: po zmianie sprawdzić ekran w przeglądarce.
+- Animacja pokazująca wynik musi być objęta `animBusy` (`S.spinning`, `S.animHold`), inaczej popup osiągnięcia zdradzi wynik.
+- W `src/` pliki nie mogą się różnić samą wielkością liter (`Jackpot.tsx` i `jackpot.ts` to na Windowsie ten sam moduł).
 
 ## Struktura
 - Wersja Python (`app.py`, `data.py`, `catalog.py`...) została usunięta (jest w historii git). Nazwy z niej w notatkach poniżej mają w Rust zwykle odpowiedniki o tej samej nazwie - szukać w `server/src` (np. `catalog.possible_variants` -> `catalog.rs`, `insert_item` -> `game/mod.rs`, `house_cards` -> `game/roll.rs`); „sekcja w app.py” = plik w `server/src/routes/`, „X w data.py” = klucz w `server/data/game.json` (camelCase: `VARIANTS` -> `variants`, `PATCH_NOTES` -> `patchNotes`, `HORSE_RACE` -> `horseRace`).
@@ -82,10 +92,10 @@ Serwer w Rust (`server/`: axum + tokio + sqlx, PostgreSQL) + vanilla JS; strony 
 - `cargo run --release -- export-catalog` (w `server/`) – eksport zmian z panelu admina do `catalog_export.json` + `custom_images/` (bez danych graczy); nowa pusta baza wczytuje je sama.
 - Filtr wariantów (ekwipunek, rynek): `filterVariants()` w app.js - warianty wydane (`variantReleased`) i te, które gracz ma; bez połączeń z `noCombo` / wariantami kart. Sortowanie ekwipunku zapamiętane w `localStorage` (`invSort`).
 - Klaser i filtr skrzynek w ekwipunku pokazują tylko skrzynki, które są albo były kiedyś w sklepie (i skrzynkę kart specjalnych): `/api/config` zapisuje skrzynki ze `shop` w tabeli `state` (klucze `crate_released:<id>`, `released_crates` w `routes/shop.rs`), skrzynka ma pole `released`, w JS `seenCrateList()`.
-- Adresy stron: `/crates` `/binder` `/inventory` `/forge` `/market` `/casino` `/friends` `/ranking` `/arena` (admini) `/mockups` `/stickers` `/variants` `/designer` (admini) `/link/<kod>` `/player/<nazwa>` – ta sama strona `index.html`, widok wybiera JS (`VIEW_PATHS`, `switchView`, historia przeglądarki).
-- `templates/` (index, login, admin), `static/js/` (app, fx, forge, market, casino, slots, social, sound, admin, arena, hof, designer), `static/css/` (m.in. special.css - karty specjalne).
-- Pliki statyczne wersjonowane przez `asset()` (z `?v=` cache na rok); HTML/API z `Cache-Control: no-store` i gzipem (`gzip_response`) - duże odpowiedzi bez gzipa potrafiły się na tym komputerze zawieszać na ~19 s (antywirus sprawdzający ruch lokalny).
-- Wydajność (gracze mają tysiące kart): długie listy kart mają `content-visibility: auto` (style.css, sekcja WYDAJNOŚĆ - nowe listy dopisać tam). Pełnoekranowe nakładki dodawać bezpośrednio do `<body>` i dopisać do `COVERS` w app.js (`body.covered` chowa stronę pod spodem); bez `backdrop-filter` na dużych powierzchniach. Animowana ramka karty jest w `.card::before` (`--frame`; obracająca się bierze kolory z `--spin`, wariant ze stałą ramką ustawia `--spin: initial`), animowane nakładki mają `will-change: transform` (koniec cards2.css). Małe kafelki: `imgUrl(pid, wariant, true)` = miniatura WebP (`images.web_version`, Pillow). Przerysowanie listy do wyboru: `keepScroll` + `data-keep`.
+- Adresy stron: `/crates` `/binder` `/inventory` `/inventory/figures` `/inventory/hall-of-fame` `/forge` `/market` `/casino` `/friends` `/ranking` `/games` `/arena` (admini) `/admin` `/admin/chess` `/mockups` `/stickers` `/variants` `/designer` (admini) `/link/<kod>` `/player/<nazwa>` – ta sama aplikacja, trasy w `web/src/app/App.tsx`; nowy adres dopisać też do `routes/mod.rs` (`VIEWS` albo `.route`).
+- `static/` zostają tylko pliki podawane wprost: `img/`, `icons/`, `video/`, `sw.js`.
+- Pliki aplikacji mają skrót w nazwie (`/app/assets/`, cache na zawsze), a pliki z `static/` adres z `asset()` (`?v=`, cache na rok); HTML/API z `Cache-Control: no-store` i gzipem (`gzip_response`) - duże odpowiedzi bez gzipa potrafiły się na tym komputerze zawieszać na ~19 s (antywirus sprawdzający ruch lokalny).
+- Wydajność (gracze mają tysiące kart): długie listy kart mają `content-visibility: auto` (style.css, sekcja WYDAJNOŚĆ - nowe listy dopisać tam). Pełnoekranowe nakładki dodawać bezpośrednio do `<body>`; bez `backdrop-filter` na dużych powierzchniach. Animowana ramka karty jest w `.card::before` (`--frame`; obracająca się bierze kolory z `--spin`, wariant ze stałą ramką ustawia `--spin: initial`), animowane nakładki mają `will-change: transform` (koniec cards2.css). Małe kafelki: `imgUrl(pid, wariant, true)` = miniatura WebP (`images.web_version`, Pillow). Przerysowanie listy do wyboru: `keepScroll` + `data-keep`.
 
 ## Serwer w Rust (`server/`)
 - Tylko PostgreSQL (lokalnie `docker compose up -d` w `server/`, produkcja: Supabase - session pooler, port 5432). Szczegóły: `server/README.md`, instrukcje (uruchamianie, hosting, przejście, rozwój): `docs/`.
@@ -97,7 +107,7 @@ Serwer w Rust (`server/`: axum + tokio + sqlx, PostgreSQL) + vanilla JS; strony 
 - Testy: `cargo test`, `cargo clippy --all-targets`.
 
 ## Uruchamianie
-- `start_tailscale.bat` (hosting dla znajomych), `start_lan.bat` (sieć lokalna), `start.bat` - wszystkie robią `cargo run --release` w `server/` (potrzebne `server/.env` z `DATABASE_URL`).
+- `start_tailscale.bat` (hosting dla znajomych), `start_lan.bat` (sieć lokalna), `start.bat` - wszystkie budują `web/` i robią `cargo run --release` w `server/` (potrzebne `server/.env` z `DATABASE_URL`).
 - `cargo run --release -- [--dev] [--lan] [--test]`, port: zmienna `PORT`; `--test` = osobna baza testowa (`TEST_DATABASE_URL`) na porcie 5001 (na tym komputerze 5001 zajmuje VirtualBox - użyj `PORT=5002`). Druga kopia na zajętym porcie się nie uruchomi.
 - Po każdej zmianie kodu użytkownik musi zrestartować grę (Ctrl+C i ponownie .bat).
 

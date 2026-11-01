@@ -1,5 +1,5 @@
 @echo off
-rem Paczka na Azure App Service (Windows): buduje scambox.exe (static/, templates/, zdjecia z custom_images/ i
+rem Paczka na Azure App Service (Windows): buduje scambox.exe (static/, web/dist, zdjecia z custom_images/ i
 rem catalog_export.json sa w srodku) i robi dist\scambox-azure.zip = scambox.exe + web.config.
 rem Wdrozenie: docs\hosting.md (az webapp deploy ... --type zip albo przeciagniecie do Kudu).
 rem Baza nie jest potrzebna do zbudowania (zapytania sprawdzane z server\.sqlx).

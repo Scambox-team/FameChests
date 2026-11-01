@@ -28,7 +28,7 @@ Wszystkie zapytania przez makra `sqlx::query!` / `query_as!` / `query_scalar!` -
 - Pola z formularzy panelu admina, w których liczby przychodzą jako tekst: `serde_with` (`lenient::Num`) albo
   `lenient::NumOrText`, gdy pusty tekst ma znaczyć "nie podano".
 - Odpowiedź: struktura `#[derive(Serialize)]` z `rename_all = "camelCase"` (klucze takie, jakich oczekuje
-  `static/js`), wspólne części przez `#[serde(flatten)]` (np. `CardJson`, `UserView`). `json!` tylko dla krótkich
+  `web/src`), wspólne części przez `#[serde(flatten)]` (np. `CardJson`, `UserView`). `json!` tylko dla krótkich
   odpowiedzi.
 - Błąd dla gracza: `return bad("...")` (400) albo `fail(StatusCode::FORBIDDEN, "...")`; funkcje pomocnicze zwracają
   `Res<T>` i błędy przechodzą przez `?`.

@@ -1,6 +1,6 @@
-//! Pliki gry wbudowane w plik wykonywalny (scambox.exe działa sam, bez folderu gry): static/, templates/,
+//! Pliki gry wbudowane w plik wykonywalny (scambox.exe działa sam, bez folderu gry): static/, web/dist/,
 //! custom_images/ i catalog_export.json. W wersji debug (cargo run bez --release) rust-embed czyta je z dysku przy każdym
-//! zapytaniu - zmiany w JS/CSS/szablonach widać od razu.
+//! zapytaniu - zmiany widać od razu.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -15,10 +15,6 @@ use rust_embed::RustEmbed;
 #[derive(RustEmbed)]
 #[folder = "../static/"]
 pub struct Static;
-
-#[derive(RustEmbed)]
-#[folder = "../templates/"]
-pub struct Templates;
 
 #[derive(RustEmbed)]
 #[folder = "../custom_images/"]
@@ -38,11 +34,6 @@ pub fn static_file(path: &str) -> Option<Cow<'static, [u8]>> {
     Static::get(path).map(|f| f.data)
 }
 
-/// Szablon z templates/ jako tekst
-pub fn template(name: &str) -> Option<String> {
-    Templates::get(name).map(|f| String::from_utf8_lossy(&f.data).into_owned())
-}
-
 /// Wersja pliku statycznego do adresu ?v= (skrót treści - zmienia się razem z plikiem)
 fn version(path: &str) -> String {
     static CACHE: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Mutex::default);
@@ -56,8 +47,7 @@ fn version(path: &str) -> String {
     v
 }
 
-/// {{ asset('css/style.css') }} -> /static/css/style.css?v=<wersja>: po aktualizacji przeglądarka zawsze pobierze
-/// nowe pliki (jak asset() w wersji Python)
+/// Adres pliku statycznego z ?v=<wersja>: po aktualizacji przeglądarka zawsze pobierze nowy plik
 pub fn asset(path: &str) -> String {
     format!("/static/{path}?v={}", version(path))
 }
@@ -107,9 +97,8 @@ mod tests {
 
     #[test]
     fn embedded_files() {
-        assert!(static_file("js/app.js").is_some());
-        assert!(template("index.html").is_some());
-        assert!(asset("css/style.css").starts_with("/static/css/style.css?v="));
+        assert!(static_file("sw.js").is_some());
+        assert!(asset("img/casino_leave.png").starts_with("/static/img/casino_leave.png?v="));
         assert!(CATALOG_EXPORT.contains("\"cards\""));
     }
 }

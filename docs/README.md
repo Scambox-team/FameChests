@@ -1,6 +1,6 @@
 # Dokumentacja – serwer w Rust
 
-Serwer gry jest w Rust (`server/`): axum + tokio + sqlx (PostgreSQL). Przeglądarka (`static/`, `templates/`)
+Serwer gry jest w Rust (`server/`): axum + tokio + sqlx (PostgreSQL). Przeglądarka (`web/`, `static/`)
 i dane gry (`server/data/game.json`) są wbudowane w `scambox.exe`. Wersja Python została usunięta (jest w historii git).
 
 | Plik | Co |

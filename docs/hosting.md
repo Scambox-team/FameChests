@@ -2,7 +2,7 @@
 
 ## Azure App Service (Windows) - sam plik .exe
 
-Cała gra to jeden plik `scambox.exe`: w środku są `static/`, `templates/`, `custom_images/`, `catalog_export.json` i
+Cała gra to jeden plik `scambox.exe`: w środku są `web/`, `static/`, `custom_images/`, `catalog_export.json` i
 dane gry (`server/data/game.json`). Python ani żadne inne pliki nie są potrzebne. IIS na App Service uruchamia exe przez
 HttpPlatformHandler (`deploy/azure/web.config`) i przekazuje mu ruch.
 
@@ -60,7 +60,7 @@ Wdrażanie robi `.github/workflows/azure.yml` po każdym pushu do `main`: buduje
 docker build -f server/Dockerfile -t scambox .     # z głównego folderu gry
 ```
 
-Obraz zawiera serwer, `static/`, `templates/`, `catalog_export.json` i `custom_images/`. Zapytania do bazy są
+Obraz zawiera serwer, `web/`, `static/`, `catalog_export.json` i `custom_images/`. Zapytania do bazy są
 sprawdzane przy budowaniu z `server/.sqlx/` - baza nie jest potrzebna do zbudowania.
 
 ## Zmienne środowiskowe

@@ -1,4 +1,4 @@
-//! ScamBox - serwer gry (Rust: axum + tokio + sqlx/PostgreSQL). Przeglądarka (static/, templates/) bez zmian.
+//! ScamBox - serwer gry (Rust: axum + tokio + sqlx/PostgreSQL). Przeglądarka (web/, static/) bez zmian.
 //!
 //!   cargo run --release                 gra na http://127.0.0.1:5000
 //!   cargo run --release -- --lan        dostęp z innych komputerów w sieci
@@ -121,7 +121,6 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
         db: pool,
         cfg: Arc::new(cfg.clone()),
         catalog: Arc::new(ArcSwap::from_pointee(cat)),
-        templates: Arc::new(web::Templates::new(cfg.dev)),
         images: images.clone(),
         arena: Arc::default(),
         login: Arc::default(),

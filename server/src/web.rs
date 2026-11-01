@@ -1,4 +1,4 @@
-//! Strony HTML (szablony Jinja z templates/ - minijinja), wersjonowanie plików statycznych, nagłówki pamięci
+//! Wersjonowanie plików statycznych, nagłówki pamięci
 //! podręcznej, gzip, wysyłanie plików.
 
 use std::path::Path;
@@ -7,50 +7,12 @@ use axum::body::Body;
 use axum::extract::Request;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::middleware::Next;
-use axum::response::{Html, IntoResponse, Response};
-use minijinja::{Environment, Value as JValue};
+use axum::response::{IntoResponse, Response};
 use tower::ServiceExt;
 use tower_http::compression::predicate::{Predicate, SizeAbove};
 use tower_http::services::ServeFile;
 
 use crate::error::{AppError, Res};
-
-pub struct Templates {
-    dev: bool,
-    env: Environment<'static>,
-}
-
-fn make_env() -> Environment<'static> {
-    let mut env = Environment::new();
-    // szablony wbudowane w plik wykonywalny (assets.rs)
-    env.set_loader(|name| Ok(crate::assets::template(name)));
-    // {{ asset('css/style.css') }} -> /static/css/style.css?v=<wersja>: po aktualizacji przeglądarka
-    // zawsze pobierze nowe pliki; adres z własnych plików gry - bez escapowania "/" (jak url_for we Flasku)
-    env.add_function("asset", |filename: String| -> JValue { JValue::from_safe_string(crate::assets::asset(&filename)) });
-    env
-}
-
-impl Templates {
-    pub fn new(dev: bool) -> Self {
-        Templates { dev, env: make_env() }
-    }
-
-    pub fn render(&self, name: &str, ctx: JValue) -> Res {
-        // --dev: szablony czytane od nowa przy każdym zapytaniu
-        let fresh;
-        let env = if self.dev {
-            fresh = make_env();
-            &fresh
-        } else {
-            &self.env
-        };
-        let html = env
-            .get_template(name)
-            .and_then(|t| t.render(ctx))
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("szablon {name}: {e:#}")))?;
-        Ok(Html(html).into_response())
-    }
-}
 
 /// Strony HTML i odpowiedzi API nie mogą być brane z pamięci przeglądarki (stara wersja gry); pliki statyczne
 /// z ?v=<wersja> zmieniają adres przy każdej zmianie - przeglądarka nie musi o nie pytać.

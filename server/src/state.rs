@@ -13,14 +13,12 @@ use crate::auth::Limiter;
 use crate::catalog::Catalog;
 use crate::config::Config;
 use crate::images::Images;
-use crate::web::Templates;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub cfg: Arc<Config>,
     pub catalog: Arc<ArcSwap<Catalog>>,
-    pub templates: Arc<Templates>,
     pub images: Arc<Images>,
     pub arena: Arc<ArenaState>,
     pub login: Limiter,

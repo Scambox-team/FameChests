@@ -1,4 +1,4 @@
-# Obraz serwera gry. Budowanie z głównego folderu repozytorium (potrzebne static/, templates/, catalog_export.json):
+# Obraz serwera gry. Budowanie z głównego folderu repozytorium (potrzebne static/, web/, catalog_export.json):
 #   docker build -f server/Dockerfile -t scambox .
 # Uruchomienie: DATABASE_URL, SECRET_KEY, DATA_DIR (wolumen na zdjęcia), port 8000.
 # cargo-chef: zależności budują się w osobnej warstwie - zmiana samego kodu nie kompiluje ich od nowa.
@@ -21,7 +21,6 @@ COPY --from=planner /src/server/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # rust-embed / include_str! wkompilowują te pliki w exe (src/assets.rs: ../static/, ../../catalog_export.json)
 COPY static /src/static
-COPY templates /src/templates
 COPY custom_images /src/custom_images
 COPY catalog_export.json /src/
 COPY --from=web /src/web/dist /src/web/dist
@@ -35,7 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /app
 COPY --from=build /src/server/target/release/scambox /usr/local/bin/scambox
 COPY static ./static
-COPY templates ./templates
 COPY custom_images ./custom_images
 COPY catalog_export.json ./
 ENV GAME_DIR=/app BIND=0.0.0.0 PORT=8000 COOKIE_SECURE=1 TRUST_PROXY=1 METRICS_ADDR=127.0.0.1:9100
