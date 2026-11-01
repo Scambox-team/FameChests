@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, type MouseEvent, type ReactNode } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Gift, Menu, Settings, Volume2, VolumeX, X } from 'lucide-react';
 
 import { S, useGame } from '../game/store';
@@ -10,7 +10,10 @@ import { Logo } from './Logo';
 import styles from './AppShell.module.css';
 
 function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
+  const navigate = useNavigate();
   const count = item.badge ? S.badges[item.badge] : 0;
+  // wyjście z ekranu może zatrzymać okienko (kasyno po przegranej)
+  const leave = (e: MouseEvent, go: () => void) => { if (S.leaveGuard?.(go)) e.preventDefault(); };
   const inner = (
     <>
       <item.icon size={17} strokeWidth={1.6} aria-hidden="true" />
@@ -19,9 +22,9 @@ function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
     </>
   );
   // adresy ze starej wersji gry muszą przeładować stronę
-  if (!isReactPath(item.path)) return <a className={styles.link} href={item.path}>{inner}</a>;
+  if (!isReactPath(item.path)) return <a className={styles.link} href={item.path} onClick={e => leave(e, () => { location.href = item.path; })}>{inner}</a>;
   return (
-    <NavLink to={item.path} onClick={onPick} className={({ isActive }) => `${styles.link}${isActive ? ` ${styles.on}` : ''}`}>
+    <NavLink to={item.path} onClick={e => { leave(e, () => navigate(item.path)); onPick?.(); }} className={({ isActive }) => `${styles.link}${isActive ? ` ${styles.on}` : ''}`}>
       {inner}
     </NavLink>
   );

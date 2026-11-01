@@ -1,0 +1,69 @@
+/* Gry zachowują układ i animacje z casino.css, a tu dostają wygląd Gabloty */
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 0; border-radius: var(--radius); background: var(--surface); box-shadow: none; min-width: 0; }
+.panel h3 { margin: 0; font: 800 18px/24px var(--display); letter-spacing: -.02em; }
+.panel h3 small { font: 400 13px var(--body); letter-spacing: 0; }
+.pos-txt { color: var(--good); } .neg-txt { color: var(--bad); }
+.cs-pick-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+.rl-won { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+.cs-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.rl-num { fill: #fff; font: 600 11px var(--body); }
+.rl-pointer { border-top-color: var(--hue); }
+.rl-spin { width: 100%; }
+.rl-cell { font-family: var(--body); }
+.rl-res b, .bj-res b { font: 800 20px/26px var(--display); letter-spacing: -.01em; }
+.rl-big { font-family: var(--display); }
+.rl-joker, .rl-special { color: var(--warn); }
+.rl-history .rl-h, .hr-h { font-family: var(--body); }
+.bj-felt { background: color-mix(in srgb, var(--hue) 14%, #0d0d10); box-shadow: none; }
+.bj-rules { font: 500 13px var(--body); letter-spacing: 0; color: var(--muted); }
+.bj-chip { background: var(--raised); color: var(--text); font: 500 13px var(--body); }
+.bj-card { font-family: var(--display); }
+.bj-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.bj-actions button { flex: 1; min-width: 120px; }
+.sl-machine { background: var(--raised); box-shadow: none; }
+.sl-top b { font: 800 18px var(--display); letter-spacing: -.01em; color: var(--text); text-transform: none; }
+.sl-sym { font-style: normal; font-family: var(--display); font-weight: 800; color: var(--hue); }
+.sl-ic { display: inline-flex; }
+.sl-cherry { color: #e5484d; } .sl-lemon { color: #f5c518; } .sl-bell { color: #e5a93b; } .sl-star { color: #ffd76a; } .sl-diamond { color: #55c7ff; } .sl-seven { color: #ff5cf0; }
+.sl-title { font: 800 18px/24px var(--display); }
+.sl-howto { background: var(--raised); color: var(--text); font-weight: 500; }
+.sl-big { display: inline-flex; gap: 2px; font-size: 26px; }
+.sl-h { display: inline-flex; gap: 1px; background: var(--raised); }
+.upg-pct { font-family: var(--display) !important; }
+.upg-mult, .upg-mystery b, .upg-stake b { font-family: var(--display); }
+.upg-res-label { font-family: var(--display) !important; }
+.upg-quick .chip { height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--raised); color: var(--muted); }
+.upg-quick .chip.active { background: #fff; color: #000; font-weight: 600; }
+.upg-quick .chip:disabled { opacity: .4; }
+.upg-result .card { width: 120px; --cw: 120px; }
+.jp-anim h2 { font: 800 30px/36px var(--display); letter-spacing: -.02em; }
+.jp-anim-ok { display: flex; justify-content: center; margin-top: 12px; }
+.jp-anim-box { background: var(--surface); box-shadow: none; }
+.jp-vs-big, .jp-vs { font: 800 18px var(--display); color: var(--muted); }
+.jp-invite { display: flex; flex-direction: column; gap: 5px; font-size: 14px; color: var(--muted); }
+.jp-invite input, .jp-inv-add input { height: 38px; padding: 0 12px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); }
+.jp-win { display: inline-flex; align-items: center; gap: 4px; }
+.mk-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 13px; }
+.mk-tag.lead { color: var(--good); }
+.mk-actions { display: flex; gap: 8px; align-items: center; }
+.cs-leave-box { background: var(--surface); box-shadow: 0 30px 80px #000c; }
+.cs-leave-box h2 { font: 800 24px/30px var(--display); }
+.hr-row { font-family: var(--body); background: var(--raised); }
+.hr-row.sel { box-shadow: inset 0 0 0 2px var(--hue); }
+.hr-chip { font: 500 12px var(--body); background: #ffffff14; }
+.hr-state { font-size: 12px; color: var(--muted); }
+.hr-pays { font-weight: 600; }
+.hr-actions { display: flex; flex-direction: column; gap: 8px; }
+.hr-actions button { width: 100%; white-space: normal; height: auto; min-height: 50px; padding-block: 8px; }
+.hr-x { display: inline-grid; place-items: center; padding: 0; border: 0; background: none; color: inherit; }
+.cs-pick-head label input, .upg-filters label input { flex: 1; width: 100%; height: auto; padding: 0; border: 0; border-radius: 0; background: none; color: inherit; }
+.rl-cell.c-redbet { background: #c62828; color: #fff; font-size: 13px; }
+.rl-cell.c-blackbet { background: #16181d; color: #fff; font-size: 13px; }
+.jp-anim { background: #000d; }
+.jp-anim-box { padding: 24px; border-radius: var(--radius); box-sizing: border-box; }
+.jp-anim-box h2 { color: var(--text); text-shadow: none; }
+.jp-anim-res b { font-size: 24px; letter-spacing: -.01em; }
+.bj-felt { border: 0; }
+.hr-state { white-space: nowrap; }
+.hr-stage .hr-skip { position: absolute; right: 8px; bottom: 8px; background: #000c; opacity: 1; }

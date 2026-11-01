@@ -20,11 +20,11 @@ export function Select({ className = '', children, ...rest }: SelectHTMLAttribut
   );
 }
 
-export function Tabs<T extends string>({ value, onChange, items, label }: { value: T; onChange: (v: T) => void; items: { id: T; label: ReactNode; count?: number }[]; label: string }) {
+export function Tabs<T extends string>({ value, onChange, items, label }: { value: T; onChange: (v: T) => void; items: { id: T; label: ReactNode; count?: number; disabled?: boolean }[]; label: string }) {
   return (
     <div className={styles.tabs} role="tablist" aria-label={label}>
       {items.map(i => (
-        <button key={i.id} type="button" role="tab" aria-selected={value === i.id} onClick={() => onChange(i.id)}>
+        <button key={i.id} type="button" role="tab" aria-selected={value === i.id} disabled={i.disabled} onClick={() => onChange(i.id)}>
           {i.label}{i.count !== undefined && <small>{i.count}</small>}
         </button>
       ))}

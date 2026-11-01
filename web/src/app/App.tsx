@@ -5,6 +5,9 @@ import svgDefs from '../cards/svgDefs.html?raw';
 import { boot, startPolling } from '../game/session';
 import { S, useGame } from '../game/store';
 import { Toaster } from '../ui/Toaster';
+import { CasinoPage } from '../features/casino/CasinoPage';
+import { showJackpotResult } from '../features/casino/jackpotResult';
+import { hrNews } from '../features/casino/horsesEngine';
 import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
 import { ForgePage } from '../features/forge/ForgePage';
@@ -28,7 +31,9 @@ function onMe(me: any) {
   noteQuest(me.quest);
   noteUfo(me);
   noteMarketBonus(me.marketBonus);
+  if (me.horseNews?.length) hrNews(me.horseNews);
   if (me.achUnseen && !S.opening) achPoll();
+  if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
 }
 
@@ -45,6 +50,7 @@ function Game() {
       noteUfo(me);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
+      if (me.jackpot) setTimeout(() => showJackpotResult(me.jackpot), 600);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
     }).catch(() => setFailed(true));
@@ -63,6 +69,7 @@ function Game() {
           <Route path="/binder" element={<BinderPage />} />
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
+          <Route path="/casino" element={<CasinoPage />} />
           <Route path="*" element={<NotMoved />} />
         </Routes>
       </Suspense>

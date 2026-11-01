@@ -1,0 +1,144 @@
+import { useMemo, useRef } from 'react';
+import { api } from '../../api/client';
+import { announceFirsts } from '../../game/actions';
+import { confetti, epicReveal } from '../../fx/effects';
+import { plural, rand } from '../../game/rules';
+import { applyState } from '../../game/session';
+import { S, touch, useGame } from '../../game/store';
+import { fmt, sleep } from '../../lib/format';
+import { Sound } from '../../sound/sound';
+import { Button } from '../../ui/Button';
+import { toast } from '../../ui/Toaster';
+import { CardPicker, SpecialHint, WonCards } from './parts';
+import { addDuplicates, betOk, CS, csItems, csPct, csStake, dropMissing, isVabank, settleRound, specialChance, togglePick } from './state';
+
+const color = (n: number) => n === 0 ? 'green' : S.cfg.roulette.red.includes(n) ? 'red' : 'black';
+
+function Wheel() {
+  const svg = useMemo(() => {
+    const W: number[] = S.cfg.roulette.wheel, step = 360 / W.length, rad = (a: number) => a * Math.PI / 180;
+    const pt = (r: number, a: number) => `${(150 + r * Math.sin(rad(a))).toFixed(2)} ${(150 - r * Math.cos(rad(a))).toFixed(2)}`;
+    const fills: Record<string, string> = { green: '#0f9d58', red: '#c62828', black: '#16181d' };
+    const segs = W.map((n, i) => {
+      const a0 = (i - .5) * step, a1 = (i + .5) * step;
+      return `<path d="M ${pt(96, a0)} L ${pt(142, a0)} A 142 142 0 0 1 ${pt(142, a1)} L ${pt(96, a1)} A 96 96 0 0 0 ${pt(96, a0)} Z" fill="${fills[color(n)]}" stroke="#3a3a42" stroke-width=".8"/>
+        <text x="150" y="24" transform="rotate(${i * step} 150 150)" text-anchor="middle" dominant-baseline="middle" class="rl-num">${n}</text>`;
+    }).join('');
+    return `<svg viewBox="0 0 300 300" class="rl-svg"><circle cx="150" cy="150" r="148" fill="#1f1f24" stroke="#4a4a52" stroke-width="3"/>${segs}<circle cx="150" cy="150" r="96" fill="#131316" stroke="#4a4a52" stroke-width="2"/><circle cx="150" cy="150" r="70" fill="#1f1f24"/>${[0, 45, 90, 135].map(a => `<rect x="146" y="88" width="8" height="124" rx="4" fill="#4a4a52" transform="rotate(${a} 150 150)"/>`).join('')}<circle cx="150" cy="150" r="14" fill="#b8b8c0"/></svg>`;
+  }, []);
+  return <div dangerouslySetInnerHTML={{ __html: svg }} style={{ display: 'contents' }} />;
+}
+
+function Board({ disabled }: { disabled: boolean }) {
+  const bets = S.cfg.roulette.bets, hit = CS.last?.number;
+  const cell = (key: string, label: string | number, cls: string, area: string) => {
+    const nums: number[] = bets[key].numbers;
+    return (
+      <button key={key} type="button" className={`rl-cell ${cls}${CS.bet === key ? ' sel' : ''}${hit != null && nums.length === 1 && nums[0] === hit ? ' hit' : ''}`} style={{ gridArea: area }} disabled={disabled}
+        onClick={() => { CS.bet = key; Sound.click(); touch(); }} title={`${bets[key].name}, wypłata ${bets[key].pays}:1`}>{label}</button>
+    );
+  };
+  const cells = [cell('green', '0', 'c-green', '1 / 1 / 4 / 2')];
+  for (let col = 0; col < 12; col++) for (let row = 0; row < 3; row++) {
+    const n = col * 3 + (3 - row);
+    cells.push(cell(`n${n}`, n, `c-${color(n)}`, `${row + 1} / ${col + 2}`));
+  }
+  cells.push(cell('col3', '2:1', 'c-out', '1 / 14'), cell('col2', '2:1', 'c-out', '2 / 14'), cell('col1', '2:1', 'c-out', '3 / 14'));
+  cells.push(cell('dozen1', '1–12', 'c-out', '4 / 2 / 5 / 6'), cell('dozen2', '13–24', 'c-out', '4 / 6 / 5 / 10'), cell('dozen3', '25–36', 'c-out', '4 / 10 / 5 / 14'));
+  ([['low', '1–18'], ['even', 'Parz.'], ['red', 'Czerw.'], ['black', 'Czarne'], ['odd', 'Nieparz.'], ['high', '19–36']] as [string, string][]).forEach(([k, l], i) => {
+    cells.push(cell(k, l, `c-out${k === 'red' ? ' c-redbet' : k === 'black' ? ' c-blackbet' : ''}`, `5 / ${2 + i * 2} / 6 / ${4 + i * 2}`));
+  });
+  return <div className="rl-board">{cells}</div>;
+}
+
+export function Roulette() {
+  const game = useGame();
+  const rot = useRef<HTMLDivElement>(null), ball = useRef<HTMLDivElement>(null);
+  dropMissing(CS.sel);
+  const spinning = !!game.spinning, max = game.cfg.roulette.maxCards;
+  const bet = game.cfg.roulette.bets[CS.bet], stake = csStake(CS.sel), last = CS.last;
+
+  const spin = async () => {
+    if (S.spinning || !CS.sel.size) return;
+    const ids = [...CS.sel];
+    if (!betOk(ids, stake, max, `Postawić ${ids.length} ${plural(ids.length, 'kartę', 'karty', 'kart')} o wartości ${fmt(stake)} na „${bet.name}”?`)) return;
+    S.spinning = true;
+    touch();
+    Sound.unlock();
+    let res: any;
+    try { res = await api('/api/casino/roulette', { ids, bet: CS.bet, vabank: isVabank(ids.length, max) }); }
+    catch (e: any) { S.spinning = false; Sound.error(); toast(e.message, true); return touch(); }
+    // koło kręci się w prawo, kulka w lewo; obie stają tak, że wylosowane pole jest pod wskaźnikiem u góry
+    const W: number[] = S.cfg.roulette.wheel, step = 360 / W.length, idx = W.indexOf(res.number);
+    const fast = !!S.fast, D = fast ? 1800 : 5200, turns = fast ? 3 : 6;
+    const start = CS.angle, target = -idx * step + rand(-.3, .3) * step;
+    const end = start + turns * 360 + ((((target - start) % 360) + 360) % 360);
+    const t0 = performance.now();
+    let lastPocket: number | null = null;
+    await new Promise<void>(done => {
+      const frame = (now: number) => {
+        const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3.6), a = start + (end - start) * e;
+        if (rot.current) rot.current.style.transform = `rotate(${a}deg)`;
+        if (ball.current) ball.current.style.transform = `rotate(${-(1 - e) * 360 * (turns + 2)}deg)`;
+        const pocket = Math.round(((-a % 360) + 360) % 360 / step);
+        if (pocket !== lastPocket) { if (lastPocket != null) Sound.tick(1 - t); lastPocket = pocket; }
+        if (t < 1) requestAnimationFrame(frame); else done();
+      };
+      requestAnimationFrame(frame);
+    });
+    CS.angle = end % 360;
+    CS.history = [res.number, ...CS.history].slice(0, 14);
+    CS.last = res;
+    settleRound(res, CS.sel);
+    if (res.win) { Sound.win(); confetti(['#0f9d58', '#ffcf3f', '#c62828', '#fff'], res.payout >= stake * 2 ? 220 : 110); } else Sound.fail();
+    applyState(res.state);
+    if (res.special) {
+      await sleep(fast ? 300 : 700);
+      await epicReveal(res.special, { fast });
+      announceFirsts([res.special]);
+    }
+    S.spinning = false;
+    touch();
+  };
+
+  return (
+    <div className="rl-cols">
+      <div className="panel rl-left">
+        <div className="rl-wheel-wrap">
+          <div className="rl-rot" ref={rot} style={{ transform: `rotate(${CS.angle}deg)` }}><Wheel /></div>
+          <div className="rl-ball-rot" ref={ball}><i /></div>
+          <div className="rl-pointer" />
+        </div>
+        <div className="rl-result">
+          {last ? <>
+            <div className={`rl-res ${last.win ? 'win' : 'lose'}`}>
+              <span className={`rl-big c-${color(last.number)}`}>{last.number}</span>
+              <div>{last.win ? <b className="pos-txt">Wygrana: +{fmt(last.payout)}</b> : <b className="neg-txt">Przegrana: −{fmt(last.stake)}</b>}</div>
+            </div>
+            {last.win && <WonCards r={last} />}
+          </> : <span className="muted">Postaw karty, wybierz pole na stole i zakręć.</span>}
+        </div>
+        <div className="rl-history">{CS.history.length ? CS.history.map((n, i) => <span key={i} className={`rl-h c-${color(n)}`}>{n}</span>) : <span className="muted small">Tu pojawią się ostatnie wyniki</span>}</div>
+      </div>
+      <div className="rl-right">
+        <div className="panel">
+          <Board disabled={spinning} />
+          <div className="rl-bet-info">
+            <span>Zakład: <b>{bet.name}</b></span>
+            <span>Wypłata: <b>{bet.pays}:1</b> (karty wracają + {fmt(stake * bet.pays)} w kartach)</span>
+            <span>Szansa: <b>{csPct(bet.numbers.length / 37)}</b></span>
+            {stake > 0 && <SpecialHint chance={specialChance(stake * bet.pays)} />}
+          </div>
+          <Button kind="hue" big className="rl-spin" disabled={!CS.sel.size || spinning} onClick={spin}>Zakręć{stake ? `, stawka ${fmt(stake)}` : ''}</Button>
+          <p className="muted small">Wygrana: twoje karty zostają, a dostajesz losowe karty o wartości stawki × wypłata (przy większych wygranych w droższych wariantach, końcówka w groszach). Przegrana: postawione karty przepadają.</p>
+        </div>
+        <CardPicker set={CS.sel} zone="rl" max={max} q={CS.q} disabled={spinning}
+          onQ={q => { CS.q = q; touch(); }}
+          onPick={id => togglePick(CS.sel, id, max)}
+          onDupes={() => { const ids = addDuplicates([...CS.sel], max, 'rl'); if (ids) { CS.sel = new Set(ids); Sound.click(); touch(); } }}
+          onVabank={() => { CS.sel = new Set(csItems().map(i => i.id)); Sound.click(); touch(); }}
+          onClear={() => { CS.sel.clear(); touch(); }} />
+      </div>
+    </div>
+  );
+}
