@@ -13,6 +13,7 @@ import { SK, SK_PIECES, skDef, skinSvg, skLoad, skPreview } from './skins';
 // Partia z graczem jest odpytywana co 2 s, a w treningu odpowiedź bota przychodzi z ruchem.
 const FILES = 'abcdefgh';
 const BOTS: [number, string][] = [[1, 'Początkujący'], [2, 'Klubowy'], [3, 'Mistrz']];
+const plainName = (s: string) => s.replace(/p{Extended_Pictographic}️?s*/gu, '');   // nazwa bota przychodzi z serwera z emotką
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
@@ -49,7 +50,7 @@ function endText(g: any) {
 function Player({ g, side }: { g: any; side: 'w' | 'b' }) {
   const p = side === 'w' ? g.white : g.black, on = g.status === 'active' && g.turn === side;
   return (
-    <div className={`ch-player${on ? ' on' : ''}`}><span className="ch-who"><i className={`ch-dot ${side}`} />{p.name.replace(/p{Extended_Pictographic}FE0F?s*/gu, '')}</span>
+    <div className={`ch-player${on ? ' on' : ''}`}><span className="ch-who"><i className={`ch-dot ${side}`} />{plainName(p.name)}</span>
       {g.timed && <span className={`ch-clock${on ? ' on' : ''}`} data-chclock={side}>{clockText(side === 'w' ? g.whiteMs : g.blackMs)}</span>}</div>
   );
 }

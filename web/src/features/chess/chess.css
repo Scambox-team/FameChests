@@ -44,7 +44,7 @@
 .ch-co { position: absolute; font: 400 13cqw/1 Rubik, sans-serif; font-style: normal; pointer-events: none; }
 .ch-sq.lt .ch-co { color: #0009; } .ch-sq.dk .ch-co { color: #fff9; }
 .ch-co.f { left: 5%; bottom: 4%; } .ch-co.r { right: 5%; top: 4%; }
-.ch-status { font: 700 17px/1.3 Cinzel, Georgia, serif; letter-spacing: .03em; color: #f2f2f2; }
+.ch-status { font: 800 17px/1.3 var(--display); letter-spacing: .03em; color: #f2f2f2; }
 .ch-alert { padding: 4px 10px; border: 1px solid #f2f2f2; font-weight: 500; text-align: center; letter-spacing: .08em; text-transform: uppercase; color: #f2f2f2; }
 .ch-reward { padding: 8px 10px; border: 1px solid #f2f2f2; color: #f2f2f2; }
 .ch-offer { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; }
