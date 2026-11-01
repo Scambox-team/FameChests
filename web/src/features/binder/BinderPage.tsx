@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../cards/Card';
 import { ownedMap } from '../../game/actions';
 import { crateOf, isSpecial, person, seenCrateList, varRank } from '../../game/rules';
+import type { Reveal } from '../../game/reveal';
 import { S, useGame } from '../../game/store';
 import { Sound } from '../../sound/sound';
 import { Tabs } from '../../ui/Field';
@@ -24,7 +25,7 @@ export function collectedOwned(pairs: string[][]) {
   return out;
 }
 
-export function Pocket({ id, crateId, owned, onOpen }: { id: string | null; crateId: string; owned: Record<string, BinderOwned>; onOpen: (id: string, o: BinderOwned) => void }) {
+export function Pocket({ id, crateId, owned, onOpen, reveal }: { id: string | null; crateId: string; owned: Record<string, BinderOwned>; reveal?: Reveal; onOpen: (id: string, o: BinderOwned) => void }) {
   if (!id) return <div className="pocket" />;
   const p = person(id), o = owned[id], crate = crateOf(crateId);
   if (!o) {
@@ -37,14 +38,14 @@ export function Pocket({ id, crateId, owned, onOpen }: { id: string | null; crat
   }
   return (
     <button className={`pocket owned${o.count ? '' : ' gone'}${p.rarity === 'secret' ? ' secret-pocket' : ''}`} type="button" onClick={() => onOpen(id, o)} aria-label={p.name} title={o.count ? undefined : 'Ta karta jest w kolekcji, ale już jej nie masz'}>
-      <Card person={id} variant={o.best} tilt={false} />
+      <Card person={id} variant={o.best} tilt={false} reveal={reveal} />
       {o.count > 1 && <span className="count">×{o.count}</span>}
     </button>
   );
 }
 
 /** Dwie strony klasera i postęp zbierania: używane też na profilu gracza */
-export function Binder({ crateId, owned, mine, onOpen }: { crateId: string; owned: Record<string, BinderOwned>; mine: boolean; onOpen: (id: string, o: BinderOwned) => void }) {
+export function Binder({ crateId, owned, mine, onOpen, reveal }: { crateId: string; owned: Record<string, BinderOwned>; mine: boolean; reveal?: Reveal; onOpen: (id: string, o: BinderOwned) => void }) {
   const crate = crateOf(crateId);
   const [spread, setSpread] = useState(0);
   const book = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export function Binder({ crateId, owned, mine, onOpen }: { crateId: string; owne
   const page = (list: string[] | undefined, side: string) => {
     const slots: (string | null)[] = [...(list ?? [])];
     while (slots.length < 9) slots.push(null);
-    return <div className={`bpage ${side}`}>{slots.map((id, i) => <Pocket key={id ?? i} id={id} crateId={crateId} owned={owned} onOpen={onOpen} />)}</div>;
+    return <div className={`bpage ${side}`}>{slots.map((id, i) => <Pocket key={id ?? i} id={id} crateId={crateId} owned={owned} onOpen={onOpen} reveal={reveal} />)}</div>;
   };
   const a = cur * 2 + 1, b = Math.min(a + 1, pages.length);
 

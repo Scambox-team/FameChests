@@ -9,6 +9,7 @@ export interface Store {
   state: GameState;
   items: Item[];
   showcase: number[];
+  shareCard?: { pid: string; variant: string } | null;
   chests: Record<string, number>;
   drawn: Set<number>;
   scratched: Set<number>;

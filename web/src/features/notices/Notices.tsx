@@ -45,7 +45,7 @@ function Messages({ list, onClose }: { list: any[]; onClose: () => void }) {
   );
 }
 
-function PatchNotes({ notes, onClose }: { notes: any[]; onClose: () => void }) {
+export function PatchNotes({ notes, onClose }: { notes: any[]; onClose: () => void }) {
   useEffect(() => { api('/api/patchnotes/seen', {}).catch(() => {}); }, []);
   return (
     <Modal title="Co nowego w ScamBox" onClose={onClose} wide>

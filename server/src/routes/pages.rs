@@ -24,12 +24,12 @@ pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market",
 
 /// Adresy przeniesione już na nowy frontend (web/): tylko dla nich serwer podaje stronę Reacta, reszta zostaje na starej.
 /// Ta sama lista jest w web/src/app/nav.ts (tam decyduje, czy link przeładowuje stronę).
-pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino"];
+pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino", "/friends", "/ranking"];
 
 /// Strona startowa Reacta albo None, gdy adres nie jest przeniesiony lub frontend nie jest zbudowany
 fn react_page(path: &str) -> Option<Response> {
     let path = if path.len() > 1 { path.trim_end_matches('/') } else { path };
-    REACT_PATHS.contains(&path).then(crate::assets::web_index).flatten().map(|html| Html(html).into_response())
+    (REACT_PATHS.contains(&path) || path.starts_with("/player/") || path.starts_with("/link/")).then(crate::assets::web_index).flatten().map(|html| Html(html).into_response())
 }
 
 const MYSTERY_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">

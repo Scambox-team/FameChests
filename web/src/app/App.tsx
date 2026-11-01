@@ -5,6 +5,12 @@ import svgDefs from '../cards/svgDefs.html?raw';
 import { boot, startPolling } from '../game/session';
 import { S, useGame } from '../game/store';
 import { Toaster } from '../ui/Toaster';
+import { FriendsPage } from '../features/social/FriendsPage';
+import { LinkClaim } from '../features/social/LinkClaim';
+import { ProfilePage } from '../features/social/ProfilePage';
+import { RankingPage } from '../features/social/RankingPage';
+import { ShareDialog } from '../features/social/ShareDialog';
+import { installViewerActions } from '../features/social/showcase';
 import { CasinoPage } from '../features/casino/CasinoPage';
 import { showJackpotResult } from '../features/casino/jackpotResult';
 import { hrNews } from '../features/casino/horsesEngine';
@@ -36,6 +42,8 @@ function onMe(me: any) {
   if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
 }
+
+installViewerActions();
 
 function Game() {
   const [failed, setFailed] = useState(false);
@@ -70,11 +78,16 @@ function Game() {
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/casino" element={<CasinoPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/player/:name" element={<ProfilePage />} />
+          <Route path="/link/:token" element={<LinkClaim />} />
           <Route path="*" element={<NotMoved />} />
         </Routes>
       </Suspense>
       <Stage />
       <Notices />
+      <ShareDialog />
     </AppShell>
   );
 }

@@ -1,9 +1,10 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Gift, Menu, Settings, Volume2, VolumeX, X } from 'lucide-react';
 
 import { S, useGame } from '../game/store';
 import { Sound } from '../sound/sound';
+import { Avatar } from '../ui/UserLink';
 import { Money } from '../ui/Money';
 import { isReactPath, NAV, type NavItem } from './nav';
 import { Logo } from './Logo';
@@ -30,9 +31,9 @@ function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
   );
 }
 
-function Avatar() {
+function MyAvatar() {
   const { me } = useGame();
-  return <span className={styles.ava} aria-hidden="true">{me?.username.slice(0, 1).toUpperCase()}</span>;
+  return me ? <Avatar user={me} size={32} /> : null;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -41,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sound, setSound] = useState(Sound.enabled);
   const { pathname } = useLocation();
   const items = NAV.filter(i => !i.admin || game.cfg.arena);
-  const title = NAV.find(i => pathname.startsWith(i.path))?.label ?? 'ScamBox';
+  const title = pathname.startsWith('/player/') ? 'Profil' : NAV.find(i => pathname.startsWith(i.path))?.label ?? 'ScamBox';
   const toggleSound = () => { Sound.toggle(); setSound(Sound.enabled); };
 
   return (
@@ -53,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {game.me?.isAdmin && <a className={styles.link} href="/admin"><Settings size={17} strokeWidth={1.6} aria-hidden="true" /><span>Panel admina</span></a>}
         </nav>
         <div className={styles.foot}>
-          <a className={styles.user} href={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><Avatar /><span>{game.me?.username}</span></a>
+          <Link className={styles.user} to={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><MyAvatar /><span>{game.me?.username}</span></Link>
           <button className={styles.icon} type="button" onClick={toggleSound} aria-label={sound ? 'Wyłącz dźwięk' : 'Włącz dźwięk'}>
             {sound ? <Volume2 size={17} strokeWidth={1.6} /> : <VolumeX size={17} strokeWidth={1.6} />}
           </button>
