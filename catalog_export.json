@@ -156,6 +156,52 @@
    "deleted": false
   },
   {
+   "id": "szachy",
+   "data": {
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative",
+     "chesswhite"
+    ],
+    "variantsAll": true
+   },
+   "deleted": false
+  },
+  {
+   "id": "szachy_czarne",
+   "data": {
+    "variants": [
+     "bw",
+     "reverse",
+     "silver",
+     "holo",
+     "gold",
+     "clear",
+     "sketch",
+     "emerald",
+     "amethyst",
+     "ruby",
+     "diamond",
+     "galaxy",
+     "negative",
+     "chessblack"
+    ],
+    "variantsAll": true
+   },
+   "deleted": false
+  },
+  {
    "id": "world",
    "data": {
     "name": "Skrzynka Świat",
@@ -2351,5 +2397,35 @@
    "deleted": false
   }
  ],
- "variants": []
+ "variants": [
+  {
+   "id": "scratch",
+   "data": {
+    "settings": {
+     "enabled": null,
+     "released": false,
+     "chance": null,
+     "weight": null,
+     "mult": null,
+     "noHouse": false,
+     "desc": null,
+     "events": [
+      {
+       "id": "cc547edc",
+       "start": 1793483880,
+       "end": 1793484900,
+       "crates": [
+        "pl"
+       ],
+       "boost": 50.0,
+       "note": ""
+      }
+     ],
+     "cards": [],
+     "crateOnly": false
+    }
+   },
+   "deleted": false
+  }
+ ]
 }
