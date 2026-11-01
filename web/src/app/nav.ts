@@ -24,5 +24,5 @@ export const NAV: NavItem[] = [
 
 // Adresy przeniesione już na Reacta (ta sama lista jest w server/src/routes/pages.rs).
 // Link do pozostałych przeładowuje stronę, bo obsługuje je stara wersja gry.
-export const REACT_PATHS = ['/', '/crates', '/inventory', '/inventory/hall-of-fame', '/binder', '/forge', '/market', '/casino', '/friends', '/ranking', '/games', '/inventory/figures'];
+export const REACT_PATHS = ['/', '/crates', '/inventory', '/inventory/hall-of-fame', '/binder', '/forge', '/market', '/casino', '/friends', '/ranking', '/games', '/arena', '/inventory/figures'];
 export const isReactPath = (path: string) => REACT_PATHS.includes(path) || path === '/player' || path.startsWith('/player/');

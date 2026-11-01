@@ -24,7 +24,7 @@ pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market",
 
 /// Adresy przeniesione już na nowy frontend (web/): tylko dla nich serwer podaje stronę Reacta, reszta zostaje na starej.
 /// Ta sama lista jest w web/src/app/nav.ts (tam decyduje, czy link przeładowuje stronę).
-pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino", "/friends", "/ranking", "/games", "/inventory/figures"];
+pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino", "/friends", "/ranking", "/games", "/arena", "/inventory/figures"];
 
 /// Strona startowa Reacta albo None, gdy adres nie jest przeniesiony lub frontend nie jest zbudowany
 fn react_page(path: &str) -> Option<Response> {

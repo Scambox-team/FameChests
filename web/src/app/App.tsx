@@ -12,6 +12,8 @@ import { RankingPage } from '../features/social/RankingPage';
 import { ShareDialog } from '../features/social/ShareDialog';
 import { installViewerActions } from '../features/social/showcase';
 import { ChessPage } from '../features/chess/ChessPage';
+import { ArenaPage } from '../features/arena/ArenaPage';
+import { startArena } from '../features/arena/arena';
 import { CasinoPage } from '../features/casino/CasinoPage';
 import { showJackpotResult } from '../features/casino/jackpotResult';
 import { hrNews } from '../features/casino/horsesEngine';
@@ -59,6 +61,7 @@ function Game() {
       noteUfo(me);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
+      if (S.cfg.arena) startArena();   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania
       if (me.jackpot) setTimeout(() => showJackpotResult(me.jackpot), 600);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -79,6 +82,7 @@ function Game() {
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/casino" element={<CasinoPage />} />
+          <Route path="/arena" element={<ArenaPage />} />
           <Route path="/games" element={<ChessPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />

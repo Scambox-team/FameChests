@@ -13,7 +13,7 @@ import { SK, SK_PIECES, skDef, skinSvg, skLoad, skPreview } from './skins';
 // Partia z graczem jest odpytywana co 2 s, a w treningu odpowiedź bota przychodzi z ruchem.
 const FILES = 'abcdefgh';
 const BOTS: [number, string][] = [[1, 'Początkujący'], [2, 'Klubowy'], [3, 'Mistrz']];
-const plainName = (s: string) => s.replace(/p{Extended_Pictographic}️?s*/gu, '');   // nazwa bota przychodzi z serwera z emotką
+const plainName = (s: string) => s.replace(/\p{Extended_Pictographic}️?\s*/gu, '');   // nazwa bota przychodzi z serwera z emotką
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
