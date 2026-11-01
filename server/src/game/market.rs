@@ -8,11 +8,11 @@ use sqlx::PgPool;
 use crate::catalog::Catalog;
 use crate::data::g;
 use crate::db::{now, Conn};
-use crate::game::{add_state, give_items, hidden_users, insert_for, roll::choose_weighted};
+use crate::game::{add_state, give_items, hidden_users, insert_for, item_by_id, item_json, roll::choose_weighted, ItemJson};
 
 /// Premia przy zakupie na rynku (kupno, przyjęta propozycja, wygrana licytacja): z szansą bonusChance kupujący dostaje
 /// tę kartę w wariancie Paragon, a sprzedający w jednym z metali - losowo, wg szans tych wariantów w skrzynkach. Oba warianty
-/// wypadają stąd nawet wyłączone. Powiadomienie: market_bonuses, oddawane raz przez /api/me.
+/// wypadają stąd nawet wyłączone. Powiadomienie: market_bonuses, oddawane raz: kupującemu od razu w odpowiedzi na zakup albo przez /api/me.
 pub async fn market_bonus(c: &mut Conn, cat: &Catalog, buyer: i64, seller: i64, pid: &str) -> sqlx::Result<()> {
     let m = &g().market;
     if cat.person(pid).is_none_or(|p| p.is_special()) || rand::random::<f64>() >= m.bonus_chance {
@@ -22,30 +22,40 @@ pub async fn market_bonus(c: &mut Conn, cat: &Catalog, buyer: i64, seller: i64, 
     let Some(metal) = choose_weighted(&weights).map(|i| &m.bonus_seller[i]) else { return Ok(()) };
     let hidden = hidden_users(&mut *c).await?;
     for (uid, variant, role) in [(buyer, &m.bonus_buyer, "buyer"), (seller, metal, "seller")] {
-        insert_for(c, cat, uid, hidden.contains(&uid), pid, variant, "market").await?;
-        sqlx::query("INSERT INTO market_bonuses (user_id, person_id, variant, role, at) VALUES ($1, $2, $3, $4, $5)")
+        let item = insert_for(c, cat, uid, hidden.contains(&uid), pid, variant, "market").await?;
+        sqlx::query("INSERT INTO market_bonuses (user_id, person_id, variant, role, at, item_id) VALUES ($1, $2, $3, $4, $5, $6)")
             .bind(uid)
             .bind(pid)
             .bind(variant)
             .bind(role)
             .bind(now())
+            .bind(item.id)
             .execute(&mut *c)
             .await?;
     }
     Ok(())
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BonusNote {
     pub person_id: String,
     pub variant: String,
     pub role: String,
+    /// karta z premii (do animacji i ekwipunku); None przy starszych wpisach
+    pub item: Option<ItemJson>,
 }
 
 /// Premie z rynku czekające na gracza (każda pokazuje się raz)
-pub async fn take_bonus_notes(c: &mut Conn, uid: i64) -> sqlx::Result<Vec<BonusNote>> {
-    sqlx::query_as("DELETE FROM market_bonuses WHERE user_id = $1 RETURNING person_id, variant, role").bind(uid).fetch_all(c).await
+pub async fn take_bonus_notes(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<Vec<BonusNote>> {
+    let rows: Vec<(String, String, String, i64)> =
+        sqlx::query_as("DELETE FROM market_bonuses WHERE user_id = $1 RETURNING person_id, variant, role, item_id").bind(uid).fetch_all(&mut *c).await?;
+    let mut out = vec![];
+    for (person_id, variant, role, item_id) in rows {
+        let item = item_by_id(&mut *c, item_id).await?.and_then(|r| item_json(cat, &r));
+        out.push(BonusNote { person_id, variant, role, item });
+    }
+    Ok(out)
 }
 
 /// Rodzaj oferty na rynku

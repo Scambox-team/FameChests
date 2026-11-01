@@ -316,7 +316,7 @@ async function mkBuy(id) {
   if (S.state.balance < l.price) { Sound.error(); return toast("Za mało pieniędzy!", true); }
   if (!confirm(`Kupić ${person(l.person).masked ? "tajną kartę" : person(l.person).name}${isSpecial(l.variant) ? ` (${variantName(l.variant)})` : ""} za ${fmt(l.price)}?`)) return;
   const res = await mkAction(() => api(`/api/market/${id}/buy`, {}));
-  refreshBadgesSoon();   // premia z rynku (paragon) przychodzi z /api/me
+  refreshBadgesSoon();
   if (!res) return;
   S.items = [res.item, ...S.items].sort((a, b) => b.id - a.id);
   noteCollected([res.item]);
@@ -324,6 +324,7 @@ async function mkBuy(id) {
   Sound.win();
   toast(`🛒 Kupiono: ${person(res.item.person).name} — karta jest w ekwipunku`);
   renderHeader();
+  noteMarketBonus(res.bonus);
 }
 
 async function mkOffer(id) {
@@ -457,12 +458,35 @@ function bindMarket() {
   });
 }
 
-// premie przy zakupie na rynku (20%): kupujący - Paragon, sprzedający - metal; serwer oddaje każdą raz przez /api/me
+// premie przy zakupie na rynku (20%): kupujący - Paragon, sprzedający - metal. Serwer oddaje każdą raz: kupującemu w odpowiedzi
+// na zakup, w pozostałych przypadkach (przyjęta propozycja, koniec licytacji) przez /api/me. Paragon wychodzi z drukarki.
+const MK_PRINT = { queue: [], busy: false };
 function noteMarketBonus(list) {
-  (list || []).forEach(b => {
+  if (!list?.length) return;
+  const items = list.map(b => b.item).filter(i => i && !S.items.some(x => x.id === i.id));
+  if (items.length) {
+    S.items = [...items, ...S.items].sort((a, b) => b.id - a.id);
+    noteCollected(items);
+    renderHeader();
+  }
+  list.forEach(b => {
     const name = person(b.personId)?.name || "karta";
+    if (b.role === "buyer" && b.item) return MK_PRINT.queue.push(b.item);
     toast(b.role === "buyer" ? `🧾 Premia z rynku! Do kupionej karty dostajesz ${name} w wariancie ${variantName(b.variant)}`
       : `💰 Premia za sprzedaż! Dostajesz ${name} w wariancie ${variantName(b.variant)}`);
+    Sound.win();
   });
-  if (list?.length) Sound.win();
+  mkPrintNext();
+}
+
+async function mkPrintNext() {
+  if (MK_PRINT.busy) return;
+  MK_PRINT.busy = true;
+  while (MK_PRINT.queue.length) {
+    while (animBusy()) await sleep(300);   // nie przerywamy bębna ani innej animacji
+    const item = MK_PRINT.queue.shift();
+    if (person(item.person)?.masked) await refreshConfig();
+    await receiptReveal(item);
+  }
+  MK_PRINT.busy = false;
 }

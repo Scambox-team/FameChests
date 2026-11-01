@@ -939,7 +939,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     let seen = state["patch_seen"];
     let body = MeResponse {
         quest: super::quests::quest_view(&mut c, &cx.cat, uid).await?,
-        market_bonus: crate::game::market::take_bonus_notes(&mut c, uid).await?,
+        market_bonus: crate::game::market::take_bonus_notes(&mut c, &cx.cat, uid).await?,
         ufo: super::variants::ufo_visit(&mut c, &cx.cat, uid, state["ufo_visit"]).await?,
         user: cx.me.view(&cx.cat),
         daily_claimable: super::shop::daily_info(&mut c, uid).await?.claimable,

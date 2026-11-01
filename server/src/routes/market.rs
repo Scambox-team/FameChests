@@ -495,7 +495,8 @@ pub async fn market_buy(State(st): State<AppState>, Me(me): Me, Path(lid): Path<
     tx.commit().await?;
     metrics::counter!("scambox_market_trades_total", "kind" => "fixed").increment(1);
     let mut c = cx.st.db.acquire().await?;
-    ok(json!({"ok": true, "item": item_view(&mut c, &cx, l.item_id).await?, "state": get_state(&mut c, cx.uid()).await?}))
+    let bonus = take_bonus_notes(&mut c, &cx.cat, cx.uid()).await?; // animacja Paragonu zaraz po zakupie
+    ok(json!({"ok": true, "item": item_view(&mut c, &cx, l.item_id).await?, "bonus": bonus, "state": get_state(&mut c, cx.uid()).await?}))
 }
 
 #[derive(Deserialize, Default)]
