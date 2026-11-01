@@ -207,7 +207,63 @@ function epicReveal(drop, { fast = false, auto = false } = {}) {
   });
 }
 
-function epicOpen() { return !!document.querySelector(".epic, .sreveal"); }
+function epicOpen() { return !!document.querySelector(".epic, .sreveal, .rcp"); }
+// ================================================================ DRUKOWANIE PARAGONU
+
+// Paragon wypada z drukarki: karta wysuwa się ze szczeliny linia po linii (keyframes rcpFeed, tyle samo kroków co terkotów
+// w Sound.print), na końcu dzwonek i oderwanie papieru. Pierwsze kliknięcie kończy drukowanie, drugie zamyka.
+const RCP_LINES = 24;
+function receiptReveal(drop, { fast = false, auto = false } = {}) {
+  return new Promise(resolve => {
+    const p = person(drop.person);
+    const feedMs = fast ? 1300 : 3000;
+    const el = document.createElement("div");
+    el.className = "rcp printing";
+    el.style.setProperty("--feed", feedMs + "ms");
+    el.style.setProperty("--lines", RCP_LINES);
+    el.innerHTML = `
+      <div class="rcp-title"><span>PARAGON FISKALNY</span></div>
+      <div class="rcp-window"><div class="rcp-jit"><div class="rcp-paper">${cardHTML(drop.person, drop.variant, drop.id)}</div></div></div>
+      <div class="rcp-printer">
+        <div class="rcp-slot"></div>
+        <div class="rcp-led"></div>
+        <div class="rcp-lcd"><span class="on">DRUKUJĘ<i>...</i></span><span class="off">GOTOWE ✓</span></div>
+      </div>
+      <div class="rcp-name">${esc(p.name)}<b>${fmt(drop.value)}</b></div>
+      <div class="rcp-hint">Kliknij lub naciśnij spację, aby kontynuować</div>`;
+    document.body.appendChild(el);
+    updateCovered();
+
+    let phase = "print", autoTimer = null;
+    Sound.print(feedMs / 1000, RCP_LINES);
+    const doneTimer = setTimeout(done, feedMs + 150);
+
+    function done() {
+      if (phase !== "print") return;
+      phase = "ready";
+      clearTimeout(doneTimer);
+      el.classList.remove("printing");
+      el.classList.add("done");
+      Sound.tear();
+      confetti(["#ffffff", "#e8e4da", "#1a1a1a"], fast ? 40 : 80);
+      if (auto) autoTimer = setTimeout(close, fast ? 900 : 1500);
+    }
+    function close() {
+      if (phase === "closing") return;
+      phase = "closing";
+      clearTimeout(doneTimer); clearTimeout(autoTimer);
+      window.removeEventListener("keydown", onKey, true);
+      el.classList.add("closing");
+      setTimeout(() => { el.remove(); updateCovered(); resolve(); }, 350);
+    }
+    const advance = () => (phase === "print" ? done() : phase === "ready" ? close() : 0);
+    function onKey(e) {
+      if ([" ", "Enter", "Escape"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); advance(); }
+    }
+    window.addEventListener("keydown", onKey, true);
+    el.addEventListener("click", advance);
+  });
+}
 
 // ================================================================ PODGLĄD KARTY
 

@@ -1562,7 +1562,7 @@ document.documentElement.addEventListener("pointerleave", () => { tiltEvent = nu
 // Pełnoekranowa nakładka (otwieranie skrzynek, wielkie odsłonięcie, kuźnia, podgląd karty, skrzynka z pieniędzmi...)
 // zasłania całą stronę - wtedy body.covered chowa stronę pod spodem (style.css: WYDAJNOŚĆ), żeby przeglądarka nie liczyła
 // animacji setek niewidocznych kart. Wszystkie te nakładki są dodawane bezpośrednio do <body>.
-const COVERS = ["body > #stage:not([hidden])", "body > .epic", "body > .sreveal", "body > .dr-editor", "body > .scr-editor", "body > .forge-anim", "body > .money-stage",
+const COVERS = ["body > #stage:not([hidden])", "body > .epic", "body > .sreveal", "body > .rcp", "body > .dr-editor", "body > .scr-editor", "body > .forge-anim", "body > .money-stage",
                 "body > .jp-anim", "body > .viewer", "body > .vr-zoom"].join(", ");
 function updateCovered() { document.body.classList.toggle("covered", !!document.querySelector(COVERS)); }
 function watchCovers() {
@@ -2235,6 +2235,11 @@ async function afterSpin(o) {
     .sort((a, b) => rarityIdx(person(b.person).rarity) - rarityIdx(person(a.person).rarity) || varRank(b.variant) - varRank(a.variant));
   for (const d of epics) {
     await epicReveal(d, { fast: o.fast, auto: !!S.autoRun });
+    if (S.opening !== o) return;
+  }
+  // Paragon wypada z drukarki (karty, które mają już wielkie odsłonięcie, tego nie dostają)
+  for (const d of o.drops.filter(d => variantParts(d.variant).includes("receipt") && !epics.includes(d))) {
+    await receiptReveal(d, { fast: o.fast, auto: !!S.autoRun });
     if (S.opening !== o) return;
   }
   showResults(epics.length > 0);

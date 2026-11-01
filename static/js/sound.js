@@ -292,6 +292,26 @@ const Sound = (() => {
       noise(t, 0.15, { vol: 0.5, freq: 3000, q: 0.5 });
     },
 
+    // drukarka paragonów: terkot na każdą linię (jak keyframes rcpFeed) + szum silniczka
+    print(dur = 3, lines = 24) {
+      if (!enabled) return;
+      const t = ac().currentTime;
+      for (let i = 0; i < lines; i++) {
+        const s = t + i * dur / lines;
+        noise(s, 0.05, { vol: 0.22, freq: 2400 + (i % 3) * 500, q: 4 });
+        tone(1700 + (i % 4) * 90, s, 0.035, { type: "square", vol: 0.035 });
+      }
+      tone(120, t, dur, { type: "sawtooth", vol: 0.03 });
+    },
+    // koniec wydruku: oderwanie papieru i dzwonek
+    tear() {
+      if (!enabled) return;
+      const t = ac().currentTime;
+      noise(t, 0.2, { vol: 0.4, freq: 1800, q: 0.8, slideTo: 6500 });
+      tone(2093, t + 0.12, 0.35, { type: "sine", vol: 0.1 });
+      tone(2637, t + 0.22, 0.6, { type: "sine", vol: 0.09 });
+    },
+
     whoosh() {
       if (!enabled) return;
       const t = ac().currentTime;

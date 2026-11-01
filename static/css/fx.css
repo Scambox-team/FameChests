@@ -442,3 +442,44 @@ input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { o
 .bulk-res .daily-actions { justify-content: center; }
 @keyframes bulkIn { from { opacity: 0; transform: translateY(14px) scale(.85) rotateY(70deg); } to { opacity: 1; transform: none; } }
 @media (max-width: 700px) { .bulk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }
+/* ============================================================ DRUKOWANIE PARAGONU (receiptReveal w fx.js) */
+.rcp {
+  position: fixed; inset: 0; z-index: 400; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+  background: radial-gradient(circle at 50% 40%, #1d2026, #07080a 75%); animation: riseIn .3s both;
+  --rw: min(260px, 60vw, calc((100vh - 340px) * .716));
+}
+.rcp.closing { opacity: 0; transition: opacity .35s; }
+.rcp-title { font: 400 clamp(15px, 2.6vw, 22px) "Share Tech Mono", monospace; color: #f7f5ef; letter-spacing: .12em; }
+.rcp-title span { display: block; animation: rcpType calc(var(--feed) * .45) steps(16) both; }
+.rcp-window { position: relative; width: var(--rw); height: calc(var(--rw) * 1.4 + 30px); display: flex; align-items: flex-end; overflow: hidden; margin-bottom: -6px; }
+.rcp-jit { width: 100%; }
+.rcp.printing .rcp-jit { animation: rcpJit .09s steps(2) infinite alternate; }
+.rcp-paper { width: 100%; transform: translateY(calc(100% + 8px)); }
+.rcp-paper .card { width: 100%; --cw: 100%; }
+.rcp.printing .rcp-paper { animation: rcpFeed var(--feed) steps(var(--lines), end) forwards; }
+.rcp.done .rcp-paper { animation: rcpTear 1.1s cubic-bezier(.2, 1.4, .4, 1) forwards; transform: none; }
+.rcp-printer {
+  position: relative; z-index: 2; width: calc(var(--rw) + 90px); height: 92px; border-radius: 16px 16px 12px 12px; padding: 0 22px 14px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  background: linear-gradient(180deg, #4a4e57, #2b2e34 35%, #1c1e23); box-shadow: 0 20px 40px #000a, inset 0 2px 0 #ffffff25, inset 0 -3px 0 #0006;
+}
+.rcp.printing .rcp-printer { animation: rcpBuzz .07s steps(2) infinite alternate; }
+.rcp-slot { position: absolute; left: 50%; top: -3px; width: calc(var(--rw) + 22px); height: 12px; translate: -50% 0; border-radius: 6px; background: #050505; box-shadow: 0 0 0 3px #3a3d44, inset 0 2px 4px #000; }
+.rcp-led { width: 12px; height: 12px; margin-bottom: 8px; border-radius: 50%; background: #ff5a1f; box-shadow: 0 0 10px #ff5a1f; animation: blink .35s steps(1) infinite; }
+.rcp.done .rcp-led { background: #3dff7a; box-shadow: 0 0 10px #3dff7a; animation: none; }
+.rcp-lcd { min-width: 130px; padding: 5px 12px; border-radius: 4px; text-align: center; font: 400 15px "Share Tech Mono", monospace; color: #9dffb4; background: #0b1a10; box-shadow: inset 0 0 8px #000; }
+.rcp-lcd .off, .rcp.done .rcp-lcd .on { display: none; }
+.rcp.done .rcp-lcd .off { display: inline; }
+.rcp-lcd i { display: inline-block; width: 1.5em; overflow: hidden; vertical-align: bottom; text-align: left; font-style: normal; animation: rcpDots .9s steps(4) infinite; }
+.rcp-name { opacity: 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 6px; color: #f7f5ef;
+  font: 400 clamp(16px, 2.4vw, 22px) "Share Tech Mono", monospace; text-transform: uppercase; }
+.rcp-name b { color: var(--good); font-family: Bungee, Rubik, sans-serif; font-weight: 400; }
+.rcp.done .rcp-name { animation: riseIn .5s .4s both; }
+.rcp-hint { opacity: 0; color: #ffffffa0; font-size: 14px; }
+.rcp.done .rcp-hint { animation: riseIn .4s .6s both, blink 1.4s ease-in-out 1.1s infinite; }
+@keyframes rcpFeed { from { transform: translateY(calc(100% + 8px)); } to { transform: none; } }
+@keyframes rcpTear { 0% { transform: none; } 30% { transform: translateY(-22px) rotate(-2.2deg); } 60% { transform: translateY(-10px) rotate(.8deg); } 100% { transform: translateY(-14px) rotate(-1deg); } }
+@keyframes rcpJit { from { transform: translateX(-.6px); } to { transform: translateX(.6px); } }
+@keyframes rcpBuzz { from { transform: translateY(0); } to { transform: translateY(1px); } }
+@keyframes rcpType { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes rcpDots { from { width: 0; } to { width: 1.5em; } }
