@@ -1,0 +1,2 @@
+.form { display: flex; gap: 8px; flex-wrap: wrap; }
+.form input { flex: 1; min-width: 120px; height: 40px; padding: 0 14px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); }

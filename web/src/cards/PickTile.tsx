@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from 'react';
+import { withReveal, type Reveal } from '../game/reveal';
 import { imgUrl, isBlank, isSpecial, person, variantName, vClass, vtClass } from '../game/rules';
 import { S } from '../game/store';
 import type { Item } from '../game/types';
@@ -11,13 +12,17 @@ interface Props {
   onClick?: () => void;
   extra?: ReactNode;
   title?: string;
+  reveal?: Reveal;
 }
 
 /** Mały kafelek karty do list wyboru (kuźnia, kasyno, rynek, wymiany) */
-export const PickTile = memo(function PickTile({ item, selected, onClick, extra, title }: Props) {
-  const p = person(item.person), v = item.variant || 'normal';
+export const PickTile = memo(function PickTile({ item, selected, onClick, extra, title, reveal }: Props) {
+  const v = item.variant || 'normal';
+  const [p, img] = withReveal(reveal, () => {
+    const x = person(item.person);
+    return [x, x && (x.rarity === 'secret' && x.masked ? `/img/${x.id}` : imgUrl(x.id, v, true))];
+  });
   if (!p) return null;
-  const img = p.rarity === 'secret' && p.masked ? `/img/${p.id}` : imgUrl(p.id, v, true);
   const draw = item.draw ?? item.id;
   return (
     <button type="button" className={`pick r-${p.rarity} ${vClass(v)}${selected ? ' sel' : ''}`} style={{ '--rc': S.cfg.rarities[p.rarity].color } as React.CSSProperties} onClick={onClick} title={title ?? p.name}>

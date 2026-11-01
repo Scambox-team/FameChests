@@ -8,6 +8,8 @@ import { Toaster } from '../ui/Toaster';
 import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
 import { ForgePage } from '../features/forge/ForgePage';
+import { MarketPage } from '../features/market/MarketPage';
+import { noteMarketBonus } from '../features/market/bonus';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
@@ -25,6 +27,7 @@ const NotMoved = lazy(() => import('./NotMoved'));
 function onMe(me: any) {
   noteQuest(me.quest);
   noteUfo(me);
+  noteMarketBonus(me.marketBonus);
   if (me.achUnseen && !S.opening) achPoll();
   if (me.messages?.length) showMessages(me.messages);
 }
@@ -40,6 +43,7 @@ function Game() {
       if (!alive) return;
       noteQuest(me.quest);
       noteUfo(me);
+      noteMarketBonus(me.marketBonus);
       startNotices(me);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -58,6 +62,7 @@ function Game() {
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/binder" element={<BinderPage />} />
           <Route path="/forge" element={<ForgePage />} />
+          <Route path="/market" element={<MarketPage />} />
           <Route path="*" element={<NotMoved />} />
         </Routes>
       </Suspense>

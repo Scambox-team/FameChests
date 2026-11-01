@@ -1,0 +1,50 @@
+.tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--gap); }
+.item { display: flex; gap: 12px; padding: 12px; border-radius: var(--radius-m); background: var(--surface); min-width: 0; }
+.mine { box-shadow: inset 0 0 0 1px var(--control); }
+.card { flex: none; width: 128px; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.card :global(.card) { width: 100%; --cw: 100%; }
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kind { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.price { font: 800 24px/28px var(--display); letter-spacing: -.02em; }
+.price small { display: block; font: 400 13px/16px var(--body); color: var(--muted); letter-spacing: 0; }
+.up { color: var(--bad); } .down { color: var(--good); }
+.seller { display: flex; align-items: center; gap: 8px; }
+.acts { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.lead { display: inline-flex; align-items: center; gap: 6px; color: var(--good); font-weight: 500; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.panel h2 { font: 800 20px/26px var(--display); letter-spacing: -.02em; }
+.panel h2 small { font: 400 13px var(--body); letter-spacing: 0; }
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.form { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 14px; align-items: start; }
+.formCard :global(.card) { width: 100%; --cw: 100%; }
+.fields { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fields label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; color: var(--muted); }
+.fields input { height: 40px; padding: 0 14px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); }
+.hint { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.check input { accent-color: var(--hue); width: 16px; height: 16px; margin: 0; }
+.wanted { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.want { display: flex; gap: 10px; padding: 10px; border-radius: var(--radius-m); background: var(--surface); min-width: 0; }
+.wantTile, .histTile { flex: none; width: 84px; }
+.wantTile :global(.pick), .histTile :global(.pick) { width: 100%; }
+.wantInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mineCol { display: flex; flex-direction: column; gap: var(--gap); }
+.mineItem { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.offers { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); }
+.offer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hist { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--rule); }
+.hist:first-of-type { border-top: 0; }
+.histTile { width: 64px; }
+.grow { flex: 1; min-width: 0; }
+
+@media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .form { grid-template-columns: minmax(0, 1fr); }
+  .formCard { max-width: 200px; }
+  .card { width: 104px; }
+}
