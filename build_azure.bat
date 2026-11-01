@@ -4,6 +4,9 @@ rem catalog_export.json sa w srodku) i robi dist\scambox-azure.zip = scambox.exe
 rem Wdrozenie: docs\hosting.md (az webapp deploy ... --type zip albo przeciagniecie do Kudu).
 rem Baza nie jest potrzebna do zbudowania (zapytania sprawdzane z server\.sqlx).
 setlocal
+cd /d "%~dp0web"
+call npm ci || goto :error
+call npm run build || goto :error
 cd /d "%~dp0server"
 set SQLX_OFFLINE=true
 cargo build --release || goto :error

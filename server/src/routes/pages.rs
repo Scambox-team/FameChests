@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode, Uri};
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::response::{Html, IntoResponse, Redirect, Response};
 use minijinja::context;
 use serde_json::json;
 
@@ -22,6 +22,16 @@ use crate::web::{send_file, svg_response};
 /// Widoki gry pod własnym adresem (ta sama strona index.html, widok wybiera JS)
 pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer"];
 
+/// Adresy przeniesione już na nowy frontend (web/): tylko dla nich serwer podaje stronę Reacta, reszta zostaje na starej.
+/// Ta sama lista jest w web/src/app/nav.ts (tam decyduje, czy link przeładowuje stronę).
+pub const REACT_PATHS: &[&str] = &["/", "/crates"];
+
+/// Strona startowa Reacta albo None, gdy adres nie jest przeniesiony lub frontend nie jest zbudowany
+fn react_page(path: &str) -> Option<Response> {
+    let path = if path.len() > 1 { path.trim_end_matches('/') } else { path };
+    REACT_PATHS.contains(&path).then(crate::assets::web_index).flatten().map(|html| Html(html).into_response())
+}
+
 const MYSTERY_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
   <defs><radialGradient id="g"><stop offset="0" stop-color="#5a4a1a"/><stop offset="1" stop-color="#0b0906"/></radialGradient></defs>
   <rect width="300" height="300" fill="url(#g)"/>
@@ -34,6 +44,10 @@ pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser) -> 
         return Ok(Redirect::to("/").into_response());
     }
     let n = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM users"#).fetch_one(&st.db).await?;
+    if let Some(html) = crate::assets::web_index() {
+        // pierwsze konto przejmuje zapis i dostaje admina: strona logowania musi o tym wiedzieć przed zapytaniami do API
+        return Ok(Html(html.replace("data-first=\"0\"", if n == 0 { "data-first=\"1\"" } else { "data-first=\"0\"" })).into_response());
+    }
     st.templates.render("login.html", context! { first => n == 0 })
 }
 
@@ -41,6 +55,9 @@ pub async fn index(State(st): State<AppState>, Me(me): Me, uri: Uri) -> Res {
     // Arena i makiety kart specjalnych: tylko admini
     if matches!(uri.path(), "/arena" | "/mockups" | "/stickers" | "/variants" | "/designer") && !me.admin() {
         return Ok(Redirect::to("/").into_response());
+    }
+    if let Some(page) = react_page(uri.path()) {
+        return Ok(page);
     }
     st.templates.render("index.html", context! {})
 }

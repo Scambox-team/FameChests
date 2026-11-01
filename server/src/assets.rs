@@ -24,6 +24,12 @@ pub struct Templates;
 #[folder = "../custom_images/"]
 pub struct CustomImages;
 
+/// Zbudowany frontend (web/dist, `npm run build` w web/). Brak folderu nie blokuje kompilacji serwera.
+#[derive(RustEmbed)]
+#[folder = "../web/dist/"]
+#[allow_missing = true]
+pub struct Web;
+
 /// catalog_export.json z repozytorium (zmiany z panelu admina dla nowej instalacji)
 pub const CATALOG_EXPORT: &str = include_str!("../../catalog_export.json");
 
@@ -54,6 +60,24 @@ fn version(path: &str) -> String {
 /// nowe pliki (jak asset() w wersji Python)
 pub fn asset(path: &str) -> String {
     format!("/static/{path}?v={}", version(path))
+}
+
+/// Strona startowa nowego frontendu
+pub fn web_index() -> Option<String> {
+    Web::get("index.html").map(|f| String::from_utf8_lossy(&f.data).into_owned())
+}
+
+/// /app/<ścieżka> - pliki zbudowanego frontendu (nazwy zawierają skrót treści, więc mogą być w pamięci przeglądarki na stałe)
+pub async fn serve_web(Path(path): Path<String>) -> Response {
+    let Some(file) = Web::get(&path) else { return StatusCode::NOT_FOUND.into_response() };
+    let mime = file.metadata.mimetype().to_owned();
+    let mut resp = file.data.into_owned().into_response();
+    let h = resp.headers_mut();
+    if let Ok(v) = HeaderValue::from_str(&mime) {
+        h.insert(header::CONTENT_TYPE, v);
+    }
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("public, max-age=31536000, immutable"));
+    resp
 }
 
 /// /static/<ścieżka> - pliki z wbudowanego folderu static/ (ETag = skrót treści)

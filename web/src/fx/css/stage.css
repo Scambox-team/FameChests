@@ -1,0 +1,82 @@
+/* Scena otwierania: bębny i wyniki */
+/* ------------------------------------------------------------ SCENA */
+.stage { position: fixed; inset: 0; z-index: 100; display: flex; }
+/* nieprzezroczyste tło bez rozmycia - strona pod spodem jest wtedy schowana (body.covered) */
+.stage-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, #1b2140, #05060b); }
+.stage-inner { position: relative; flex: 1; display: flex; flex-direction: column; padding: 18px; gap: 14px; min-height: 0; }
+.stage-title { text-align: center; font-family: Bungee, Rubik, sans-serif; font-size: 22px; }
+.reels { flex: 1; display: grid; gap: 12px; align-content: center; min-height: 0; overflow: auto; padding: 4px; }
+.reel {
+  position: relative; overflow: hidden; border-radius: 12px;
+  background: linear-gradient(180deg, #0b0e18, #151a2a 50%, #0b0e18);
+  border: 2px solid #2b3449; height: var(--rh);
+  transition: border-color .3s, box-shadow .3s;
+}
+.reel::before, .reel::after { /* przyciemnione krawędzie */
+  content: ""; position: absolute; top: 0; bottom: 0; width: 22%; z-index: 2; pointer-events: none;
+}
+.reel::before { left: 0; background: linear-gradient(90deg, #070910, transparent); }
+.reel::after { right: 0; background: linear-gradient(-90deg, #070910, transparent); }
+.reel-marker {
+  position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; transform: translateX(-50%); z-index: 3;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+}
+.reel-marker::before, .reel-marker::after {
+  content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+  border: 8px solid transparent;
+}
+.reel-marker::before { top: 0; border-top-color: var(--accent); }
+.reel-marker::after { bottom: 0; border-bottom-color: var(--accent); }
+.strip { position: absolute; left: 0; top: 50%; display: flex; gap: var(--gap); transform: translate3d(0, -50%, 0); will-change: transform; }
+.mini {
+  width: var(--mw); flex: none; border-radius: 8px; overflow: hidden; position: relative;
+  background: #1a2030; border-bottom: 5px solid var(--rc);
+  box-shadow: inset 0 -30px 30px -20px var(--rc);
+}
+.mini img { width: 100%; aspect-ratio: 1 / 1.05; object-fit: cover; object-position: 50% 18%; display: block; }
+.mini .mn { font-size: 10.5px; font-weight: 700; padding: 3px 5px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #0009; }
+.mini.r-gold { box-shadow: inset 0 0 0 2px var(--c-gold), inset 0 -30px 30px -20px var(--c-gold); }
+.mini.r-ultra { border-image: var(--rainbow) 1; box-shadow: inset 0 0 0 2px #fff6; }
+.mini.r-ultra::after { content: ""; position: absolute; inset: 0; background: var(--rainbow); background-size: 200% 100%; opacity: .25; mix-blend-mode: screen; animation: rainbowSlide 2s linear infinite; }
+/* w kręcącym się bębnie błyski kafelków stoją (inaczej cały pasek przerysowywał się w każdej klatce) - ruszają po zatrzymaniu */
+.reel:not(.landed) .mini::after { animation-play-state: paused; }
+.reel.landed { border-color: var(--rc); box-shadow: 0 0 18px var(--rc), inset 0 0 30px color-mix(in srgb, var(--rc) 30%, transparent); }
+.reel.landed .mini.win { transform: scale(1.06); transition: transform .25s; z-index: 1; box-shadow: 0 0 20px var(--rc), inset 0 0 0 2px var(--rc); }
+.reel.landed .mini:not(.win) { opacity: .35; transition: opacity .4s; }
+.reel.landed.r-ultra { border-image: var(--rainbow) 1; }
+
+.results {
+  flex: 1; overflow: auto; display: grid; gap: 18px; padding: 10px 6px 20px;
+  align-content: start; justify-content: center;
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, var(--rcw, 190px)));
+}
+.result { display: flex; flex-direction: column; gap: 8px; align-items: stretch; animation: popIn .5s cubic-bezier(.2, 1.6, .4, 1) both; position: relative; }
+.result .new-badge {
+  position: absolute; top: -8px; left: -8px; z-index: 6;
+  background: var(--accent); color: #241800; font-weight: 900; font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  transform: rotate(-8deg); box-shadow: 0 2px 8px #0008;
+}
+.result .rsell { font-size: 13px; padding: 6px; white-space: nowrap; }
+.result.sold { opacity: .25; pointer-events: none; filter: grayscale(1); }
+.result.big::before {
+  content: ""; position: absolute; inset: -30%; z-index: -1;
+  background: conic-gradient(from 0deg, transparent 0 10deg, var(--rc) 10deg 20deg, transparent 20deg 40deg, var(--rc) 40deg 50deg, transparent 50deg 70deg, var(--rc) 70deg 80deg, transparent 80deg 100deg, var(--rc) 100deg 110deg, transparent 110deg 130deg, var(--rc) 130deg 140deg, transparent 140deg 160deg, var(--rc) 160deg 170deg, transparent 170deg 190deg, var(--rc) 190deg 200deg, transparent 200deg 220deg, var(--rc) 220deg 230deg, transparent 230deg 250deg, var(--rc) 250deg 260deg, transparent 260deg 280deg, var(--rc) 280deg 290deg, transparent 290deg 310deg, var(--rc) 310deg 320deg, transparent 320deg 340deg, var(--rc) 340deg 350deg, transparent 350deg);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent);
+  mask: radial-gradient(closest-side, #000 30%, transparent);
+  opacity: .5; animation: spin 8s linear infinite;
+}
+.result.big.r-ultra::before { background: conic-gradient(#ff3b3b, #ff9f1a, #ffe53b, #3bff6b, #3bd5ff, #6b5bff, #ff3bd8, #ff3b3b); opacity: .6; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes popIn { from { opacity: 0; transform: scale(.4) rotateY(180deg); } }
+
+.stage-bar { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.stage-sum { font-family: Bungee, Rubik, sans-serif; color: var(--good); font-size: 18px; margin-right: 10px; }
+.flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5; }
+.flash.go { animation: flash .9s ease-out; }
+@keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+.shake { animation: shake .5s; }
+@keyframes shake {
+  10%, 90% { transform: translate(-2px, 1px); } 20%, 80% { transform: translate(4px, -2px); }
+  30%, 50%, 70% { transform: translate(-6px, 3px); } 40%, 60% { transform: translate(6px, -3px); }
+}
+

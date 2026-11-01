@@ -2,6 +2,13 @@
 #   docker build -f server/Dockerfile -t scambox .
 # Uruchomienie: DATABASE_URL, SECRET_KEY, DATA_DIR (wolumen na zdjęcia), port 8000.
 # cargo-chef: zależności budują się w osobnej warstwie - zmiana samego kodu nie kompiluje ich od nowa.
+FROM node:24-slim AS web
+WORKDIR /src/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ .
+RUN npm run build
+
 FROM lukemathwalker/cargo-chef:latest-rust-1-bookworm AS chef
 WORKDIR /src/server
 
@@ -17,6 +24,7 @@ COPY static /src/static
 COPY templates /src/templates
 COPY custom_images /src/custom_images
 COPY catalog_export.json /src/
+COPY --from=web /src/web/dist /src/web/dist
 COPY server/ .
 # zapytania sqlx::query! sprawdzane z .sqlx/ (cargo sqlx prepare) - bez bazy przy budowaniu
 ENV SQLX_OFFLINE=true

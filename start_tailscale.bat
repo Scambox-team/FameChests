@@ -1,5 +1,8 @@
 @echo off
 rem Uruchamia gre i udostepnia ja w Twojej sieci Tailscale (tylko dla osob z Twojej sieci, przez HTTPS).
+cd /d "%~dp0web"
+call npm install --no-audit --no-fund
+call npm run build
 cd /d "%~dp0server"
 "C:\Program Files\Tailscale\tailscale.exe" serve --bg 5000
 echo.

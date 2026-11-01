@@ -1754,6 +1754,8 @@ function showRoute(how = "none") {
 
 // how: "push" - nowy wpis w historii (kliknięcie), "replace" - podmiana (start), "none" - bez zmian (wstecz/dalej)
 function switchView(view, how = "push") {
+  // ekrany przeniesione już na nowy frontend (web/, server/src/routes/pages.rs: REACT_PATHS)
+  if (view === "crates") { location.href = "/crates"; return; }
   if (view !== "casino" && currentView() === "casino" && csLeaveGuard(() => switchView(view, how))) {
     if (how === "none") history.pushState(null, "", viewPath("casino"));   // wstecz w przeglądarce: zostajemy na adresie kasyna
     return;

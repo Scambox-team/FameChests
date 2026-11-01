@@ -24,3 +24,7 @@ server/.env
 
 # paczka na Azure (build_azure.bat)
 dist/
+
+# frontend (web/)
+web/node_modules/
+web/dist/

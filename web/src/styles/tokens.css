@@ -1,0 +1,23 @@
+/* Gablota: prawie czarna sala, kolor wchodzi razem z wybraną skrzynką (--hue) */
+:root {
+  color-scheme: dark;
+  --ground: #08080a;
+  --surface: #131316;
+  --raised: #1f1f24;
+  --rule: #26262c;
+  --control: #4a4a52;
+  --text: #fff;
+  --muted: #b8b8c0;
+  --faint: #96969f;
+  --hue: #e0264a;
+  --on-hue: #fff;
+  --good: #3fc07a;
+  --bad: #e5484d;
+  --warn: #e5a93b;
+  --radius: 20px;
+  --radius-m: 14px;
+  --radius-s: 10px;
+  --gap: 14px;
+  --display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+  --body: "Hanken Grotesk", system-ui, sans-serif;
+}

@@ -1,0 +1,22 @@
+/* Scena otwierania w kolorach Gabloty. Pozycje bębnów i kart są w fx/css/stage.css, tu tylko wygląd. */
+.stage-bg { background: color-mix(in srgb, var(--hue) 10%, #070709); }
+.stage-title { font: 800 26px/32px var(--display); letter-spacing: -.02em; }
+.stage-sum { font: 800 20px var(--display); color: var(--text); margin-right: 10px; }
+.reel { background: var(--surface); border-radius: var(--radius-m); box-shadow: none; }
+.result .rbtns { gap: 6px; }
+.result .rsell { height: 36px; padding: 0 14px; border: 1px solid var(--control); border-radius: 999px; background: transparent; color: var(--text); font: 500 14px var(--body); }
+.result .rsell:hover { background: #ffffff14; }
+.result .rsell:disabled { opacity: .5; cursor: not-allowed; }
+.result .fav-btn { width: 36px; height: 36px; border: 1px solid var(--control); border-radius: 50%; background: transparent; color: var(--text); font-size: 16px; }
+.result .fav-btn.on { background: var(--warn); border-color: var(--warn); color: #000; }
+.new-badge { font: 600 12px var(--body); letter-spacing: 0; background: var(--hue); color: var(--on-hue); }
+.stage .card { cursor: zoom-in; }
+
+/* wielkie odsłonięcia i podgląd karty: te same animacje, spokojniejsza typografia */
+.epic-title, .sr-title, .vi-rarity { font-family: var(--display) !important; letter-spacing: -.01em; }
+.viewer-info h2 { font: 800 30px/34px var(--display); letter-spacing: -.02em; }
+.viewer-info .btn { height: 40px; padding: 0 18px; border: 1px solid var(--control); border-radius: 999px; background: transparent; color: var(--text); font: 500 15px var(--body); }
+.viewer-info .btn:hover { background: #ffffff14; }
+.viewer-info .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--on-hue); }
+.viewer-info .tp { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.12em; }
+.results { align-content: center; flex: 1; }

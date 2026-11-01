@@ -1,0 +1,181 @@
+/* Podstawa karty: kolory rzadkości, rozmiary, holo. Bez zmian względem starej gry. */
+:root {
+  --bg: #0c0f17;
+  --panel: #161b28;
+  --panel2: #1e2536;
+  --line: #2b3449;
+  --text: #e9edf7;
+  --muted: #8c97b2;
+  --accent: #ffcf3f;
+  --good: #3ddc84;
+  --bad: #ff5468;
+
+  --c-green: #9aa3ad;      /* Zwykła (klucz "green" został ze starych zapisów) */
+  --c-uncommon: #4fc34f;
+  --c-blue: #4b8bff;
+  --c-purple: #a35bff;
+  --c-red: #ff4040;
+  --c-gold: #ffc531;
+  --c-ultra: #ff5cf0;
+
+  --rainbow: linear-gradient(90deg, #ff3b3b, #ff9f1a, #ffe53b, #3bff6b, #3bd5ff, #6b5bff, #ff3bd8, #ff3b3b);
+}
+
+/* ------------------------------------------------------------ KARTA */
+.card {
+  --cw: 200px;
+  --rc: var(--c-green);
+  --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
+  width: var(--cw); aspect-ratio: 63 / 88;
+  container-type: inline-size;
+  position: relative; border-radius: 4.5%/3.2%;
+  padding: 3.6%;
+  background: var(--frame);
+  box-shadow: 0 6px 18px #000a, 0 0 0 1px #0006;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .15s ease-out, box-shadow .2s;
+  user-select: none; flex: none;
+}
+.pocket .card, .contents-grid .card, .inv-grid .card, .results .card { width: 100%; --cw: 100%; }
+.card.tilting { transition: none; }
+.card-inner {
+  position: relative; height: 100%; border-radius: 3%/2.2%; overflow: hidden;
+  background: var(--inner);
+  display: flex; flex-direction: column; padding: 4% 5% 3%;
+  color: #1a1a1a; font-size: 5.7cqw;
+}
+.card-head { display: flex; align-items: baseline; gap: .3em; }
+.card-name { font-weight: 900; font-size: 1em; line-height: 1.05; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-hp { font-weight: 900; color: #c4001a; font-size: 1em; white-space: nowrap; }
+.card-hp small { font-size: .55em; margin-right: .1em; }
+.card-type {
+  width: 1.45em; height: 1.45em; border-radius: 50%; display: grid; place-items: center;
+  background: #fff; box-shadow: 0 0 0 .1em #0003; font-size: .8em; align-self: center;
+}
+.card-photo {
+  position: relative; margin-top: 3%; aspect-ratio: 1 / .96; flex: none;
+  border: .28em solid; border-image: linear-gradient(135deg, #f7e7a1, #b28a2b, #fff1b8, #8e6b1d) 1;
+  background: #222; overflow: hidden;
+  box-shadow: inset 0 0 1em #0008;
+}
+.card-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.card-sub {
+  margin: 2.5% -2% 0; padding: .15em .5em; text-align: center; font-size: .5em; font-style: italic; font-weight: 500;
+  background: linear-gradient(90deg, transparent, #fff8, transparent); color: #333;
+}
+.card-sub.has-subtitle { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* podtytuł z panelu admina */
+.sc-sub { text-align: center; font-size: 3.4cqw; font-style: italic; font-weight: 700; color: #f3e3b0; text-shadow: 0 1px 2px #000; margin-bottom: 1.5%; }
+.card-attack {
+  margin-top: auto; display: flex; align-items: center; gap: .35em; padding: .45em 0;
+  border-top: 1px solid #0002; border-bottom: 1px solid #0002;
+}
+.atk-cost { font-size: .62em; white-space: nowrap; }
+.atk-name { flex: 1; font-weight: 700; font-size: .66em; line-height: 1.1; }
+.atk-dmg { font-weight: 900; font-size: 1em; }
+.card-stats { display: flex; justify-content: space-between; margin-top: 3%; font-size: .42em; color: #444; text-align: center; }
+.card-stats span { display: flex; flex-direction: column; gap: .2em; flex: 1; }
+.card-stats b { font-size: 1.25em; color: #222; }
+.card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 3%; font-size: .45em; font-weight: 700; color: #333; gap: .4em; }
+.card-rarity { display: flex; align-items: center; gap: .35em; text-transform: uppercase; letter-spacing: .03em; }
+.gem { width: 1.1em; height: 1.1em; transform: rotate(45deg); background: var(--rc); box-shadow: 0 0 0 .12em #0004, 0 0 .5em var(--rc); flex: none; }
+.card-value { color: #0a6b33; font-size: 1.3em; font-weight: 900; }
+
+.holo-tag {
+  position: absolute; top: 34%; right: 7%; z-index: 4;
+  font-size: 3cqw; font-weight: 900; letter-spacing: .1em; padding: .25em .6em; border-radius: .4em;
+  background: var(--rainbow); background-size: 200% 100%; color: #fff; text-shadow: 0 1px 2px #000a;
+  animation: rainbowSlide 3s linear infinite; box-shadow: 0 0 .6em #fff8;
+}
+.shine {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+  background: radial-gradient(circle at var(--mx) var(--my), #ffffff55, transparent 45%);
+  mix-blend-mode: soft-light; opacity: 0; transition: opacity .2s;
+}
+.card:hover .shine { opacity: 1; }
+
+/* rzadkości - ramka i wnętrze */
+.card.r-green  { --rc: var(--c-green);  --frame: linear-gradient(145deg, #d3d8de, #6b737c 50%, #d3d8de); --inner: linear-gradient(170deg, #f4f5f7, #dcdfe3); }
+.card.r-uncommon { --rc: var(--c-uncommon); --frame: linear-gradient(145deg, #a4e89a, #2f8f3a 50%, #a4e89a); --inner: linear-gradient(170deg, #f0faea, #cfeac4); }
+.card.r-blue   { --rc: var(--c-blue);   --frame: linear-gradient(145deg, #a8c8ff, #2453c7 50%, #a8c8ff); --inner: linear-gradient(170deg, #eef4ff, #c8dafc); }
+.card.r-purple { --rc: var(--c-purple); --frame: linear-gradient(145deg, #d7b5ff, #6a20c9 50%, #d7b5ff); --inner: linear-gradient(170deg, #f6efff, #dccaf7); }
+.card.r-red    { --rc: var(--c-red);    --frame: linear-gradient(145deg, #ffb0b0, #b3121f 50%, #ffb0b0); --inner: linear-gradient(170deg, #fff0ee, #f7cdc8); }
+.card.r-gold   {
+  --rc: var(--c-gold);
+  --frame: linear-gradient(115deg, #8a5b00, #ffe58a 20%, #c78b00 40%, #fff3c4 55%, #b07a00 75%, #ffe08a);
+  --inner: linear-gradient(170deg, #fff9df, #f6dc8a);
+  box-shadow: 0 6px 18px #000a, 0 0 18px #ffc53188;
+}
+.card.r-ultra  {
+  --rc: var(--c-ultra);
+  --spin: #ff3b3b, #ff9f1a, #ffe53b, #3bff6b, #3bd5ff, #6b5bff, #ff3bd8, #ff3b3b;   /* kolory obracającej się ramki */
+  --frame: conic-gradient(from 0deg, var(--spin));
+  --inner: linear-gradient(160deg, #fff4fd, #e8f3ff 40%, #f2ffe9 70%, #fff6dc);
+  box-shadow: 0 6px 18px #000a, 0 0 22px #ff5cf0aa, 0 0 44px #3bd5ff55;
+}
+/* Animowana ramka (mieniące się złoto, obracająca się tęcza / kamienie / galaktyka) jest rysowana w ::before na osobnej
+   warstwie - w każdej klatce przerysowuje się tylko ramka, a nie cała karta ze zdjęciem i napisami (wcześniej każda złota
+   i ULTRA karta na ekranie przerysowywała się w całości 60 razy na sekundę). Obracająca się ramka bierze kolory z --spin,
+   bo kąt (--ang) musi się zmieniać w samym ::before; wariant ze stałą ramką (np. czarno-biała) ustawia --spin: initial.
+   Tajne i flagowe karty mają własne tło - bez ::before (cards2.css). */
+.card:is(.r-gold, .r-ultra, .v-gold, .v-silver, .v-platinum, .v-bronze, .v-pearl, .v-royal, .v-diamond, .v-emerald, .v-ruby, .v-amethyst, .v-sapphire, .v-blackdiamond, .v-galaxy, .v-mlg, .v-slime, .v-bismuth, .v-fade, .v-artdeco) { background: none; isolation: isolate; }
+.card:is(.r-gold, .r-ultra, .v-gold, .v-silver, .v-platinum, .v-bronze, .v-pearl, .v-royal, .v-diamond, .v-emerald, .v-ruby, .v-amethyst, .v-sapphire, .v-blackdiamond, .v-galaxy, .v-mlg, .v-slime, .v-bismuth, .v-fade, .v-artdeco)::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; will-change: transform;
+  background: var(--frame);
+}
+.card.r-gold::before { background-size: 200% 200%; animation: goldShift 4s ease-in-out infinite; }
+.card.r-ultra::before {
+  background: conic-gradient(from var(--ang, 0deg), var(--spin, transparent 0 0)), var(--frame);
+  animation: ultraSpin 3s linear infinite;
+}
+.card.r-ultra .card-name {
+  background: linear-gradient(90deg, #d4004a, #e07a00, #1a9e3f, #0067d6, #8a1fd6);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.card.r-gold .card-name { color: #6b4700; }
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes ultraSpin { to { --ang: 360deg; } }
+@keyframes goldShift { 50% { background-position: 100% 100%; } }
+@keyframes rainbowSlide { to { background-position: 200% 0; } }
+
+/* HOLO */
+.holo-layer {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 2;
+  background:
+    repeating-linear-gradient(115deg,
+      #ff00004d 0%, #ffa5004d 4%, #ffff004d 8%, #00ff004d 12%, #00ffff4d 16%, #0000ff4d 20%, #ff00ff4d 24%, #ff00004d 28%),
+    radial-gradient(circle at var(--mx) var(--my), #fff9, transparent 50%);
+  background-size: 300% 300%, 100% 100%;
+  background-position: var(--hx, 50%) var(--hy, 50%), 0 0;
+  mix-blend-mode: color-dodge; opacity: .55;
+  animation: holoDrift 6s linear infinite;
+}
+.holo-layer::after { /* gwiazdki */
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle, #fff 0 1px, transparent 1.5px),
+    radial-gradient(circle, #fff 0 1px, transparent 1.5px);
+  background-size: 23px 31px, 37px 29px;
+  background-position: 0 0, 11px 13px;
+  opacity: .6; animation: sparkle 1.6s ease-in-out infinite alternate;
+}
+@keyframes holoDrift { from { background-position: 0% 0%, 0 0; } to { background-position: 300% 300%, 0 0; } }
+@keyframes sparkle { from { opacity: .15; } to { opacity: .8; } }
+.card.holo { box-shadow: 0 6px 18px #000a, 0 0 18px #9ff6ff99, 0 0 36px #ff9ff355; }
+.card.holo .card-photo::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, #ffffff66 45%, transparent 60%);
+  background-size: 250% 100%; animation: photoGlint 3s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes photoGlint { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+
+/* karta-rewers (pusta kieszeń) */
+.card-back {
+  width: 100%; aspect-ratio: 63 / 88; border-radius: 4.5%/3.2%;
+  border: 2px dashed #ffffff22; display: grid; place-items: center; text-align: center;
+  color: #ffffff40; font-family: Bungee, Rubik, sans-serif;
+  background: repeating-linear-gradient(45deg, #ffffff06 0 10px, transparent 10px 20px);
+}
+.card-back .q { font-size: 42px; line-height: 1; }
+.card-back .n { font-size: 12px; margin-top: 4px; }
+

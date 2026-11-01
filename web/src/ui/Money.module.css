@@ -1,0 +1,2 @@
+.money { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.unit { font: 400 14px var(--body); color: var(--muted); letter-spacing: 0; }

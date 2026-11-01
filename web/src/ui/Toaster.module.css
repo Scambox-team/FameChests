@@ -1,0 +1,5 @@
+.box { position: fixed; top: max(16px, env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 400; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.toast { display: flex; align-items: center; gap: 8px; max-width: min(420px, calc(100vw - 32px)); padding: 10px 14px; border-radius: var(--radius-s); background: var(--raised); box-shadow: 0 10px 24px #0009; font-size: 14px; animation: rise .2s ease-out; }
+.toast svg { color: var(--good); flex: none; }
+.err svg { color: var(--bad); }
+@keyframes rise { from { opacity: 0; transform: translateY(-6px); } }

@@ -4,3 +4,5 @@ server/.env
 image_cache/
 *.db
 secret_key.txt
+web/node_modules/
+web/dist/

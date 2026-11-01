@@ -1,0 +1,10 @@
+.btn { height: 40px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--control); border-radius: 999px; background: transparent; font-weight: 500; white-space: nowrap; transition: background .12s, transform .08s, opacity .12s, filter .12s; }
+.btn:hover { background: #ffffff14; }
+.btn:active { transform: translateY(1px) scale(.985); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.big { height: 50px; padding: 0 26px; font-size: 16px; }
+.plain {}
+.quiet { border-color: transparent; color: var(--muted); }
+.quiet:hover { color: #fff; }
+.hue { background: var(--hue); color: var(--on-hue); border-color: var(--hue); font-weight: 600; transition: background .3s, border-color .3s, color .3s, transform .08s, filter .12s; }
+.hue:hover { background: var(--hue); filter: brightness(1.1); }

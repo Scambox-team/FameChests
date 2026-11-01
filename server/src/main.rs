@@ -144,6 +144,7 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
 
     let app = routes::router(st.clone())
         .route("/static/{*path}", axum::routing::get(assets::serve_static))
+        .route("/app/{*path}", axum::routing::get(assets::serve_web))
         // osiągnięcia (X-Ach) i X-Bibi po udanym zapytaniu
         .layer(middleware::from_fn_with_state(st, achievements::layer))
         .layer(middleware::from_fn(web::cache_headers))
