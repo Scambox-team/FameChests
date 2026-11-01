@@ -1,0 +1,66 @@
+import { useEffect, useRef, type ReactNode } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Logo } from '../../app/Logo';
+import { bindDesigner, renderDesigner } from './designer';
+import { renderMockups } from './mockups';
+import panelHtml from './panel.html?raw';
+import { startPanel } from './panel';
+import { renderStickers } from './stickers';
+import { renderVariants } from './variants';
+import './admin.css';
+import styles from './AdminApp.module.css';
+
+const TABS: [string, string][] = [['/admin', 'Skrzynki i karty'], ['/admin/chess', 'Szachy'], ['/variants', 'Warianty'], ['/stickers', 'Naklejki'], ['/designer', 'Kreator wariantów'], ['/mockups', 'Karty specjalne']];
+
+// Formularze panelu są gotowym HTML, a każdy widok rysuje się sam w swoim elemencie.
+// Zakładki przeładowują stronę, więc każdy widok startuje raz.
+function View({ id, start }: { id: string; start: () => void }) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    start();
+  }, [start]);
+  return <div id={id} />;
+}
+
+function Panel() {
+  const box = useRef<HTMLDivElement>(null), done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    startPanel();
+  }, []);
+  return <div ref={box} dangerouslySetInnerHTML={{ __html: panelHtml }} />;
+}
+
+const startDesigner = () => { bindDesigner(); renderDesigner(); };
+
+function page(path: string): [string, ReactNode] {
+  if (path === '/variants') return ['Warianty', <View id="variantsBody" start={renderVariants} />];
+  if (path === '/stickers') return ['Naklejki', <View id="stickersBody" start={renderStickers} />];
+  if (path === '/designer') return ['Kreator wariantów', <View id="designerBody" start={startDesigner} />];
+  if (path === '/mockups') return ['Karty specjalne', <View id="mockupsBody" start={renderMockups} />];
+  return [path === '/admin/chess' ? 'Szachy' : 'Panel admina', <Panel />];
+}
+
+export default function AdminApp() {
+  const { pathname, search } = useLocation();
+  const path = pathname.replace(/\/$/, '') === '/admin/mockups' ? '/mockups' : pathname.replace(/\/$/, '');
+  const [title, body] = page(path);
+  useEffect(() => { document.title = `${title} · ScamBox`; }, [title]);
+  if (new URLSearchParams(search).has('embed')) return <div className="a-page a-embed">{body}</div>;   // podgląd karty w ramce okna edycji
+  return (
+    <div className={`a-page ${styles.page}`}>
+      <header className={styles.head}>
+        <a className={styles.logo} href="/"><Logo /></a>
+        <nav className={styles.tabs} aria-label="Panel admina">
+          {TABS.map(([to, label]) => <a key={to} href={to} aria-current={to === path ? 'page' : undefined}>{label}</a>)}
+        </nav>
+        <a className={styles.back} href="/"><ArrowLeft size={16} aria-hidden="true" /> Wróć do gry</a>
+      </header>
+      <main className={styles.main}>{body}</main>
+    </div>
+  );
+}

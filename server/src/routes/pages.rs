@@ -24,7 +24,7 @@ pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market",
 
 /// Adresy przeniesione już na nowy frontend (web/): tylko dla nich serwer podaje stronę Reacta, reszta zostaje na starej.
 /// Ta sama lista jest w web/src/app/nav.ts (tam decyduje, czy link przeładowuje stronę).
-pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino", "/friends", "/ranking", "/games", "/arena", "/inventory/figures"];
+pub const REACT_PATHS: &[&str] = &["/", "/crates", "/inventory", "/inventory/hall-of-fame", "/binder", "/forge", "/market", "/casino", "/friends", "/ranking", "/games", "/arena", "/inventory/figures", "/admin", "/admin/chess", "/mockups", "/stickers", "/variants", "/designer"];
 
 /// Strona startowa Reacta albo None, gdy adres nie jest przeniesiony lub frontend nie jest zbudowany
 fn react_page(path: &str) -> Option<Response> {
@@ -62,7 +62,10 @@ pub async fn index(State(st): State<AppState>, Me(me): Me, uri: Uri) -> Res {
     st.templates.render("index.html", context! {})
 }
 
-pub async fn admin_page(State(st): State<AppState>, Admin(_): Admin) -> Res {
+pub async fn admin_page(State(st): State<AppState>, Admin(_): Admin, uri: Uri) -> Res {
+    if let Some(page) = react_page(uri.path()) {
+        return Ok(page);
+    }
     st.templates.render("admin.html", context! {})
 }
 

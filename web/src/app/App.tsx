@@ -49,6 +49,7 @@ function onMe(me: any) {
 installViewerActions();
 
 function Game() {
+  const { pathname } = useLocation();
   const [failed, setFailed] = useState(false);
   const game = useGame();
 
@@ -71,6 +72,7 @@ function Game() {
 
   if (failed) return <div className={styles.splash}>Nie można połączyć się z serwerem. Odśwież stronę.</div>;
   if (!game.cfg || !game.state) return <div className={styles.splash} aria-busy="true">Wczytywanie gry</div>;
+  if (ADMIN_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) return <Suspense fallback={null}><AdminApp /></Suspense>;
   return (
     <AppShell>
       <Suspense fallback={null}>
@@ -97,6 +99,9 @@ function Game() {
     </AppShell>
   );
 }
+
+const AdminApp = lazy(() => import('../features/admin/AdminApp'));
+const ADMIN_PATHS = ['/admin', '/variants', '/stickers', '/designer', '/mockups'];
 
 export function App() {
   const { pathname } = useLocation();
