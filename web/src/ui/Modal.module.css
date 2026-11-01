@@ -1,0 +1,7 @@
+.back { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: #000000b8; overflow-y: auto; }
+.box { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: var(--radius); background: var(--surface); box-shadow: 0 30px 80px #000c; }
+.wide { width: min(760px, 100%); }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.head h2 { font: 800 24px/30px var(--display); letter-spacing: -.02em; }
+.close { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border: 0; border-radius: var(--radius-s); background: none; color: var(--muted); }
+.close:hover { background: var(--raised); color: #fff; }

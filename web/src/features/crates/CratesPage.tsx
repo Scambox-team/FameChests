@@ -17,6 +17,7 @@ import { CrateArt } from './CrateArt';
 import { CrateStage } from './CrateStage';
 import { applyHue, crateHue } from './crateLook';
 import { OddsLadder } from './OddsLadder';
+import { QuestBox } from './QuestBox';
 import { openCrates } from './opening';
 import styles from './CratesPage.module.css';
 
@@ -126,6 +127,22 @@ function Contents({ crate }: { crate: Crate }) {
   );
 }
 
+function Stats() {
+  const { state: st, items } = useGame();
+  const profit = st.earned - st.spent;
+  const rows: [string, string][] = [
+    ['Otwarte skrzynki', String(st.opened)], ['Wydano', fmt(st.spent)], ['Ze sprzedaży', fmt(st.earned)],
+    ['Wartość ekwipunku', fmt(items.reduce((a, i) => a + i.value, 0))], ['Bilans sprzedaży', `${profit >= 0 ? '+' : ''}${fmt(profit)}`],
+    ['Z codziennych skrzynek', fmt(st.daily_total || 0)], ['Kontrakty', String(st.contracts || 0)], ['Ulepszenia udane / nieudane', `${st.upgrades_won || 0} / ${st.upgrades_lost || 0}`]
+  ];
+  return (
+    <section className={styles.sec}>
+      <h2>Twoje statystyki</h2>
+      <dl className={styles.stats}>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+    </section>
+  );
+}
+
 export function CratesPage() {
   const game = useGame();
   const hero = useRef<HTMLElement>(null);
@@ -144,6 +161,7 @@ export function CratesPage() {
 
   return (
     <>
+      <QuestBox />
       <section className={styles.tiles} aria-label="Wybór skrzynki">
         {crates.map(c => <CrateTile key={c.id} crate={c} active={c.id === crate.id} onPick={() => pick(c)} />)}
       </section>
@@ -155,6 +173,7 @@ export function CratesPage() {
         </SpotlightCard>
       </section>
       <Contents crate={crate} />
+      <Stats />
     </>
   );
 }

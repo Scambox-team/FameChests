@@ -49,6 +49,11 @@
 .cards :global(.card) { width: 100%; --cw: 100%; cursor: zoom-in; }
 .cards > div:hover { position: relative; z-index: 2; }
 
+.stats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+.stats div { padding: 12px 14px; border-radius: var(--radius-m); background: var(--surface); }
+.stats dt { font-size: 13px; color: var(--muted); }
+.stats dd { margin: 0; font: 800 20px/26px var(--display); letter-spacing: -.01em; }
+
 @media (max-width: 1240px) {
   .hero { grid-template-columns: 40% minmax(0, 1fr); }
   .ladderBox { grid-column: 1 / -1; max-height: none; }
@@ -60,5 +65,5 @@
   .hero { display: flex; flex-direction: column; padding: 16px; gap: 14px; }
   .scene { height: 280px; bottom: auto; }
   .stage { height: 248px; min-height: 248px; flex: none; }
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cards, .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

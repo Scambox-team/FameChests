@@ -3,15 +3,26 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import svgDefs from '../cards/svgDefs.html?raw';
 import { boot, startPolling } from '../game/session';
-import { useGame } from '../game/store';
+import { S, useGame } from '../game/store';
 import { Toaster } from '../ui/Toaster';
 import { CratesPage } from '../features/crates/CratesPage';
 import { LoginPage } from '../features/auth/LoginPage';
+import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
+import { Notices, showMessages, startNotices } from '../features/notices/Notices';
+import { achPoll } from '../features/achievements/popups';
+import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
 import styles from './App.module.css';
 
 const NotMoved = lazy(() => import('./NotMoved'));
+
+// odpowiedź /api/me co 30 s: to, co mogło się zmienić bez udziału gracza
+function onMe(me: any) {
+  noteQuest(me.quest);
+  if (me.achUnseen && !S.opening) achPoll();
+  if (me.messages?.length) showMessages(me.messages);
+}
 
 function Game() {
   const [failed, setFailed] = useState(false);
@@ -19,7 +30,14 @@ function Game() {
 
   useEffect(() => {
     let stop: undefined | (() => void), alive = true;
-    boot().then(() => { if (alive) stop = startPolling(() => {}); }).catch(() => setFailed(true));
+    onResponseHeaders({ achievements: achPoll });
+    boot().then(me => {
+      if (!alive) return;
+      noteQuest(me.quest);
+      startNotices(me);
+      if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
+      stop = startPolling(onMe);
+    }).catch(() => setFailed(true));
     return () => { alive = false; stop?.(); };
   }, []);
 
@@ -35,6 +53,7 @@ function Game() {
         </Routes>
       </Suspense>
       <Stage />
+      <Notices />
     </AppShell>
   );
 }

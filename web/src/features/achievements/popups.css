@@ -1,0 +1,10 @@
+#achToasts { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(76px, calc(env(safe-area-inset-bottom, 0px) + 76px)); z-index: 420; display: flex; flex-direction: column; gap: 10px; }
+.ach-popup { width: min(340px, calc(100vw - 32px)); display: flex; gap: 12px; padding: 12px 14px; border-radius: var(--radius-m); background: var(--raised); box-shadow: 0 16px 40px #000b; cursor: pointer; opacity: 0; transform: translateX(30px); transition: opacity .3s, transform .3s; }
+.ach-popup.in { opacity: 1; transform: none; }
+.ach-popup.out { opacity: 0; transform: translateX(30px); }
+.ach-pic { width: 36px; height: 36px; flex: none; color: var(--warn); }
+.ach-pic svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ach-txt { display: flex; flex-direction: column; min-width: 0; }
+.ach-txt small { color: var(--muted); font-size: 12px; }
+.ach-txt span { color: var(--muted); font-size: 14px; }
+.ach-txt em { font-style: normal; font-size: 13px; color: var(--warn); }

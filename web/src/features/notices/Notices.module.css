@@ -1,0 +1,4 @@
+.note { display: flex; flex-direction: column; gap: 6px; }
+.note header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.note p { white-space: pre-wrap; }
+.note ul { margin: 0; padding-left: 20px; color: var(--muted); }
