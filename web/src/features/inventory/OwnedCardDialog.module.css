@@ -1,0 +1,8 @@
+.grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+.card :global(.card) { width: 100%; --cw: 100%; }
+.side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--rule); }
+.lbl { min-width: 0; }
+.fav { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; color: var(--warn); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 620px) { .grid { grid-template-columns: minmax(0, 1fr); } .card { max-width: 240px; } }

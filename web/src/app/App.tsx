@@ -5,7 +5,10 @@ import svgDefs from '../cards/svgDefs.html?raw';
 import { boot, startPolling } from '../game/session';
 import { S, useGame } from '../game/store';
 import { Toaster } from '../ui/Toaster';
+import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
+import { InventoryPage } from '../features/inventory/InventoryPage';
+import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
@@ -20,6 +23,7 @@ const NotMoved = lazy(() => import('./NotMoved'));
 // odpowiedź /api/me co 30 s: to, co mogło się zmienić bez udziału gracza
 function onMe(me: any) {
   noteQuest(me.quest);
+  noteUfo(me);
   if (me.achUnseen && !S.opening) achPoll();
   if (me.messages?.length) showMessages(me.messages);
 }
@@ -34,6 +38,7 @@ function Game() {
     boot().then(me => {
       if (!alive) return;
       noteQuest(me.quest);
+      noteUfo(me);
       startNotices(me);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -49,6 +54,8 @@ function Game() {
         <Routes>
           <Route path="/" element={<Navigate to="/crates" replace />} />
           <Route path="/crates" element={<CratesPage />} />
+          <Route path="/inventory/*" element={<InventoryPage />} />
+          <Route path="/binder" element={<BinderPage />} />
           <Route path="*" element={<NotMoved />} />
         </Routes>
       </Suspense>

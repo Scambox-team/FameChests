@@ -1,0 +1,54 @@
+.modes { display: flex; gap: 4px; }
+.modes a { height: 36px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; color: var(--muted); }
+.modes a:hover { background: var(--raised); color: #fff; }
+.modes a[aria-current="page"] { background: #fff; color: #000; font-weight: 600; }
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }
+.chest { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-m); background: var(--surface); }
+.chestArt { width: 52px; flex: none; display: block; }
+.chestArt svg { display: block; width: 100%; }
+.chestText { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.chestText b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(98px, 1fr)); gap: 8px; }
+.counts button { height: 61px; padding: 10px 12px; border: 0; border-radius: var(--radius-m); background: var(--surface); text-align: left; display: flex; flex-direction: column; min-width: 0; transition: background .12s; }
+.counts button:hover { background: #1a1a1f; }
+.counts button[aria-pressed="true"] { background: var(--raised); box-shadow: inset 0 0 0 1.5px var(--hue); }
+.counts span { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.counts i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.counts b { font-size: 17px; line-height: 21px; font-weight: 600; }
+
+.tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sort { margin-left: auto; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap); }
+.tile { position: relative; border-radius: 10px; cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 260px; }
+.tile :global(.card) { width: 100%; --cw: 100%; }
+.sel { outline: 3px solid var(--hue); outline-offset: 2px; }
+.pin { position: absolute; z-index: 6; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #000000c4; color: #fff; opacity: 0; transition: opacity .12s; }
+.tile:hover .pin, .tile:focus-within .pin, .pin.on { opacity: 1; }
+.fav { top: -6px; right: -6px; }
+.fav.on { color: var(--warn); }
+.zoom { top: -6px; left: -6px; }
+@media (hover: none) { .pin { opacity: 1; } }
+.empty { grid-column: 1 / -1; padding: 40px 0; text-align: center; color: var(--muted); }
+.more { display: flex; justify-content: center; }
+
+.sellbar { position: sticky; bottom: 12px; z-index: 15; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--radius-m); background: var(--raised); box-shadow: 0 12px 32px #000a; }
+.selInfo { margin-right: auto; font-weight: 500; }
+@media (max-width: 820px) { .sellbar { bottom: 72px; } .sort { margin-left: 0; } }
+
+/* Hall of Fame */
+.hofHead { padding: 16px; border-radius: var(--radius-m); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.hofHead h3 { font: 800 18px/24px var(--display); }
+.recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.recentItem { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.thumb { width: 44px; height: 58px; flex: none; padding: 0; border: 2px solid var(--rc, #666); border-radius: 6px; overflow: hidden; background: var(--raised); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.hofGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--gap); }
+.hofCard { display: flex; gap: 12px; padding: 12px; border-radius: var(--radius-m); background: var(--surface); min-width: 0; content-visibility: auto; contain-intrinsic-size: auto 110px; }
+.hofNone { opacity: .6; }
+.hofInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.hofVar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; gap: 8px; font-size: 13px; align-items: center; }
+.hofVar span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 480px) { .hofGrid { grid-template-columns: minmax(0, 1fr); } }

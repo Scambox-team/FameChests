@@ -1,0 +1,13 @@
+.search { display: flex; align-items: center; gap: 8px; height: 40px; width: 300px; max-width: 100%; padding: 0 14px; border: 1px solid var(--control); border-radius: 999px; background: var(--surface); color: var(--muted); }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--text); }
+.search input::placeholder { color: var(--muted); }
+.search:focus-within { border-color: var(--hue); }
+.select { position: relative; display: inline-flex; align-items: center; max-width: 100%; }
+.select select { appearance: none; height: 40px; max-width: 100%; padding: 0 34px 0 14px; border: 1px solid var(--control); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+.select select option { background: var(--surface); }
+.select svg { position: absolute; right: 12px; pointer-events: none; color: var(--muted); }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { height: 36px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: none; color: var(--muted); transition: background .12s, color .12s; }
+.tabs button:hover { background: var(--raised); color: #fff; }
+.tabs button[aria-selected="true"] { background: #fff; color: #000; font-weight: 600; }
+.tabs small { font-size: 12px; opacity: .75; }
