@@ -38,7 +38,7 @@ function vrStatus(v) {
   return {
     cls: live ? "live" : cfg.enabled ? "on" : "off",
     txt: live ? "⏰ wydarzenie trwa" : cfg.enabled ? "✅ włączony" : "⛔ wyłączony",
-    extra: [planned ? `📅 ${planned}` : "", crates !== null && cfg.enabled ? `📦 ${crates}` : ""].filter(Boolean).join(" "),
+    extra: [planned ? `📅 ${planned}` : "", crates !== null && cfg.enabled ? `📦 ${crates}` : "", VR_SOURCES[V.extraSource]?.chip || ""].filter(Boolean).join(" "),
   };
 }
 
@@ -52,6 +52,10 @@ function vrCardHTML(pid, v) {
 }
 
 function renderVariants() {
+  if (VR.questOn === undefined) {   // stan questów do „Gdzie wypada teraz” (nagroda Wanted)
+    VR.questOn = null;
+    api("/api/admin/quests").then(d => { VR.questOn = d.enabled; if (currentView() === "variants" && VR.tab !== "proposals") renderVariants(); }).catch(() => {});
+  }
   const list = vrList();
   if (!list.includes(VR.variant)) VR.variant = list[0];
   if (!person(VR.pid) || person(VR.pid).masked) VR.pid = Object.values(S.cfg.people).find(p => !p.masked && !isSpecialCard(p))?.id;
@@ -209,6 +213,26 @@ function vrPinnable(v) { const V = vrV(v); return (!V.cards || V.crateOnly) && !
 
 // gdzie wariant może wypaść TERAZ: każda skrzynka (bez skrzynki kart specjalnych) z powodem i przełącznikiem "przypięty"
 // - każdy wariant wypada tylko ze skrzynek, do których jest przypięty (catalog.drop_variants)
+// warianty, które wypadają też poza skrzynkami - nawet wyłączone (extraSource w game.json)
+const VR_SOURCES = {
+  quest: { chip: "🎯 quest", title: "🎯 Nagroda za codzienny quest" },
+  market: { chip: "🧾 rynek", title: "🧾 Premia kupującego na rynku" },
+  marketSeller: { chip: "💰 rynek", title: "💰 Premia sprzedającego na rynku" },
+};
+function vrExtraHTML(v) {
+  const V = vrV(v), src = VR_SOURCES[V.extraSource];
+  if (!src) return "";
+  const pct = n => `${String(Math.round(n * 1000) / 10).replace(".", ",")}%`, m = S.cfg.market || {};
+  const metals = m.bonusSeller || [], sum = metals.reduce((a, x) => a + vrV(x).chance, 0);
+  const off = vrCfg(v).enabled ? "" : " Ten wariant jest wyłączony, ale stąd i tak wypada.";
+  const text = V.extraSource === "quest"
+    ? `Codzienne questy są teraz <b>${VR.questOn == null ? "…" : VR.questOn ? "włączone ✅" : "wyłączone ⛔"}</b> (panel admina → 🎯 Codzienne questy). Pierwszy gracz, który wypełni questa, dostaje kartę w tym wariancie.`
+    : V.extraSource === "market"
+    ? `Gdy ktoś kupi albo wylicytuje kartę na rynku, z szansą ${pct(m.bonusChance || 0)} dostaje też tę kartę w tym wariancie.`
+    : `Gdy zakup na rynku da premię (${pct(m.bonusChance || 0)}), sprzedający dostaje jeden z metali; ten wariant to ${pct(sum ? V.chance / sum : 0)} tych premii.`;
+  return `<div class="vr-extra"><b>${src.title}</b><p class="small">${text}${off}</p></div>`;
+}
+
 function vrWhereHTML(v) {
   const V = vrV(v), on = vrCfg(v).enabled, pin = vrPinnable(v);
   const rows = vrShopCrates().map(c => {
@@ -227,7 +251,7 @@ function vrWhereHTML(v) {
         <input type="checkbox" data-pin="${c.id}"${inCrate ? " checked" : ""}><span>📌</span></label>` : ""}</div>`;
   }).join("");
   const pinned = vrShopCrates().filter(c => (c.variants || []).includes(v)).length;
-  return `<div class="vr-where-head"><h3 class="stk-h">📦 Gdzie wypada teraz</h3>${pin ? `<span class="vr-pin-all">
+  return `${vrExtraHTML(v)}<div class="vr-where-head"><h3 class="stk-h">📦 Gdzie wypada teraz</h3>${pin ? `<span class="vr-pin-all">
       <span class="muted small">📌 przypięty do <b>${pinned}</b> z ${vrShopCrates().length}</span>
       <button class="btn tiny" type="button" data-pinall="1">📌 Przypnij do wszystkich</button>
       <button class="btn tiny" type="button" data-pinall="0">Odepnij od wszystkich</button></span>` : ""}</div>

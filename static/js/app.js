@@ -9,7 +9,7 @@ const fmt = n => Math.round(n).toLocaleString("pl-PL") + " gr";   // waluta gry:
 
 const COUNT_CHIPS = [1, 2, 3, 5, 10, 15, 20];
 const INV_PAGE = 120;
-const VARIANT_TAGS = { anime: "🌸 ANIME", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 const GEMS = ["emerald", "amethyst", "ruby", "sapphire", "diamond", "blackdiamond"];  // warianty z kamieniami szlachetnymi - wspólny wygląd, inne kolory
 
 const S = {
@@ -112,7 +112,7 @@ function variantEvent(v, crateId, now = Date.now() / 1000) {
   return (S.cfg.variantCfg?.[v]?.events || []).find(e => e.start <= now && now < e.end && (!e.crates.length || e.crates.includes(crateId))) || null;
 }
 // wariant już był w grze (włączony kiedykolwiek albo po wydarzeniu) - tylko takie pokazujemy w klaserze
-function variantReleased(v) { return S.cfg.variantCfg?.[v]?.released ?? !S.cfg.variants[v]?.off; }
+function variantReleased(v) { return !!S.cfg.variants[v]?.extraSource || (S.cfg.variantCfg?.[v]?.released ?? !S.cfg.variants[v]?.off); }
 // szansa na wariant z mnożnikiem trwającego wydarzenia w tej skrzynce
 function vChance(v, crate) { return S.cfg.variants[v].chance * (variantEvent(v, crate?.id)?.boost || 1); }
 // Warianty, w których ta karta może istnieć (jak catalog.possible_variants): zwykłe zawsze, wyjątkowe tylko z jej skrzynek,
@@ -969,6 +969,10 @@ const anSfx = (t, x, y, r, cls = "") => `<b class="an-sfx ${cls}" style="left:${
 // COVID: cząsteczki wirusa w świetle kogutów (trzy obrazki w CSS: --cvd-v1...3)
 const cvdFloats = n => Array.from({ length: n }, (_, k) => `<i class="cvd-float v${k % 3 + 1}" style="left:${vxN(4, 92)}%;top:${vxN(2, 78)}%;--s:${vxN(.8, 2.4, 2)};animation-delay:-${vxN(0, 12, 1)}s"></i>`).join("");
 
+// Biała / Czarna (skrzynka szachów): relief figur pod zdjęciem; ornamenty to obrazki w CSS (cards2.css)
+const CS_RELIEF = `<i class="cs-relief">${[..."♜♞♝♛♚♝♞♜"].map(c => `<b>${c}︎</b>`).join("")}</i>`;
+const CS_CORNERS = c => ["tl", "tr", "bl", "br"].map(k => `<i class="${c} ${k}"></i>`).join("");
+
 function dmImages() {
   if (dmImages.done) return;
   dmImages.done = true;
@@ -1043,6 +1047,8 @@ const apScratches = n => Array.from({ length: n }, () =>
   `<i class="ap-scratch" style="left:${vxN(2, 96)}%;animation-delay:-${vxN(0, 6, 1)}s;animation-duration:${vxN(1.2, 3, 1)}s"></i>`).join("");
 const VX_BG = {
   anime: anSpeed,
+  chesswhite: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
+  chessblack: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   covid: () => `<i class="cvd-beam"></i>${cvdFloats(11)}`,
   scratch: () => `${zdStars(26)}<i class="zd-line a">5 ZŁ ★ 50 ZŁ ★ 500 ZŁ ★ 5 000 ZŁ</i><i class="zd-line b">CENA LOSU 500 GR ★ SZANSA 1:4,2</i>`,
   teletext: () => '<i class="tt-bars"></i><i class="tt-grid"></i><i class="tt-ticker"><b>PRZEPRASZAMY ZA USTERKI +++ AWARIA NADAJNIKA +++ ZARAZ WRACAMY +++ NIE REGULUJ ODBIORNIKA +++ </b></i>',
@@ -1086,6 +1092,8 @@ const VX_BG = {
 };
 const VX_PHOTO = {
   scratch: uid => scratchPhoto(uid),   // scratch.js: folia do zdrapania / zdrapana / pokaz (bez numeru egzemplarza)
+  chesswhite: `<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn">${CS_CORNERS("cs-v")}<i class="cs-crest"></i></i>`,
+  chessblack: '<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn"><i class="cs-beads"></i></i>',
   covid: '<i class="vx-photo cvd-tint"></i><b class="cvd-scale"><u></u>100 nm</b>',
   receipt: '<i class="vx-photo rc-dots"></i>',
   muertos: '<i class="vx-photo dm-f1"></i>',
@@ -1115,6 +1123,8 @@ const VX_DECO = {
   // Día de Muertos: płatki i konfetti, motyle, zygzak, chorągiewki, pas aksamitek
   tarot: () => `<div class="vx-deco">${trCorners()}<i class="tr-frame"></i></div>`,
   retroos: () => `<div class="vx-deco vx-clip">${w9Dialogs()}</div>`,
+  chesswhite: () => `<div class="vx-deco"><i class="cs-rline"></i>${CS_CORNERS("cs-vc")}</div>`,
+  chessblack: () => '<div class="vx-deco"><i class="cs-beads card"></i><u class="cs-pearl a"></u><u class="cs-pearl b"></u><u class="cs-pearl c"></u><u class="cs-pearl d"></u></div>',
   covid: () => '<div class="vx-deco"><i class="cvd-sms"><b>⚠ KOMUNIKAT · TERAZ</b>Zostań w domu. Wychodź tylko, gdy to konieczne.</i></div>',
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
@@ -1254,6 +1264,7 @@ function cvDeco(k) {
 // pasek nad nazwą: okno terminala (Cyfrowa), napis WANTED
 function variantTop(variant, p) {
   const parts = variantParts(variant);
+  if (parts.includes("chesswhite") || parts.includes("chessblack")) return '<div class="cs-mark"><i></i>♚\uFE0E<i></i></div>';
   if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
   if (parts.includes("claude")) return '<div class="cl-app"><i class="cl-logo"></i><b>Claude</b><span><u></u>online</span></div>';
   if (parts.includes("scratch")) return '<div class="zd-title">ZDRAP I WYGRAJ!</div>';
@@ -1289,6 +1300,8 @@ function variantSub(variant, pid) {
   if (parts.includes("receipt")) return "*** PARAGON FISKALNY ***";
   if (parts.includes("teletext")) return "PRZERWA W EMISJI";
   if (parts.includes("anime")) return "SEZON 1 · ODCINEK 12";
+  if (parts.includes("chesswhite")) return "BIAŁE";
+  if (parts.includes("chessblack")) return "CZARNE";
   if (parts.includes("covid")) return "SARS-CoV-2 · SYTUACJA NADZWYCZAJNA";
   if (parts.includes("claude")) return "Claude pisze…";
   if (parts.includes("scratch")) return "GŁÓWNA WYGRANA 100 000 ZŁ";
@@ -1713,7 +1726,7 @@ function setupInstall() {
 // ================================================================ ADRESY STRON
 // każda zakładka ma swój adres (/inventory...), profil gracza: /player/<nazwa>; "/" = skrzynki
 const VIEW_PATHS = { crates: "/crates", binder: "/binder", inventory: "/inventory", forge: "/forge", market: "/market", casino: "/casino",
-                     friends: "/friends", ranking: "/ranking", arena: "/arena", mockups: "/mockups",
+                     friends: "/friends", ranking: "/ranking", games: "/games", arena: "/arena", mockups: "/mockups",
                      stickers: "/stickers", variants: "/variants", designer: "/designer" };
 
 function viewPath(view) {
@@ -1767,6 +1780,8 @@ function switchView(view, how = "push") {
   if (view === "friends") renderFriends();
   if (view === "ranking") renderRanking();
   if (view === "profile") renderProfile();
+  if (view === "games") renderGames();
+  else chStop();
   if (view === "arena") renderArena();
   if (view === "mockups") renderMockups();
   if (view === "stickers") renderStickers();
@@ -1814,7 +1829,7 @@ function shopRotate(dir) {
 }
 
 function crateArtHTML(c, cls = "") {
-  return `<div class="crate-art ${cls}" style="${crateStyle(c)}">
+  return `<div class="crate-art crate-${c.id} ${cls}" style="${crateStyle(c)}">
     <div class="crate-box"><div class="crate-emblem">${esc(c.emoji)}</div></div><div class="crate-lid"></div><div class="crate-lock"></div></div>`;
 }
 
@@ -2105,6 +2120,8 @@ async function openCrates() {
   S.chests = res.chests || S.chests;
   applyState(res.state);
   S.opening.drops = res.drops;
+  S.opening.skins = res.skins;
+  if (res.skins?.length) await skLoad();   // do bębna figur potrzebny świeży katalog
   S.opening.ownedBefore = ownedBefore;
   runStage();
 }
@@ -2125,7 +2142,8 @@ function runStage() {
 
   const fitW = window.innerWidth - 40;
   const cols = Math.min(n <= 2 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, Math.max(1, Math.floor(fitW / 230)));
-  const rows = Math.ceil(n / cols);
+  const skins = o.skins || [];
+  const rows = Math.ceil(n / cols) * (skins.length ? 2 : 1);   // skrzynka szachów: karty na górze, figury na dole
   const gap = 12;
   reels.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   reels.style.maxWidth = n <= 2 ? "1100px" : "";
@@ -2144,31 +2162,35 @@ function runStage() {
   const rare = crateOf(o.crate).people.filter(id => rarityIdx(person(id).rarity) >= rarityIdx("gold"));
   reels.innerHTML = "";
   const now = performance.now();
-  o.reels = o.drops.map((drop, i) => {
-    const ids = Array.from({ length: STRIP }, () => weightedPerson(o.crate));
-    ids[WIN] = drop.person;
-    // czasem "prawie" - rzadka karta tuż obok wygranej
-    if (rare.length && Math.random() < 0.28) ids[WIN + (Math.random() < 0.5 ? -1 : 1)] = rare[Math.floor(Math.random() * rare.length)];
+  const addReel = (tiles, rarity, i, isCard) => {
     const el = document.createElement("div");
     el.className = "reel";
     el.style.setProperty("--rh", rh + "px");
     el.style.setProperty("--mw", mw + "px");
     el.style.setProperty("--gap", mgap + "px");
-    el.innerHTML = `<div class="strip">${ids.map((id, k) => miniHTML(id, k === WIN)).join("")}</div><div class="reel-marker"></div>`;
+    el.innerHTML = `<div class="strip">${tiles}</div><div class="reel-marker"></div>`;
     reels.appendChild(el);
     const strip = el.firstElementChild;
     const step = mw + mgap;
     const center = cellW / 2;
     let off = rand(-0.42, 0.42) * mw, egg = 0;
-    if (S.cfg.easterEgg && Math.random() < S.cfg.easterEgg.chance) [off, egg] = eggSpot(step, mw, center, WIN, off);
+    if (isCard && S.cfg.easterEgg && Math.random() < S.cfg.easterEgg.chance) [off, egg] = eggSpot(step, mw, center, WIN, off);
     const from = rand(0, step * 0.8);
     const to = -(WIN * step + mw / 2 + off) + center;
     strip.style.transform = `translate3d(${from}px, -50%, 0)`;
     if (egg) spinEgg(strip, egg);
     const dur = o.fast ? 700 : rand(5200, 6200);
     const delay = o.fast ? i * 18 : i * 70;
-    return { el, strip, drop, from, to, step, center, dur, start: now + delay, lastIdx: -1, done: false };
+    return { el, strip, rarity, isCard, from, to, step, center, dur, start: now + delay, lastIdx: -1, done: false };
+  };
+  o.reels = o.drops.map((drop, i) => {
+    const ids = Array.from({ length: STRIP }, () => weightedPerson(o.crate));
+    ids[WIN] = drop.person;
+    // czasem "prawie" - rzadka karta tuż obok wygranej
+    if (rare.length && Math.random() < 0.28) ids[WIN + (Math.random() < 0.5 ? -1 : 1)] = rare[Math.floor(Math.random() * rare.length)];
+    return addReel(ids.map((id, k) => miniHTML(id, k === WIN)).join(""), person(drop.person).rarity, i, true);
   });
+  skins.forEach((s, i) => o.reels.push(addReel(skStripHTML(s, o.crate, STRIP, WIN), s.rarity, i, false)));
 
   o.spinning = true;
   const easeSlow = t => 1 - Math.pow(1 - t, 4.2);
@@ -2184,10 +2206,10 @@ function runStage() {
       const x = r.from + (r.to - r.from) * ease(t);
       r.strip.style.transform = `translate3d(${x.toFixed(1)}px, -50%, 0)`;
       const idx = Math.floor((r.center - x) / r.step);
-      if (idx !== r.lastIdx) { if (r.lastIdx >= 0) Sound.tick(1 - t); r.lastIdx = idx; }
+      if (idx !== r.lastIdx) { if (r.lastIdx >= 0 && r.isCard) Sound.tick(1 - t); r.lastIdx = idx; }
       if (t >= 1) {
         r.done = true;
-        const rar = person(r.drop.person).rarity;
+        const rar = r.rarity;
         r.el.classList.add("landed", "r-" + rar);
         if (rarityIdx(rar) >= rarityIdx("gold")) r.el.classList.add("jackpot");
         r.el.style.setProperty("--rc", S.cfg.rarities[rar].color);
@@ -2252,7 +2274,7 @@ function showResults(afterEpic = false) {
       ${cardHTML(d.person, d.variant, d.id)}
       <div class="rbtns">${favBtnHTML(d.id, d.fav)}<button class="btn sell rsell" data-id="${d.id}" title="Sprzedaj" ${d.fav ? "disabled" : ""}>💰 ${fmt(d.value)}</button></div>
     </div>`;
-  }).join("");
+  }).join("") + (o.skins?.length ? `<div class="sk-res-head">Figury</div>${o.skins.map(skResultHTML).join("")}` : "");
 
   // najlepszy drop -> efekty
   let best = o.drops[0];
@@ -2292,7 +2314,7 @@ function showResults(afterEpic = false) {
       electric: ["#9fdcff", "#ffffff", "#4fb8ff"],
       synthwave: ["#ff2bd6", "#00e5ff", "#ffe14a", "#6a1fb8"], motor: ["#e8202f", "#f2f2f2", "#1b1b1b"],
       chocolate: ["#6b3a1f", "#d4a12a", "#ffe6c8", "#3a1a08"], candy: ["#ff5aa8", "#3ddc84", "#ffffff", "#ffd23f", "#4fb8ff"], hollywood: ["#ffd08a", "#e0683a", "#8a3a5a", "#1a2048"], cobalt: ["#3ab0ff", "#bfe6ff", "#1e4fd8", "#ffffff"], banana: ["#ffe14a", "#9ab82a", "#7a5414", "#fff6b0"],
-      covid: ["#e8101e", "#ffd21a", "#120304"], anime: ["#ff7a00", "#ffd21a", "#1f6bff", "#ffffff"], claude: ["#e88a55", "#f1e9db", "#1a1614"], scratch: ["#ffd21a", "#7a2ae0", "#c8ccd4"], teletext: ["#ffff00", "#00ffff", "#ff00ff", "#00ff00"], retroos: ["#008080", "#c0c0c0", "#000080"], receipt: ["#ffffff", "#d8d4cc", "#1a1a1a"], tarot: ["#e8c8ff", "#ffe8a8", "#6a2aa8"], muertos: ["#ff2f92", "#ffb81a", "#19d3c5", "#8a3dff", "#ff7a00"], uranium: ["#5dff1f", "#b6ff5a", "#d8ff8a"], mercury: ["#ffffff", "#c8d0d8", "#6a7480"], californium: ["#ffffff", "#dfe6f2", "#9aa2b0"], files: ["#e2c88a", "#b8201a", "#f8f4ea"], copper: ["#e8945a", "#c87533", "#5ab89e", "#8fd8c0"], reflective: ["#e6ff2a", "#d8dde2", "#ffffff"], usa: ["#f2f2f2", "#141414", "#8a8a8a"], apollo: ["#f2d27a", "#c8ccd4", "#f4f6f9"], komuna: ["#d4161f", "#111111", "#f6d77a"],
+      chesswhite: ["#fbf6ea", "#d8ccb0", "#1b1712"], chessblack: ["#1b1712", "#5a5040", "#fbf6ea"], covid: ["#e8101e", "#ffd21a", "#120304"], anime: ["#ff7a00", "#ffd21a", "#1f6bff", "#ffffff"], claude: ["#e88a55", "#f1e9db", "#1a1614"], scratch: ["#ffd21a", "#7a2ae0", "#c8ccd4"], teletext: ["#ffff00", "#00ffff", "#ff00ff", "#00ff00"], retroos: ["#008080", "#c0c0c0", "#000080"], receipt: ["#ffffff", "#d8d4cc", "#1a1a1a"], tarot: ["#e8c8ff", "#ffe8a8", "#6a2aa8"], muertos: ["#ff2f92", "#ffb81a", "#19d3c5", "#8a3dff", "#ff7a00"], uranium: ["#5dff1f", "#b6ff5a", "#d8ff8a"], mercury: ["#ffffff", "#c8d0d8", "#6a7480"], californium: ["#ffffff", "#dfe6f2", "#9aa2b0"], files: ["#e2c88a", "#b8201a", "#f8f4ea"], copper: ["#e8945a", "#c87533", "#5ab89e", "#8fd8c0"], reflective: ["#e6ff2a", "#d8dde2", "#ffffff"], usa: ["#f2f2f2", "#141414", "#8a8a8a"], apollo: ["#f2d27a", "#c8ccd4", "#f4f6f9"], komuna: ["#d4161f", "#111111", "#f6d77a"],
       vintage: ["#efe4cb", "#b8913d", "#6b4c22"], marble: ["#ffffff", "#d9d4c8", "#d4af37"], toxic: ["#5dff1f", "#b6ff3a", "#ffd400", "#0c1407"], reverse: ["#c9d6ff", "#ffffff", "#9ff6ff"], bw: ["#ffffff", "#111111", "#888888"],
       rzulty: ["#ffe600", "#fff6a0", "#ffffff"], flag: ["#ffffff", "#dc143c", "#ffcf3f"], halloween: ["#ff7a00", "#1a0a12", "#8a2be2", "#ffd84a"],
       lantern: ["#ffb347", "#ff7a00", "#fff1c1", "#3a1a06"], devil: ["#ff1a1a", "#b3001b", "#ffcf5a", "#120002"],
@@ -2585,7 +2607,7 @@ function chestTileHTML(kind, n) {
   const money = kind.startsWith("money_") ? S.cfg.moneyChests[kind.slice(6)] : null;
   const c = money || crateOf(kind);
   if (!c) return "";
-  const art = `<div class="crate-art chest-art" style="--crate-bg: linear-gradient(180deg, ${c.color1} 0 50%, ${c.color2} 50%); --crate-lid: linear-gradient(180deg, ${c.color1}, ${c.color2})">
+  const art = `<div class="crate-art chest-art crate-${kind}" style="--crate-bg: linear-gradient(180deg, ${c.color1} 0 50%, ${c.color2} 50%); --crate-lid: linear-gradient(180deg, ${c.color1}, ${c.color2})">
       <div class="crate-box"><div class="crate-emblem">${esc(c.emoji)}</div></div><div class="crate-lid"></div><div class="crate-lock"></div></div>`;
   const k = n => n.toLocaleString("pl-PL");
   return `<div class="chest-tile${money ? " money" : ""}${kind === "money_mega" ? " mega" : ""}">
@@ -2608,10 +2630,12 @@ function renderChestShelf() {
 }
 
 function renderInventory() {
-  const hof = S.inv.mode === "hof";
+  const hof = S.inv.mode === "hof", fig = S.inv.mode === "figures";
   $$("#invMode [data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === S.inv.mode));
-  $("#invCards").hidden = hof;
+  $("#invCards").hidden = hof || fig;
   $("#hofBody").hidden = !hof;
+  $("#figuresBody").hidden = !fig;
+  if (fig) return renderFigures();
   if (hof) return renderHallOfFame();
   renderChestShelf();
   const f = S.inv;
@@ -2653,7 +2677,7 @@ function ufoArrive() {
 }
 function ufoLeave() { if (!S.ufo?.abducting) S.ufo = null; }
 function ufoItemHTML() {
-  if (!S.ufo?.shown || S.ufo.abducting || S.inv.mode === "hof") return "";
+  if (!S.ufo?.shown || S.ufo.abducting || S.inv.mode !== "cards") return "";
   const p = person(S.ufo.pid);
   return p ? `<div class="inv-item ufo-item">${cardHTML(p.id, p.fixedVariant || "ufo")}</div>` : "";
 }
@@ -2735,7 +2759,7 @@ function updateSellbar() {
   $("#selInfo").textContent = `Zaznaczono ${sel.length}` + (sel.length ? ` (${fmt(sel.reduce((a, i) => a + i.value, 0))})` : "");
   $("#sellSel").disabled = !sel.length;
   $("#selNone").disabled = !sel.length;
-  $("#sellbar").hidden = currentView() !== "inventory" || S.inv.mode === "hof" || !S.items.length;
+  $("#sellbar").hidden = currentView() !== "inventory" || S.inv.mode !== "cards" || !S.items.length;
 }
 
 async function sellSelected() {
@@ -3100,6 +3124,7 @@ function bind() {
   renderHeader();
   noteUfo(me);
   noteQuest(me.quest);
+  noteMarketBonus(me.marketBonus);
   showRoute("replace");  // widok z adresu strony (/inventory, /player/nazwa...)
   setupInstall();
   updateSellbar();

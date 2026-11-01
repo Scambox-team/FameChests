@@ -12,12 +12,14 @@
   <link rel="stylesheet" href="{{ asset('css/fx.css') }}">
   <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
   <link rel="stylesheet" href="{{ asset('css/avatars.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/chess.css') }}">
 </head>
 <body>
   <header class="topbar">
     <div class="logo">⚙️ <span>Panel admina</span></div>
     <nav class="a-tabs">
-      <a class="active" href="/admin">📦 Skrzynki i karty</a>
+      <a id="tabMain" href="/admin">📦 Skrzynki i karty</a>
+      <a id="tabChess" href="/admin/chess">♟️ Szachy</a>
       <a href="/variants">✨ Warianty</a>
       <a href="/stickers">🎨 Naklejki</a>
       <a href="/designer">🖌️ Kreator wariantów</a>
@@ -37,9 +39,9 @@
     </aside>
 
     <section class="a-main">
-      <form class="panel a-crate-form" id="crateForm" autocomplete="off"></form>
+      <form class="panel a-crate-form a-both" id="crateForm" autocomplete="off"></form>
 
-      <div class="panel">
+      <div class="panel a-both">
         <div class="a-cards-head">
           <button class="a-collapse" type="button" id="cardsToggle" aria-expanded="true" title="Zwiń / rozwiń listę kart">▾</button>
           <h3 id="cardsTitle">Karty</h3>
@@ -122,11 +124,12 @@
 
       <div class="panel">
         <h3>🎯 Codzienne questy</h3>
-        <p class="muted small">Każdego dnia wszyscy gracze dostają ten sam cel: rzadką kartę albo dowolną kartę w rzadkim wariancie (tylko to, co da się teraz zdobyć).
+        <p class="muted small">Każdego dnia wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).
           Kto pierwszy, dostaje tę kartę w wariancie Wanted i jej wartość w groszach. Liczą się karty ze skrzynek, kuźni, ulepszacza i kasyna, nie z rynku ani wymian.</p>
         <label class="chk"><input type="checkbox" id="questOn"> Questy włączone</label>
         <button class="btn" id="questReroll" type="button">🎲 Wylosuj nowy cel na dziś</button>
         <div id="questInfo" class="muted small"></div>
+        <p class="muted small">🎯 Nagrodą jest wariant Wanted: wypada stąd, nawet gdy jest wyłączony na <a href="/variants">/variants</a> (dzięki temu nie wypada ze skrzynek ani gier).</p>
       </div>
 
       <div class="panel">
@@ -137,6 +140,17 @@
         <form id="horseForm" autocomplete="off">
           <div id="horseRows" class="a-horse-rows"></div>
           <button class="btn primary" type="submit">💾 Zapisz konie</button>
+        </form>
+      </div>
+
+      <div class="panel a-chess-only">
+        <h3>♟️ Skiny figur</h3>
+        <p class="muted small">Wszystkie skiny do szachów. Wyłączony skin nie wypada ze skrzynek, nie da się go założyć, a założony znika z planszy (zostaje zwykła figura).
+          Gracze go nie tracą: widzą go w ekwipunku i mogą sprzedać, a po włączeniu wraca na figurę. Zmiana rzadkości zmienia też cenę sprzedaży.
+          Nowy skin wymaga rysunku w kodzie, więc tutaj go nie dodasz.</p>
+        <form id="skinForm" autocomplete="off">
+          <div id="skinRows" class="a-skin-rows"></div>
+          <button class="btn primary" type="submit">💾 Zapisz skiny</button>
         </form>
       </div>
 
@@ -162,6 +176,7 @@
   </div>
 
   <div class="toasts" id="toasts"></div>
+  <script src="{{ asset('js/chess-skins.js') }}"></script>
   <script src="{{ asset('js/admin.js') }}"></script>
   <script src="{{ asset('js/achievements-admin.js') }}"></script>
 </body>

@@ -12,6 +12,7 @@ mod assets;
 mod horses;
 mod auth;
 mod catalog;
+mod chess;
 mod config;
 mod data;
 mod db;

@@ -490,6 +490,7 @@ pub async fn market_buy(State(st): State<AppState>, Me(me): Me, Path(lid): Path<
     add_state(&mut tx, cx.uid(), "balance", -l.price).await?;
     add_state(&mut tx, l.seller_id, "balance", after_fee(l.price)).await?;
     give_items(&mut tx, &cx.cat, &[l.item_id], cx.uid(), "transfer").await?;
+    market_bonus(&mut tx, &cx.cat, cx.uid(), l.seller_id, &l.person_id).await?;
     refund_offers(&mut tx, lid, now).await?;
     tx.commit().await?;
     metrics::counter!("scambox_market_trades_total", "kind" => "fixed").increment(1);
@@ -625,6 +626,7 @@ pub async fn market_offer_action(State(st): State<AppState>, Me(me): Me, Path((o
             .await?;
             add_state(&mut tx, me, "balance", after_fee(o.price)).await?;
             give_items(&mut tx, &cx.cat, &[l.item_id], o.buyer_id, "transfer").await?;
+            market_bonus(&mut tx, &cx.cat, o.buyer_id, me, &l.person_id).await?;
             refund_offers(&mut tx, l.id, now).await?;
             metrics::counter!("scambox_market_trades_total", "kind" => "offer").increment(1);
         }
@@ -847,6 +849,8 @@ pub async fn market_wanted_fill(
 /// Usuwany gracz: jego karty z rynku znikają razem z nim, pieniądze innych graczy wracają, jego własne propozycje,
 /// licytacje i zlecenia przepadają (pieniądze były już zabrane z jego konta)
 pub async fn market_forget_user(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
+    sqlx::query("DELETE FROM market_bonuses WHERE user_id = $1").bind(uid).execute(&mut *c).await?;
+    super::chess::chess_forget_user(&mut *c, uid).await?;
     let now = now();
     let listings = sqlx::query!("SELECT id, item_id FROM market_listings WHERE seller_id = $1 AND status = 'active'", uid)
         .fetch_all(&mut *c)

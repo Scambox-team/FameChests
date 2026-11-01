@@ -1,12 +1,12 @@
 //! Codzienny quest (domyślnie wyłączony, włącza admin w panelu): każdego dnia jeden wspólny cel dla wszystkich graczy -
-//! zdobyć konkretną rzadką kartę albo dowolną kartę w rzadkim wariancie. Kto pierwszy, dostaje tę samą kartę w wariancie
-//! Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
+//! zdobyć konkretną kartę od Epickiej wzwyż: Epicką zawsze w rzadkim wariancie, wyższą zwykłą albo w wariancie (losowo).
+//! Kto pierwszy, dostaje tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
 //!
 //! Quest losuje się przy pierwszym zapytaniu danego dnia (`daily_quests`, klucz = dzień). Liczą się tylko karty, które
 //! dopiero powstają (skrzynki, kuźnia, ulepszacz, kasyno) - kupno na rynku albo wymiana nie wypełnia questa, inaczej
 //! wygrywałby ten, kto akurat ma najwięcej pieniędzy.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use axum::extract::State;
 use rand::seq::SliceRandom;
@@ -18,7 +18,7 @@ use super::shop::today;
 use super::{ok, JsonBody};
 use crate::achievements::{self, parts};
 use crate::auth::Admin;
-use crate::catalog::Catalog;
+use crate::catalog::{Catalog, Crate, Person};
 use crate::data::g;
 use crate::db::{now, Conn};
 use crate::error::{bad, Res};
@@ -29,8 +29,11 @@ pub const REWARD_VARIANT: &str = "wanted";
 const ENABLED_KEY: &str = "quests_enabled";
 /// karty, które wypełniają questa: nowe, nie z rynku, wymiany ani nagród
 const SOURCES: [&str; 4] = ["drop", "contract", "upgrade", "casino"];
-/// rzadkości kart do questa
-const RARITIES: [&str; 3] = ["red", "gold", "ultra"];
+/// rzadkości kart do questa; Epicka tylko w wariancie
+const RARITIES: [&str; 4] = ["purple", "red", "gold", "ultra"];
+const EPIC: &str = "purple";
+/// najmniejsza szansa na trafienie celu z jednej skrzynki - niżej quest byłby praktycznie niewykonalny
+const MIN_ODDS: f64 = 1e-5;
 /// „rzadki wariant”: szansa na wariant przy wypadnięciu karty
 const VARIANT_CHANCE: (f64, f64) = (0.002, 0.02);
 const HISTORY: i64 = 14;
@@ -47,45 +50,56 @@ fn day() -> String {
     today().to_string()
 }
 
-/// Karty i warianty, które teraz naprawdę można zdobyć: skrzynka jest w sklepie, wariant włączony i do niej przypięty
-fn candidates(cat: &Catalog) -> (Vec<String>, Vec<String>) {
-    let shop: Vec<_> = cat.crates.values().filter(|c| c.shop && !c.restricted).collect();
-    let in_shop: HashSet<&str> = shop.iter().map(|c| c.id.as_str()).collect();
-    let cards = cat
-        .people
-        .values()
-        .filter(|p| RARITIES.contains(&p.rarity.as_str()) && p.crates.iter().any(|c| in_shop.contains(c.as_str())))
-        .map(|p| p.id.clone())
-        .collect();
-    let mut variants: Vec<String> = shop.iter().flat_map(|c| cat.drop_variants(c, None).0).collect();
-    variants.sort();
-    variants.dedup();
-    let (lo, hi) = VARIANT_CHANCE;
-    let gd = g();
-    variants.retain(|v| {
-        let x = gd.variant(v);
-        !x.combo
-            && !x.special
-            && !x.layer
-            && !x.always
-            && x.cards.is_empty()
-            && v != REWARD_VARIANT
-            && (lo..=hi).contains(&x.chance)
-    });
-    (cards, variants)
+/// Szansa na tę kartę z jednej skrzynki (wśród kart tej rzadkości wszystkie są równie prawdopodobne)
+fn card_odds(cat: &Catalog, cr: &Crate, p: &Person) -> f64 {
+    let people: Vec<_> = cat.crate_people(cr).filter(|x| !x.is_special()).collect();
+    let present: HashSet<&str> = people.iter().map(|x| x.rarity.as_str()).collect();
+    let total: f64 = present.iter().map(|r| cr.weight(r)).sum();
+    let same = people.iter().filter(|x| x.rarity == p.rarity).count() as f64;
+    if total > 0.0 && same > 0.0 { cr.weight(&p.rarity) / total / same } else { 0.0 }
 }
 
-/// Cel questa: (karta, wariant) - jedno z dwóch
-fn pick(cat: &Catalog) -> Option<(Option<String>, Option<String>)> {
-    let (cards, variants) = candidates(cat);
-    let mut rng = rand::thread_rng();
-    let card = cards.choose(&mut rng).map(|p| (Some(p.clone()), None));
-    let variant = variants.choose(&mut rng).map(|v| (None, Some(v.clone())));
-    if rng.gen_bool(0.5) {
-        card.or(variant)
-    } else {
-        variant.or(card)
+/// Karty, o które może być quest, z wariantami, w których teraz naprawdę wypadają: skrzynka jest w sklepie, karta w niej jest,
+/// wariant włączony i przypięty do tej skrzynki, a szansa na trafienie nie jest niemal zerowa (MIN_ODDS).
+fn candidates(cat: &Catalog) -> Vec<(String, bool, Vec<String>)> {
+    let gd = g();
+    let shop: Vec<_> = cat.crates.values().filter(|c| c.shop && !c.restricted).collect();
+    let (lo, hi) = VARIANT_CHANCE;
+    let mut out = vec![];
+    for p in cat.people.values().filter(|p| RARITIES.contains(&p.rarity.as_str())) {
+        let (mut best, mut variants) = (0.0_f64, vec![]);
+        for cr in shop.iter().filter(|c| p.crates.contains(&c.id)) {
+            let odds = card_odds(cat, cr, p);
+            best = best.max(odds);
+            variants.extend(cat.drop_variants(cr, Some(p)).0.into_iter().filter(|v| {
+                let x = gd.variant(v);
+                !x.combo
+                    && !x.special
+                    && !x.layer
+                    && !x.always
+                    && x.extra_source.as_deref() != Some("quest")
+                    && (lo..=hi).contains(&x.chance)
+                    && odds * x.chance >= MIN_ODDS
+            }));
+        }
+        variants.sort();
+        variants.dedup();
+        // epicka sama w sobie to za mało: bez wariantu quest byłby za łatwy
+        let plain = p.rarity != EPIC && best >= MIN_ODDS;
+        if plain || !variants.is_empty() {
+            out.push((p.id.clone(), plain, variants));
+        }
     }
+    out
+}
+
+/// Cel questa: konkretna karta; epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (losowo)
+fn pick(cat: &Catalog) -> Option<(Option<String>, Option<String>)> {
+    let list = candidates(cat);
+    let mut rng = rand::thread_rng();
+    let (pid, plain, variants) = list.choose(&mut rng)?;
+    let variant = if *plain && rng.gen_bool(0.5) { None } else { variants.choose(&mut rng).cloned() };
+    Some((Some(pid.clone()), variant))
 }
 
 async fn row_of(c: &mut Conn, day: &str) -> sqlx::Result<Option<QuestRow>> {
@@ -213,17 +227,19 @@ pub async fn admin_quests(State(st): State<AppState>, Admin(me): Admin) -> Res {
     if on {
         current(&mut c, &cat).await?;
     }
-    let (cards, variants) = candidates(&cat);
+    let list = candidates(&cat);
+    let (cards, variants): (usize, BTreeSet<&String>) = (list.len(), list.iter().flat_map(|c| &c.2).collect());
     let names: HashMap<&str, &str> = cat.people.values().map(|p| (p.id.as_str(), p.name.as_str())).collect();
     let list = history(&mut c, &cat, me.id).await?;
     let label = |q: &QuestView| match (&q.person, &q.variant) {
-        (Some(p), _) => names.get(p.as_str()).copied().unwrap_or(p).to_owned(),
+        (Some(p), Some(v)) => format!("{} w wariancie {}", names.get(p.as_str()).copied().unwrap_or(p), g().variant(v).name),
+        (Some(p), None) => names.get(p.as_str()).copied().unwrap_or(p).to_owned(),
         (_, Some(v)) => format!("dowolna karta w wariancie {}", g().variant(v).name),
         _ => String::new(),
     };
     let history: Vec<_> =
         list.iter().map(|q| json!({"day": q.day, "target": label(q), "winner": q.winner, "money": q.money})).collect();
-    ok(json!({"enabled": on, "day": day(), "history": history, "cards": cards.len(), "variants": variants.len()}))
+    ok(json!({"enabled": on, "day": day(), "history": history, "cards": cards, "variants": variants.len()}))
 }
 
 #[derive(Deserialize)]

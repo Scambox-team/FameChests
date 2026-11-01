@@ -446,6 +446,11 @@ pub fn build_with_variants(crate_rows: &[OverrideRow], card_rows: &[OverrideRow]
         people.into_iter().map(|(pid, p)| (pid.clone(), check_card(pid, p, &crates))).collect();
 
     // ---- skrzynki: lista kart (numery), cena, warianty, szanse
+    // Skrzynka Czarnych ma zawsze te same karty co Skrzynka Białych: admin dodaje je tylko do jednej
+    let (white, black) = (&g.chess.crate_white, &g.chess.crate_black);
+    for p in persons.values_mut().filter(|p| p.crates.contains(white) && !p.crates.contains(black)) {
+        p.crates.push(black.clone());
+    }
     let mut out_crates: IndexMap<String, Crate> = IndexMap::new();
     let mut final_ids: IndexSet<String> = IndexSet::new();
     for (cid, c) in crates {
@@ -829,6 +834,7 @@ impl Catalog {
     pub fn variant_released(&self, v: &str) -> bool {
         let now = crate::db::now();
         !g().variant(v).off
+            || g().variant(v).extra_source.is_some()
             || self.vs.cfg.get(v).is_some_and(|s| s.released)
             || self.vs.enabled(v)
             || self.vs.events(v).iter().any(|e| e.start as f64 <= now)

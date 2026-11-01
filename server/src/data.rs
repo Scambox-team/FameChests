@@ -61,6 +61,8 @@ pub struct VariantDef {
     pub styles: Vec<String>,
     /// domyślnie wyłączony (nie wypada, nie jest celem ulepszacza)
     pub off: bool,
+    /// wypada też poza skrzynkami, nawet wyłączony: "quest", "market" (kupujący), "marketSeller" (sprzedający)
+    pub extra_source: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -89,6 +91,41 @@ pub struct MarketCfg {
     pub max_wanted: i64,
     pub auction_hours: Vec<i64>,
     pub snipe_seconds: f64,
+    /// szansa na premię przy zakupie: kupujący dostaje wariant bonus_buyer, sprzedający jeden z bonus_seller
+    pub bonus_chance: f64,
+    pub bonus_buyer: String,
+    pub bonus_seller: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChessCfg {
+    pub minutes: Vec<i64>,
+    pub increment_ms: i64,
+    pub open_hours: f64,
+    pub rewards_per_day: i64,
+    pub min_plies: usize,
+    /// skrzynka za wygraną białymi / czarnymi; czarna ma te same karty co biała (mirror w catalog.rs)
+    pub crate_white: String,
+    pub crate_black: String,
+}
+
+/// Skin do figur szachowych: działa jak karta (rzadkość), ale leży w osobnej tabeli - nie ma rynku, wymian ani kasyna
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+pub struct ChessSkin {
+    pub id: String,
+    pub name: String,
+    /// figury, do których wypada: k, q, r, b, n, p
+    pub pieces: Vec<String>,
+    pub rarity: String,
+    pub desc: String,
+    /// false = wyłączony w panelu admina (tabela chess_skin_settings): nie wypada, nie da się go założyć, na planszy zwykła figura
+    #[serde(default = "skin_on")]
+    pub enabled: bool,
+}
+
+fn skin_on() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -266,6 +303,8 @@ pub struct GameData {
     pub arena_visuals: Value,
     pub max_ability_effects: usize,
     pub market: MarketCfg,
+    pub chess: ChessCfg,
+    pub chess_skins: Vec<ChessSkin>,
     pub market_json: Value,
     pub roulette: RouletteCfg,
     pub roulette_json: Value,
@@ -436,6 +475,8 @@ impl GameData {
             arena_visuals: v("arenaVisuals"),
             max_ability_effects: get(&raw, "maxAbilityEffects")?,
             market: get(&raw, "market")?,
+            chess: get(&raw, "chess")?,
+            chess_skins: get(&raw, "chessSkins")?,
             market_json: v("market"),
             roulette: get(&raw, "roulette")?,
             roulette_json: {

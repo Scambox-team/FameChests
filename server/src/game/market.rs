@@ -8,7 +8,45 @@ use sqlx::PgPool;
 use crate::catalog::Catalog;
 use crate::data::g;
 use crate::db::{now, Conn};
-use crate::game::{add_state, give_items};
+use crate::game::{add_state, give_items, hidden_users, insert_for, roll::choose_weighted};
+
+/// Premia przy zakupie na rynku (kupno, przyjęta propozycja, wygrana licytacja): z szansą bonusChance kupujący dostaje
+/// tę kartę w wariancie Paragon, a sprzedający w jednym z metali - losowo, wg szans tych wariantów w skrzynkach. Oba warianty
+/// wypadają stąd nawet wyłączone. Powiadomienie: market_bonuses, oddawane raz przez /api/me.
+pub async fn market_bonus(c: &mut Conn, cat: &Catalog, buyer: i64, seller: i64, pid: &str) -> sqlx::Result<()> {
+    let m = &g().market;
+    if cat.person(pid).is_none_or(|p| p.is_special()) || rand::random::<f64>() >= m.bonus_chance {
+        return Ok(());
+    }
+    let weights: Vec<f64> = m.bonus_seller.iter().map(|v| g().variant(v).chance).collect();
+    let Some(metal) = choose_weighted(&weights).map(|i| &m.bonus_seller[i]) else { return Ok(()) };
+    let hidden = hidden_users(&mut *c).await?;
+    for (uid, variant, role) in [(buyer, &m.bonus_buyer, "buyer"), (seller, metal, "seller")] {
+        insert_for(c, cat, uid, hidden.contains(&uid), pid, variant, "market").await?;
+        sqlx::query("INSERT INTO market_bonuses (user_id, person_id, variant, role, at) VALUES ($1, $2, $3, $4, $5)")
+            .bind(uid)
+            .bind(pid)
+            .bind(variant)
+            .bind(role)
+            .bind(now())
+            .execute(&mut *c)
+            .await?;
+    }
+    Ok(())
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct BonusNote {
+    pub person_id: String,
+    pub variant: String,
+    pub role: String,
+}
+
+/// Premie z rynku czekające na gracza (każda pokazuje się raz)
+pub async fn take_bonus_notes(c: &mut Conn, uid: i64) -> sqlx::Result<Vec<BonusNote>> {
+    sqlx::query_as("DELETE FROM market_bonuses WHERE user_id = $1 RETURNING person_id, variant, role").bind(uid).fetch_all(c).await
+}
 
 /// Rodzaj oferty na rynku
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, sqlx::Type)]
@@ -224,6 +262,7 @@ pub async fn settle_market(pool: &PgPool, cat: &Catalog) -> sqlx::Result<()> {
                 .execute(&mut *tx)
                 .await?;
             give_items(&mut tx, cat, &[l.item_id], top.bidder_id, "transfer").await?;
+            market_bonus(&mut tx, cat, top.bidder_id, l.seller_id, &l.person_id).await?;
             add_state(&mut tx, l.seller_id, "balance", after_fee(top.amount)).await?;
             metrics::counter!("scambox_market_trades_total", "kind" => "auction").increment(1);
         } else {

@@ -297,26 +297,39 @@ pub async fn insert_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, sourc
 
 /// insert_item bez sprawdzania codziennego questa (nagroda za questa nie może wypełnić kolejnego)
 pub async fn insert_plain(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source: &str) -> sqlx::Result<NewItem> {
+    insert_for(c, &cx.cat, cx.uid(), cx.me.hidden_from_ranking(), pid, variant, source).await
+}
+
+/// insert_plain dla dowolnego gracza - także takiego, który nie wysłał tego zapytania (premie z rynku, licytacje)
+pub async fn insert_for(
+    c: &mut Conn,
+    cat: &Catalog,
+    uid: i64,
+    hidden: bool,
+    pid: &str,
+    variant: &str,
+    source: &str,
+) -> sqlx::Result<NewItem> {
     let now = now();
-    let new_for_me = note_collected(c, cx.uid(), pid, variant, source).await?;
-    crate::achievements::count_card(c, cx.uid(), &cx.cat.people[pid], variant).await?;
+    let new_for_me = note_collected(c, uid, pid, variant, source).await?;
+    crate::achievements::count_card(c, uid, &cat.people[pid], variant).await?;
     let id = sqlx::query_scalar!(
         "INSERT INTO items (person_id, holo, variant, created_at, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         pid,
         (variant != "normal") as i32,
         variant,
         now,
-        cx.uid()
+        uid
     )
     .fetch_one(&mut *c)
     .await?;
     let first =
-        if source != "casino" { note_hall_of_fame(c, cx, pid, variant, source, now, new_for_me).await? } else { false };
+        if source != "casino" { note_hall_of_fame(c, uid, hidden, pid, variant, source, now, new_for_me).await? } else { false };
     Ok(NewItem {
         id,
         person: pid.into(),
         variant: variant.into(),
-        value: cx.cat.people[pid].value(variant),
+        value: cat.people[pid].value(variant),
         created: now,
         fav: false,
         first,
@@ -326,9 +339,11 @@ pub async fn insert_plain(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, sour
 /// Hall of Fame: kto pierwszy zdobył tę kartę w tym wariancie (i kiedy) + ile ich w ogóle wypadło.
 /// true, gdy gracz trafia do Hall of Fame jako pierwszy (ukryci gracze się nie liczą - liczy się pierwszy widoczny).
 /// new_for_me: gracz nie miał wcześniej tej karty w tym wariancie (note_collected).
+#[allow(clippy::too_many_arguments)]
 async fn note_hall_of_fame(
     c: &mut Conn,
-    cx: &Ctx,
+    uid: i64,
+    hidden_me: bool,
     pid: &str,
     variant: &str,
     source: &str,
@@ -340,7 +355,7 @@ async fn note_hall_of_fame(
          VALUES ($1, $2, $3, $4, $5, 0) ON CONFLICT (person_id, variant) DO NOTHING",
         pid,
         variant,
-        cx.uid(),
+        uid,
         now,
         source
     )
@@ -350,7 +365,7 @@ async fn note_hall_of_fame(
     sqlx::query!("UPDATE hall_of_fame SET drops = drops + 1 WHERE person_id = $1 AND variant = $2", pid, variant)
         .execute(&mut *c)
         .await?;
-    if cx.me.hidden_from_ranking() {
+    if hidden_me {
         return Ok(false);
     }
     if inserted == 1 {
@@ -371,7 +386,7 @@ async fn note_hall_of_fame(
     }
     // brak widocznego wpisu (stare wpisy bez daty, karta tylko z kasyna / rynku) NIE znaczy, że jestem pierwszy
     let first = hof_first(c, pid, variant, None).await?;
-    Ok(first.is_some_and(|f| f.0 == cx.uid()))
+    Ok(first.is_some_and(|f| f.0 == uid))
 }
 
 pub async fn hidden_users(c: &mut Conn) -> sqlx::Result<HashSet<i64>> {

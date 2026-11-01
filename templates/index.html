@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="{{ asset('css/stickers.css') }}">
   <link rel="stylesheet" href="{{ asset('css/designer.css') }}">
   <link rel="stylesheet" href="{{ asset('css/drawing.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/chess.css') }}">
   <link rel="stylesheet" href="{{ asset('css/scratch.css') }}">
   <link rel="stylesheet" href="{{ asset('css/variants.css') }}">
   <link rel="stylesheet" href="{{ asset('css/variant-mockups.css') }}">
@@ -149,6 +150,7 @@
       <a class="tab" href="/casino" data-view="casino"><span class="ti">🎰</span><span class="tl">Kasyno</span> <span class="badge alert" id="casinoBadge" hidden>0</span></a>
       <a class="tab" href="/friends" data-view="friends"><span class="ti">👥</span><span class="tl">Znajomi</span> <span class="badge alert" id="friendsBadge" hidden>0</span></a>
       <a class="tab" href="/ranking" data-view="ranking"><span class="ti">🏆</span><span class="tl">Ranking</span></a>
+      <a class="tab" href="/games" data-view="games"><span class="ti">🎮</span><span class="tl">Gry</span></a>
       <a class="tab" href="/arena" data-view="arena"><span class="ti">⚔️</span><span class="tl">Arena</span></a>
     </nav>
     <div class="top-right">
@@ -247,12 +249,14 @@
 
     <!-- EKWIPUNEK -->
     <!-- ARENA (mock-up minigry) -->
+    <section class="view" id="view-games"><div id="gamesBody"></div></section>
+
     <section class="view" id="view-arena">
       <div id="arenaBody"></div>
     </section>
 
     <section class="view" id="view-inventory">
-      <div class="seg inv-mode" id="invMode"><button data-mode="cards">🎒 Moje karty</button><button data-mode="hof">🏆 Hall of Fame</button></div>
+      <div class="seg inv-mode" id="invMode"><button data-mode="cards">🎒 Moje karty</button><button data-mode="figures">♟️ Figury</button><button data-mode="hof">🏆 Hall of Fame</button></div>
       <div id="invCards">
       <div class="panel chest-shelf" id="chestShelf" hidden></div>
       <div class="inv-toolbar">
@@ -273,6 +277,7 @@
       <div class="inv-grid" id="invGrid"></div>
       <div class="inv-more"><button class="btn" id="invMore">Pokaż więcej</button></div>
       </div>
+      <div id="figuresBody" hidden></div>
       <div id="hofBody" hidden></div>
     </section>
 
@@ -372,6 +377,8 @@
   <script src="{{ asset('js/drawing.js') }}"></script>
   <script src="{{ asset('js/scratch.js') }}"></script>
   <script src="{{ asset('js/quests.js') }}"></script>
+  <script src="{{ asset('js/chess-skins.js') }}"></script>
+  <script src="{{ asset('js/chess.js') }}"></script>
   <script src="{{ asset('js/variant-mockups.js') }}"></script>
   <script src="{{ asset('js/variants.js') }}"></script>
   <script src="{{ asset('js/app.js') }}"></script>

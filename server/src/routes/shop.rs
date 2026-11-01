@@ -224,6 +224,8 @@ struct OpenResponse {
     state: GameState,
     from_inventory: i64,
     chests: Chests,
+    /// skiny figur ze skrzynek szachów: każda otwarta skrzynka daje kartę i skin
+    skins: Vec<super::chess::SkinDrop>,
 }
 
 pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<OpenRequest>) -> Res {
@@ -266,6 +268,7 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
         let (person, variant) = roll(&cx.cat, cr).ok_or_else(|| AppError::bad("Ta skrzynka jest pusta"))?;
         drops.push(insert_item(&mut tx, &cx, &person.id, &variant, "drop").await?);
     }
+    let skins = super::chess::drop_skins(&mut tx, cx.uid(), cr, req.count).await?;
     let discovered = note_drops(&mut tx, &cx, &drops_of(&drops), "drop").await?;
     let persons: Vec<String> = drops.iter().map(|d| d.person.clone()).collect();
     crate::achievements::count_open(&mut tx, cx.uid(), &cr.id, req.count, &persons).await?;
@@ -273,7 +276,7 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
     let chests = get_chests(&mut tx, &cx.cat, cx.uid()).await?;
     tx.commit().await?;
     metrics::counter!("scambox_crates_opened_total", "crate" => cr.id.clone()).increment(req.count.unsigned_abs());
-    ok(OpenResponse { drops, discovered, state, from_inventory: from_inv, chests })
+    ok(OpenResponse { drops, discovered, state, from_inventory: from_inv, chests, skins })
 }
 
 #[derive(Deserialize, Default)]

@@ -316,6 +316,7 @@ async function mkBuy(id) {
   if (S.state.balance < l.price) { Sound.error(); return toast("Za mało pieniędzy!", true); }
   if (!confirm(`Kupić ${person(l.person).masked ? "tajną kartę" : person(l.person).name}${isSpecial(l.variant) ? ` (${variantName(l.variant)})` : ""} za ${fmt(l.price)}?`)) return;
   const res = await mkAction(() => api(`/api/market/${id}/buy`, {}));
+  refreshBadgesSoon();   // premia z rynku (paragon) przychodzi z /api/me
   if (!res) return;
   S.items = [res.item, ...S.items].sort((a, b) => b.id - a.id);
   noteCollected([res.item]);
@@ -454,4 +455,14 @@ function bindMarket() {
       return drawMarket();
     }
   });
+}
+
+// premie przy zakupie na rynku (20%): kupujący - Paragon, sprzedający - metal; serwer oddaje każdą raz przez /api/me
+function noteMarketBonus(list) {
+  (list || []).forEach(b => {
+    const name = person(b.personId)?.name || "karta";
+    toast(b.role === "buyer" ? `🧾 Premia z rynku! Do kupionej karty dostajesz ${name} w wariancie ${variantName(b.variant)}`
+      : `💰 Premia za sprzedaż! Dostajesz ${name} w wariancie ${variantName(b.variant)}`);
+  });
+  if (list?.length) Sound.win();
 }

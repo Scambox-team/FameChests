@@ -3,7 +3,8 @@
 // (S.quest; null = questy wyłączone). Kto pierwszy, dostaje tę kartę w wariancie Wanted i jej wartość w groszach.
 
 function questTarget(q) {
-  return q.person ? `kartę <b>${esc(person(q.person).name)}</b>` : `dowolną kartę w wariancie <b>${esc(variantName(q.variant))}</b>`;
+  if (!q.person) return `dowolną kartę w wariancie <b>${esc(variantName(q.variant))}</b>`;   // stare questy
+  return `kartę <b>${esc(person(q.person).name)}</b>${q.variant ? ` w wariancie <b>${esc(variantName(q.variant))}</b>` : ""}`;
 }
 
 function renderQuest() {

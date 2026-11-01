@@ -873,6 +873,8 @@ struct MeResponse {
     quest: Option<super::quests::QuestView>,
     /// karta, którą przy wejściu do ekwipunku zabierze UFO (easter egg, bez powiadomień)
     ufo: Option<String>,
+    /// premie z rynku do pokazania (każda raz)
+    market_bonus: Vec<crate::game::market::BonusNote>,
     user: UserView,
     daily_claimable: bool,
     incoming: i64,
@@ -937,6 +939,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     let seen = state["patch_seen"];
     let body = MeResponse {
         quest: super::quests::quest_view(&mut c, &cx.cat, uid).await?,
+        market_bonus: crate::game::market::take_bonus_notes(&mut c, uid).await?,
         ufo: super::variants::ufo_visit(&mut c, &cx.cat, uid, state["ufo_visit"]).await?,
         user: cx.me.view(&cx.cat),
         daily_claimable: super::shop::daily_info(&mut c, uid).await?.claimable,

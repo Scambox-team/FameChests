@@ -19,6 +19,7 @@
    "mult": 1.8
   },
   "bronze": {
+   "extraSource": "marketSeller",
    "name": "Brązowa",
    "chance": 0.04,
    "mult": 2.0,
@@ -26,6 +27,7 @@
    "desc": "Karta z brązu - ciepły, ciemniejszy metal, najczęstszy z metalowych wariantów."
   },
   "silver": {
+   "extraSource": "marketSeller",
    "name": "Srebrna",
    "chance": 0.03,
    "mult": 2.5
@@ -50,11 +52,13 @@
    "desc": "Cała karta z masy perłowej - mleczna biel z różowo-miętowo-błękitnymi refleksami, które przesuwają się po karcie."
   },
   "gold": {
+   "extraSource": "marketSeller",
    "name": "Złota",
    "chance": 0.01,
    "mult": 7.5
   },
   "platinum": {
+   "extraSource": "marketSeller",
    "name": "Platynowa",
    "chance": 0.006,
    "mult": 10.0,
@@ -298,6 +302,7 @@
    "desc": "Dolna część karty pływa w szlamie z falującą powierzchnią i bąbelkami, z góry kapie glut, zdjęcie lekko zielone."
   },
   "wanted": {
+   "extraSource": "quest",
    "name": "Wanted",
    "chance": 0.006,
    "mult": 10.5,
@@ -529,6 +534,7 @@
    "chance": 0.008,
    "mult": 8.0,
    "off": true,
+   "extraSource": "market",
    "desc": "Karta wydrukowana na papierze termicznym: ząbkowane brzegi, nagłówek sklepu, czarno-białe zdjęcie z drukarki i kod kreskowy."
   },
   "tarot": {
@@ -586,6 +592,26 @@
    "exclusive": true,
    "stickers": true,
    "desc": "Alarm pod mikroskopem: koguty, migająca ramka, cząsteczki wirusa, czerwone zdjęcie z podziałką 100 nm i komunikat na telefon. Naklejki prosto na zdjęciu."
+  },
+  "chesswhite": {
+   "name": "Biała",
+   "chance": 0.0,
+   "mult": 15.0,
+   "exclusive": true,
+   "always": true,
+   "noCombo": true,
+   "weight": 50,
+   "desc": "Ze skrzynki szachów, cała w bieli: figury wytłoczone w atłasowej szachownicy, secesyjne wici wokół zdjęcia i karty."
+  },
+  "chessblack": {
+   "name": "Czarna",
+   "chance": 0.0,
+   "mult": 15.0,
+   "exclusive": true,
+   "always": true,
+   "noCombo": true,
+   "weight": 50,
+   "desc": "Ze skrzynki szachów, cała w czerni: figury wytłoczone w atłasowej szachownicy, sznury pereł wokół zdjęcia i karty."
   },
   "blank": {
    "name": "Czysta kartka",
@@ -687,10 +713,18 @@
   ],
   "prl": [
    "komuna"
+  ],
+  "szachy": [
+   "chesswhite"
+  ],
+  "szachy_czarne": [
+   "chessblack"
   ]
  },
  "cratesAddedLater": [
-  "halloween"
+  "halloween",
+  "szachy",
+  "szachy_czarne"
  ],
  "contractSize": {
   "green": 5,
@@ -961,7 +995,294 @@
   }
  },
  "maxExtraAbilities": 2,
+ "chess": {
+  "minutes": [
+   3,
+   5,
+   10,
+   15
+  ],
+  "incrementMs": 2000,
+  "openHours": 2,
+  "rewardsPerDay": 5,
+  "minPlies": 10,
+  "crateWhite": "szachy",
+  "crateBlack": "szachy_czarne"
+ },
+ "chessSkins": [
+  {
+   "id": "janusz",
+   "name": "Janusz",
+   "pieces": [
+    "p"
+   ],
+   "rarity": "green",
+   "desc": "Wąs, kapelusz i pewność siebie na każdą okazję."
+  },
+  {
+   "id": "polski",
+   "name": "Polski",
+   "pieces": [
+    "k",
+    "q",
+    "r",
+    "b",
+    "n",
+    "p"
+   ],
+   "rarity": "uncommon",
+   "desc": "Cała figura w barwach narodowych. Do każdej figury osobno."
+  },
+  {
+   "id": "grazyna",
+   "name": "Grażyna",
+   "pieces": [
+    "q"
+   ],
+   "rarity": "uncommon",
+   "desc": "Trwała i korale. Hetman, który chce rozmawiać z kierownikiem."
+  },
+  {
+   "id": "kremowka",
+   "name": "Kremówka",
+   "pieces": [
+    "p"
+   ],
+   "rarity": "blue",
+   "desc": "Pion przekładany kremem."
+  },
+  {
+   "id": "goniec",
+   "name": "Goniec Pocztowy",
+   "pieces": [
+    "b"
+   ],
+   "rarity": "blue",
+   "desc": "Prawdziwy goniec: torba, list i awizo."
+  },
+  {
+   "id": "pkin",
+   "name": "Pałac Kultury",
+   "pieces": [
+    "r"
+   ],
+   "rarity": "purple",
+   "desc": "Wieża z iglicą, dar narodów."
+  },
+  {
+   "id": "plotka",
+   "name": "Płotka",
+   "pieces": [
+    "n"
+   ],
+   "rarity": "purple",
+   "desc": "Klacz Wiedźmina. Czeka na dachu."
+  },
+  {
+   "id": "kasztanka",
+   "name": "Kasztanka",
+   "pieces": [
+    "n"
+   ],
+   "rarity": "red",
+   "desc": "Klacz Marszałka, w ułańskim czapraku."
+  },
+  {
+   "id": "smok",
+   "name": "Smok Wawelski",
+   "pieces": [
+    "n"
+   ],
+   "rarity": "red",
+   "desc": "Zielony łeb, grzebień i ogień z paszczy."
+  },
+  {
+   "id": "korwin",
+   "name": "Król Korwin",
+   "pieces": [
+    "k"
+   ],
+   "rarity": "gold",
+   "desc": "Złota korona, muszka i okulary. Król, i to dosłownie."
+  },
+  {
+   "id": "orzel",
+   "name": "Orzeł Bielik",
+   "pieces": [
+    "k",
+    "q"
+   ],
+   "rarity": "gold",
+   "desc": "Biały orzeł w koronie na czerwonej tarczy."
+  },
+  {
+   "id": "jp2",
+   "name": "Jan Paweł II",
+   "pieces": [
+    "k"
+   ],
+   "rarity": "ultra",
+   "desc": "Biała sutanna, mitra i pastorał."
+  },
+  {
+   "id": "zloty_pion",
+   "name": "Złoty Scam",
+   "pieces": [
+    "p"
+   ],
+   "rarity": "ultra",
+   "desc": "Pion ze złota. Prawie na pewno prawdziwego."
+  }
+ ],
  "crates": {
+  "szachy": {
+   "name": "Skrzynka Białych",
+   "short": "Białe",
+   "code": "SZ",
+   "emoji": "♚",
+   "color1": "#f2e9d8",
+   "color2": "#1b1712",
+   "price": 1000000,
+   "shop": false,
+   "restricted": false,
+   "desc": "za wygraną białymi: karta w wariancie Biała i skin do figury",
+   "people": [],
+   "shared": [
+    "pl_malysz",
+    "pl_walesa",
+    "pl_swiatek",
+    "pl_tusk",
+    "pl_kaczynski",
+    "pl_duda",
+    "pl_nawrocki",
+    "pl_stoch",
+    "pl_doda",
+    "pl_maklowicz",
+    "pl_gessler",
+    "pl_mentzen",
+    "pl_trzaskowski",
+    "pl_holownia",
+    "pl_ibisz",
+    "pl_wojewodzki",
+    "pl_kubica",
+    "pl_podsiadlo",
+    "pl_szczesny",
+    "pl_zenek",
+    "pl_rodowicz",
+    "pl_pudzianowski",
+    "pl_najman",
+    "pl_korwin",
+    "pl_petru",
+    "pl_sanah",
+    "pl_wojciechowska",
+    "pl_wisniewski",
+    "pl_quebonafide",
+    "pl_pilsudski",
+    "pl_krawczyk",
+    "pl_morawiecki",
+    "pl_zyla",
+    "pl_hurkacz",
+    "pl_szydlo",
+    "pl_bosak",
+    "pl_gorniak",
+    "pl_wlodarczyk",
+    "pl_kowalczyk",
+    "pl_ziobro",
+    "pl_czarnek",
+    "pl_kazik",
+    "pl_stanowski",
+    "pl_farna",
+    "pl_linda",
+    "pl_pazura",
+    "pl_golota",
+    "pl_kukiz",
+    "w_ronaldo",
+    "w_messi",
+    "w_musk",
+    "w_obama",
+    "w_swift",
+    "w_putin",
+    "w_biden",
+    "w_kim",
+    "w_keanu",
+    "w_beyonce",
+    "w_lebron",
+    "w_macron",
+    "w_merkel",
+    "w_zelensky",
+    "w_rock",
+    "w_rihanna",
+    "w_dicaprio",
+    "w_zuckerberg",
+    "w_bolt",
+    "w_bieber",
+    "w_kardashian",
+    "w_ramsay",
+    "w_mrbeast",
+    "w_boris",
+    "w_trudeau",
+    "w_gates",
+    "w_bezos",
+    "w_shakira",
+    "w_sheeran",
+    "w_jordan",
+    "w_elizabeth",
+    "w_mbappe",
+    "w_arnold",
+    "w_xi",
+    "w_cruise",
+    "w_eminem",
+    "w_serena",
+    "w_gaga",
+    "w_willsmith",
+    "w_depp",
+    "w_djokovic",
+    "w_greta",
+    "w_snoop",
+    "w_grylls",
+    "w_hilton",
+    "w_atkinson",
+    "w_norris",
+    "w_chan",
+    "prl_hermaszewski",
+    "prl_jaruzelski",
+    "prl_gomulka",
+    "prl_urban",
+    "prl_bierut",
+    "prl_kiszczak",
+    "prl_rakowski",
+    "prl_walentynowicz",
+    "prl_kuron",
+    "prl_bareja",
+    "prl_deyna",
+    "prl_michnik",
+    "prl_boniek",
+    "prl_szewinska",
+    "prl_gorski",
+    "prl_niemen",
+    "prl_cyrankiewicz",
+    "prl_kozakiewicz",
+    "prl_tomaszewski",
+    "prl_lato",
+    "prl_kora",
+    "prl_jantar",
+    "prl_himilsbach"
+   ]
+  },
+  "szachy_czarne": {
+   "name": "Skrzynka Czarnych",
+   "short": "Czarne",
+   "code": "SC",
+   "emoji": "♚",
+   "color1": "#1b1712",
+   "color2": "#f2e9d8",
+   "price": 1000000,
+   "shop": false,
+   "restricted": false,
+   "desc": "za wygraną czarnymi: karta w wariancie Czarna i skin do figury. Karty te same co w Skrzynce Białych",
+   "people": [],
+   "shared": []
+  },
   "pl": {
    "name": "Skrzynka Polska",
    "short": "Polska",
@@ -2986,7 +3307,15 @@
    24,
    48
   ],
-  "snipeSeconds": 120
+  "snipeSeconds": 120,
+  "bonusChance": 0.2,
+  "bonusBuyer": "receipt",
+  "bonusSeller": [
+   "bronze",
+   "silver",
+   "gold",
+   "platinum"
+  ]
  },
  "roulette": {
   "maxCards": 20,
@@ -3575,6 +3904,18 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 20,
+   "date": "2026-11-01",
+   "title": "Szachy",
+   "items": [
+    "♟️ Nowa zakładka <b>Gry</b>: prawdziwe szachy z innymi graczami i trening z botem. Kolor jest losowany.",
+    "🎁 Za wygraną z graczem dostajesz skrzynkę daily i skrzynkę w swoim kolorze: Białych albo Czarnych. Karty z niej są zawsze w wariancie Biała albo Czarna.",
+    "🐎 Każda skrzynka szachów daje też <b>skin do figury</b>. Znajdziesz je w ekwipunku w zakładce <b>Figury</b>, założysz w menu szachów, a niepotrzebne sprzedasz.",
+    "🧾 Kupno na rynku może dać premię: kupujący dostaje kartę w wariancie Paragon, a sprzedający w metalu.",
+    "🎯 Codzienne questy mają teraz zawsze konkretną kartę od Epickiej wzwyż."
+   ]
+  },
   {
    "v": 19,
    "date": "2026-10-27",

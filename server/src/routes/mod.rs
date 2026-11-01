@@ -5,6 +5,7 @@ pub mod account;
 pub mod admin;
 pub mod arena;
 pub mod casino;
+pub mod chess;
 pub mod drawings;
 pub mod scratch;
 pub mod horses;
@@ -72,6 +73,7 @@ pub fn router(st: AppState) -> Router {
         .route("/manifest.webmanifest", get(manifest))
         .route("/sw.js", get(service_worker))
         .route("/admin", get(admin_page))
+        .route("/admin/chess", get(admin_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -151,7 +153,21 @@ pub fn router(st: AppState) -> Router {
         .route("/api/casino/horses/solo", post(horses::casino_horses_solo))
         .route("/api/casino/horses/debug", post(horses::casino_horses_debug))
         .route("/api/admin/horses", get(horses::admin_horses).post(horses::admin_horses_save))
+        .route("/api/admin/chess-skins", get(chess::admin_skins).post(chess::admin_skins_save))
         .route("/api/admin/quests", get(quests::admin_quests).post(quests::admin_quests_save))
+        .route("/api/games/chess", get(chess::chess_lobby))
+        .route("/api/games/chess/create", post(chess::chess_create))
+        .route("/api/games/chess/test", post(chess::chess_test))
+        .route("/api/games/chess/skins", get(chess::chess_skins))
+        .route("/api/games/chess/skins/equip", post(chess::chess_skin_equip))
+        .route("/api/games/chess/skins/sell", post(chess::chess_skin_sell))
+        .route("/api/games/chess/{id}", get(chess::chess_state))
+        .route("/api/games/chess/{id}/join", post(chess::chess_join))
+        .route("/api/games/chess/{id}/test-step", post(chess::chess_test_step))
+        .route("/api/games/chess/{id}/cancel", post(chess::chess_cancel))
+        .route("/api/games/chess/{id}/move", post(chess::chess_move))
+        .route("/api/games/chess/{id}/resign", post(chess::chess_resign))
+        .route("/api/games/chess/{id}/draw", post(chess::chess_draw))
         .route("/api/items/{id}/drawing", get(drawings::drawing_info).post(drawings::drawing_save))
         .route("/api/items/{id}/scratch", post(scratch::scratch_item))
         // arena (tylko admini)

@@ -7,6 +7,11 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const fmt = n => Math.round(n).toLocaleString("pl-PL") + " gr";
 
 const A = { cat: null, crate: null, search: "", rarity: "all", showSecrets: false };
+// zakładka Szachy (/admin/chess): ta sama strona, tylko skrzynki szachów i skiny; zwykła zakładka ich nie pokazuje
+const CHESS_TAB = location.pathname === "/admin/chess", CHESS_CRATES = ["szachy", "szachy_czarne"];
+const tabCrates = () => A.cat.crates.filter(c => CHESS_CRATES.includes(c.id) === CHESS_TAB);
+document.body.classList.toggle("a-chess", CHESS_TAB);
+$(CHESS_TAB ? "#tabChess" : "#tabMain").classList.add("active");
 try { A.showSecrets = localStorage.getItem("adminSecrets") === "1"; } catch (_) {}
 
 async function api(path, { method = "GET", json, form } = {}) {
@@ -45,9 +50,10 @@ async function load() {
   loadLinks();
   loadMessages();
   loadHorses();
+  loadSkins();
   loadQuests();
   renderEgg();
-  if (!A.crate || !A.cat.crates.some(c => c.id === A.crate)) A.crate = A.cat.crates.find(c => !c.hidden)?.id || null;
+  if (!A.crate || !tabCrates().some(c => c.id === A.crate)) A.crate = tabCrates().find(c => !c.hidden)?.id || null;
   render();
 }
 
@@ -76,7 +82,7 @@ function render() {
 function renderCrates() {
   const counts = {};
   A.cat.cards.forEach(c => { if (!c.hidden) (c.crates || [c.crate]).forEach(k => { counts[k] = (counts[k] || 0) + 1; }); });
-  $("#crateList").innerHTML = A.cat.crates.map(c => `
+  $("#crateList").innerHTML = tabCrates().map(c => `
     <button class="a-crate${c.id === A.crate ? " active" : ""}${c.hidden ? " is-hidden" : ""}" data-crate="${c.id}"
             style="--c1:${esc(c.color1)}; --c2:${esc(c.color2)}">
       <span class="a-crate-ico">${esc(c.emoji)}</span>
@@ -513,6 +519,28 @@ async function loadHorses() {
   }).join("");
 }
 
+// ================================================================ SKINY FIGUR (szachy)
+
+async function loadSkins() {
+  let d;
+  try { d = await api("/api/admin/chess-skins"); } catch (e) { return toast(e.message, true); }
+  A.skins = d;
+  const rarity = v => d.rarities.map(r => `<option value="${r.id}"${r.id === v ? " selected" : ""}>${esc(r.name)} · ${fmt(r.value)}</option>`).join("");
+  $("#skinRows").innerHTML = d.skins.map(s => `<div class="a-skin${s.enabled ? "" : " off"}" data-skinrow="${s.id}">
+    ${skPreview(s.id, s.pieces[0])}
+    <div class="a-skin-main">
+      <div class="a-skin-line">
+        <input type="text" name="name" maxlength="${d.nameMax}" value="${esc(s.name)}" placeholder="${esc(s.default.name)}" title="Nazwa skina">
+        <select name="rarity" title="Rzadkość">${rarity(s.rarity)}</select>
+        <label class="chk"><input type="checkbox" name="enabled"${s.enabled ? " checked" : ""}> Włączony</label>
+      </div>
+      <input type="text" name="desc" maxlength="${d.descMax}" value="${esc(s.desc)}" placeholder="${esc(s.default.desc)}" title="Opis skina">
+      <small class="muted">${s.pieces.map(p => SK_PIECES[p]).join(", ")} · ${s.copies} szt. · graczy: ${s.players} · założony: ${s.worn}</small>
+    </div>
+    <button class="btn tiny" type="button" data-skreset title="Przywróć nazwę, rzadkość i opis z gry">↺</button>
+  </div>`).join("");
+}
+
 // ================================================================ CODZIENNE QUESTY
 
 async function loadQuests() {
@@ -520,7 +548,7 @@ async function loadQuests() {
   try { d = await api("/api/admin/quests"); } catch (e) { return toast(e.message, true); }
   $("#questOn").checked = d.enabled;
   $("#questReroll").hidden = !d.enabled;
-  $("#questInfo").innerHTML = `Można wylosować ${d.cards} kart i ${d.variants} wariantów.` + (d.history.length ? `<ul>${d.history.map(q =>
+  $("#questInfo").innerHTML = `Można teraz wylosować ${d.cards} kart, ${d.variants} rzadkich wariantów.` + (d.history.length ? `<ul>${d.history.map(q =>
     `<li><b>${esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr)` : "nikt"}</li>`).join("")}</ul>` : "");
 }
 
@@ -786,6 +814,26 @@ function bind() {
       await api("/api/admin/horses", { method: "POST", json: { horses } });
       toast("🐎 Konie zapisane");
       loadHorses(); loadLog();
+    } catch (err) { toast(err.message, true); }
+  });
+  $("#skinRows").addEventListener("change", e => {
+    if (e.target.name === "enabled") e.target.closest("[data-skinrow]").classList.toggle("off", !e.target.checked);
+  });
+  $("#skinRows").addEventListener("click", e => {
+    const b = e.target.closest("[data-skreset]"); if (!b) return;
+    const row = b.closest("[data-skinrow]"), def = A.skins.skins.find(s => s.id === row.dataset.skinrow).default;
+    row.querySelector("[name=name]").value = def.name;
+    row.querySelector("[name=rarity]").value = def.rarity;
+    row.querySelector("[name=desc]").value = def.desc;
+  });
+  $("#skinForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const skins = [...$$("#skinRows [data-skinrow]")].map(r => ({ id: r.dataset.skinrow, name: r.querySelector("[name=name]").value, rarity: r.querySelector("[name=rarity]").value,
+      desc: r.querySelector("[name=desc]").value, enabled: r.querySelector("[name=enabled]").checked }));
+    try {
+      await api("/api/admin/chess-skins", { method: "POST", json: { skins } });
+      toast("♟️ Skiny zapisane");
+      loadSkins(); loadLog();
     } catch (err) { toast(err.message, true); }
   });
   $("#msgForm").addEventListener("submit", async e => {

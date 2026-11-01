@@ -20,7 +20,7 @@ use crate::state::AppState;
 use crate::web::{send_file, svg_response};
 
 /// Widoki gry pod własnym adresem (ta sama strona index.html, widok wybiera JS)
-pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "arena", "stickers", "variants", "designer"];
+pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer"];
 
 const MYSTERY_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
   <defs><radialGradient id="g"><stop offset="0" stop-color="#5a4a1a"/><stop offset="1" stop-color="#0b0906"/></radialGradient></defs>

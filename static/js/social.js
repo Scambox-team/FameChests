@@ -88,6 +88,7 @@ function startPolling() {
       applyBadges(me);
       noteUfo(me);                                      // wizyta UFO - pokaże się przy następnym wejściu do ekwipunku
       noteQuest(me.quest);                              // quest dnia: nowy cel, wygrana
+      noteMarketBonus(me.marketBonus);                  // premie z rynku (paragon, metale)
       if (hadNew && currentView() === "friends" && !S.opening) renderFriends();
       if (me.market && currentView() === "market" && !S.opening && !dialogOpen()) renderMarket(true);
       S.jpLobby = me.jackpotLobby;
@@ -348,7 +349,7 @@ async function openMoneyChest(kind) {
 }
 
 async function refreshBadgesSoon() {
-  try { applyBadges(await api("/api/me")); } catch (_) {}
+  try { const me = await api("/api/me"); applyBadges(me); noteMarketBonus(me.marketBonus); } catch (_) {}
 }
 
 // ================================================================ ZNAJOMI + AKTYWNOŚĆ

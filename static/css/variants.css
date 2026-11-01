@@ -115,3 +115,7 @@
 .vr-lock-box[hidden] { display: none; }
 .vr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .vr-chips:empty::before { content: "Nie wybrano jeszcze żadnej karty."; font-size: 13px; color: var(--muted); }
+
+/* wariant wypada też poza skrzynkami */
+.vr-extra { margin-bottom: 12px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--panel2); }
+.vr-extra p { margin: 4px 0 0; }
