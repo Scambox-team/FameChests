@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import { Sound } from '../sound/sound';
 import { toast } from '../ui/Toaster';
 import { fmt } from '../lib/format';
-import { dupKey, isSpecialCard, person, plural, varRank } from './rules';
+import { dupKey, isSpecial, isSpecialCard, person, plural, varRank, variantName } from './rules';
 import { applyState } from './session';
 import { S, touch } from './store';
 
@@ -64,6 +64,16 @@ export function dupesOf(o: Owned, perVariant = false) {
   const best = (o.byVar[o.best] || []).filter(id => !S.drawn.has(id));
   const keep = new Set([...drawn, ...(perVariant ? [...byKey.values()].map(keepOne) : drawn.length ? [] : [keepOne(best.length ? best : free)])]);
   return o.ids.filter(id => !keep.has(id) && !favs.has(id));
+}
+
+// karty, które gracz zdobył jako pierwszy w grze: odnotowane w Hall of Fame
+export function announceFirsts(items: any[]) {
+  const firsts = (items || []).filter(i => i?.first);
+  if (!firsts.length) return;
+  const it = firsts[0], p = person(it.person);
+  const name = (p.masked ? 'Tajna karta' : p.name) + (isSpecial(it.variant) ? ` (${variantName(it.variant)})` : '');
+  toast(`Pierwsza taka karta w grze: ${name}. Trafiasz do Hall of Fame${firsts.length > 1 ? ` (i jeszcze ${firsts.length - 1})` : ''}.`);
+  Sound.gold();
 }
 
 export const personName = (id: string) => person(id)?.name ?? '';

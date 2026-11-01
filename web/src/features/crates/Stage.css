@@ -20,3 +20,9 @@
 .viewer-info .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--on-hue); }
 .viewer-info .tp { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.12em; }
 .results { align-content: center; flex: 1; }
+
+/* małe kafelki kart */
+.pick { padding: 0; border-radius: 8px; color: var(--text); text-align: left; font-family: var(--body); }
+.pick .pn { font-weight: 500; }
+.pick .pv { color: var(--muted); font-weight: 500; }
+.fa-title, .fa-result-name { font-family: var(--display) !important; }

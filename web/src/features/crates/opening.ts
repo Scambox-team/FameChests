@@ -5,6 +5,7 @@ import { cardHTML, cvColors } from '../../cards/cardHtml';
 import { confetti, epicOpen, epicReveal, GOLDS, receiptReveal } from '../../fx/effects';
 import { VARIANT_COLORS } from '../../fx/variantColors';
 import { baseVariant, crateOf, imgUrl, isSpecial, person, plural, rand, rarityIdx, varRank, variantName, variantParts } from '../../game/rules';
+import { announceFirsts } from '../../game/actions';
 import { applyState, refreshConfig } from '../../game/session';
 import { S, touch } from '../../game/store';
 import { esc, fmt, sleep } from '../../lib/format';
@@ -51,7 +52,7 @@ function eggSpot(step: number, mw: number, center: number, win: number, off: num
   return [off, Math.floor((-to - mw - EGG_EDGE) / step)];
 }
 
-function miniHTML(pid: string, win = false) {
+export function miniHTML(pid: string, win = false) {
   const p = person(pid);
   if (p.rarity === 'secret') {
     return `<div class="mini r-secret mini-secret${win ? ' win' : ''}" style="--rc:${S.cfg.rarities.secret.color}"><div class="ms-star">★</div><div class="mn">??? TAJNA</div></div>`;
@@ -274,7 +275,7 @@ function showResults(o: Opening, afterEpic: boolean) {
   const drops = o.drops!, n = drops.length;
   o.spinning = false;
   o.showingResults = true;
-  openingHooks.announceFirsts?.(drops);
+  announceFirsts(drops);
   $('#reels').hidden = true;
   const results = $('#results');
   results.hidden = false;

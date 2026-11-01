@@ -1,0 +1,31 @@
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: var(--gap); align-items: start; }
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.tiers { display: flex; gap: 6px; flex-wrap: wrap; }
+.tiers button { height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 14px; }
+.tiers button[aria-pressed="true"] { background: #fff; color: #000; font-weight: 600; }
+.tiers i { width: 8px; height: 8px; border-radius: 50%; }
+.tiers small { opacity: .75; }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; }
+.picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-height: 620px; overflow-y: auto; padding-right: 4px; }
+.title { font: 800 22px/28px var(--display); letter-spacing: -.02em; }
+.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 8px; }
+.slot { position: relative; padding: 0; border: 0; background: none; cursor: pointer; }
+.slot :global(.card) { width: 100%; --cw: 100%; }
+.remove { position: absolute; top: 4px; right: 4px; padding: 2px; border-radius: 50%; background: #000c; color: #fff; }
+.empty { aspect-ratio: 63 / 88; display: grid; place-items: center; border-radius: 8px; background: var(--raised); color: var(--faint); font: 800 18px var(--display); }
+.flow { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; }
+.facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.facts dt { font-size: 13px; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bulk { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.bulk h3, .sub { font: 600 15px var(--body); }
+.bulk label { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.bulk input { accent-color: var(--hue); width: 16px; height: 16px; margin: 0; flex: none; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button:not([class]) { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--radius-s); background: var(--raised); color: #fff; }
+.stepper button:disabled { opacity: .4; }
+.ways { display: flex; flex-wrap: wrap; gap: 6px; }
+.ways span { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); }
+.ways img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 18%; border-radius: 6px; }
+@media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } .picks { max-height: 380px; } }

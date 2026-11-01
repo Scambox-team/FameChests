@@ -7,6 +7,7 @@ import { S, useGame } from '../game/store';
 import { Toaster } from '../ui/Toaster';
 import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
+import { ForgePage } from '../features/forge/ForgePage';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
@@ -56,6 +57,7 @@ function Game() {
           <Route path="/crates" element={<CratesPage />} />
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/binder" element={<BinderPage />} />
+          <Route path="/forge" element={<ForgePage />} />
           <Route path="*" element={<NotMoved />} />
         </Routes>
       </Suspense>
