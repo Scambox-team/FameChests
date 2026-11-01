@@ -474,6 +474,39 @@ pub async fn admin_restore_crate(State(st): State<AppState>, Admin(me): Admin, P
     ok(json!({"ok": true}))
 }
 
+/// Odpina wszystkie karty od skrzynki (karty zostają w grze i u graczy). Karta, która nie ma innej skrzynki, zostaje:
+/// bez skrzynki nie mogłaby istnieć. Skrzynka Czarnych dziedziczy karty po Białych, więc czyszczą się obie.
+pub async fn admin_clear_crate(State(st): State<AppState>, Admin(me): Admin, Path(cid): Path<String>) -> Res {
+    let cat = st.cat();
+    let cr = cat.crates.get(&cid).ok_or_else(|| not_found("Nie ma takiej skrzynki"))?;
+    let g = g();
+    let chess = [&g.chess.crate_white, &g.chess.crate_black];
+    let drop: Vec<&String> = if chess.contains(&&cid) { chess.to_vec() } else { vec![&cid] };
+    // pełna lista: wbudowane "shared" nie wrócą po następnym złożeniu katalogu (merge_cards)
+    let crates_seen: std::collections::BTreeSet<&String> = cat.crates.keys().chain(cat.hidden_crates.keys()).collect();
+    let (mut removed, mut kept) = (0, 0);
+    let mut tx = st.db.begin().await?;
+    for p in cat.crate_people(cr) {
+        let left: Vec<&String> = p.crates.iter().filter(|c| !drop.contains(c)).collect();
+        let Some(main) = left.first() else {
+            kept += 1;
+            continue;
+        };
+        let exclusive: Vec<&String> = p.exclusive.iter().filter(|c| !drop.contains(c)).collect();
+        let mut fields = Map::new();
+        fields.insert("crate".into(), json!(main));
+        fields.insert("crates".into(), json!(left));
+        fields.insert("exclusive".into(), json!(exclusive));
+        fields.insert("crates_seen".into(), json!(crates_seen));
+        catalog::save_override(&mut tx, Table::Cards, &p.id, fields).await?;
+        removed += 1;
+    }
+    log_admin(&mut tx, &me, "crate_clear", None, &format!("{}: odpięto {removed}, zostało {kept}", cr.name)).await?;
+    tx.commit().await?;
+    st.refresh_catalog().await?;
+    ok(json!({"removed": removed, "kept": kept}))
+}
+
 /// Formularz karty z panelu admina (multipart: pola + pliki zdjęć)
 #[derive(Default)]
 struct CardForm {

@@ -144,6 +144,7 @@ function crateFormHTML(c) {
       <button class="btn primary" type="submit">💾 ${isNew ? "Utwórz skrzynkę" : "Zapisz"}</button>
       ${!isNew && c.hidden ? `<button class="btn" type="button" data-act="restore-crate">↩️ Przywróć skrzynkę</button>` : ""}
       ${!isNew && !c.hidden && c.builtin && c.modified ? `<button class="btn" type="button" data-act="restore-crate">↩️ Przywróć domyślne</button>` : ""}
+      ${!isNew && !c.hidden && !c.special ? `<button class="btn danger" type="button" data-act="clear-crate" title="Odpina wszystkie karty od tej skrzynki. Karty zostają w grze i u graczy.">🧹 Wyczyść skrzynkę</button>` : ""}
       ${!isNew && !c.hidden ? `<button class="btn danger" type="button" data-act="delete-crate">${c.builtin ? "🙈 Ukryj skrzynkę" : "🗑️ Usuń skrzynkę"}</button>` : ""}
       ${isNew ? `<button class="btn" type="button" data-act="cancel-crate">Anuluj</button>` : ""}
     </div>`;
@@ -926,6 +927,13 @@ function bind() {
         if (!confirm(msg)) return;
         await api(`/api/admin/crates/${encodeURIComponent(c.id)}`, { method: "DELETE" });
         toast(c.builtin ? "Skrzynka ukryta" : "Skrzynka usunięta");
+      }
+      if (act === "clear-crate") {
+        const n = A.cat.cards.filter(x => !x.hidden && (x.crates || [x.crate]).includes(c.id)).length;
+        const both = CHESS_CRATES.includes(c.id) ? " Skrzynka Czarnych ma te same karty, więc wyczyszczą się obie." : "";
+        if (!confirm(`Odpiąć ${n} kart od skrzynki „${c.name}”?${both} Karty zostają w grze i u graczy, ale z powrotem trzeba je przypinać ręcznie.`)) return;
+        const r = await api(`/api/admin/crates/${encodeURIComponent(c.id)}/clear`, { method: "POST" });
+        toast(`🧹 Odpięto ${r.removed} kart${r.kept ? `, zostało ${r.kept}: nie mają innej skrzynki` : ""}`, r.kept > 0);
       }
       if (act === "restore-crate") {
         await api(`/api/admin/crates/${encodeURIComponent(c.id)}/restore`, { method: "POST" });

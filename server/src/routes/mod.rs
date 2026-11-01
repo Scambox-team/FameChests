@@ -186,6 +186,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/crates", post(admin_save_crate))
         .route("/api/admin/crates/{cid}", delete(admin_delete_crate))
         .route("/api/admin/crates/{cid}/restore", post(admin_restore_crate))
+        .route("/api/admin/crates/{cid}/clear", post(admin_clear_crate))
         .route("/api/admin/cards", post(admin_save_card))
         .route("/api/admin/cards/{pid}", delete(admin_delete_card))
         .route("/api/admin/cards/{pid}/restore", post(admin_restore_card))
