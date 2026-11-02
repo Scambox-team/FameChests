@@ -56,6 +56,14 @@ export function possibleVariants(p) {
 // Warstwy wariantu: flaga leży na osobnej warstwie, więc karta może być np. "flag+gold" (Flagowa + Złota)
 export function variantParts(v) { return S.cfg.variants[v || "normal"]?.layers || [v || "normal"]; }
 export function isCombo(v) { return !!S.cfg.variants[v]?.combo; }
+// warstwa (flaga, Halloween, Lampionowa, Diabelska) leży na zwykłym wariancie: "flag+gold" = warstwa flag + baza gold
+export const isLayer = v => !!S.cfg.variants[v]?.layer;
+export function splitVariant(v) {
+  const p = variantParts(v);
+  if (p.length > 1) return { layer: p[0], base: p[p.length - 1] };
+  return isLayer(v) ? { layer: v, base: "normal" } : { layer: null, base: v || "normal" };
+}
+export function joinVariant(layer, base) { return !layer ? base : base === "normal" ? layer : `${layer}+${base}`; }
 // warianty do filtrów (ekwipunek, rynek): tylko te, które są albo były w grze (połączenie - gdy każda warstwa była),
 // plus te, które gracz ma (np. karta od admina w niewydanym wariancie); bez połączeń z wariantami "noCombo"
 // (Lampionowa, Diabelska - zawsze same) i z wariantami konkretnych kart (Rzulty)

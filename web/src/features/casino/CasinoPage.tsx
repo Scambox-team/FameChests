@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Dices } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 import { S, touch, useGame } from '../../game/store';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
@@ -59,7 +61,9 @@ export function CasinoPage() {
   };
   return (
     <>
-      <Tabs label="Gry" value={CS.tab} onChange={pick} items={GAMES.map(g => ({ ...g, disabled: !!game.spinning }))} />
+      <PageHero icon={Dices} title="Graj kartami" lead="Stawką są twoje karty. Wygrana daje losowe karty o wartości stawki razy mnożnik, przegrana zabiera postawione. Ulubionych i specjalnych nie da się postawić.">
+        <Tabs label="Gry" value={CS.tab} onChange={pick} items={GAMES.map(g => ({ ...g, disabled: !!game.spinning }))} />
+      </PageHero>
       {CS.tab === 'roulette' && <Roulette />}
       {CS.tab === 'blackjack' && <Blackjack />}
       {CS.tab === 'slots' && <Slots />}

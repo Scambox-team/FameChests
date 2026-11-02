@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Crown } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 import { api } from '../../api/client';
 import { confetti } from '../../fx/effects';
 import { S, touch, useGame } from '../../game/store';
@@ -235,7 +237,8 @@ function Lobby({ onOpen }: { onOpen: (id: number) => void }) {
   const create = async () => { if (await post('/api/games/chess/create', { minutes, invite })) { setInvite(''); refetch(); } };
   return (
     <div className="ch-lobby">
-      <p className="muted">Prawdziwe szachy: roszady, bicie w przelocie, promocje, mat, pat i remisy. Za wygraną z graczem dostajesz <b>skrzynkę daily</b> i <b>skrzynkę w kolorze, którym grałeś</b>: kartę w wariancie Biała albo Czarna oraz skin do figury. Kolor jest losowany przy starcie. Dzisiaj zostało nagród: <b>{d.rewardsLeft}/{d.rewardsPerDay}</b>. Partia musi trwać co najmniej {d.minPlies} półruchów.</p>
+      <PageHero icon={Crown} title="Szachy" lead={<>Prawdziwe szachy: roszady, bicie w przelocie, promocje, mat, pat i remisy. Za wygraną z graczem dostajesz <b>skrzynkę daily</b> i <b>skrzynkę w kolorze, którym grałeś</b>: kartę w wariancie Biała albo Czarna oraz skin do figury. Kolor jest losowany przy starcie. Partia musi trwać co najmniej {d.minPlies} półruchów.</>}
+        stats={[['Nagrody dziś', `${d.rewardsLeft} / ${d.rewardsPerDay}`]]} />
       {d.active && !mine && <div className="panel ch-resume"><b>Masz trwającą partię</b><Button kind="hue" onClick={() => onOpen(d.active)}>Wróć do gry</Button></div>}
       <div className="ch-grid">
         <div className="panel">

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, Minus, Plus, X } from 'lucide-react';
+import { Hammer } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
@@ -164,7 +166,7 @@ export function ForgePage() {
 
   return (
     <>
-      <p className="muted">Połącz kilka kart tej samej rzadkości w jedną kartę wyższej rzadkości. Karty w specjalnych wariantach zwiększają szansę na wariant. Ulubione i karty specjalne nie trafiają do kuźni. Ulepszacz jest w Kasynie.</p>
+      <PageHero icon={Hammer} title="Kontrakty" lead={<>Połącz kilka kart tej samej rzadkości w jedną kartę wyższej rzadkości. Karty w specjalnych wariantach zwiększają szansę na wariant. Ulubione i karty specjalne nie trafiają do kuźni. Ulepszacz jest w Kasynie.</>} />
       <div className={styles.cols}>
         <section className={styles.panel} aria-label="Twoje karty">
           <div className={styles.tiers} role="group" aria-label="Rzadkość">

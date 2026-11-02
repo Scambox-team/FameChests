@@ -49,38 +49,6 @@ input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { o
 .cback-logo svg { display: block; width: 100%; height: 100%; }
 .cback-title { position: relative; color: #ffffffcc; font: 800 11cqw/1 var(--display); letter-spacing: -.02em; }
 
-/* ============================================================ PODGLĄD KARTY */
-.viewer {
-  position: fixed; inset: 0; z-index: 300; display: flex; flex-wrap: wrap; gap: 36px; padding: 24px;
-  justify-content: safe center; align-content: safe center; align-items: center; overflow: auto;
-  background: radial-gradient(circle, #1b2140, #05060b);   /* strona pod spodem jest schowana (body.covered) */
-  animation: fadeIn .25s;
-}
-.viewer-stage {
-  width: min(400px, 86vw, calc((100vh - 60px) * .716)); aspect-ratio: 63 / 88; perspective: 1600px; flex: none;
-  animation: zoomIn .5s cubic-bezier(.2, 1.4, .4, 1);
-}
-.viewer-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.3, 1.3, .4, 1); cursor: pointer; }
-.viewer-flipper.flipped { transform: rotateY(180deg); }
-.vf { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.vf-back { transform: rotateY(180deg); }
-.vf .card { width: 100%; --cw: 100%; }
-.viewer-info {
-  width: min(380px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px;
-  display: flex; flex-direction: column; gap: 10px; animation: riseIn .4s .1s both;
-}
-.vi-rarity { color: var(--rc); font-family: Bungee, Rubik, sans-serif; letter-spacing: 1px; }
-.viewer-info h2 { margin: 0; font-family: Bungee, Rubik, sans-serif; font-weight: 400; font-size: 26px; }
-.vi-subtitle { font-style: italic; color: var(--rc); font-weight: 500; }
-.vi-desc {   /* opis karty z panelu admina */
-  margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--panel2); border-left: 3px solid var(--rc);
-  font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto;
-}
-.vi-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.vi-table td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-.vi-table td:first-child { color: var(--muted); white-space: nowrap; padding-right: 12px; }
-.vi-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
 /* ============================================================ KUŹNIA */
 .forge-toolbar { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .forge-info { font-size: 14px; flex: 1; min-width: 240px; }

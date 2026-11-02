@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Gavel, Tag, Trophy } from 'lucide-react';
+import { Store } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
@@ -17,6 +19,7 @@ import { Button } from '../../ui/Button';
 import { SearchField, Select, Tabs } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
 import { UserLink } from '../../ui/UserLink';
+import { VariantPicker, variantMatches, type VariantValue } from '../../ui/VariantPicker';
 import { noteMarketBonus } from './bonus';
 import { MineTab } from './MineTab';
 import { SellTab } from './SellTab';
@@ -34,12 +37,12 @@ export function timeLeft(end: number) {
   return `${m}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export interface Filters { q: string; rarity: string; variant: string; kind: string; sort: string; crate: string }
+export interface Filters { q: string; rarity: string; variant: VariantValue; kind: string; sort: string; crate: string }
 export function matches(x: any, f: Filters) {
   const p = person(x.person);
   if (f.q && !(p.masked ? searchMatch(searchNorm(`??? ${variantName(x.variant)} ${S.cfg.rarities[p.rarity].name}`), f.q) : cardMatches(x, f.q))) return false;
   if (f.rarity !== 'all' && p.rarity !== f.rarity) return false;
-  if (f.variant === 'special' ? !isSpecial(x.variant) : f.variant !== 'all' && x.variant !== f.variant) return false;
+  if (f.variant.base === 'special' ? !isSpecial(x.variant) : !variantMatches(x.variant, f.variant)) return false;
   if (f.crate !== 'all' && !(p.crates || [p.crate]).includes(f.crate)) return false;
   return true;
 }
@@ -51,7 +54,7 @@ export function FilterBar({ f, set, listings = true }: { f: Filters; set: (p: Pa
       <SearchField value={f.q} onChange={e => set({ q: e.target.value })} placeholder="Szukaj karty" aria-label="Szukaj karty" />
       {listings && <Select value={f.kind} onChange={e => set({ kind: e.target.value })} aria-label="Rodzaj oferty"><option value="all">Wszystkie oferty</option><option value="fixed">Kup teraz</option><option value="auction">Licytacje</option></Select>}
       <Select value={f.rarity} onChange={e => set({ rarity: e.target.value })} aria-label="Rzadkość"><option value="all">Każda rzadkość</option>{cfg.rarityOrder.map(r => <option key={r} value={r}>{cfg.rarities[r].name}</option>)}</Select>
-      <Select value={f.variant} onChange={e => set({ variant: e.target.value })} aria-label="Wariant"><option value="all">Każdy wariant</option><option value="special">Tylko specjalne</option>{filterVariants().map(v => <option key={v} value={v}>{variantName(v)}</option>)}</Select>
+      <VariantPicker value={f.variant} onChange={v => set({ variant: v })} variants={filterVariants()} extra={[['special', 'Tylko specjalne']]} allLabel="Każdy wariant" />
       <Select value={f.crate} onChange={e => set({ crate: e.target.value })} aria-label="Skrzynka"><option value="all">Każda skrzynka</option>{crateList().map(c => <option key={c.id} value={c.id}>{c.short}</option>)}</Select>
       {listings && <Select value={f.sort} onChange={e => set({ sort: e.target.value })} aria-label="Sortowanie"><option value="new">Najnowsze</option><option value="cheap">Najtańsze</option><option value="expensive">Najdroższe</option><option value="ending">Kończące się</option><option value="deal">Najlepsza okazja</option></Select>}
     </div>
@@ -136,7 +139,7 @@ export function MarketPage() {
   const client = useQueryClient();
   const { data, refetch, error } = useQuery({ queryKey: ['market'], queryFn: () => api('/api/market'), refetchInterval: 30_000 });
   const [tab, setTab] = useState<'buy' | 'wanted' | 'sell' | 'mine'>('buy');
-  const [f, setF] = useState<Filters>({ q: '', rarity: 'all', variant: 'all', kind: 'all', sort: 'new', crate: 'all' });
+  const [f, setF] = useState<Filters>({ q: '', rarity: 'all', variant: { base: 'all', layer: null }, kind: 'all', sort: 'new', crate: 'all' });
   const [ask, setAsk] = useState<any>(null);
   const [, tick] = useState(0);
   const set = (p: Partial<Filters>) => setF(x => ({ ...x, ...p }));
@@ -174,6 +177,8 @@ export function MarketPage() {
 
   return (
     <>
+      <PageHero icon={Store} title="Karty od innych graczy" lead="Kupuj od razu albo licytuj, zostaw zlecenie na kartę, której szukasz, i wystawiaj własne karty. Pieniądze za oferty są zablokowane do końca transakcji."
+        stats={[['Oferty', String(data.listings.filter((l: any) => !l.mine).length)], ['Zlecenia „Szukam”', String(data.wanted.length)], ['Twoje oferty', String(data.listings.filter((l: any) => l.mine).length)]]} />
       <Tabs label="Rynek" value={tab} onChange={v => { setTab(v); Sound.click(); }} items={[
         { id: 'buy', label: 'Kupuj', count: data.listings.filter((l: any) => !l.mine).length },
         { id: 'wanted', label: 'Szukam', count: data.wanted.length },

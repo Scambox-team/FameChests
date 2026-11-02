@@ -1,0 +1,53 @@
+/* Podgląd karty w stylu Gabloty: karta po lewej, obok panel z danymi i rozwijanym wyborem wariantu */
+.viewer {
+  position: fixed; inset: 0; z-index: 300; display: flex; flex-wrap: wrap; gap: 40px; padding: 24px;
+  justify-content: safe center; align-content: safe center; align-items: center; overflow: auto;
+  background: radial-gradient(ellipse 70% 60% at 35% 50%, #17171c, #050506 75%); animation: fadeIn .2s;
+}
+.viewer-stage { width: min(400px, 86vw, calc((100vh - 60px) * .716)); aspect-ratio: 63 / 88; perspective: 1600px; flex: none; animation: vwIn .45s cubic-bezier(.2, 1.1, .3, 1); }
+@keyframes vwIn { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+.viewer-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.3, 1.2, .4, 1); cursor: pointer; }
+.viewer-flipper.flipped { transform: rotateY(180deg); }
+.vf { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.vf-back { transform: rotateY(180deg); }
+.vf .card { width: 100%; --cw: 100%; }
+
+.viewer-info { width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px; padding: 22px; border-radius: var(--radius); background: var(--surface); animation: vwIn .4s .06s both; }
+.vi-rarity { color: var(--rc); font: 600 13px var(--body); letter-spacing: .2em; text-transform: uppercase; }
+.viewer-info h2 { margin: 0; font: 800 30px/1.1 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+.viewer-info .muted { color: var(--muted); }
+.vi-subtitle { color: var(--rc); font-weight: 500; }
+.vi-desc { margin: 0; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; }
+.vi-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.vi-table td { padding: 8px 2px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.vi-table td:first-child { color: var(--muted); white-space: nowrap; padding-right: 14px; }
+.vi-table b { font-weight: 600; }
+.viewer-info .tp { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.12em; }
+.vi-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.viewer-info .btn { height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--raised); box-shadow: inset 0 0 0 1px var(--control); color: var(--text); font: 500 15px var(--body); cursor: pointer; }
+.viewer-info .btn:hover { background: #2a2a31; }
+.viewer-info .btn.primary { background: var(--hue); box-shadow: none; color: var(--on-hue); }
+.vi-social { padding-top: 12px; border-top: 1px solid var(--rule); }
+
+/* wybór wariantu: nagłówek z aktualnym wariantem, po rozwinięciu kafelki warstw i wariantów */
+.vi-vpick { border-radius: var(--radius-m); background: var(--raised); }
+.vi-vhead { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 14px; border: 0; border-radius: var(--radius-m); background: none; color: var(--text); font: 500 15px var(--body); text-align: left; cursor: pointer; }
+.vi-vhead b { margin-left: auto; font-weight: 600; }
+.vi-vhead .vdot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.vi-chev { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+.vi-vpick.open .vi-chev { transform: rotate(180deg); }
+.vi-vbody { display: none; flex-direction: column; gap: 8px; padding: 0 12px 14px; }
+.vi-vpick.open .vi-vbody { display: flex; }
+.vi-vlabel { display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; }
+.vi-vlabel .muted { font-weight: 400; font-size: 12px; }
+.vi-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; max-height: 268px; overflow-y: auto; padding: 2px; }
+.vt-tile { font: inherit; cursor: pointer; text-align: left; }
+.vt-tile .pv { color: var(--muted) !important; font-weight: 500 !important; }
+.vt-tile.on { outline: 2px solid #fff; outline-offset: 1px; }
+.vt-tile.dim { opacity: .45; }
+.vt-tile.dim:hover { opacity: .8; }
+
+@media (max-width: 760px) {
+  .viewer { gap: 18px; padding: 16px; }
+  .viewer-info { padding: 16px; }
+}

@@ -13,12 +13,6 @@
 .stage .card { cursor: zoom-in; }
 
 /* wielkie odsłonięcia i podgląd karty: te same animacje, spokojniejsza typografia */
-.epic-title, .sr-title, .vi-rarity { font-family: var(--display) !important; letter-spacing: -.01em; }
-.viewer-info h2 { font: 800 30px/34px var(--display); letter-spacing: -.02em; }
-.viewer-info .btn { height: 40px; padding: 0 18px; border: 1px solid var(--control); border-radius: 999px; background: transparent; color: var(--text); font: 500 15px var(--body); }
-.viewer-info .btn:hover { background: #ffffff14; }
-.viewer-info .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--on-hue); }
-.viewer-info .tp { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.12em; }
 .results { align-content: center; flex: 1; }
 
 /* małe kafelki kart */

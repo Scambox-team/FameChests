@@ -16,6 +16,8 @@ import { Avatar, UserLink } from '../../ui/UserLink';
 import { TradeBuilder } from './TradeBuilder';
 import { TradesPanel } from './Trades';
 import { Link } from 'react-router-dom';
+import { Users } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 import s from './social.module.css';
 
 const VERBS: Record<string, string> = { drop: 'trafia ze skrzynki', contract: 'wytwarza w kontrakcie', upgrade: 'wygrywa w ulepszaczu', casino: 'wygrywa w ruletce', blackjack: 'wygrywa w blackjacku', joker: 'wygrywa w kasynie kartę specjalną', link: 'dostaje kartę specjalną z linku' };
@@ -106,6 +108,9 @@ export function FriendsPage() {
   );
 
   return (
+    <>
+    <PageHero icon={Users} title="Znajomi i wymiany" lead="Zapraszaj graczy, wymieniaj się kartami i zobacz, co trafili znajomi."
+      stats={[['Znajomi', String(fr.friends.length)], ['Zaproszenia', String(fr.incoming.length)], ['Oferty dla ciebie', String(tr.incoming.length)]]} />
     <div className={s.cols}>
       <div className={s.stack}>
         <section className={s.panel}>
@@ -140,5 +145,6 @@ export function FriendsPage() {
       </section>
       {trade && <TradeBuilder username={trade} onClose={() => setTrade(null)} onSent={refetch} />}
     </div>
+    </>
   );
 }

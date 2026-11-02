@@ -2,6 +2,7 @@
 // Efekty nad stroną: cząsteczki, wielkie odsłonięcie karty, drukarka paragonów, konfetti, podgląd karty.
 // Rysują bezpośrednio na body i na canvasach (#fxCanvas, #confetti), bo muszą działać nad każdym ekranem.
 import { S } from '../game/store';
+import { joinVariant, splitVariant } from '../game/rules';
 import { abilitiesOf, baseVariant, beerSub, cardValue, crateOf, crateVariants, isBlank, isCombo, isSpecial, isSpecialCard, person, plural, possibleVariants, rand, rarityIdx, rarityShare, variantChance, variantName, variantParts, vClass, vtClass, imgUrl } from '../game/rules';
 import { cardHTML, scratchable } from '../cards/cardHtml';
 import { esc, fmt, sleep } from '../lib/format';
@@ -317,9 +318,23 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     // warianty, w których karta może istnieć (np. Rzulty tylko JP2), osobno połączenia z flagą; plus te, które już masz
     const mine = S.items.filter(i => i.person === pid);
     const shown = new Set([...possibleVariants(p), variant, ...mine.map(i => i.variant)]);
-    const chip = v => `<button class="vchip ${vtClass(v)}${v === variant ? " active" : ""}" data-var="${v}">${isCombo(v) ? "+ " + variantName(baseVariant(v)) : variantName(v)}</button>`;
-    const combos = S.cfg.variantOrder.filter(v => shown.has(v) && isCombo(v));
-    const layers = [...new Set(combos.map(v => variantParts(v)[0]))];   // osobny wiersz dla każdej warstwy (flaga, Halloween)
+    // kafelki: warstwy (flaga, Halloween...) i zwykłe warianty osobno; zaznaczone razem dają połączenie (flag+gold)
+    const cur = splitVariant(variant);
+    const order = S.cfg.variantOrder.filter(v => shown.has(v));
+    const layerList = [...new Set(order.map(v => splitVariant(v).layer).filter(Boolean))];
+    const baseList = [...new Set(order.map(v => splitVariant(v).base))];
+    const tile = (v, key, val, on, dim = false) => `<button type="button" class="pick vt-tile ${vClass(v)}${on ? " on" : ""}${dim ? " dim" : ""}" style="--rc:${S.cfg.rarities[p.rarity].color}" ${key}="${val}" title="${esc(variantName(v))}">
+      <img src="${imgUrl(pid, v, true)}" alt="" loading="lazy" draggable="false"><span class="pn">${esc(variantName(v))}</span><span class="pv">×${String(S.cfg.variants[v].mult).replace(".", ",")}</span></button>`;
+    const vpick = `<div class="vi-vpick${VIEWER.tilesOpen ? " open" : ""}">
+      <button type="button" class="vi-vhead" data-act="vtoggle" aria-expanded="${VIEWER.tilesOpen}"><span class="vdot ${vtClass(variant)}"></span><span class="muted">Wariant</span><b>${esc(variantName(variant))}</b>
+        <svg class="vi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="vi-vbody">
+        ${layerList.length ? `<div class="vi-vlabel">Warstwa <span class="muted">łączy się z wariantem poniżej</span></div>
+          <div class="vi-tiles">${layerList.map(l => tile(l, "data-vlayer", l, cur.layer === l)).join("")}</div>` : ""}
+        <div class="vi-vlabel">Wariant</div>
+        <div class="vi-tiles">${baseList.map(b => tile(b, "data-vbase", b, cur.base === b, !!cur.layer && !shown.has(joinVariant(cur.layer, b)))).join("")}</div>
+      </div>
+    </div>`;
     const owned = S.cfg.variantOrder.filter(v => mine.some(i => i.variant === v))
       .map(v => `${variantName(v)} ×${mine.filter(i => i.variant === v).length}`).join(", ");
     el.innerHTML = `${stage}
@@ -340,9 +355,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
           ${cratesRow}
           <tr><td>Posiadasz</td><td>${owned || '<span class="muted">brak</span>'}</td></tr>
         </table>
-        <div class="vi-variants">${S.cfg.variantOrder.filter(v => shown.has(v) && !isCombo(v)).map(chip).join("")}</div>
-        ${layers.map(l => `<div class="vi-variants vi-combos"><span class="vi-combo-lbl">${variantName(l)} +</span>${
-          combos.filter(v => variantParts(v)[0] === l).map(chip).join("")}</div>`).join("")}
+        ${vpick}
         <div class="vi-actions">
           <button class="btn" data-act="flip">Obróć</button>
           <button class="btn" data-act="close">Zamknij</button>
@@ -361,9 +374,17 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
 
   el.addEventListener("click", e => {
     const act = e.target.closest("[data-act]")?.dataset.act;
-    const v = e.target.closest("[data-var]")?.dataset.var;
+    const vb = e.target.closest("[data-vbase]")?.dataset.vbase, vl = e.target.closest("[data-vlayer]")?.dataset.vlayer;
     if (act === "close" || e.target === el) return closeViewer();
-    if (v) return openViewer(pid, v, v === variant ? uid : null);
+    if (act === "vtoggle") { VIEWER.tilesOpen = !VIEWER.tilesOpen; el.querySelector(".vi-vpick").classList.toggle("open", VIEWER.tilesOpen); e.target.closest("[data-act]").setAttribute("aria-expanded", String(VIEWER.tilesOpen)); return Sound.click(); }
+    if (vb || vl) {
+      const cur = splitVariant(variant), ok = v => S.cfg.variants[v] && (possibleVariants(p).includes(v) || S.items.some(i => i.person === pid && i.variant === v) || v === variant);
+      let next;
+      if (vb) next = ok(joinVariant(cur.layer, vb)) ? joinVariant(cur.layer, vb) : vb;   // baza bez pary z warstwą: warstwa odpada
+      else next = cur.layer === vl ? cur.base : ok(joinVariant(vl, cur.base)) ? joinVariant(vl, cur.base) : vl;
+      if (next !== variant) { Sound.click(); return openViewer(pid, next, next === variant ? uid : null); }
+      return;
+    }
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "draw") return viewerActions.openDrawing?.(+uid);
@@ -374,6 +395,9 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     }
   });
 }
+
+// rozwinięty wybór wariantów zostaje rozwinięty przy kolejnych podglądach
+const VIEWER = { tilesOpen: false };
 
 export function closeViewer() { document.querySelector(".viewer")?.remove(); }
 export function viewerOpen() { return !!document.querySelector(".viewer"); }

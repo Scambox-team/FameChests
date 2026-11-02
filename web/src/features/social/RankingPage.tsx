@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Crown, Medal, Users } from 'lucide-react';
+import { Crown, Medal, Trophy, Users } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 import { api } from '../../api/client';
 import { plural } from '../../game/rules';
 import { fmt, fmtNum } from '../../lib/format';
@@ -54,10 +55,8 @@ export function RankingPage() {
 
   return (
     <>
-      <div className={s.rankStats}>
-        <span title="Gracze z otwartą grą w ciągu ostatnich 2 minut"><i className={s.online} /><b>{fmtNum(r.online)}</b> online</span>
-        <span><b>{fmtNum(r.accounts)}</b> {plural(r.accounts, 'konto', 'konta', 'kont')} w grze</span>
-      </div>
+      <PageHero icon={Trophy} title="Najlepsi gracze" lead="Ranking według wartości kolekcji, zebranych kart albo otwartych skrzynek. Wyszukasz tu każdego gracza, także spoza rankingu."
+        stats={[['Online', <><i className={s.online} /> {fmtNum(r.online)}</>], [plural(r.accounts, 'Konto', 'Konta', 'Kont') + ' w grze', fmtNum(r.accounts)]]} />
       <div className={s.rankTools}>
         <Tabs label="Ranking według" value={by} onChange={v => { setBy(v); Sound.click(); }} items={[{ id: 'value', label: 'Wartość kolekcji' }, { id: 'cards', label: 'Zebrane karty' }, { id: 'opened', label: 'Otwarte skrzynki' }]} />
         <Tabs label="Zakres" value={scope} onChange={v => { setScope(v); Sound.click(); }} items={[{ id: 'all', label: 'Wszyscy' }, { id: 'friends', label: 'Znajomi' }]} />

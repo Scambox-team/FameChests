@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import { PageHero } from '../../ui/PageHero';
 
 import { Card } from '../../cards/Card';
 import { ownedMap } from '../../game/actions';
@@ -124,8 +126,12 @@ export function BinderPage() {
   const open = (id: string, o: BinderOwned) => { if (o.count) setDialog(id); else openViewer(id, o.best); };
   const pick = (id: string) => { S.binderCrate = id; setCrate(id); Sound.click(); };
 
+  const all = crates.reduce((a, c) => a + c.people.filter(id => person(id)?.source !== 'ufo').length, 0);
+  const have = crates.reduce((a, c) => a + c.people.filter(id => owned[id]).length, 0);
   return (
     <>
+      <PageHero icon={BookOpen} title="Twoja kolekcja" lead="Każda karta ma swoje miejsce w klaserze. Karty, które kiedyś miałeś, zostają w nim przygaszone."
+        stats={[['Zebrane karty', `${have} / ${all}`], ['Kolekcja', `${all ? Math.round(have / all * 100) : 0}%`]]} />
       <Tabs label="Skrzynka" value={crate} onChange={pick} items={crates.map(c => ({ id: c.id, label: c.short }))} />
       {crateOf(crate) && <Binder crateId={crate} owned={owned} mine onOpen={open} />}
       {dialog && <OwnedCardDialog pid={dialog} onClose={() => setDialog(null)} />}
