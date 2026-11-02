@@ -7,10 +7,9 @@ import {
   beerSub, vClass, variantName, variantParts
 } from '../game/rules';
 import { esc, fmt } from '../lib/format';
-import { kindIcon, typeIcon } from '../icons/cardIcons';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "ANIME", covid: "COVID-19", claude: "✻ CLAUDE", scratch: "ZDRAPKA", teletext: "P888", retroos: "OKIENKA 97", receipt: "PARAGON", tarot: "TAROT", muertos: "MUERTOS", blank: "CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "STEEL", sapphire: "SAPPHIRE", blackdiamond: "BLACK DIAMOND", holo: "HOLO", pearl: "PEARL", gold: "GOLDEN", vintage: "1887", marble: "MARBLE", slime: "SLIME", matte: "MATTE", racing: "RETRO", bismuth: "BISMUTH", digital: "DIGITAL", cyber: "CYBER", fade: "FADE", wanted: "WANTED", artdeco: "ART DÉCO", cheese: "CHEESE", aero: "AERO", honey: "HONEY", chinese: "CHINA", moro: "MORO", beer: "BEER", neon: "NEON", electric: "VOLT", synthwave: "SYNTH", motor: "MOTO", toxic: "TOXIC", pixel: "PIXEL", popart: "POP!", glass: "VITRAIL", thermal: "THERMAL", blueprint: "BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "MOSAIC", noir: "NOIR", chocolate: "CHOCO", candy: "CANDY", hollywood: "1969", cobalt: "COBALT", banana: "BANANA", uranium: "U-238", mercury: "☿ Hg", californium: "Cf-252", files: "AKTA", copper: "Cu", reflective: "HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "HALLOWEEN", lantern: "LAMPION", devil: "DEVIL", joker: "JOKER", jeans: "DŻINS", ufo: "⎍⎎⍜⌰⎍⎅", clear: "CLEAR", sketch: "SKETCH", emerald: "EMERALD", amethyst: "AMETHYST", ruby: "RUBY", mlg: "MLG", royal: "ROYAL", diamond: "DIAMOND", galaxy: "GALAXY", negative: "◐ NEGATIVE", rzulty: "RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -1134,7 +1133,7 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
   const type = S.cfg.types[p.type];
   const crate = crateOf(p.crate);
   const total = String(crate.people.length).padStart(3, "0");
-  const costN = Math.min(3, 1 + Math.floor(rarityIdx(p.rarity) / 2));
+  const cost = type.icon.repeat(Math.min(3, 1 + Math.floor(rarityIdx(p.rarity) / 2)));
   const abils = abilitiesOf(p);
   const T = cardTexts(p), name = p.texts?.name ?? p.name;
   // napis rzadkości: wariant może mieć własny (UFO - alfabet obcych zamiast "Specjalna")
@@ -1148,20 +1147,20 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
       <div class="card-head">
         <span class="card-name">${variantParts(variant).includes("digital") ? `<span class="dg-type" style="--n:${[...name].length}">${esc(name)}</span>` : esc(name)}</span>
         <span class="card-hp"><small>${T("hpLabel", "HP")}</small>${T("hp", p.hp)}</span>
-        <span class="card-type">${T("type", typeIcon(p.type))}</span>
+        <span class="card-type">${T("type", type.icon)}</span>
       </div>
       <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}</div>
       <div class="card-sub${p.subtitle || p.texts?.sub ? " has-subtitle" : ""}">${T("sub", p.subtitle ? esc(p.subtitle)
         : bs ? esc(bs.label) : variantSub(variant, pid) ?? `${type.name} · ${esc(crate.short)}`)}</div>
       ${abils.map((a, i) => `<div class="card-attack${i ? " atk2" : ""}${a.kind !== "off" ? " " + a.kind : ""}">
-        <span class="atk-cost">${T(`atk${i + 1}Cost`, a.kind === "off" ? `${typeIcon(p.type)}×${costN + (i ? 1 : 0)}` : kindIcon(a.kind))}</span>
+        <span class="atk-cost">${T(`atk${i + 1}Cost`, a.kind === "off" ? cost + (i ? type.icon : "") : S.cfg.abilityKinds[a.kind]?.icon || "")}</span>
         <span class="atk-name">${T(`atk${i + 1}Name`, esc(a.name))}</span>
         <span class="atk-dmg">${T(`atk${i + 1}Value`, a.value)}</span>
       </div>`).join("")}
       <div class="card-stats">
-        <span>${T("weakLabel", "słabość")}<b>${T("weak", typeIcon(type.weak) + "×2")}</b></span>
-        <span>${T("resistLabel", "odporność")}<b>${T("resist", typeIcon(type.resist) + "-20")}</b></span>
-        <span>${T("retreatLabel", "wycofanie")}<b>${T("retreat", "●".repeat(1 + rarityIdx(p.rarity) % 3))}</b></span>
+        <span>${T("weakLabel", "słabość")}<b>${T("weak", S.cfg.types[type.weak].icon + "×2")}</b></span>
+        <span>${T("resistLabel", "odporność")}<b>${T("resist", S.cfg.types[type.resist].icon + "-20")}</b></span>
+        <span>${T("retreatLabel", "wycofanie")}<b>${T("retreat", "⚪".repeat(1 + rarityIdx(p.rarity) % 3))}</b></span>
       </div>
       <div class="card-foot">
         <span class="card-rarity"><span class="gem"></span>${T("rarity", rarityName)}</span>
@@ -1194,7 +1193,7 @@ function secretCardHTML(p, variant, uid = null) {
       </div>
       <div class="sc-panel">
         ${p.subtitle ? `<div class="sc-sub">${esc(p.subtitle)}</div>` : ""}
-        ${abilitiesOf(p).map((a, i) => `<div class="sc-attack${a.kind !== "off" ? " " + a.kind : ""}"><span>${a.kind === "off" ? `${typeIcon(p.type)}×${i ? 2 : 1}` : kindIcon(a.kind)}</span><span class="sc-atk">${esc(a.name)}</span><b>${a.value}</b></div>`).join("")}
+        ${abilitiesOf(p).map((a, i) => `<div class="sc-attack${a.kind !== "off" ? " " + a.kind : ""}"><span>${a.kind === "off" ? type.icon.repeat(i ? 2 : 1) : S.cfg.abilityKinds[a.kind]?.icon || ""}</span><span class="sc-atk">${esc(a.name)}</span><b>${a.value}</b></div>`).join("")}
         <div class="sc-foot"><span>★ TAJNA ★</span><span>${esc(crate.code)} ★${String(p.number).padStart(3, "0")}</span><span class="sc-val">${fmt(cardValue(p.id, variant))}</span></div>
       </div>
       <div class="sc-frame"></div>

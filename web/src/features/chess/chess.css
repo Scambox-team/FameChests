@@ -1,5 +1,6 @@
-/* ZAKŁADKA GRY i SZACHY (chess.js): czarno-biało i oszczędnie, kolor wnoszą tylko skiny */
-#view-games { --muted: #989898; --good: #f2f2f2; }
+/* ZAKŁADKA GRY i SZACHY: plansza w ciepłych odcieniach (jasny beż, szarobrązowy), żeby białe i czarne figury się od niej odcinały;
+   ruch, zaznaczenie i szach w kolorze wybranej skrzynki jak reszta gry */
+#view-games { --sq-lt: #eadcc2; --sq-dk: #8a765f; --sq-lt-c: #5e4f3d; --sq-dk-c: #f3e9d6; }
 .ch-lobby { display: flex; flex-direction: column; gap: 14px; }
 .ch-lobby > p { margin: 0; }
 .ch-form input { height: 40px; padding: 0 12px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; }
@@ -17,22 +18,23 @@
 .ch-game { position: relative; display: flex; gap: 20px; align-items: stretch; justify-content: center; }
 .ch-left { flex: 0 1 auto; width: min(calc(100% - 300px), calc(100vh - 176px)); min-width: 320px; }
 .ch-side { flex: 0 0 280px; display: flex; flex-direction: column; gap: 12px; }
-.ch-player { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); color: #8a8a8a; }
-.ch-side > .ch-player:last-child { margin-top: auto; border-top: 1px solid var(--rule); border-bottom: 0; }
-.ch-player.on { color: #fff; }
+.ch-player { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); color: var(--muted); }
+.ch-side > .ch-player:last-child { margin-top: auto; }
+.ch-player.on { color: var(--text); box-shadow: inset 0 0 0 2px var(--hue); }
 .ch-who { display: flex; align-items: center; gap: 8px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-dot { flex: none; width: 11px; height: 11px; border-radius: 50%; border: 1px solid #8a8a8a; }
 .ch-dot.w { background: #f6f6f6; } .ch-dot.b { background: #0c0c0c; }
-.ch-clock { font: 400 24px/1.2 "Share Tech Mono", monospace; color: inherit; }
-.ch-board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; outline: 1px solid #5a5a5a; outline-offset: 3px; user-select: none; touch-action: manipulation; }
+.ch-clock { font: 600 22px/1.2 var(--body); font-variant-numeric: tabular-nums; color: inherit; }
+.ch-board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-m); box-shadow: 0 0 0 6px var(--raised), 0 24px 60px #000a; user-select: none; touch-action: manipulation; }
 .ch-board.wait { pointer-events: none; }
 .ch-sq { position: relative; display: grid; place-items: center; aspect-ratio: 1; container-type: inline-size; cursor: pointer; }
-.ch-sq.lt, .sk-sq.lt { background: #efefed; } .ch-sq.dk, .sk-sq.dk { background: #1c1c1c; }
-.ch-sq.last.lt { background: #cfcfcd; } .ch-sq.last.dk { background: #3e3e3e; }
-.ch-sq.sel.lt { background: #b0b0ae; } .ch-sq.sel.dk { background: #5c5c5c; }
-.ch-sq.check { box-shadow: inset 0 0 0 5cqw #8a8a8a; }
-.ch-sq.move::after { content: ""; position: absolute; width: 24%; aspect-ratio: 1; border-radius: 50%; background: #8a8a8a; }
-.ch-sq.take::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; border: 4cqw solid #8a8a8a; }
+.ch-sq.lt, .sk-sq.lt { background: var(--sq-lt, #eadcc2); } .ch-sq.dk, .sk-sq.dk { background: var(--sq-dk, #8a765f); }
+.ch-sq.last.lt { background: color-mix(in srgb, var(--hue) 32%, var(--sq-lt)); } .ch-sq.last.dk { background: color-mix(in srgb, var(--hue) 36%, var(--sq-dk)); }
+.ch-sq.sel.lt { background: color-mix(in srgb, var(--hue) 55%, var(--sq-lt)); } .ch-sq.sel.dk { background: color-mix(in srgb, var(--hue) 60%, var(--sq-dk)); }
+.ch-sq.check { background: radial-gradient(circle, #ff4d4d 0 28%, color-mix(in srgb, #ff4d4d 45%, transparent) 55%, transparent 72%), var(--sq-lt) !important; }
+.ch-sq.check.dk { background: radial-gradient(circle, #ff4d4d 0 28%, color-mix(in srgb, #ff4d4d 45%, transparent) 55%, transparent 72%), var(--sq-dk) !important; }
+.ch-sq.move::after { content: ""; position: absolute; width: 26%; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--hue) 80%, #000); opacity: .75; }
+.ch-sq.take::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; border: 5cqw solid color-mix(in srgb, var(--hue) 80%, #000); opacity: .75; }
 .ch-pc { display: block; width: 94%; height: 94%; pointer-events: none; }
 .ch-pc svg { display: block; width: 100%; height: 100%; overflow: visible; shape-rendering: geometricPrecision; }
 .ch-pc.w { --f: #fafafa; --l: #141414; } .ch-pc.b { --f: #151515; --l: #efefef; }
@@ -40,21 +42,24 @@
 .pc-line { fill: none; stroke: var(--l); stroke-width: 2.2; stroke-linecap: round; }
 .pc-eye { fill: var(--l); }
 .pc-plate { fill: var(--f); stroke: var(--l); stroke-width: 2.4; }
-.dk > .ch-pc.sk { filter: drop-shadow(0 0 .7px #ffffffb0); }
-.ch-co { position: absolute; font: 400 13cqw/1 Rubik, sans-serif; font-style: normal; pointer-events: none; }
-.ch-sq.lt .ch-co { color: #0009; } .ch-sq.dk .ch-co { color: #fff9; }
+.ch-pc { filter: drop-shadow(0 2px 2px #0006); }
+/* animacja ruchu: figura startuje z poprzedniego pola (FLIP w ChessPage.tsx) */
+.ch-pc.moving { position: relative; z-index: 3; transition: transform .26s cubic-bezier(.3, .7, .2, 1); }
+.ch-co { position: absolute; font: 600 13cqw/1 var(--body); font-style: normal; pointer-events: none; }
+.ch-sq.lt .ch-co { color: var(--sq-lt-c); } .ch-sq.dk .ch-co { color: var(--sq-dk-c); }
 .ch-co.f { left: 5%; bottom: 4%; } .ch-co.r { right: 5%; top: 4%; }
-.ch-status { font: 800 17px/1.3 var(--display); letter-spacing: .03em; color: #f2f2f2; }
-.ch-alert { padding: 4px 10px; border: 1px solid #f2f2f2; font-weight: 500; text-align: center; letter-spacing: .08em; text-transform: uppercase; color: #f2f2f2; }
-.ch-reward { padding: 8px 10px; border: 1px solid #f2f2f2; color: #f2f2f2; }
+.ch-status { font: 800 20px/1.3 var(--display); letter-spacing: -.01em; color: var(--text); }
+.ch-alert { padding: 6px 12px; border-radius: 999px; background: #ff4d4d22; color: #ff7a7a; font-weight: 600; text-align: center; letter-spacing: .12em; text-transform: uppercase; }
+.ch-reward { padding: 10px 12px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--text); }
 .ch-offer { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; }
-.ch-moves { flex: 1 1 200px; min-height: 120px; overflow-y: auto; font: 400 14px/1.6 "Share Tech Mono", monospace; color: #cfcfcf; }
+.ch-moves { flex: 1 1 200px; min-height: 120px; overflow-y: auto; padding: 8px 10px; border-radius: var(--radius-s); background: var(--ground); font: 500 14px/1.7 var(--body); font-variant-numeric: tabular-nums; color: var(--text); }
 .ch-mv { display: grid; grid-template-columns: 34px 1fr 1fr; }
-.ch-mv i { font-style: normal; color: var(--muted); } .ch-mv b { font-weight: 400; }
+.ch-mv i { font-style: normal; color: var(--muted); } .ch-mv b { font-weight: 500; }
+.ch-mv:last-child b:last-of-type:not(:empty), .ch-mv:last-child b:only-of-type { color: var(--hue); }
 .ch-btns { display: flex; flex-wrap: wrap; gap: 6px; }
-.ch-promo { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #000a; }
-.ch-pick { width: 84px; height: 84px; margin: 4px; padding: 6px; border: 1px solid #5a5a5a; background: #7a7a7a; cursor: pointer; }
-.ch-pick:hover { background: #9a9a9a; }
+.ch-promo { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #000b; }
+.ch-pick { width: 84px; height: 84px; margin: 4px; padding: 6px; border: 0; border-radius: var(--radius-s); background: var(--sq-lt); cursor: pointer; }
+.ch-pick:hover { background: color-mix(in srgb, var(--hue) 40%, var(--sq-lt)); }
 @media (max-width: 1000px) { .ch-game { flex-direction: column; align-items: center; } .ch-left { width: min(100%, calc(100vh - 176px)); } .ch-side { flex: none; width: min(100%, 640px); } .ch-moves { flex: none; max-height: 160px; } }
 @media (max-width: 760px) { .ch-grid { grid-template-columns: 1fr; } }
 
@@ -74,7 +79,7 @@
 .sk-slot select { width: 100%; }
 /* bęben figur i wyniki */
 .mini-sk .sk-art { display: grid; place-items: center; aspect-ratio: 1 / 1.05; }
-.mini-sk .sk-art.lt { background: #efefed; } .mini-sk .sk-art.dk { background: #1c1c1c; }
+.mini-sk .sk-art.lt { background: #eadcc2; } .mini-sk .sk-art.dk { background: #8a765f; }
 .mini-sk .sk-art .ch-pc { width: 88%; height: 88%; }
 .sk-res-head { grid-column: 1 / -1; text-align: center; font: 800 16px var(--display); letter-spacing: .1em; text-transform: uppercase; }
 .result.sk-res { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-radius: 14px; background: #121722; box-shadow: 0 0 0 2px var(--rc), 0 0 22px var(--rc); }
@@ -94,3 +99,6 @@
 .crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock { left: 50%; top: 31%; width: 42%; height: 5%; border: none; border-radius: 0; box-shadow: none; background: conic-gradient(var(--t3) 25%, var(--t1) 0 50%, var(--t3) 0 75%, var(--t1) 0) 0 0 / 14% 100%; }
 .crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock::before, .crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-lock::after { content: none; }
 .crate-art:is(.crate-szachy, .crate-szachy_czarne) .crate-emblem { top: 36%; left: 50%; color: var(--t3); filter: none; text-shadow: none; -webkit-text-stroke: 0; animation: none; }
+
+/* zakładki Partie / Figury */
+.ch-tabs { margin-bottom: 4px; }

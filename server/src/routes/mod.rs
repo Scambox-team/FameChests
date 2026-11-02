@@ -68,6 +68,8 @@ pub fn router(st: AppState) -> Router {
         .route("/", get(index))
         .route("/inventory/hall-of-fame", get(index))
         .route("/inventory/figures", get(index))
+        .route("/binder/hall-of-fame", get(index))
+        .route("/games/figures", get(index))
         .route("/player/{name}", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))

@@ -1,12 +1,11 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Maximize2, Star } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Backpack } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
-import { Figures } from '../chess/Figures';
 import { dupesOf, ownedMap, sellIds, setFavorite } from '../../game/actions';
 import { cardMatches, filterVariants, isSpecial, isSpecialCard, person, plural, rarityIdx, seenCrateList, sortCards, varRank } from '../../game/rules';
 import { S, touch, useGame } from '../../game/store';
@@ -17,7 +16,6 @@ import { Button } from '../../ui/Button';
 import { SearchField, Select } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
 import { ChestShelf } from './ChestShelf';
-import { HallOfFame } from './HallOfFame';
 import { ufoAbduct, ufoArrive, ufoLeave } from './ufo';
 import { VariantPicker, variantMatches, type VariantValue } from '../../ui/VariantPicker';
 import styles from './InventoryPage.module.css';
@@ -159,8 +157,6 @@ function MyCards() {
 
 export function InventoryPage() {
   const { pathname } = useLocation();
-  const hof = pathname.endsWith('/hall-of-fame');
-  const figures = pathname.endsWith('/figures');
   const game = useGame();
   useEffect(() => {
     document.title = 'Ekwipunek · ScamBox';
@@ -168,16 +164,14 @@ export function InventoryPage() {
     touch();
     return ufoLeave;
   }, []);
+  // Hall of Fame jest teraz w klaserze, a figury w szachach
+  if (pathname.endsWith('/hall-of-fame')) return <Navigate to="/binder/hall-of-fame" replace />;
+  if (pathname.endsWith('/figures')) return <Navigate to="/games/figures" replace />;
   return (
     <>
-      <PageHero icon={Backpack} title="Twoje karty" lead="Wszystko, co masz: karty, skrzynki do otwarcia i figury do szachów. Kliknij kartę, żeby ją zaznaczyć, ikoną obok, żeby ją obejrzeć."
+      <PageHero icon={Backpack} title="Twoje karty" lead="Wszystko, co masz: karty i skrzynki do otwarcia. Kliknij kartę, żeby ją zaznaczyć, ikoną obok, żeby ją obejrzeć."
         stats={[['Karty', game.items.length.toLocaleString('pl-PL')], ['Wartość', fmt(game.items.reduce((a, i) => a + i.value, 0))], ['Ulubione', String(game.items.filter(i => i.fav).length)]]} />
-      <nav className={styles.modes} aria-label="Ekwipunek">
-        <Link to="/inventory" aria-current={!hof && !figures ? 'page' : undefined}>Moje karty</Link>
-        <Link to="/inventory/figures" aria-current={figures ? 'page' : undefined}>Figury</Link>
-        <Link to="/inventory/hall-of-fame" aria-current={hof ? 'page' : undefined}>Hall of Fame</Link>
-      </nav>
-      {hof ? <HallOfFame /> : figures ? <Figures /> : <MyCards />}
+      <MyCards />
     </>
   );
 }

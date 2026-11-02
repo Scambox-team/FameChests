@@ -32,7 +32,7 @@ function setup() {
   rig = { renderer, scene, camera, kit, rim, canvas };
 }
 
-export const crateIconKey = (look: CrateLook) => `${look.c1}|${look.c2}|${look.hue}|${look.d}`;
+export const crateIconKey = (look: CrateLook) => `${look.c1}|${look.c2}|${look.hue}|${look.emoji || look.d}`;
 const cache = new Map<string, string>();
 
 /** Obrazek skrzynki w danym wyglądzie (adres data:, gotowy do <img>) */

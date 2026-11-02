@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { CrateLook } from '../../three/crateModel';
 
-const key = (l: CrateLook) => `${l.c1}|${l.c2}|${l.hue}|${l.d}`;
+const key = (l: CrateLook) => `${l.c1}|${l.c2}|${l.hue}|${l.emoji || l.d}`;
 const ready = new Map<string, string>();
 let failed = false;
 

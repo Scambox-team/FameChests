@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BookOpen } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { HallOfFame } from '../inventory/HallOfFame';
 import { PageHero } from '../../ui/PageHero';
 
 import { Card } from '../../cards/Card';
@@ -109,6 +111,8 @@ export function Binder({ crateId, owned, mine, onOpen, reveal }: { crateId: stri
 
 export function BinderPage() {
   const game = useGame();
+  const hof = useParams().tab === 'hall-of-fame';
+  const navigate = useNavigate();
   const [dialog, setDialog] = useState<string | null>(null);
   const crates = seenCrateList();
   if (!crates.some(c => c.id === game.binderCrate)) S.binderCrate = crates[0]?.id;
@@ -130,11 +134,15 @@ export function BinderPage() {
   const have = crates.reduce((a, c) => a + c.people.filter(id => owned[id]).length, 0);
   return (
     <>
+      <Tabs label="Klaser" value={hof ? 'hof' : 'binder'} onChange={v => { Sound.click(); navigate(v === 'hof' ? '/binder/hall-of-fame' : '/binder'); }}
+        items={[{ id: 'binder', label: 'Klaser' }, { id: 'hof', label: 'Hall of Fame' }]} />
+      {hof ? <HallOfFame /> : <>
       <PageHero icon={BookOpen} title="Twoja kolekcja" lead="Każda karta ma swoje miejsce w klaserze. Karty, które kiedyś miałeś, zostają w nim przygaszone."
         stats={[['Zebrane karty', `${have} / ${all}`], ['Kolekcja', `${all ? Math.round(have / all * 100) : 0}%`]]} />
       <Tabs label="Skrzynka" value={crate} onChange={pick} items={crates.map(c => ({ id: c.id, label: c.short }))} />
       {crateOf(crate) && <Binder crateId={crate} owned={owned} mine onOpen={open} />}
       {dialog && <OwnedCardDialog pid={dialog} onClose={() => setDialog(null)} />}
+      </>}
     </>
   );
 }

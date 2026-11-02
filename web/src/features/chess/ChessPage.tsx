@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Figures } from './Figures';
+import { Tabs } from '../../ui/Field';
 import { useQuery } from '@tanstack/react-query';
 import { Crown } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
@@ -16,6 +19,8 @@ import { SK, SK_PIECES, skDef, skinSvg, skLoad, skPreview } from './skins';
 const FILES = 'abcdefgh';
 const BOTS: [number, string][] = [[1, 'Początkujący'], [2, 'Klubowy'], [3, 'Mistrz']];
 const plainName = (s: string) => s.replace(/\p{Extended_Pictographic}️?\s*/gu, '');   // nazwa bota przychodzi z serwera z emotką
+const CASTLE: Record<string, [string, string]> = { e1g1: ['h1', 'f1'], e1c1: ['a1', 'd1'], e8g8: ['h8', 'f8'], e8c8: ['a8', 'd8'] };
+const pieceAt = (fen: string, sq: string) => squares(fen)[(8 - +sq[1]) * 8 + FILES.indexOf(sq[0])];
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
@@ -66,6 +71,36 @@ function Game({ id, onBack }: { id: number; onBack: () => void }) {
   const live = useRef({ g, busy });
   live.current = { g, busy };
   const list = useRef<HTMLDivElement>(null);
+  const board = useRef<HTMLDivElement>(null);
+  const seen = useRef<number | null>(null);   // ile półruchów już pokazaliśmy (dźwięk i animacja tylko dla nowych)
+  const mineMoved = useRef('');   // ruch, który właśnie przesunęliśmy sami (nie animujemy go drugi raz)
+
+  // nowy ruch: figura przesuwa się z poprzedniego pola (FLIP), roszada przesuwa też wieżę; dźwięk mocniejszy po ruchu rywala
+  useLayoutEffect(() => {
+    if (!g) return;
+    const n = g.san.length;
+    if (seen.current === null || n <= seen.current || !g.last) { seen.current = n; return; }
+    seen.current = n;
+    const glide = (from: string, to: string) => {
+      const a = board.current?.querySelector<HTMLElement>(`[data-sq="${from}"]`), b = board.current?.querySelector<HTMLElement>(`[data-sq="${to}"]`);
+      const pc = b?.querySelector<HTMLElement>('.ch-pc');
+      if (!a || !b || !pc || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      pc.classList.remove('moving');
+      pc.style.transform = `translate(${ra.left - rb.left}px, ${ra.top - rb.top}px)`;
+      void pc.offsetWidth;
+      pc.classList.add('moving');
+      pc.style.transform = '';
+      pc.addEventListener('transitionend', () => pc.classList.remove('moving'), { once: true });
+    };
+    const from = g.last.slice(0, 2), to = g.last.slice(2, 4);
+    if (mineMoved.current === from + to) { mineMoved.current = ''; return; }   // mój ruch bez odpowiedzi bota: już przesunięty i zagrany
+    mineMoved.current = '';
+    glide(from, to);
+    if (CASTLE[from + to] && g.san[n - 1]?.startsWith('O-O')) glide(...CASTLE[from + to]);
+    const byMe = g.you && (n % 2 === 1 ? 'w' : 'b') === g.you;
+    Sound.move(!!byMe);
+  }, [g?.san.length]);
 
   useEffect(() => {
     let alive = true, poll: ReturnType<typeof setInterval>, tick: ReturnType<typeof setInterval>;
@@ -79,7 +114,7 @@ function Game({ id, onBack }: { id: number; onBack: () => void }) {
           await new Promise(r => setTimeout(r, 450));
           if (!alive) return;
           d = await post(`/api/games/chess/${id}/test-step`);
-          if (d && alive) { setG(d); Sound.click(); }
+          if (d && alive) setG(d);
         }
         return;
       }
@@ -114,10 +149,26 @@ function Game({ id, onBack }: { id: number; onBack: () => void }) {
 
   if (!g) return <p className="muted">Wczytuję partię</p>;
 
+  // własny ruch: figura rusza od razu, a odpowiedź serwera (z ruchem bota) przychodzi w tym czasie
+  const slide = (from: string, to: string) => new Promise<void>(done => {
+    const a = board.current?.querySelector<HTMLElement>(`[data-sq="${from}"]`), b = board.current?.querySelector<HTMLElement>(`[data-sq="${to}"]`);
+    const pc = a?.querySelector<HTMLElement>('.ch-pc');
+    if (!a || !b || !pc || matchMedia('(prefers-reduced-motion: reduce)').matches) return done();
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    pc.classList.add('moving');
+    pc.style.transform = `translate(${rb.left - ra.left}px, ${rb.top - ra.top}px)`;
+    setTimeout(done, 270);
+  });
   const move = async (uci: string) => {
     setSel(null); setPromo(null); setBusy(true);
-    try { setG(await api(`/api/games/chess/${id}/move`, { move: uci })); Sound.click(); }
-    catch (e: any) { toast(e.message, true); }
+    mineMoved.current = uci.slice(0, 4);
+    Sound.move(true);
+    try {
+      const rook = CASTLE[uci.slice(0, 4)] && pieceAt(g.fen, uci.slice(0, 2))?.toLowerCase() === 'k' ? CASTLE[uci.slice(0, 4)] : null;
+      const [res] = await Promise.all([api(`/api/games/chess/${id}/move`, { move: uci }), slide(uci.slice(0, 2), uci.slice(2, 4)), rook && slide(...rook)]);
+      setG(res);
+    } catch (e: any) { toast(e.message, true); mineMoved.current = ''; }
+    board.current?.querySelectorAll<HTMLElement>('.ch-pc.moving').forEach(p => { p.classList.remove('moving'); p.style.transform = ''; });
     setBusy(false);
   };
   const click = (name: string) => {
@@ -145,7 +196,7 @@ function Game({ id, onBack }: { id: number; onBack: () => void }) {
   return (
     <div className="ch-game">
       <div className="ch-left">
-        <div className={`ch-board${busy ? ' wait' : ''}`}>
+        <div ref={board} className={`ch-board${busy ? ' wait' : ''}`}>
           {order.map(i => {
             const f = i % 8, r = 7 - Math.floor(i / 8), name = FILES[f] + (r + 1), c = sq[i];
             const cls = [(f + r) % 2 === 0 ? 'dk' : 'lt'];
@@ -154,7 +205,7 @@ function Game({ id, onBack }: { id: number; onBack: () => void }) {
             if (name === g.check) cls.push('check');
             if (targets.has(name)) cls.push(c ? 'take' : 'move');
             return (
-              <div key={name} className={`ch-sq ${cls.join(' ')}`} onPointerUp={() => click(name)}>
+              <div key={name} data-sq={name} className={`ch-sq ${cls.join(' ')}`} onPointerUp={() => click(name)}>
                 {(bottomBlack ? r === 7 : r === 0) && <i className="ch-co f">{FILES[f]}</i>}
                 {(bottomBlack ? f === 0 : f === 7) && <i className="ch-co r">{r + 1}</i>}
                 {c && <span style={{ display: 'contents' }} {...html(pieceHTML(g, c))} />}
@@ -272,7 +323,17 @@ function Lobby({ onOpen }: { onOpen: (id: number) => void }) {
 
 export function ChessPage() {
   const [id, setId] = useState(openId);
+  const { tab } = useParams();
+  const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  return <div id="view-games">{id ? <Game key={id} id={id} onBack={() => open(null)} /> : <Lobby onOpen={open} />}</div>;
+  if (id) return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
+  const figures = tab === 'figures';
+  return (
+    <div id="view-games">
+      <Tabs label="Szachy" value={figures ? 'figures' : 'games'} onChange={v => { Sound.click(); navigate(v === 'figures' ? '/games/figures' : '/games'); }}
+        items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />
+      {figures ? <Figures /> : <Lobby onOpen={open} />}
+    </div>
+  );
 }

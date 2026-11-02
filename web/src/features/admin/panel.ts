@@ -4,7 +4,7 @@ import { crateIconPath } from '../../icons/crateIcons';
 import { toast } from '../../ui/Toaster';
 import { SK_PIECES, skPreview } from '../chess/skins';
 
-const crateIconSvg = emoji => `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${crateIconPath(emoji)}"/></svg>`;
+const crateIconSvg = emoji => emoji ? String(emoji).replace(/[<>&"]/g, "") : `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${crateIconPath(emoji)}"/></svg>`;
 
 export function startPanel() {
   // Panel admina: skrzynki i karty.

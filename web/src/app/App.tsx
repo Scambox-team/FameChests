@@ -84,11 +84,13 @@ function Game() {
           <Route path="/crates" element={<CratesPage />} />
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/binder" element={<BinderPage />} />
+          <Route path="/binder/:tab" element={<BinderPage />} />
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/casino" element={<CasinoPage />} />
           <Route path="/arena" element={<ArenaPage />} />
           <Route path="/games" element={<ChessPage />} />
+          <Route path="/games/:tab" element={<ChessPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
@@ -110,7 +112,7 @@ export function App() {
   const { pathname } = useLocation();
   return (
     <>
-      <div dangerouslySetInnerHTML={{ __html: svgDefs }} />
+      <div className="svg-defs" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svgDefs }} />
       {pathname === '/login' ? <LoginPage /> : <Game />}
       <Toaster />
       <canvas id="confetti" />

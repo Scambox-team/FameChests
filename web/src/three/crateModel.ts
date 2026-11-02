@@ -5,8 +5,8 @@ import * as THREE from 'three';
 
 export const LID_OPEN = -1.95;
 
-/** Wygląd skrzynki: kolor wieka, kolor korpusu, kolor przewodni i ścieżka emblematu (siatka 24 x 24) */
-export interface CrateLook { c1: string; c2: string; hue: string; d: string }
+/** Wygląd skrzynki: kolor wieka, kolor korpusu, kolor przewodni, emotka na emblemacie (albo ścieżka siatki 24 x 24, gdy emotki brak) */
+export interface CrateLook { c1: string; c2: string; hue: string; d: string; emoji?: string }
 
 function roundedRect(w, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
@@ -39,10 +39,17 @@ export function softDot() {
   x.fillStyle = g; x.fillRect(0, 0, 128, 128);
   return new THREE.CanvasTexture(c);
 }
-export function emblemTexture(d, c1, c2) {
+export function emblemTexture(d, c1, c2, emoji = '') {
   const c = document.createElement('canvas'); c.width = c.height = 256;
   const x = c.getContext('2d');
   x.fillStyle = c1; x.fillRect(0, 0, 256, 256);
+  if (emoji) {
+    x.font = "150px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(emoji, 128, 140);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
   x.translate(128 - 84, 128 - 84); x.scale(7, 7);
   x.strokeStyle = c2; x.lineWidth = 1.9; x.lineCap = 'round'; x.lineJoin = 'round';
   x.stroke(new Path2D(d));
@@ -104,11 +111,11 @@ export function crateKit() {
     setEmblem(look);
   }
   function setEmblem(look: CrateLook) {
-    const key = `${look.d}|${look.c1}|${look.c2}`;
+    const key = `${look.emoji || look.d}|${look.c1}|${look.c2}`;
     if (key === emblemKey) return;
     emblemKey = key;
     mat.emblem.map?.dispose();
-    mat.emblem.map = emblemTexture(look.d, look.c1, look.c2); mat.emblem.needsUpdate = true;
+    mat.emblem.map = emblemTexture(look.d, look.c1, look.c2, look.emoji); mat.emblem.needsUpdate = true;
     mat.emblem.color.set('#ffffff');
   }
   function dispose() {

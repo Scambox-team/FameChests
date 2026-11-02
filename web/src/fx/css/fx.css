@@ -23,6 +23,9 @@ input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { o
   animation: rainbowSlide 3s linear infinite; font-weight: 900;
 }
 #fxCanvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 350; }
+/* konfetti i definicje SVG nie mogą zajmować miejsca w stronie (inaczej da się przewinąć pod treść) */
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 450; }
+.svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 #contentsGrid .card, #results .card, #modalBox .card, .fa-result .card { cursor: zoom-in; }
 .inv-item .zoom-btn {

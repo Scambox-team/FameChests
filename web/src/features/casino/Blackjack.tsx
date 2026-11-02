@@ -82,7 +82,7 @@ async function animate(target: any) {
     if (flip) v.dealer[1] = card; else v[side].push(card);
     CS.bj.anim = [side, i, flip ? 'flip' : 'new'];
     touch();
-    Sound.page();
+    Sound.deal();
     await sleep(gap);
   };
   while (v.player.length < 2 || v.dealer.length < 2) {

@@ -1,5 +1,6 @@
 // @ts-nocheck -- kod rysujący na canvasie i w DOM-ie, przeniesiony bez zmian; typy dochodzą przy dalszym porządkowaniu
-// Wszystkie dźwięki są generowane w przeglądarce (Web Audio API), bez plików audio.
+// Dźwięki: nagrania z paczek Kenney (CC0, static/sounds) tam, gdzie pasują, a reszta i zapas na czas wczytywania
+// to syntezator Web Audio API.
 export const Sound = (() => {
   let ctx = null, master = null, noiseBuf = null;
   let enabled = true;
@@ -87,22 +88,53 @@ export const Sound = (() => {
     o.start(start); o.stop(start + dur + 0.05);
   }
 
+  // nagrania: klucz dźwięku w grze -> pliki (losowany jeden, żeby powtórzenia nie brzmiały identycznie)
+  const SAMPLES = {
+    click: ["click-1", "click-2"], select: ["select"], toggle: ["toggle"], tick: ["tick"], error: ["error"], win: ["confirm-1", "confirm-2"],
+    page: ["page-1", "page-2", "page-3"], open: ["pack-open-1", "pack-open-2"], land: ["card-place-1", "card-place-2", "card-place-3", "card-place-4"],
+    whoosh: ["card-slide-1", "card-slide-2", "card-slide-3", "card-slide-4"], deal: ["card-place-1", "card-place-2", "card-place-3", "card-place-4"],
+    coin: ["coins-1", "coins-2"], cash: ["chips-1", "chips-2", "chips-3"], chips: ["chips-collide"], move: ["chess-move-1", "chess-move-2", "chess-move-3"],
+    notify: ["pluck"], dice: ["dice-shake"], gold: ["jingle-gold"], ultra: ["jingle-ultra"], secret: ["jingle-secret"], bigwin: ["jingle-win"],
+    impact: ["impact"]
+  };
+  const buffers = {}, loading = {};
+  function load(name) {
+    if (buffers[name] || loading[name]) return;
+    loading[name] = fetch(`/static/sounds/${name}.ogg`).then(r => r.arrayBuffer()).then(b => ac().decodeAudioData(b)).then(buf => { buffers[name] = buf; }).catch(() => {});
+  }
+  function preload() { Object.values(SAMPLES).flat().forEach(load); }
+  // odtwarza nagranie; false = jeszcze się nie wczytało (wtedy gra syntezator)
+  function sample(key, { vol = .8, rate = 1, delay = 0 } = {}) {
+    const list = SAMPLES[key];
+    const name = list[Math.floor(Math.random() * list.length)], buf = buffers[name];
+    if (!buf) { preload(); return false; }
+    const c = ac(), src = c.createBufferSource(), g = c.createGain();
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol;
+    src.connect(g).connect(master);
+    src.start(c.currentTime + delay);
+    return true;
+  }
+
   const N = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88,
               C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880, B5: 987.77,
               C6: 1046.5, D6: 1174.66, E6: 1318.5, G6: 1567.98, C7: 2093 };
 
   const api = {
     get enabled() { return enabled; },
+    move(mine = true) { if (enabled && !sample("move", { vol: mine ? .7 : .9, rate: mine ? 1 : .92 })) api.click(); if (enabled && !mine) sample("notify", { vol: .45, delay: .06 }); },
+    deal() { if (enabled && !sample("deal", { vol: .7 })) api.page(); },
+    dice() { if (enabled && !sample("dice", { vol: .7 })) api.click(); },
     toggle() {
       enabled = !enabled;
       try { localStorage.setItem("sound", enabled ? "on" : "off"); } catch (e) {}
       if (enabled) api.click();
       return enabled;
     },
-    unlock() { if (enabled) ac(); },
+    unlock() { if (enabled) { ac(); preload(); } },
 
     click() {
       if (!enabled) return;
+      if (sample("click", { vol: .55 })) return;
       const t = ac().currentTime;
       tone(1400, t, 0.04, { type: "square", vol: 0.06 });
     },
@@ -113,6 +145,7 @@ export const Sound = (() => {
       const now = performance.now();
       if (now - lastTick < 28) return;
       lastTick = now;
+      if (sample("tick", { vol: .35, rate: .9 + speed * .3 })) return;
       const t = ac().currentTime;
       noise(t, 0.03, { vol: 0.35, freq: 3500 + speed * 1500, q: 6 });
       tone(900 + speed * 500, t, 0.025, { type: "triangle", vol: 0.08 });
@@ -120,6 +153,7 @@ export const Sound = (() => {
 
     open() {
       if (!enabled) return;
+      if (sample("open", { vol: .9 })) return;
       const t = ac().currentTime;
       // zatrzask
       noise(t, 0.06, { vol: 0.6, freq: 1200, q: 3 });
@@ -131,6 +165,7 @@ export const Sound = (() => {
 
     land(rarity) {
       if (!enabled) return;
+      if (sample("land", { vol: .7, rate: { gold: 1.05, ultra: 1.1 }[rarity] || 1 })) return;
       const t = ac().currentTime;
       const base = { green: N.C5, blue: N.D5, purple: N.E5, red: N.G5, gold: N.A5, ultra: N.C6 }[rarity] || N.C5;
       tone(base, t, 0.18, { type: "triangle", vol: 0.12 });
@@ -160,6 +195,7 @@ export const Sound = (() => {
 
     gold() {
       if (!enabled) return;
+      if (sample("gold", { vol: .7 })) return;
       const t = ac().currentTime;
       // fanfara
       const melody = [[N.G4, 0], [N.C5, 0.12], [N.E5, 0.24], [N.G5, 0.36], [N.E5, 0.52], [N.G5, 0.62]];
@@ -226,6 +262,7 @@ export const Sound = (() => {
 
     ultra(noRise = false) {
       if (!enabled) return;
+      if (sample("ultra", { vol: .75 })) return;
       const t = ac().currentTime;
       // narastanie
       if (!noRise) {
@@ -249,6 +286,7 @@ export const Sound = (() => {
 
     coin(n = 1) {
       if (!enabled) return;
+      if (sample("coin", { vol: .7 })) return;
       const t = ac().currentTime;
       const reps = Math.min(n, 5);
       for (let i = 0; i < reps; i++) {
@@ -260,6 +298,7 @@ export const Sound = (() => {
 
     error() {
       if (!enabled) return;
+      if (sample("error", { vol: .6 })) return;
       const t = ac().currentTime;
       tone(200, t, 0.15, { type: "square", vol: 0.1 });
       tone(150, t + 0.15, 0.25, { type: "square", vol: 0.1 });
@@ -267,6 +306,7 @@ export const Sound = (() => {
 
     page() {
       if (!enabled) return;
+      if (sample("page", { vol: .7 })) return;
       const t = ac().currentTime;
       noise(t, 0.25, { vol: 0.25, freq: 1500, q: 0.6, slideTo: 600 });
     },
@@ -315,12 +355,14 @@ export const Sound = (() => {
 
     whoosh() {
       if (!enabled) return;
+      if (sample("whoosh", { vol: .55 })) return;
       const t = ac().currentTime;
       noise(t, 0.6, { vol: 0.35, freq: 300, q: 1, slideTo: 4000 });
     },
 
     win() {
       if (!enabled) return;
+      if (sample("win", { vol: .7 })) { sample("chips", { vol: .35, delay: .08 }); return; }
       const t = ac().currentTime;
       [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => {
         tone(f, t + i * 0.06, 0.5, { type: "square", vol: 0.07 });
@@ -339,6 +381,7 @@ export const Sound = (() => {
 
     cash() {
       if (!enabled) return;
+      if (sample("cash", { vol: .75 })) { sample("coin", { vol: .45, delay: .1 }); return; }
       const t = ac().currentTime;
       noise(t, 0.08, { vol: 0.5, freq: 1800, q: 2 });
       tone(N.E6, t + 0.05, 0.6, { type: "sine", vol: 0.15 });
@@ -364,6 +407,7 @@ export const Sound = (() => {
     // chór + dzwony - wielkie odsłonięcie tajnej karty
     choir() {
       if (!enabled) return;
+      sample("secret", { vol: .7, delay: .15 });
       const c = ac(), t = c.currentTime;
       const chord = [N.C4, N.G4, N.C5, N.E5, N.G5, N.C6];
       chord.forEach((f, i) => {
