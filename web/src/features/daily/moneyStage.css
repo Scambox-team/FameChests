@@ -42,8 +42,8 @@
 }
 
 .ms-title { font-family: var(--display); }
-.ms-chest-wrap svg { width: 220px; display: block; animation: chestBounce .6s; }
-.ms-chest-wrap svg.shaking { animation: chestShake .12s linear infinite; }
+.ms-chest-wrap svg, .ms-chest-wrap img { width: 220px; display: block; animation: chestBounce .6s; }
+.ms-chest-wrap svg.shaking, .ms-chest-wrap img.shaking { animation: chestShake .12s linear infinite; }
 .ms-label { font-family: var(--display) !important; }
 .ms-amount { font-family: var(--display) !important; }
 .ms-btn { height: 44px; padding: 0 22px; border: 1px solid var(--control); border-radius: 999px; background: #0006; color: var(--text); font: 500 15px var(--body); }

@@ -1,9 +1,24 @@
 import { crateIconPath } from '../../icons/crateIcons';
 import type { Crate } from '../../game/types';
+import type { CrateLook } from '../../three/crateModel';
+import { useCrateIcon } from './crateIcon';
+import { crateLook3d } from './crateLook';
 
-/** Płaski rysunek skrzynki: kafelki i sytuacje, w których nie ma sceny 3D */
+/** Ikona skrzynki: obrazek modelu 3D, a dopóki go nie ma (albo bez WebGL) płaski rysunek */
 export function CrateArt({ crate, className }: { crate: Crate; className?: string }) {
-  const { color1: c1, color2: c2 } = crate;
+  const src = useCrateIcon(crateLook3d(crate));
+  if (src) return <img className={className} src={src} alt="" draggable={false} />;
+  return <FlatCrate c1={crate.color1} c2={crate.color2} d={crateIconPath(crate.emoji)} className={className} />;
+}
+
+/** Ikona skrzynki z pieniędzmi z tego samego modelu */
+export function MoneyChestArt({ look, className }: { look: CrateLook; className?: string }) {
+  const src = useCrateIcon(look);
+  if (src) return <img className={className} src={src} alt="" draggable={false} />;
+  return <FlatCrate c1={look.c1} c2={look.c2} d={look.d} className={className} />;
+}
+
+function FlatCrate({ c1, c2, d, className }: { c1: string; c2: string; d: string; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 120 100" aria-hidden="true">
       <rect x="10" y="38" width="100" height="54" rx="4" fill={c2} />
@@ -11,7 +26,7 @@ export function CrateArt({ crate, className }: { crate: Crate; className?: strin
       <rect x="10" y="40" width="100" height="4" fill="#00000033" />
       <circle cx="60" cy="63" r="17" fill={c1} />
       <g transform="translate(48 51)" fill="none" stroke={c2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d={crateIconPath(crate.emoji)} />
+        <path d={d} />
       </g>
     </svg>
   );

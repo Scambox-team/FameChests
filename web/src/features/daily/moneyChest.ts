@@ -8,6 +8,8 @@ import { S, touch } from '../../game/store';
 import { esc, fmt, sleep } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
+import { crateIconSrc } from '../crates/crateIcon';
+import { moneyLook3d } from '../crates/crateLook';
 import './moneyStage.css';
 
 const TIERS: [number, string][] = [[.15, '#4fc34f'], [.35, '#4b8bff'], [.6, '#a35bff'], [.85, '#ff4040'], [1.01, '#ffc531']];
@@ -25,9 +27,11 @@ function tile(kind: string, v: number, win = false) {
   return `<div class="mini money-tile${win ? ' win' : ''}" style="--rc:${tier(kind, v)}"><div class="mt-val"><b>${short}</b></div><div class="mn">${fmt(v)}</div></div>`;
 }
 
-/** Płaski rysunek skrzynki z pieniędzmi jako HTML */
+/** Skrzynka z pieniędzmi jako HTML: obrazek modelu 3D, gdy jest już narysowany, inaczej płaski rysunek */
 export function moneyChestHTML(kind: string, cls = '') {
   const m = S.cfg.moneyChests[kind];
+  const src = crateIconSrc(moneyLook3d(m));
+  if (src) return `<img class="${cls}" src="${src}" alt="" draggable="false">`;
   return `<svg class="${cls}" viewBox="0 0 120 100" aria-hidden="true"><rect x="10" y="38" width="100" height="54" rx="4" fill="${m.color2}"/><path d="M8 40 14 16q1-4 5-4h82q4 0 5 4l6 24z" fill="${m.color1}"/><rect x="10" y="40" width="100" height="4" fill="#00000033"/><circle cx="60" cy="63" r="15" fill="${m.color1}"/><path d="M60 54v18M65 57h-7a3.5 3.5 0 0 0 0 7h4a3.5 3.5 0 0 1 0 7h-8" fill="none" stroke="${m.color2}" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 }
 
@@ -57,6 +61,25 @@ export async function openMoneyChest(kind: string) {
   const chest = el.querySelector('.ms-chest-svg')!;
   const cx = () => innerWidth / 2, cy = () => innerHeight / 2;
 
+  // Spacja/Enter/Esc: w trakcie bębna przewija do wyniku, na wyniku = Odbierz
+  let skip = false, t0 = 0, D = 0;
+  const finish = (again = false) => {
+    window.removeEventListener('keydown', onKey, true);
+    P.stop();
+    el.remove();
+    document.body.style.overflow = '';
+    if (again) openMoneyChest(kind);
+  };
+  function onKey(e: KeyboardEvent) {
+    if (![' ', 'Enter', 'Escape'].includes(e.key)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (!el.querySelector('.ms-result')!.hasAttribute('hidden')) return finish();
+    skip = true;
+    t0 = performance.now() - D;
+  }
+  window.addEventListener('keydown', onKey, true);
+
   chest.classList.add('shaking');
   Sound.charge(fast ? .5 : 1.1, kind === 'mega');
   await sleep(fast ? 500 : 1100);
@@ -79,7 +102,8 @@ export async function openMoneyChest(kind: string) {
   strip.innerHTML = vals.map((v, i) => tile(kind, v, i === WIN)).join('');
   await sleep(50);
   const step = MW + GAP, center = reel.clientWidth / 2, to = -(WIN * step + MW / 2 + rand(-.4, .4) * MW) + center;
-  const D = fast ? 1000 : 4300, t0 = performance.now();
+  D = skip ? 1 : fast ? 1000 : 4300;
+  t0 = performance.now();
   let lastIdx = -1;
   await new Promise<void>(done => {
     const frame = (now: number) => {
@@ -129,10 +153,6 @@ export async function openMoneyChest(kind: string) {
 
   box.addEventListener('click', e => {
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
-    if (!act) return;
-    P.stop();
-    el.remove();
-    document.body.style.overflow = '';
-    if (act === 'again') openMoneyChest(kind);
+    if (act) finish(act === 'again');
   });
 }

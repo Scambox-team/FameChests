@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { crateOf } from '../../game/rules';
 import { S, useGame } from '../../game/store';
 import { Button } from '../../ui/Button';
-import { CrateArt } from '../crates/CrateArt';
+import { CrateArt, MoneyChestArt } from '../crates/CrateArt';
+import { moneyLook3d } from '../crates/crateLook';
 import { openCrates } from '../crates/opening';
-import { moneyChestHTML, openMoneyChest } from '../daily/moneyChest';
+import { openMoneyChest } from '../daily/moneyChest';
 import styles from './InventoryPage.module.css';
 
 /** Skrzynki czekające w ekwipunku, pieniężne na początku */
@@ -23,7 +24,7 @@ export function ChestShelf() {
         const max = Math.min(n, cfg.maxOpen);
         return (
           <div key={kind} className={styles.chest}>
-            {money ? <span className={styles.chestArt} dangerouslySetInnerHTML={{ __html: moneyChestHTML(kind.slice(6)) }} /> : <CrateArt crate={crate} className={styles.chestArt} />}
+            {money ? <MoneyChestArt look={moneyLook3d(money)} className={styles.chestArt} /> : <CrateArt crate={crate} className={styles.chestArt} />}
             <span className={styles.chestText}><b>{(money ?? crate).name}</b><span className="muted small">×{n} · {money ? `${money.min.toLocaleString('pl-PL')}–${money.max.toLocaleString('pl-PL')} gr` : `${crate.people.length} kart`}</span></span>
             {money
               ? <Button kind="hue" onClick={() => openMoneyChest(kind.slice(6))}>Otwórz</Button>

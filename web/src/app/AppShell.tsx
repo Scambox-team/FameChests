@@ -25,7 +25,7 @@ function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
   );
   // adresy ze starej wersji gry muszą przeładować stronę
   return (
-    <NavLink to={item.path} onClick={e => { leave(e, () => navigate(item.path)); onPick?.(); }} className={({ isActive }) => `${styles.link}${isActive ? ` ${styles.on}` : ''}`}>
+    <NavLink to={item.path} end={item.path === '/'} onClick={e => { leave(e, () => navigate(item.path)); onPick?.(); }} className={({ isActive }) => `${styles.link}${isActive ? ` ${styles.on}` : ''}`}>
       {inner}
     </NavLink>
   );
@@ -42,13 +42,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sound, setSound] = useState(Sound.enabled);
   const { pathname } = useLocation();
   const items = NAV.filter(i => !i.admin || game.cfg.arena);
-  const title = pathname.startsWith('/player/') ? 'Profil' : NAV.find(i => pathname.startsWith(i.path))?.label ?? 'ScamBox';
+  const title = pathname.startsWith('/player/') ? 'Profil' : NAV.find(i => i.path === '/' ? pathname === '/' : pathname.startsWith(i.path))?.label ?? 'ScamBox';
   const toggleSound = () => { Sound.toggle(); setSound(Sound.enabled); };
 
   return (
     <div className={styles.app}>
       <aside className={styles.side}>
-        <a className={styles.brand} href="/crates"><Logo />ScamBox</a>
+        <a className={styles.brand} href="/"><Logo />ScamBox</a>
         <nav className={styles.nav} aria-label="Główna">
           {items.map(i => <NavEntry key={i.path} item={i} />)}
           {game.me?.isAdmin && <a className={styles.link} href="/admin"><Settings size={17} strokeWidth={1.6} aria-hidden="true" /><span>Panel admina</span></a>}
@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <header className={styles.phoneTop}>
-        <a className={styles.brand} href="/crates"><Logo />ScamBox</a>
+        <a className={styles.brand} href="/"><Logo />ScamBox</a>
         <span className={styles.phoneMoney}><Money value={game.state.balance} /></span>
         <button className={styles.icon} type="button" aria-label="Menu" onClick={() => setSheet(true)}><Menu size={20} strokeWidth={1.6} /></button>
       </header>

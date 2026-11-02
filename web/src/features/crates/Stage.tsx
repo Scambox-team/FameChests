@@ -1,11 +1,39 @@
-import { closeStage, openAgain, sellDrops, setDropFavorite, skipSpin, stopAutoRun } from './opening';
+import { useEffect } from 'react';
+import { closeStage, openAgain, openCrates, sellDrops, setDropFavorite, skipSpin, stopAutoRun } from './opening';
 import { Button } from '../../ui/Button';
-import { openViewer } from '../../fx/effects';
+import { closeViewer, epicOpen, openViewer, viewerOpen } from '../../fx/effects';
 import { S } from '../../game/store';
 import './Stage.css';
 
+// klawiatura: Spacja/Enter = otwórz / pomiń / otwórz ponownie, Esc = pomiń / zamknij
+// (wielkie odsłonięcie i skrzynka z pieniędzmi mają własną obsługę klawiszy)
+function onStageKey(e: KeyboardEvent) {
+  const t = e.target as HTMLElement;
+  if (t.closest?.('input, select, textarea, [contenteditable]')) return;
+  if (epicOpen() || document.querySelector('.money-stage, .forge-anim, [role=dialog]')) return;
+  if (viewerOpen()) {
+    if (e.key === 'Escape' || e.key === ' ') { e.preventDefault(); closeViewer(); }
+    return;
+  }
+  const o = S.opening;
+  if (e.key === 'Escape') {
+    if (o?.spinning) return skipSpin();
+    if (o?.showingResults) return closeStage();
+  }
+  if (e.key === ' ' || e.key === 'Enter') {
+    if (o?.spinning) { e.preventDefault(); return skipSpin(); }
+    if (o?.showingResults) { e.preventDefault(); return void openAgain(); }
+    if (!o && location.pathname === '/crates' && !t.closest?.('button, a')) { e.preventDefault(); openCrates(); }
+  }
+}
+
 // Scena otwierania. Układ jest stały, a zawartość bębnów i wyników wstawia opening.ts.
 export function Stage() {
+  useEffect(() => {
+    document.addEventListener('keydown', onStageKey);
+    return () => document.removeEventListener('keydown', onStageKey);
+  }, []);
+
   const clickResults = (e: React.MouseEvent) => {
     const t = e.target as HTMLElement;
     const fav = t.closest<HTMLElement>('[data-fav]');

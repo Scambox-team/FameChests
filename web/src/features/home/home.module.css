@@ -1,0 +1,131 @@
+/* Strona startowa: kafelki po lewej, ranking i lista zmian po prawej */
+.home { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--gap); align-items: start; }
+.tiles { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
+.side { display: grid; gap: var(--gap); position: sticky; top: 16px; }
+
+/* kafelek */
+.tile { position: relative; overflow: hidden; isolation: isolate; display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; min-height: 230px; padding: 22px;
+  border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; transition: transform .25s cubic-bezier(.2, .8, .3, 1), background .25s; }
+a.tile:hover { transform: translateY(-3px); background: #17171b; }
+a.tile:focus-visible { outline: 2px solid var(--hue); outline-offset: 3px; }
+.copy { position: relative; display: grid; gap: 6px; max-width: 46ch; }
+.kicker { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 500; }
+.name { margin: 0; font: 800 28px/1.05 var(--display); letter-spacing: -.02em; }
+.name.big { font-size: clamp(40px, 4.4vw, 64px); letter-spacing: -.035em; }
+.lead { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.45; }
+.go { position: absolute; top: 22px; right: 22px; color: var(--faint); transition: transform .25s, color .25s; }
+a.tile:hover .go { transform: translateX(4px); color: var(--text); }
+.cta { position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 999px;
+  background: var(--hue); color: var(--on-hue); font-weight: 700; font-size: 16px; transition: gap .25s; }
+a.tile:hover .cta { gap: 12px; }
+
+/* Skrzynki: najważniejszy kafelek, skrzynki 3D na półce w świetle koloru wybranej skrzynki */
+.crates { grid-column: span 7; min-height: 440px;
+  background: radial-gradient(70% 60% at 62% 30%, color-mix(in srgb, var(--hue) 34%, transparent), transparent 70%), linear-gradient(#141418, #0d0d10); }
+a.crates:hover { background: radial-gradient(70% 60% at 62% 30%, color-mix(in srgb, var(--hue) 44%, transparent), transparent 70%), linear-gradient(#16161b, #0e0e11); }
+.shelf { position: absolute; inset: 4% 0 auto; height: 56%; display: flex; align-items: center; justify-content: center; padding: 0 4% 0 22%; z-index: -1; }
+.shelf::after { content: ""; position: absolute; left: 14%; right: 0; bottom: 4%; height: 18%; background: radial-gradient(50% 50% at 50% 50%, #000a, transparent 70%); z-index: -1; }
+.crate { width: 26%; height: auto; margin: 0 -5%; filter: brightness(.72) drop-shadow(0 18px 18px #0009); transform: translateY(6%); transition: transform .5s cubic-bezier(.2, .8, .3, 1), filter .5s; }
+.crate.main { width: 44%; filter: drop-shadow(0 26px 26px #000b); transform: none; z-index: 1; animation: crateBob 4.5s ease-in-out infinite; }
+a.crates:hover .crate { transform: translateY(0); filter: brightness(.85) drop-shadow(0 18px 18px #0009); }
+a.crates:hover .crate.main { filter: drop-shadow(0 30px 30px #000b) brightness(1.08); }
+@keyframes crateBob { 50% { transform: translateY(-4%); } }
+
+/* Arena: drugi co do wielkości, na razie zamknięty */
+.arena { grid-column: span 5; min-height: 440px;
+  background: repeating-linear-gradient(-45deg, #ffffff05 0 14px, transparent 14px 28px), radial-gradient(80% 60% at 50% 25%, #e5484d26, transparent 70%), #101013; }
+.arenaArt { position: absolute; inset: 0 0 auto; height: 58%; display: grid; place-items: center; z-index: -1; }
+.swords { width: min(52%, 200px); height: auto; color: #e5484d; opacity: .55; filter: drop-shadow(0 0 30px #e5484d66); }
+.soon { justify-self: start; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--raised); color: var(--warn); font-size: 14px; font-weight: 700; }
+.arena[aria-disabled] .name, .arena[aria-disabled] .lead { opacity: .8; }
+
+/* Gry i Kasyno */
+.games, .casino { grid-column: span 4; min-height: 400px; }
+.board { position: absolute; inset: 0 0 auto; height: 60%; display: grid; place-items: center; z-index: -1;
+  background: repeating-conic-gradient(#ffffff0d 0 25%, transparent 0 50%) 50% 50% / 56px 56px;
+  mask: radial-gradient(60% 70% at 50% 45%, #000 30%, transparent 75%); -webkit-mask: radial-gradient(60% 70% at 50% 45%, #000 30%, transparent 75%); }
+.knight { width: 46%; max-width: 150px; height: auto; color: #fff; filter: drop-shadow(0 16px 20px #000); transition: transform .4s cubic-bezier(.2, .8, .3, 1); }
+a.games:hover .knight { transform: translateY(-6px) rotate(-6deg); }
+.wheel { position: absolute; left: 50%; top: 30%; width: min(62%, 210px); aspect-ratio: 1; translate: -50% -50%; display: grid; place-items: center; z-index: -1; }
+.wheel i { position: absolute; inset: 0; border-radius: 50%; border: 6px solid #2a2a30;
+  background: repeating-conic-gradient(#c8402a 0 10deg, #141416 10deg 20deg); box-shadow: 0 0 0 2px #e5b94a55, 0 20px 40px #000c;
+  mask: radial-gradient(circle, transparent 34%, #000 35%); -webkit-mask: radial-gradient(circle, transparent 34%, #000 35%); animation: wheelSpin 30s linear infinite; }
+a.casino:hover .wheel i { animation-duration: 4s; }
+.dice { width: 34%; height: auto; color: #e5b94a; }
+@keyframes wheelSpin { to { rotate: 360deg; } }
+
+/* Quest dnia: deska z gwoździem i listem gończym */
+.quest { grid-column: span 4; min-height: 400px; padding-top: 0; justify-content: flex-start; background: #0f0d0b; }
+.plank { position: relative; margin: 0 -22px; height: 250px; flex: none; display: grid; justify-items: center; align-content: start; padding-top: 22px;
+  background: linear-gradient(#0000 0 100%), repeating-linear-gradient(90deg, #00000026 0 1px, transparent 1px 33%),
+    repeating-linear-gradient(0deg, #ffffff06 0 2px, transparent 2px 9px), linear-gradient(170deg, #4a3220, #2c1d12 60%, #22170e);
+  box-shadow: inset 0 -30px 40px -20px #0f0d0b; }
+.nail { position: absolute; top: 18px; left: 50%; width: 14px; height: 14px; translate: -50% 0; border-radius: 50%; z-index: 3;
+  background: radial-gradient(circle at 35% 30%, #e6e6ea, #8a8a92 45%, #3a3a40 75%); box-shadow: 0 3px 4px #000a, 0 0 0 1px #0006; }
+.poster { width: 132px; transform-origin: 50% 3%; rotate: -2deg; filter: drop-shadow(0 10px 12px #000b); animation: posterSway 6s ease-in-out infinite; }
+.poster :global(.card) { width: 100%; --cw: 132px; }
+.blankPoster { aspect-ratio: 63 / 88; display: grid; place-content: center; gap: 6px; text-align: center; border-radius: 8px; color: #2a1608;
+  background: radial-gradient(130% 100% at 50% 40%, #f2e2b8, #ddc28a 70%, #b8955a); font-family: Rye, Georgia, serif; }
+.blankPoster b { font-size: 24px; font-weight: 400; } .blankPoster span { font-family: Georgia, serif; font-size: 13px; }
+@keyframes posterSway { 0%, 100% { rotate: -2deg; } 50% { rotate: 1.5deg; } }
+
+/* zerwanie: list szarpie się na gwoździu, urywa się pod nim i spada; strzępki zostają */
+.tearing .poster { animation: posterTear 1.5s cubic-bezier(.5, 0, .7, 1) forwards; }
+@keyframes posterTear {
+  0% { rotate: -2deg; translate: 0 0; opacity: 1; clip-path: inset(0); }
+  10% { rotate: 7deg; } 18% { rotate: -9deg; } 26% { rotate: 6deg; translate: 0 4px; }
+  34% { rotate: -3deg; translate: 0 6px; clip-path: polygon(0 9%, 12% 6%, 25% 10%, 38% 5%, 50% 9%, 62% 4%, 75% 10%, 88% 6%, 100% 9%, 100% 100%, 0 100%); }
+  100% { rotate: 28deg; translate: 30px 340px; opacity: 0; clip-path: polygon(0 9%, 12% 6%, 25% 10%, 38% 5%, 50% 9%, 62% 4%, 75% 10%, 88% 6%, 100% 9%, 100% 100%, 0 100%); }
+}
+.scraps { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.scrap { position: absolute; left: 50%; top: 22px; width: 92px; height: 26px; translate: -50% 0; rotate: -3deg;
+  background: radial-gradient(130% 100% at 50% 0, #f2e2b8, #c9a86a); filter: drop-shadow(0 4px 4px #0009);
+  clip-path: polygon(0 0, 100% 0, 100% 46%, 90% 78%, 80% 52%, 69% 96%, 58% 60%, 47% 100%, 36% 62%, 25% 88%, 14% 50%, 6% 74%, 0 40%); }
+.bit { position: absolute; left: 34%; bottom: 26px; width: 22px; height: 16px; rotate: 24deg; background: #d8bd84;
+  clip-path: polygon(0 20%, 40% 0, 100% 30%, 80% 100%, 30% 80%); opacity: .75; }
+.bit2 { left: 60%; bottom: 44px; width: 14px; height: 12px; rotate: -40deg; opacity: .55; }
+.tearing .scrap, .tearing .bit { animation: scrapIn .3s .45s both; }
+@keyframes scrapIn { from { opacity: 0; } }
+.empty { align-self: center; margin: 90px 0 0; color: #f2e2b8aa; font-family: Rye, Georgia, serif; font-size: 16px; }
+.qVariant { color: #ddc28a; font-weight: 700; }
+.won { display: flex; gap: 8px; align-items: flex-start; color: var(--good); }
+.won svg { flex: none; margin-top: 3px; }
+.timer { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; color: var(--muted); font-size: 14px; }
+.timer b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+.quest .copy { flex: 1; align-content: start; }
+
+/* pole z boku */
+.box { display: grid; gap: 12px; padding: 18px; border-radius: var(--radius); background: var(--surface); }
+.boxHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.boxHead h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 700 18px var(--display); }
+.more { justify-self: start; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.more:hover { color: var(--text); }
+.rank { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.rankRow { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px; border-radius: var(--radius-s); }
+.rankRow > a { min-width: 0; overflow: hidden; }
+.rankRow.me { background: var(--raised); }
+.pos { display: grid; place-items: center; color: var(--faint); font-weight: 700; font-variant-numeric: tabular-nums; }
+.val { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gap { height: 1px; margin: 4px 8px; background: var(--rule); }
+.patchTitle { font-size: 16px; }
+.patch { display: grid; gap: 8px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+
+@media (max-width: 1260px) {
+  .home { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
+}
+@media (max-width: 980px) {
+  .crates, .arena, .quest { grid-column: span 12; }
+  .crates { min-height: 400px; } .arena { min-height: 300px; }
+  .games, .casino { grid-column: span 6; }
+}
+@media (max-width: 600px) {
+  .games, .casino { grid-column: span 12; min-height: 300px; }
+  .tile { padding: 18px; } .plank { margin: 0 -18px; }
+  .shelf { padding: 0 2% 0 2%; }
+}
+@media (prefers-reduced-motion: reduce) { .crate.main, .poster, .wheel i { animation: none; } }
+.quest .name, .games .name, .casino .name { font-size: 24px; }
+.quest .lead, .games .lead, .casino .lead { font-size: 15px; }
+.timer { white-space: nowrap; flex-wrap: wrap; }
+.empty { justify-self: stretch; padding: 0 24px; text-align: center; text-wrap: balance; }

@@ -8,6 +8,8 @@ import { cardHTML, scratchable } from '../cards/cardHtml';
 import { esc, fmt, sleep } from '../lib/format';
 import { Sound } from '../sound/sound';
 import { kindIcon, typeIcon } from '../icons/cardIcons';
+import { crateIconPath } from '../icons/crateIcons';
+import { crateLook3d } from '../features/crates/crateLook';
 
 const $ = (s, el: any = document) => el.querySelector(s);
 const $$ = (s, el: any = document) => [...el.querySelectorAll(s)];
@@ -113,10 +115,24 @@ export function cardBackHTML() {
 
 // ================================================================ WIELKIE ODSŁONIĘCIE
 
-// Odsłonięcie najlepszych kart (Legendarna, ULTRA, Specjalna, Tajna): ciemna scena, linia światła w kolorze rzadkości
-// ładuje się, karta wychodzi z cienia rewersem, odwraca się w snopie reflektora. ULTRA ma opalizującą obwódkę,
-// Tajna złotą ramkę rysowaną w ciemności i opadający pył. Kliknięcie albo spacja przyspiesza i zamyka.
-export function epicReveal(drop, { fast = false, auto = false } = {}) {
+// Odsłonięcie najlepszych kart (Legendarna, ULTRA, Specjalna, Tajna): skrzynka 3D wybucha i wyrzuca kartę (reveal3d.ts).
+// Three.js wczytuje się dopiero tutaj; bez WebGL albo przy ograniczonym ruchu zostaje płaska wersja poniżej.
+// Skrzynka ma wygląd tej, którą właśnie otwieramy; nagrody z kasyna, kuźni i linków dostają ciemną skrzynkę „domu”.
+export async function epicReveal(drop, opts: { fast?: boolean; auto?: boolean } = {}) {
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    try {
+      const { epicReveal3d } = await import("./reveal3d");
+      const crate = S.opening?.crate ? crateOf(S.opening.crate) : null;
+      const look = crate ? crateLook3d(crate) : { c1: "#2b2b33", c2: "#141418", hue: S.cfg.rarities[person(drop.person).rarity].color, d: crateIconPath("") };
+      return await epicReveal3d(drop, { ...opts, look });
+    } catch { /* bez WebGL: płaskie odsłonięcie */ }
+  }
+  return epicRevealFlat(drop, opts);
+}
+
+// Płaska wersja: ciemna scena, linia światła w kolorze rzadkości ładuje się, karta wychodzi z cienia rewersem,
+// odwraca się w snopie reflektora. ULTRA ma opalizującą obwódkę, Tajna złotą ramkę rysowaną w ciemności i opadający pył.
+function epicRevealFlat(drop, { fast = false, auto = false } = {}) {
   return new Promise(resolve => {
     const p = person(drop.person);
     const tier = p.rarity === "secret" ? "secret" : p.rarity === "ultra" ? "ultra" : p.rarity === "special" ? "special" : "gold";
@@ -204,7 +220,7 @@ export function epicReveal(drop, { fast = false, auto = false } = {}) {
   });
 }
 
-export function epicOpen() { return !!document.querySelector(".rv, .rcp"); }
+export function epicOpen() { return !!document.querySelector(".rv, .r3, .rcp"); }
 // ================================================================ DRUKOWANIE PARAGONU
 
 // Paragon wypada z drukarki: karta wysuwa się ze szczeliny linia po linii (keyframes rcpFeed, tyle samo kroków co terkotów

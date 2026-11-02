@@ -4,7 +4,7 @@ import { ChevronDown, Lock, Zap, Repeat } from 'lucide-react';
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
-import { crateList, plural } from '../../game/rules';
+import { crateList, crateOf, plural, testCrates } from '../../game/rules';
 import { applyState } from '../../game/session';
 import { S, touch, useGame } from '../../game/store';
 import type { Crate } from '../../game/types';
@@ -13,9 +13,9 @@ import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import SpotlightCardJs from '../../ui/reactbits/SpotlightCard/SpotlightCard';
-import { CrateArt } from './CrateArt';
+import { CrateCarousel } from './CrateCarousel';
 import { CrateStage } from './CrateStage';
-import { applyHue, crateHue } from './crateLook';
+import { applyHue } from './crateLook';
 import { OddsLadder } from './OddsLadder';
 import { QuestBox } from './QuestBox';
 import { openCrates } from './opening';
@@ -24,25 +24,12 @@ import styles from './CratesPage.module.css';
 const SpotlightCard = SpotlightCardJs as any;
 const COUNTS = [1, 2, 3, 5, 10, 15, 20];
 
-// skrzynki dla wybranych widzą tylko gracze z dostępem, posiadane z ekwipunku zawsze da się otworzyć
-const shopCrates = () => crateList()
+// skrzynki dla wybranych widzą tylko gracze z dostępem, posiadane z ekwipunku zawsze da się otworzyć;
+// admini mają na końcu skrzynki testowe (rules.ts: testCrates)
+const shopCrates = () => [...crateList()
   .filter(c => !c.special && ((c.shop && (!c.restricted || c.canBuy)) || (S.chests[c.id] || 0) > 0 || S.me?.isAdmin))
-  .sort((a, b) => Number(b.shop) - Number(a.shop));
+  .sort((a, b) => Number(b.shop) - Number(a.shop)), ...Object.values(testCrates()) as Crate[]];
 const kart = (n: number) => `${n} ${plural(n, 'karta', 'karty', 'kart')}`;
-
-function CrateTile({ crate, active, onPick }: { crate: Crate; active: boolean; onPick: () => void }) {
-  const owned = S.chests[crate.id] || 0;
-  return (
-    <button className={styles.tile} type="button" aria-pressed={active} style={{ '--th': crateHue(crate).hue } as React.CSSProperties} onClick={onPick}>
-      <CrateArt crate={crate} className={styles.tileArt} />
-      <span className={styles.tileText}>
-        <b>{crate.short}</b>
-        <span className="muted small">{kart(crate.people.length)} · {fmt(crate.price)}</span>
-      </span>
-      {owned > 0 && <span className={styles.owned} aria-label={`Masz ${owned} w ekwipunku`}>{owned}</span>}
-    </button>
-  );
-}
 
 function BuyPanel({ crate }: { crate: Crate }) {
   const game = useGame();
@@ -50,7 +37,7 @@ function BuyPanel({ crate }: { crate: Crate }) {
   const count: number = game.count;
   const owned = Math.min(ownedAll, count), toBuy = count - owned, cost = toBuy * crate.price;
   const blocked = toBuy > 0 && !crate.canBuy, after = game.state.balance - cost;
-  const openLabel = blocked ? `Otwórz ${count}` : owned ? `Otwórz ${count}${cost ? ` za ${fmt(cost)}` : ' z ekwipunku'}` : `Otwórz za ${fmt(cost)}`;
+  const openLabel = crate.test ? `Otwórz ${count} (test)` : blocked ? `Otwórz ${count}` : owned ? `Otwórz ${count}${cost ? ` za ${fmt(cost)}` : ' z ekwipunku'}` : `Otwórz za ${fmt(cost)}`;
 
   const setCount = (n: number) => { S.count = Math.max(1, Math.min(S.cfg.maxOpen, n)); touch(); };
   const setFlag = (k: 'fast' | 'auto', v: boolean) => {
@@ -89,9 +76,9 @@ function BuyPanel({ crate }: { crate: Crate }) {
       </div>
       <div className={styles.acts}>
         <Button kind="hue" big disabled={!!game.opening || !crate.people.length || blocked} onClick={openCrates}>{openLabel}</Button>
-        {crate.canBuy && <Button big disabled={!!game.opening} onClick={buy}>Kup {count} do ekwipunku</Button>}
+        {crate.canBuy && !crate.test && <Button big disabled={!!game.opening} onClick={buy}>Kup {count} do ekwipunku</Button>}
       </div>
-      <p className={styles.after}>{after < 0 ? `Brakuje ${fmt(-after)}.` : `Po otwarciu zostanie ${fmt(after)}.`}</p>
+      <p className={styles.after}>{crate.test ? 'Skrzynka testowa: wynik losuje przeglądarka, karty nie trafiają do ekwipunku.' : after < 0 ? `Brakuje ${fmt(-after)}.` : `Po otwarciu zostanie ${fmt(after)}.`}</p>
     </div>
   );
 }
@@ -148,10 +135,10 @@ export function CratesPage() {
   const hero = useRef<HTMLElement>(null);
   const crates = shopCrates();
   if (!crates.some(c => c.id === game.crate)) S.crate = (crates.find(c => c.canBuy) ?? crates[0])?.id;
-  if (!S.cratePicked && !S.cfg.crates[S.crate]?.shop) S.crate = crates.find(c => c.shop)?.id ?? S.crate;
+  if (!S.cratePicked && !crateOf(S.crate)?.shop) S.crate = crates.find(c => c.shop)?.id ?? S.crate;
   if (!S.count) S.count = 1;
   if (S.fast === undefined) { try { S.fast = localStorage.getItem('fast') === '1'; } catch { S.fast = false; } }
-  const crate = S.cfg.crates[S.crate];
+  const crate = crateOf(S.crate);
 
   useEffect(() => { document.title = 'Skrzynki · ScamBox'; }, []);
   useEffect(() => { if (crate) applyHue(crate); }, [crate?.id]);
@@ -162,15 +149,13 @@ export function CratesPage() {
   return (
     <>
       <QuestBox />
-      <section className={styles.tiles} aria-label="Wybór skrzynki">
-        {crates.map(c => <CrateTile key={c.id} crate={c} active={c.id === crate.id} onPick={() => pick(c)} />)}
-      </section>
+      <CrateCarousel crates={crates} active={crate.id} onPick={pick} />
       <section ref={hero} className={styles.hero} aria-label={`Wybrana skrzynka: ${crate.name}`}>
         <CrateStage crate={crate} hero={hero} onOpen={openCrates} count={game.count} label={`Otwórz: ${crate.name}, kliknij dwa razy`} />
         <BuyPanel crate={crate} />
-        <SpotlightCard className={styles.ladderBox} spotlightColor="#ffffff" intensity={.08} borderGlow={.35} style={{ '--spotlight-card-surface': '#000000a8', '--spotlight-card-shadow': 'none', '--spotlight-card-border': 'transparent' } as React.CSSProperties}>
+        {!crate.test && <SpotlightCard className={styles.ladderBox} spotlightColor="#ffffff" intensity={.08} borderGlow={.35} style={{ '--spotlight-card-surface': '#000000a8', '--spotlight-card-shadow': 'none', '--spotlight-card-border': 'transparent' } as React.CSSProperties}>
           <OddsLadder crate={crate} />
-        </SpotlightCard>
+        </SpotlightCard>}
       </section>
       <Contents crate={crate} />
       <Stats />

@@ -1,4 +1,4 @@
-import { Backpack, BookOpen, Dices, Gamepad2, Hammer, Package, Store, Swords, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Dices, Gamepad2, Hammer, House, Package, Store, Swords, Trophy, Users, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -10,8 +10,9 @@ export interface NavItem {
 }
 
 export const NAV: NavItem[] = [
+  { path: '/', label: 'Start', icon: House, short: true },
   { path: '/crates', label: 'Skrzynki', icon: Package, short: true },
-  { path: '/binder', label: 'Klaser', icon: BookOpen, short: true },
+  { path: '/binder', label: 'Klaser', icon: BookOpen },
   { path: '/inventory', label: 'Ekwipunek', icon: Backpack, short: true },
   { path: '/forge', label: 'Kuźnia', icon: Hammer },
   { path: '/market', label: 'Rynek', icon: Store, badge: 'market', short: true },

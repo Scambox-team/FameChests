@@ -1,0 +1,52 @@
+/* Wielkie odsłonięcie w 3D (reveal3d.ts): scena Three.js na całym ekranie, karta i napisy w HTML nad nią */
+.r3 { position: fixed; inset: 0; z-index: 400; overflow: hidden; cursor: pointer; background: #040405; opacity: 0; transition: opacity .3s;
+  --w: min(290px, 62vw, calc((100vh - 290px) * .716)); }
+.r3.on { opacity: 1; }
+.r3.closing { opacity: 0; transition: opacity .35s; }
+.r3-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* błysk przy wybuchu */
+.r3-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 62%, #fff, color-mix(in srgb, var(--rc) 70%, transparent) 35%, transparent 70%); }
+.r3.burst .r3-flash { animation: r3Flash .9s ease-out; }
+.r3-secret.burst .r3-flash { animation-duration: 1.6s; }
+@keyframes r3Flash { 0% { opacity: 0; } 8% { opacity: 1; } 100% { opacity: 0; } }
+
+/* karta: niewidoczna, dopóki nie wyleci ze skrzynki */
+.r3-card { position: absolute; left: 50%; top: 42%; width: var(--w); aspect-ratio: 63 / 88; translate: -50% -50%; perspective: 1500px; pointer-events: none; }
+.r3-spin { position: absolute; inset: 0; transform-style: preserve-3d; opacity: 0; }
+.r3-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.r3-front { transform: rotateY(180deg); }
+.r3-front .card { width: 100%; --cw: var(--w); }
+.r3-back .cback { box-shadow: 0 0 0 1px color-mix(in srgb, var(--rc) 70%, transparent), 0 0 50px color-mix(in srgb, var(--rc) 55%, transparent); }
+.r3-front .card { box-shadow: 0 0 0 1px #0006, 0 0 60px color-mix(in srgb, var(--rc) 55%, transparent), 0 30px 60px #000c; }
+/* po wylądowaniu karta lekko unosi się w słupie światła (na rodzicu, bo .r3-spin trzyma końcowy obrót) */
+.r3.ready .r3-card { animation: r3Float 3.4s ease-in-out infinite; }
+@keyframes r3Float { 50% { transform: translateY(-8px); } }
+
+/* ULTRA: tęczowa obwódka wokół karty */
+.r3-ultra .r3-front .card { animation: r3Rainbow 3s linear infinite; }
+@keyframes r3Rainbow {
+  0%, 100% { box-shadow: 0 0 0 2px #ff6b6b, 0 0 70px #ff6b6b99, 0 30px 60px #000c; }
+  25% { box-shadow: 0 0 0 2px #ffd36b, 0 0 70px #ffd36b99, 0 30px 60px #000c; }
+  50% { box-shadow: 0 0 0 2px #6bffb0, 0 0 70px #6bd5ff99, 0 30px 60px #000c; }
+  75% { box-shadow: 0 0 0 2px #c86bff, 0 0 70px #c86bff99, 0 30px 60px #000c; }
+}
+
+/* napisy pod kartą */
+.r3-text { position: absolute; left: 0; right: 0; bottom: max(28px, 5vh); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px; text-align: center; pointer-events: none; }
+.r3-label, .r3-name, .r3-meta, .r3-hint { opacity: 0; transform: translateY(12px); transition: opacity .5s, transform .5s cubic-bezier(.2, .8, .3, 1); }
+.r3.ready .r3-label { opacity: 1; transform: none; }
+.r3.ready .r3-name { opacity: 1; transform: none; transition-delay: .12s; }
+.r3.ready .r3-meta { opacity: 1; transform: none; transition-delay: .22s; }
+.r3.ready .r3-hint { opacity: 1; transform: none; transition-delay: .6s; }
+.r3-label { color: var(--rc); font: 700 15px var(--body); text-shadow: 0 0 18px var(--rc); }
+.r3-name { color: #fff; font: 800 clamp(28px, 4.4vw, 46px)/1.05 var(--display); letter-spacing: -.03em; text-wrap: balance; text-shadow: 0 4px 30px #000; }
+.r3-meta { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 16px; }
+.r3-meta b { color: var(--good); font-weight: 700; }
+.r3-hint { color: var(--faint); font-size: 13px; }
+.r3-ultra .r3-label { animation: r3Hue 2.4s linear infinite; }
+@keyframes r3Hue { to { filter: hue-rotate(360deg); } }
+.r3-secret .r3-label { color: #f3e3b0; }
+
+/* niski ekran: napisy obok siebie, karta mniejsza */
+@media (max-height: 640px) { .r3 { --w: min(220px, 52vw, calc((100vh - 210px) * .716)); } .r3-card { top: 40%; } .r3-text { gap: 4px; } }

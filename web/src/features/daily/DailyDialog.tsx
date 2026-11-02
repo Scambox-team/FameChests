@@ -9,7 +9,9 @@ import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { toast } from '../../ui/Toaster';
-import { moneyChestHTML, openMoneyChest } from './moneyChest';
+import { MoneyChestArt } from '../crates/CrateArt';
+import { moneyLook3d } from '../crates/crateLook';
+import { openMoneyChest } from './moneyChest';
 import styles from './DailyDialog.module.css';
 
 const range = (m: any) => `${(m.min / 1000).toLocaleString('pl-PL')}k–${(m.max / 1000).toLocaleString('pl-PL')}k gr`;
@@ -51,7 +53,7 @@ export function DailyDialog({ onClose }: { onClose: () => void }) {
         {d.days.map((w: any) => (
           <div key={w.day} className={`${styles.day}${w.today ? ` ${styles.today}` : ''}${w.claimed ? ` ${styles.done}` : ''}${w.kind === 'mega' ? ` ${styles.mega}` : ''}`}>
             <span className="small">Dzień {w.day}</span>
-            {w.claimed ? <Check size={20} aria-label="odebrano" /> : w.kind === 'mega' ? <Crown size={20} aria-hidden="true" /> : <span className={styles.chest} dangerouslySetInnerHTML={{ __html: moneyChestHTML(w.kind) }} />}
+            {w.claimed ? <Check size={20} aria-label="odebrano" /> : w.kind === 'mega' ? <Crown size={20} aria-hidden="true" /> : <MoneyChestArt look={moneyLook3d(S.cfg.moneyChests[w.kind])} className={styles.chest} />}
           </div>
         ))}
       </div>

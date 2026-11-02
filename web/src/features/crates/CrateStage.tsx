@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { Crate } from '../../game/types';
-import { crateIconPath } from '../../icons/crateIcons';
 import { CrateArt } from './CrateArt';
-import { crateHue } from './crateLook';
+import { crateLook3d as look } from './crateLook';
 import { crate3d } from './opening';
 import styles from './CratesPage.module.css';
 
@@ -25,8 +24,6 @@ export function CrateStage({ crate, hero, onOpen, label, count }: Props) {
   const howMany = useRef(count);
   howMany.current = count;
   const lastClick = useRef(0);
-
-  const look = (c: Crate) => ({ c1: c.color1, c2: c.color2, hue: crateHue(c).hue, d: crateIconPath(c.emoji) });
 
   useEffect(() => {
     let alive = true, destroy = () => {};

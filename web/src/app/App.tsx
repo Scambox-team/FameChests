@@ -21,6 +21,7 @@ import { showJackpotResult } from '../features/casino/jackpotResult';
 import { hrNews } from '../features/casino/horsesEngine';
 import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
+import { HomePage } from '../features/home/HomePage';
 import { ForgePage } from '../features/forge/ForgePage';
 import { MarketPage } from '../features/market/MarketPage';
 import { noteMarketBonus } from '../features/market/bonus';
@@ -79,7 +80,7 @@ function Game() {
     <AppShell>
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<Navigate to="/crates" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/crates" element={<CratesPage />} />
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/binder" element={<BinderPage />} />
@@ -92,7 +93,7 @@ function Game() {
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
           <Route path="/link/:token" element={<LinkClaim />} />
-          <Route path="*" element={<Navigate to="/crates" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
       <Stage />

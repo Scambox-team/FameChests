@@ -156,7 +156,27 @@ export function person(id) { return S.cfg.people[id]; }
 // karta specjalna (rzadkość Specjalna): tylko z kasyna albo z linku, jeden wariant; nie da się jej sprzedać grze,
 // postawić ani zużyć w kuźni (można ją wymienić albo sprzedać na rynku). p - karta albo jej id.
 export function isSpecialCard(p) { p = typeof p === "string" ? person(p) : p; return p?.rarity === "special"; }
-export function crateOf(id) { return S.cfg.crates[id]; }
+export function crateOf(id) { return S.cfg.crates[id] ?? testCrates()[id]; }
+
+// Skrzynki testowe adminów: każda daje tylko karty jednej rzadkości, żeby obejrzeć animację odsłonięcia.
+// Istnieją tylko w przeglądarce (opening.ts: testOpen) - nic nie idzie do serwera, ekwipunku, rankingu ani Hall of Fame.
+const TEST_CRATES = [["gold", "👑", "#e5b94a", "#3b2806"], ["ultra", "🃏", "#c58bff", "#1c0b38"], ["secret", "🃏", "#f3e3b0", "#0a0a0c"]];
+let testCfg = null, testCache = {};
+export function testCrates() {
+  if (!S.me?.isAdmin) return {};
+  if (testCfg === S.cfg) return testCache;
+  testCfg = S.cfg; testCache = {};
+  const all = Object.keys(S.cfg.people).filter(id => S.cfg.people[id].rarity !== "special");
+  const weights = Object.fromEntries(S.cfg.rarityOrder.map((r, i) => [r, Math.max(1, 2 ** (S.cfg.rarityOrder.length - i))]));
+  for (const [r, emoji, color1, color2] of TEST_CRATES) {
+    const pool = all.filter(id => S.cfg.people[id].rarity === r), name = S.cfg.rarities[r]?.name;
+    if (!pool.length || !name) continue;
+    const id = `__test_${r}`;
+    testCache[id] = { id, name: `Test: ${name}`, short: `Test: ${name}`, code: "", desc: "Skrzynka testowa admina, karty nie trafiają do ekwipunku", emoji, price: 0, color1, color2,
+      shop: false, canBuy: true, test: r, pool, people: all, weights };
+  }
+  return testCache;
+}
 export function crateList() { return S.cfg.crateOrder.map(id => S.cfg.crates[id]); }
 // skrzynki, które są albo były już w sklepie (i skrzynka kart specjalnych) - klaser i filtr ekwipunku nie zdradzają
 // skrzynek, których jeszcze nie było (serwer: released_crates)

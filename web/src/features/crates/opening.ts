@@ -4,7 +4,7 @@ import { api } from '../../api/client';
 import { cardHTML, cvColors } from '../../cards/cardHtml';
 import { confetti, epicOpen, epicReveal, GOLDS, receiptReveal } from '../../fx/effects';
 import { VARIANT_COLORS } from '../../fx/variantColors';
-import { baseVariant, crateOf, imgUrl, isSpecial, person, plural, rand, rarityIdx, varRank, variantName, variantParts } from '../../game/rules';
+import { baseVariant, cardValue, crateOf, imgUrl, isSpecial, person, plural, rand, rarityIdx, varRank, variantName, variantParts } from '../../game/rules';
 import { announceFirsts } from '../../game/actions';
 import { applyState, refreshConfig } from '../../game/session';
 import { S, touch } from '../../game/store';
@@ -12,6 +12,7 @@ import { esc, fmt, sleep } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
 import type { CrateScene } from '../../three/crateScene';
+import { crateHue, crateLook3d } from './crateLook';
 
 const STRIP = 54, WIN = 46, EGG_EDGE = 6;
 const $ = (s: string) => document.querySelector(s) as HTMLElement;
@@ -27,6 +28,9 @@ export interface Opening {
   crate: string; count: number; fast: boolean;
   drops?: Drop[]; skins?: any[]; reels?: any[]; ownedBefore?: Set<string>;
   spinning?: boolean; showingResults?: boolean; shown?: boolean;
+  dropOverlay?: () => void;
+  /** skrzynka testowa admina: wynik losuje przeglądarka, karty nie trafiają do ekwipunku */
+  test?: boolean;
 }
 
 function weightedPerson(crateId: string) {
@@ -95,29 +99,32 @@ export async function openCrates() {
     return;
   }
   Sound.unlock();
-  if (!S.autoRun && S.auto) S.autoRun = { rounds: 0, spent: 0 };
+  if (!S.autoRun && S.auto && !crate.test) S.autoRun = { rounds: 0, spent: 0 };
   if (S.autoRun) { S.autoRun.rounds++; S.autoRun.spent += cost; }
-  const o: Opening = { crate: S.crate, count: S.count, fast: S.fast };
+  const o: Opening = { crate: S.crate, count: S.count, fast: S.fast, test: !!crate.test };
   S.opening = o;
   touch();
   const ownedBefore = new Set(S.items.map(i => i.person));
   let res: any;
   try {
     Sound.open();
-    [res] = await Promise.all([api('/api/open', { crate: S.crate, count: S.count }), lidBeforeResult(o)]);
+    [res] = await Promise.all([o.test ? testOpen(crate, S.count) : api('/api/open', { crate: S.crate, count: S.count }), lidBeforeResult(o)]);
     if (res.discovered.length) await refreshConfig();
   } catch (e: any) {
     S.opening = null;
     crate3d.scene?.close();
+    o.dropOverlay?.();
     touch();
     Sound.error();
     toast(e.message, true);
     stopAuto();
     return;
   }
-  S.items = [...res.drops.slice().reverse(), ...S.items];
-  S.chests = res.chests || S.chests;
-  applyState(res.state);
+  if (!o.test) {
+    S.items = [...res.drops.slice().reverse(), ...S.items];
+    S.chests = res.chests || S.chests;
+    applyState(res.state);
+  }
   o.drops = res.drops;
   o.skins = res.skins;
   o.ownedBefore = ownedBefore;
@@ -126,11 +133,51 @@ export async function openCrates() {
   else runStage();
 }
 
+// skrzynka testowa: karty tej jednej rzadkości, zwykły wariant, numery ujemne (nie istnieją na serwerze)
+let testId = 0;
+async function testOpen(crate: any, count: number) {
+  await sleep(150);
+  const drops: Drop[] = Array.from({ length: count }, () => {
+    const pid = crate.pool[Math.floor(Math.random() * crate.pool.length)];
+    return { id: --testId, person: pid, variant: 'normal', value: cardValue(pid), sold: true };
+  });
+  return { drops, discovered: [], skins: [] };
+}
+
 // przed wynikiem: w zwykłym trybie wieko uchyla się w kolorze skrzynki, a o karcie decydują dopiero bębny
 async function lidBeforeResult(o: Opening) {
+  if (!crate3d.scene) await sceneOverlay(o);
   const scene = crate3d.scene;
   if (o.fast || !scene) return sleep(o.fast ? 120 : 450);
-  await scene.open(getComputedStyle(document.documentElement).getPropertyValue('--hue').trim(), .3);
+  await scene.open(crateHue(crateOf(o.crate)).hue, .3);
+}
+
+// Otwieranie poza sklepem (ekwipunek): ta sama scena 3D nad ekranem. Skrzynki spadają w piramidę, wieka się otwierają,
+// a gdy pokazuje się scena z bębnami, nakładka gaśnie. Bez WebGL otwieranie idzie dalej bez niej.
+async function sceneOverlay(o: Opening) {
+  const el = document.createElement('div');
+  el.className = 'crate-overlay';
+  el.innerHTML = '<canvas aria-hidden="true"></canvas>';
+  document.body.appendChild(el);
+  let scene: CrateScene;
+  try {
+    const { createCrateScene } = await import('../../three/crateScene');
+    scene = createCrateScene(el.firstElementChild, { sideShift: 0 });
+  } catch { el.remove(); return; }
+  if (S.opening !== o) { scene.destroy(); el.remove(); return; }
+  scene.setCrate(crateLook3d(crateOf(o.crate)));
+  scene.setCount(o.count);
+  scene.dropIn();
+  crate3d.scene = scene;
+  void el.offsetWidth;   // styl startowy (przezroczysty) musi być policzony, zanim zacznie się przejście
+  el.classList.add('on');
+  o.dropOverlay = () => {
+    o.dropOverlay = undefined;
+    if (crate3d.scene === scene) crate3d.scene = null;
+    el.classList.remove('on');
+    setTimeout(() => { scene.destroy(); el.remove(); }, 400);
+  };
+  await sleep(matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750);
 }
 
 // ultraszybko: bez bębnów, światło od razu ma kolor najlepszej karty
@@ -155,6 +202,7 @@ function bestDrop(drops: Drop[]) {
 function showStage(o: Opening) {
   const stage = $('#stage');
   stage.hidden = false;
+  o.dropOverlay?.();
   document.body.style.overflow = 'hidden';
   $('#stageTitle').textContent = `${crateOf(o.crate).name} × ${o.drops!.length}${S.autoRun ? `, runda ${S.autoRun.rounds}` : ''}`;
   $('#autoStopBtn').hidden = !S.autoRun;
@@ -275,7 +323,7 @@ function showResults(o: Opening, afterEpic: boolean) {
   const drops = o.drops!, n = drops.length;
   o.spinning = false;
   o.showingResults = true;
-  announceFirsts(drops);
+  if (!o.test) announceFirsts(drops);
   $('#reels').hidden = true;
   const results = $('#results');
   results.hidden = false;
@@ -292,7 +340,7 @@ function showResults(o: Opening, afterEpic: boolean) {
     return `<div class="result r-${p.rarity}${big ? ' big' : ''}" data-id="${d.id}" style="--rc:${S.cfg.rarities[p.rarity].color}; animation-delay:${i * (o.fast ? 25 : 70)}ms">
       ${isNew ? '<span class="new-badge">NOWA</span>' : ''}
       ${cardHTML(d.person, d.variant, d.id)}
-      <div class="rbtns"><button class="fav-btn${d.fav ? ' on' : ''}" data-fav="${d.id}" title="${d.fav ? 'Ulubiona: nie da się jej sprzedać ani zużyć' : 'Dodaj do ulubionych'}">${d.fav ? '★' : '☆'}</button><button class="rsell" data-id="${d.id}" ${d.fav ? 'disabled' : ''}>Sprzedaj za ${fmt(d.value)}</button></div>
+      ${o.test ? '' : `<div class="rbtns"><button class="fav-btn${d.fav ? ' on' : ''}" data-fav="${d.id}" title="${d.fav ? 'Ulubiona: nie da się jej sprzedać ani zużyć' : 'Dodaj do ulubionych'}">${d.fav ? '★' : '☆'}</button><button class="rsell" data-id="${d.id}" ${d.fav ? 'disabled' : ''}>Sprzedaj za ${fmt(d.value)}</button></div>`}
     </div>`;
   }).join('') + (o.skins?.length ? `<div class="sk-res-head">Figury</div>${o.skins.map((s, i) => openingHooks.skResultHTML?.(s, i) ?? '').join('')}` : '');
 
@@ -323,7 +371,7 @@ function showResults(o: Opening, afterEpic: boolean) {
 export function updateStageBar() {
   const o: Opening = S.opening;
   const unsold = o.drops!.filter(d => !d.sold), sellable = unsold.filter(d => !d.fav);
-  $('#stageSum').textContent = unsold.length ? `Wartość: ${fmt(unsold.reduce((a, d) => a + d.value, 0))}` : 'Wszystko sprzedane';
+  $('#stageSum').textContent = o.test ? 'Skrzynka testowa: karty nie trafiają do ekwipunku' : unsold.length ? `Wartość: ${fmt(unsold.reduce((a, d) => a + d.value, 0))}` : 'Wszystko sprzedane';
   const sellAll = $('#sellAllBtn');
   sellAll.hidden = !sellable.length;
   sellAll.textContent = `Sprzedaj ${sellable.length < unsold.length ? 'resztę' : 'wszystko'} (${fmt(sellable.reduce((a, d) => a + d.value, 0))})`;
