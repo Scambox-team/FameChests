@@ -40,12 +40,14 @@ export function CrateCarousel({ crates, active, onPick }: { crates: Crate[]; act
           let d = i - at;
           if (d > n / 2) d -= n;
           if (d < -n / 2) d += n;
-          const u = Math.min(1, Math.abs(d) / half), x = Math.sign(d) * (W / 2 - size * .32) * Math.pow(u, .72);
-          const scale = d === 0 ? 1 : .62 - .3 * u, owned = S.chests[c.id] || 0;
+          // dalsze stoją ciaśniej i wyżej, jak na okręgu oglądanym lekko z góry
+          const u = Math.min(1, Math.abs(d) / half), x = Math.sign(d) * (W / 2 - size * .32) * .8 * Math.pow(u, .78);
+          const y = d === 0 ? 0 : -size * (.1 + .22 * u);
+          const scale = d === 0 ? 1 : .64 - .3 * u, owned = S.chests[c.id] || 0;
           return (
             <button key={c.id} type="button" className={`${styles.item}${d === 0 ? ` ${styles.on}` : ''}`} aria-pressed={d === 0} aria-label={`${c.name}${owned ? `, masz ${owned}` : ''}`}
               tabIndex={-1} onClick={() => d && onPick(c)}
-              style={{ '--th': crateHue(c).hue, transform: `translateX(calc(-50% + ${x.toFixed(1)}px)) scale(${scale.toFixed(3)})`, zIndex: 100 - Math.abs(d), opacity: d === 0 ? 1 : 1 - u * .45 } as React.CSSProperties}>
+              style={{ '--th': crateHue(c).hue, transform: `translate(calc(-50% + ${x.toFixed(1)}px), ${y.toFixed(1)}px) scale(${scale.toFixed(3)})`, zIndex: 100 - Math.abs(d), opacity: d === 0 ? 1 : 1 - u * .45 } as React.CSSProperties}>
               <CrateArt crate={c} className={styles.art} />
               {owned > 0 && <span className={styles.owned}>{owned}</span>}
               {c.test && <span className={styles.test}><FlaskConical size={13} aria-hidden="true" />Test</span>}

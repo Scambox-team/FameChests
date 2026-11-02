@@ -56,8 +56,18 @@ export function epicReveal3d(drop, { fast = false, auto = false, look }: { fast?
     void el.offsetWidth;
     el.classList.add('on');
 
+    // Tajna: po ładowaniu skrzynka wzlatuje i jaśnieje, dopiero potem wybucha
+    function ascend() {
+      if (phase !== 'charge') return;
+      phase = 'ascend';
+      clearTimeout(chargeTimer);
+      const ms = 1600 * speed;
+      scene.ascend(ms);
+      el.classList.add('ascend');
+      chargeTimer = setTimeout(burst, ms);
+    }
     function burst() {
-      if (phase !== 'intro' && phase !== 'charge') return;
+      if (phase !== 'intro' && phase !== 'charge' && phase !== 'ascend') return;
       phase = 'flying';
       clearTimeout(chargeTimer);
       scene.burst();
@@ -100,7 +110,8 @@ export function epicReveal3d(drop, { fast = false, auto = false, look }: { fast?
       setTimeout(() => { scene.destroy(); el.remove(); resolve(); }, 380);
     }
     function advance() {
-      if (phase === 'intro' || phase === 'charge') burst();
+      if (phase === 'charge' && T.orbit) ascend();
+      else if (phase === 'intro' || phase === 'charge' || phase === 'ascend') burst();
       else if (phase === 'flying') ready();
       else if (phase === 'ready') close();
     }
@@ -120,8 +131,8 @@ export function epicReveal3d(drop, { fast = false, auto = false, look }: { fast?
       const ms = T.charge * speed;
       scene.charge(ms);
       el.classList.add('charging');
-      if (tierKey === 'secret') Sound.drone(ms); else Sound.charge(ms / 1000, tierKey === 'ultra');
-      chargeTimer = setTimeout(burst, ms);
+      if (tierKey === 'secret') Sound.drone(ms + 1600 * speed); else Sound.charge(ms / 1000, tierKey === 'ultra');
+      chargeTimer = setTimeout(T.orbit ? ascend : burst, ms);
     })();
   });
 }

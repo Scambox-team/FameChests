@@ -13,7 +13,8 @@
 .stage .card { cursor: zoom-in; }
 
 /* wielkie odsłonięcia i podgląd karty: te same animacje, spokojniejsza typografia */
-.results { align-content: center; flex: 1; }
+/* safe: gdy kart jest więcej, niż mieści ekran, siatka zaczyna się od góry (zwykłe center wypychało pierwszy rząd pod tytuł, poza zasięg przewijania) */
+.results { align-content: safe center; flex: 1; }
 
 /* małe kafelki kart */
 .pick { padding: 0; border-radius: 8px; color: var(--text); text-align: left; font-family: var(--body); }

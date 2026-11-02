@@ -101,6 +101,9 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
   const dot = softDot();
   const leakMat = new THREE.SpriteMaterial({ map: dot, color: main, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
   const leak = new THREE.Sprite(leakMat); leak.position.y = MOUTH_Y; leak.scale.setScalar(4.5); crate.add(leak);
+  // Tajna: biały blask, w którym skrzynka znika, gdy wzlatuje (rysowany na wierzchu)
+  const blazeMat = new THREE.SpriteMaterial({ map: dot, color: '#fff8e6', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false });
+  const blaze = new THREE.Sprite(blazeMat); blaze.position.y = .9; blaze.renderOrder = 10; crate.add(blaze);
 
   // podłoga, plama światła i cień
   const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: .92, metalness: .05 }));
@@ -203,7 +206,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
       b.mat.opacity = Math.max(goal + Math.sin(t * 2 + b.ph) * .04 * (goal ? 1 : 0), b.on * .55) * (1 - near * .9);
       b.spotMat.opacity = b.mat.opacity * 1.4;
       // przechylone do środka, kołyszą się; przy wybuchu celują w skrzynkę
-      b.m.rotation.z = (open ? .32 : .14) + Math.sin(t * .9 + b.ph) * .12;
+      b.m.rotation.z = (open ? .32 : s.phase === 'ascend' ? .36 : .14) + Math.sin(t * .9 + b.ph) * .12;
       b.m.rotation.x = Math.cos(t * .7 + b.ph) * .1;
     }
     r.halos.forEach((h, i) => {
@@ -233,7 +236,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
   }
 
   // przebieg
-  const s = { phase: 'intro', t: 0, y: 11, vy: 0, landed: false, chargeStart: 0, chargeDur: 1, shake: 0, lift: 0, lid: 0, lidVel: 0, open: 0, lidFly: null, pillar: 0, flash: 0, hue: 0, cam: 0 };
+  const s = { ascStart: 0, ascDur: 1, ascFrom: 0, phase: 'intro', t: 0, y: 11, vy: 0, landed: false, chargeStart: 0, chargeDur: 1, shake: 0, lift: 0, lid: 0, lidVel: 0, open: 0, lidFly: null, pillar: 0, flash: 0, hue: 0, cam: 0 };
   let W = 0, H = 0, running = true, last = performance.now(), onLand = null;
   const camFrom = new THREE.Vector3(0, 5.2, 15), camTo = new THREE.Vector3(0, 3.1, 10.2), look3 = new THREE.Vector3(0, 2.2, 0);
 
@@ -289,7 +292,20 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
         emit(1, x, y, z, -x / l, (MOUTH_Y + s.lift - y) / l, -z / l, l, pick());
       }
     }
-    const tremble = s.phase === 'charge' ? (.01 + charge * charge * .09) : 0;
+    // Tajna: po okrążeniu kamery skrzynka wzlatuje, rozjarza się do białości i dopiero wtedy wybucha
+    let asc = 0;
+    if (s.phase === 'ascend') {
+      asc = Math.min(1, (now - s.ascStart) / s.ascDur);
+      const e = asc * asc * (3 - 2 * asc);
+      s.lift = s.ascFrom + e * 2.8;
+      seamMat.opacity = 1; leakMat.opacity = 1;
+      leak.scale.setScalar(7 + e * 9);
+      glow.intensity = 18 + e * 70;
+      rays.material.opacity = .22 + e * .4;
+      blazeMat.opacity = Math.min(1, e * 1.3); blaze.scale.setScalar(2 + e * 11);
+      for (let i = 0; i < 4; i++) emit(2, rnd(-1.2, 1.2), s.lift + rnd(0, 1.2), rnd(-.7, .7), rnd(-1.5, 1.5), rnd(-4, -1), rnd(-1, 1), rnd(.5, 1.1), pick());
+    } else if (s.phase === 'open') blazeMat.opacity += (0 - blazeMat.opacity) * k(2.5);
+    const tremble = s.phase === 'charge' ? (.01 + charge * charge * .09) : s.phase === 'ascend' ? .05 + asc * .08 : 0;
     root.position.set(rnd(-1, 1) * tremble, Math.max(0, s.y) + s.lift + (s.phase === 'open' ? Math.sin(t * 1.6) * .05 * tier.levitate : 0), rnd(-1, 1) * tremble * .5);
     root.rotation.z = rnd(-1, 1) * tremble * .5;
     if (s.phase === 'open' && tier.levitate) crate.rotation.y += dt * .25 * tier.levitate;
@@ -322,7 +338,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
       if (tier.ambient === 'dust' && Math.random() < dt * 55) emit(4, rnd(-11, 11), rnd(9, 12), rnd(-5, 3), rnd(-.15, .15), rnd(-1.2, -.6), 0, rnd(6, 9), pick());
       if (tier.ambient === 'neon' && Math.random() < dt * 30) emit(3, ax + rnd(-1.2, 1.2), ay, rnd(-.6, .6), rnd(-1.5, 1.5), rnd(1.5, 3.5), rnd(-.4, .4), rnd(.8, 1.4), pick());
     }
-    if (rig) rigFrame(dt, t, charge, k);
+    if (rig) rigFrame(dt, t, s.phase === 'ascend' ? 1 : charge, k);
     for (let i = rings.length - 1; i >= 0; i--) {
       const r = rings[i];
       r.t += dt;
@@ -359,10 +375,12 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
     if (rig) {
       const c = Math.cos(rig.ang), sn = Math.sin(rig.ang), x = camera.position.x, z = camera.position.z;
       camera.position.x = x * c + z * sn; camera.position.z = -x * sn + z * c; camera.position.y += rig.dip;
-      rays.position.set(-sn * 6, 3, -c * 6);   // promienie zawsze za skrzynką, patrząc od kamery
+      rays.position.set(-sn * 6, 3 + s.lift, -c * 6);
+      camera.position.y += s.lift * .45;   // kamera i jej cel idą w górę za wzlatującą skrzynką   // promienie zawsze za skrzynką, patrząc od kamery
     }
     const sh = s.shake * s.shake * .5;
     camera.position.x += rnd(-1, 1) * sh; camera.position.y += rnd(-1, 1) * sh;
+    look3.y = 2.2 + (rig ? s.lift * .75 : 0);
     camera.lookAt(look3);
     rays.lookAt(camera.position);
     rays.rotation.z = t * .08;
@@ -384,8 +402,13 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
       if (!s.landed) land();
       s.phase = 'charge'; s.chargeStart = performance.now(); s.chargeDur = ms;
     },
+    /** Tajna: skrzynka wzlatuje i rozjarza się przez ms, potem burst() */
+    ascend(ms) {
+      s.phase = 'ascend'; s.ascStart = performance.now(); s.ascDur = ms; s.ascFrom = s.lift;
+    },
     burst() {
       if (!s.landed) land();
+      pillar.position.y = core.position.y = MOUTH_Y - .2 + s.lift;
       s.phase = 'open'; s.open = 1; s.shake = 1.15; s.lidVel = -14;
       if (tier.lidFly) s.lidFly = { vy: 11 };
       if (rig) {
@@ -417,7 +440,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
         for (const b of rig.beams) { b.mat.dispose(); b.spotMat.dispose(); }
         for (const h of rig.halos) h.mat.dispose();
       }
-      for (const m of [seamMat, leakMat, poolMat, pillarMat, coreMat, pMat, rays.material, shadow.material, floor.material]) m.dispose();
+      for (const m of [blazeMat, seamMat, leakMat, poolMat, pillarMat, coreMat, pMat, rays.material, shadow.material, floor.material]) m.dispose();
       renderer.dispose();
     }
   };

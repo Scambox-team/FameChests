@@ -5,6 +5,10 @@
 .r3.closing { opacity: 0; transition: opacity .35s; }
 .r3-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
+/* Tajna: ekran jaśnieje razem z wzlatującą skrzynką (przed regułą wybuchu, która ją potem nadpisuje) */
+.r3-secret.ascend .r3-flash { background: radial-gradient(circle at 50% 42%, #fff, #fff3cf 30%, transparent 72%); animation: r3Rise 1.6s ease-in forwards; }
+@keyframes r3Rise { from { opacity: 0; } to { opacity: .7; } }
+
 /* błysk przy wybuchu */
 .r3-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 62%, #fff, color-mix(in srgb, var(--rc) 70%, transparent) 35%, transparent 70%); }
 .r3.burst .r3-flash { animation: r3Flash .9s ease-out; }
