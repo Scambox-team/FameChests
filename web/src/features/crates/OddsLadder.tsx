@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, LayoutGrid } from 'lucide-react';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { crateVariants, isExclusive, person, plural, variantEvent, vChance } from '../../game/rules';
@@ -37,14 +37,34 @@ function VariantRows({ crate }: { crate: Crate }) {
   );
 }
 
-/** Wszystkie karty jednej rzadkości w skrzynce; kliknięcie karty otwiera podgląd */
+const ALL = 'all';
+const shown = (crate: Crate, rarity: string) => crate.people.filter(id => person(id).rarity === rarity && person(id).source !== 'ufo').sort((a, b) => person(a).name.localeCompare(person(b).name, 'pl'));
+
+/** Karty skrzynki w oknie: jednej rzadkości albo wszystkie (ALL), wtedy pogrupowane od najczęstszej. Kliknięcie karty otwiera podgląd */
 function RarityCards({ crate, rarity, onClose }: { crate: Crate; rarity: string; onClose: () => void }) {
-  const R = S.cfg.rarities[rarity];
-  const ids = crate.people.filter(id => person(id).rarity === rarity && person(id).source !== 'ufo').sort((a, b) => person(a).name.localeCompare(person(b).name, 'pl'));
   const zoom = (e: React.MouseEvent) => {
     const c = (e.target as HTMLElement).closest<HTMLElement>('.card');
     if (c) openViewer(c.dataset.pid, c.dataset.variant);
   };
+  if (rarity === ALL) {
+    const groups = crateRarities(crate).map(r => [r, shown(crate, r)] as const).filter(([, ids]) => ids.length);
+    const n = groups.reduce((a, [, ids]) => a + ids.length, 0);
+    return (
+      <Modal title={`Wszystkie karty: ${crate.name}`} onClose={onClose} wide>
+        <p className="muted small">{n} {plural(n, 'karta', 'karty', 'kart')}, od najczęstszych do najrzadszych. Kliknij kartę, żeby ją obejrzeć w każdym wariancie.</p>
+        <div className={styles.rarityCards} onClick={zoom}>
+          {groups.map(([r, ids]) => {
+            const R = S.cfg.rarities[r];
+            return [
+              <h3 key={r} className={styles.rGroup}><i style={{ background: R.color }} />{R.name}<span>{ids.length} · {fmt(R.value)} za sztukę</span></h3>,
+              ...ids.map(id => <Card key={id} person={id} />)
+            ];
+          })}
+        </div>
+      </Modal>
+    );
+  }
+  const R = S.cfg.rarities[rarity], ids = shown(crate, rarity);
   return (
     <Modal title={`${R.name}: ${crate.name}`} onClose={onClose} wide>
       <p className="muted small">{ids.length} {plural(ids.length, 'karta', 'karty', 'kart')} · wartość {fmt(R.value)} za sztukę. Kliknij kartę, żeby ją obejrzeć w każdym wariancie.</p>
@@ -75,6 +95,9 @@ export function OddsLadder({ crate }: { crate: Crate }) {
           </button>
         );
       })}
+      <button className={styles.more} type="button" onClick={() => { Sound.click(); setOpen(ALL); }}>
+        Wszystkie karty w skrzynce<LayoutGrid size={15} aria-hidden="true" />
+      </button>
       {hasVariants && (
         <>
           <button className={styles.more} type="button" aria-expanded={more} onClick={() => setMore(!more)}>

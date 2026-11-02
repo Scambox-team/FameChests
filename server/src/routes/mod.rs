@@ -92,6 +92,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/config", get(config))
         .route("/api/state", get(state))
         .route("/api/open", post(open_crates))
+        .route("/api/crates/{crate_id}/top-drops", get(crate_top_drops))
         .route("/api/chests/buy", post(buy_chests))
         .route("/api/chests/money", post(open_money_chest))
         .route("/api/sell", post(sell))

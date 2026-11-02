@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::{Duration, Local, NaiveDate};
 use indexmap::IndexMap;
@@ -24,6 +24,9 @@ use crate::game::*;
 use crate::state::AppState;
 
 const MAX_BULK_CONTRACTS: usize = 50; // ile kontraktów naraz
+/// „Ostatnie najlepsze dropy” w sklepie: karta warta co najmniej tyle cen skrzynki
+const TOP_DROP_MULT: i64 = 10;
+const TOP_DROPS_SHOWN: i64 = 12;
 
 fn one() -> i64 {
     1
@@ -268,6 +271,23 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
         let (person, variant) = roll(&cx.cat, cr).ok_or_else(|| AppError::bad("Ta skrzynka jest pusta"))?;
         drops.push(insert_item(&mut tx, &cx, &person.id, &variant, "drop").await?);
     }
+    // najlepsze dropy tej skrzynki; gracze ukryci w rankingu odpadają dopiero przy odczycie (crate_top_drops)
+    if cr.price > 0 {
+        for d in drops.iter().filter(|d| d.value >= TOP_DROP_MULT * cr.price) {
+            sqlx::query(
+                "INSERT INTO crate_drops (crate_id, user_id, item_id, person_id, variant, value, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            )
+            .bind(&cr.id)
+            .bind(cx.uid())
+            .bind(d.id)
+            .bind(&d.person)
+            .bind(&d.variant)
+            .bind(d.value)
+            .bind(d.created)
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
     let skins = super::chess::drop_skins(&mut tx, cx.uid(), cr, req.count).await?;
     let discovered = note_drops(&mut tx, &cx, &drops_of(&drops), "drop").await?;
     let persons: Vec<String> = drops.iter().map(|d| d.person.clone()).collect();
@@ -277,6 +297,62 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
     tx.commit().await?;
     metrics::counter!("scambox_crates_opened_total", "crate" => cr.id.clone()).increment(req.count.unsigned_abs());
     ok(OpenResponse { drops, discovered, state, from_inventory: from_inv, chests, skins })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TopDropUser {
+    username: String,
+    avatar_card: Option<String>,
+    avatar_rarity: Option<String>,
+    avatar_variant: String,
+}
+
+#[derive(Serialize)]
+struct TopDrop {
+    person: String,
+    variant: String,
+    value: i64,
+    at: f64,
+    user: TopDropUser,
+}
+
+/// Ostatnie najlepsze dropy ze skrzynki (karty warte co najmniej TOP_DROP_MULT × jej obecna cena), bez graczy ukrytych w rankingu
+pub async fn crate_top_drops(State(st): State<AppState>, Me(_me): Me, Path(crate_id): Path<String>) -> Res {
+    let cat = st.cat();
+    let Some(cr) = cat.crates.get(&crate_id) else {
+        return bad("Nie ma takiej skrzynki");
+    };
+    let min = TOP_DROP_MULT * cr.price;
+    let mut c = st.db.acquire().await?;
+    let rows: Vec<(String, String, i64, f64, String, String, String)> = sqlx::query_as(
+        "SELECT d.person_id, d.variant, d.value, d.created_at, u.username, u.avatar_card, u.avatar_variant \n         FROM crate_drops d JOIN users u ON u.id = d.user_id \n         WHERE d.crate_id = $1 AND d.value >= $2 AND u.banned = 0 AND u.ranking_hidden = 0 AND u.money_generated = 0 \n         ORDER BY d.id DESC LIMIT $3",
+    )
+    .bind(&cr.id)
+    .bind(min)
+    .bind(TOP_DROPS_SHOWN)
+    .fetch_all(&mut *c)
+    .await?;
+    let drops: Vec<TopDrop> = rows
+        .into_iter()
+        .filter(|r| cat.person(&r.0).is_some())
+        .map(|(person, variant, value, at, username, avatar_card, avatar_variant)| {
+            let avatar = cat.person(&avatar_card);
+            TopDrop {
+                person,
+                variant,
+                value,
+                at,
+                user: TopDropUser {
+                    username,
+                    avatar_card: avatar.map(|a| a.id.clone()),
+                    avatar_rarity: avatar.map(|a| a.rarity.clone()),
+                    avatar_variant: if g().is_variant(&avatar_variant) { avatar_variant } else { "normal".into() },
+                },
+            }
+        })
+        .collect();
+    ok(json!({"drops": drops, "min": min}))
 }
 
 #[derive(Deserialize, Default)]

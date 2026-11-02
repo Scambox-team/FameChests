@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Lock, Zap, Repeat } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Lock, Zap, Repeat } from 'lucide-react';
 
 import { api } from '../../api/client';
-import { Card } from '../../cards/Card';
-import { openViewer } from '../../fx/effects';
 import { crateList, crateOf, plural, testCrates } from '../../game/rules';
 import { applyState } from '../../game/session';
 import { S, touch, useGame } from '../../game/store';
@@ -18,6 +16,7 @@ import { CrateStage } from './CrateStage';
 import { applyHue } from './crateLook';
 import { OddsLadder } from './OddsLadder';
 import { QuestBox } from './QuestBox';
+import { TopDrops } from './TopDrops';
 import { openCrates } from './opening';
 import styles from './CratesPage.module.css';
 
@@ -83,37 +82,6 @@ function BuyPanel({ crate }: { crate: Crate }) {
   );
 }
 
-function Contents({ crate }: { crate: Crate }) {
-  const [all, setAll] = useState(false);
-  const people = crate.people;
-  const shown = useMemo(() => {
-    if (all) return people;
-    const order = S.cfg.rarityOrder, pick: string[] = [];
-    for (const r of [...order].reverse()) {
-      const hit = people.find(id => S.cfg.people[id].rarity === r);
-      if (hit) pick.push(hit);
-      if (pick.length === 6) break;
-    }
-    return pick;
-  }, [people, all]);
-  if (!people.length) return <section className={styles.sec}><h2>Zawartość</h2><p className="muted">W tej skrzynce nie ma jeszcze kart.</p></section>;
-  const zoom = (e: React.MouseEvent) => {
-    const c = (e.target as HTMLElement).closest<HTMLElement>('.card');
-    if (c) openViewer(c.dataset.pid, c.dataset.variant);
-  };
-  return (
-    <section className={styles.sec}>
-      <div className={styles.secHead}>
-        <h2>{all ? `Wszystkie karty: ${crate.name}` : 'Po jednej karcie z każdej rzadkości'}</h2>
-        {people.length > 6 && <Button kind="quiet" onClick={() => setAll(!all)}>{all ? 'Zwiń' : `Pokaż wszystkie (${people.length})`}<ChevronDown size={16} aria-hidden="true" style={{ transform: all ? 'rotate(180deg)' : undefined }} /></Button>}
-      </div>
-      <div className={styles.cards} onClick={zoom}>
-        {shown.map(id => <Card key={id} person={id} />)}
-      </div>
-    </section>
-  );
-}
-
 function Stats() {
   const { state: st, items } = useGame();
   const profit = st.earned - st.spent;
@@ -157,7 +125,7 @@ export function CratesPage() {
           <OddsLadder crate={crate} />
         </SpotlightCard>}
       </section>
-      <Contents crate={crate} />
+      <TopDrops crate={crate} />
       <Stats />
     </>
   );
