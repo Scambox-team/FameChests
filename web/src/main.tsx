@@ -11,6 +11,7 @@ import './cards/css/ufo.css';
 import './cards/css/avatars.css';
 import './fx/css/stage.css';
 import './fx/css/fx.css';
+import './fx/css/reveal.css';
 import './styles/tokens.css';
 import './styles/base.css';
 

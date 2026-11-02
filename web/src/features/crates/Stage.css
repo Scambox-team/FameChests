@@ -25,4 +25,4 @@
 .pick { padding: 0; border-radius: 8px; color: var(--text); text-align: left; font-family: var(--body); }
 .pick .pn { font-weight: 500; }
 .pick .pv { color: var(--muted); font-weight: 500; }
-.fa-title, .fa-result-name { font-family: var(--display) !important; }
+

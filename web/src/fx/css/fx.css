@@ -38,174 +38,16 @@ input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { o
 @keyframes jackpot { to { box-shadow: 0 0 40px var(--rc), 0 0 80px var(--rc), inset 0 0 40px var(--rc); } }
 
 /* ============================================================ rewers karty */
-.cback {
-  width: 100%; height: 100%; border-radius: 4.5%/3.2%; padding: 3.6%;
-  background: linear-gradient(145deg, #ffe58a, #b07a00 50%, #ffe58a);
-  box-shadow: 0 6px 18px #000a;
-}
-.cback-inner {
-  position: relative; height: 100%; border-radius: 3%/2.2%; overflow: hidden;
-  background: radial-gradient(circle at 50% 45%, #4430a8, #120a3a 70%);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4%;
-  container-type: inline-size;
-}
-.cback-inner::after { content: ""; position: absolute; inset: 6%; border: 2px solid #ffd54a66; border-radius: 4%; }
-.cback-swirl {
-  position: absolute; inset: -50%;
-  background: repeating-conic-gradient(from 0deg, #ffffff12 0 10deg, transparent 10deg 20deg);
-  animation: spin 30s linear infinite;
-}
-.cback-logo { position: relative; font-size: 30cqw; line-height: 1; filter: drop-shadow(0 0 12px #ffd54a); }
-.cback-title {
-  position: relative; font-family: Bungee, Rubik, sans-serif; font-size: 11cqw; text-align: center; line-height: 1.05;
-  background: linear-gradient(180deg, #fff6cf, #ffc531); -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-
-/* ============================================================ WIELKIE ODSŁONIĘCIE */
-.epic {
-  position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; overflow: hidden; cursor: pointer;
-  --c1: #ffc531; --c2: #fff3b0; --amp: 2px;
-}
-.epic.ultra { --c1: #ff5cf0; --c2: #9ff6ff; --amp: 4px; }
-.epic.closing { opacity: 0; transition: opacity .35s; }
-.epic-bg { position: absolute; inset: 0; background: radial-gradient(circle, #1f1606, #000 70%); opacity: 0; transition: opacity .4s; }
-.epic.ultra .epic-bg { background: radial-gradient(circle, #200a26, #000 70%); }
-.epic.charging .epic-bg, .epic.burst .epic-bg { opacity: .97; }
-
-.epic-vortex {
-  position: absolute; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
-  background: conic-gradient(from 0deg, transparent, #ffc53140, transparent 12%, #fff3b030, transparent 25%, #ffc53140, transparent 37%,
-    #fff3b030, transparent 50%, #ffc53140, transparent 62%, #fff3b030, transparent 75%, #ffc53140, transparent 87%, #fff3b030, transparent);
-  filter: blur(18px); opacity: 0; transition: opacity 1s; animation: spin 7s linear infinite;
-}
-.epic.ultra .epic-vortex {
-  background: conic-gradient(#ff3b3b66, #ff9f1a66, #ffe53b66, #3bff6b66, #3bd5ff66, #6b5bff66, #ff3bd866, #ff3b3b66);
-  animation-duration: 3s;
-}
-.epic.charging .epic-vortex { opacity: .55; }
-.epic.ultra.charging .epic-vortex { animation-duration: .9s; opacity: .7; }
-.epic.burst .epic-vortex { opacity: .3; }
-
-.epic-rays {
-  position: absolute; left: 50%; top: 50%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax;
-  background: repeating-conic-gradient(from 0deg, #ffc53170 0deg 5deg, transparent 5deg 15deg);
-  -webkit-mask: radial-gradient(circle, #000 2%, transparent 50%); mask: radial-gradient(circle, #000 2%, transparent 50%);
-  opacity: 0; scale: .2; transition: opacity .5s, scale 1.2s cubic-bezier(.2, 1.2, .3, 1);
-  animation: spin 16s linear infinite;
-}
-.epic.ultra .epic-rays {
-  background: repeating-conic-gradient(#ff3b3b90 0 4deg, transparent 4deg 12deg, #ffe53b90 12deg 16deg, transparent 16deg 24deg,
-    #3bff6b90 24deg 28deg, transparent 28deg 36deg, #3bd5ff90 36deg 40deg, transparent 40deg 48deg, #ff3bd890 48deg 52deg, transparent 52deg 60deg);
-  animation-duration: 9s;
-}
-.epic.burst .epic-rays { opacity: 1; scale: 1; }
-
-.epic-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-
-.epic-rings { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-.epic-rings i {
-  position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
-  border: 6px solid var(--c1); box-shadow: 0 0 30px var(--c1), inset 0 0 30px var(--c1); opacity: 0;
-}
-.epic-rings i:nth-child(2) { border-color: var(--c2); }
-.epic.ultra .epic-rings i:nth-child(1) { border-color: #ff3b3b; box-shadow: 0 0 30px #ff3b3b; }
-.epic.ultra .epic-rings i:nth-child(2) { border-color: #ffe53b; box-shadow: 0 0 30px #ffe53b; }
-.epic.ultra .epic-rings i:nth-child(3) { border-color: #3bff6b; box-shadow: 0 0 30px #3bff6b; }
-.epic.ultra .epic-rings i:nth-child(4) { border-color: #3bd5ff; box-shadow: 0 0 30px #3bd5ff; }
-.epic.ultra .epic-rings i:nth-child(5) { border-color: #ff3bd8; box-shadow: 0 0 30px #ff3bd8; }
-.epic.burst .epic-rings i { animation: ring 1.3s cubic-bezier(.1, .6, .3, 1) forwards; }
-.epic.burst .epic-rings i:nth-child(2) { animation-delay: .12s; }
-.epic.burst .epic-rings i:nth-child(3) { animation-delay: .24s; }
-.epic.burst .epic-rings i:nth-child(4) { animation-delay: .36s; }
-.epic.burst .epic-rings i:nth-child(5) { animation-delay: .48s; }
-@keyframes ring { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(9); opacity: 0; border-width: 1px; } }
-
-.epic-lightning { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0;
-  background: radial-gradient(circle at var(--lx, 50%) 0%, #ffffff70, transparent 60%); }
-.epic-lightning::before {
-  content: ""; position: absolute; left: var(--lx, 50%); top: 0; width: 120px; height: 55%; margin-left: -60px;
-  background: linear-gradient(#fff, #9ff6ff);
-  clip-path: polygon(48% 0, 62% 0, 50% 33%, 68% 33%, 34% 100%, 46% 45%, 28% 45%);
-  filter: drop-shadow(0 0 12px #9ff6ff);
-}
-.epic-lightning.go { animation: lightning .35s steps(3); }
-@keyframes lightning { 0% { opacity: 1; } 35% { opacity: .15; } 65% { opacity: .9; } 100% { opacity: 0; } }
-
-.epic-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
-
-.epic-center {
-  --ew: min(300px, 64vw, calc((100vh - 270px) * .716));
-  width: var(--ew); aspect-ratio: 63 / 88; position: relative; perspective: 1400px; transform: scale(0);
-}
-.epic.charging .epic-center { animation: epicEnter .6s cubic-bezier(.2, 1.4, .4, 1) forwards, tremble .07s linear .6s infinite; }
-.epic.burst .epic-center { transform: none; animation: epicPop .7s cubic-bezier(.2, 1.6, .4, 1), floaty 3s ease-in-out .7s infinite; }
-@keyframes epicEnter { from { transform: scale(0); } to { transform: scale(1); } }
-@keyframes tremble {
-  0% { transform: translate(0, 0); } 25% { transform: translate(var(--amp), calc(var(--amp) * -1)); }
-  50% { transform: translate(calc(var(--amp) * -1), var(--amp)); } 75% { transform: translate(var(--amp), var(--amp)); }
-}
-@keyframes epicPop { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
-@keyframes floaty { 50% { transform: translateY(-10px); } }
-
-.epic-glow { position: absolute; inset: -45%; border-radius: 50%; background: radial-gradient(closest-side, var(--c2), var(--c1) 35%, transparent); opacity: 0; filter: blur(12px); }
-.epic.charging .epic-glow { animation: glowGrow var(--charge, 1.5s) ease-in forwards; }
-.epic.burst .epic-glow { opacity: .55; animation: glowPulse 2s ease-in-out infinite; }
-.epic.ultra.burst .epic-glow { animation: glowPulse 2s ease-in-out infinite, hue 3s linear infinite; }
-@keyframes glowGrow { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: scale(1.25); } }
-@keyframes glowPulse { 50% { opacity: .8; transform: scale(1.1); } }
-@keyframes hue { to { filter: blur(12px) hue-rotate(360deg); } }
-
-.epic-flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.2, 1.3, .35, 1); }
-.epic.charging .epic-flipper { animation: epicSpin .8s ease-out; }
-.epic.burst .epic-flipper { transform: rotateY(180deg); }
-@keyframes epicSpin { from { transform: rotateY(-1080deg); } }
-.epic-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.epic-front { transform: rotateY(180deg); }
-.epic-front .card { width: 100%; --cw: 100%; }
-.epic .cback { box-shadow: 0 0 40px var(--c1), 0 0 90px var(--c1); }
-.epic.charging .cback-inner { animation: backPulse .35s ease-in-out infinite alternate; }
-.epic.ultra .cback { background: conic-gradient(from var(--ang, 0deg), #ff3b3b, #ff9f1a, #ffe53b, #3bff6b, #3bd5ff, #6b5bff, #ff3bd8, #ff3b3b); animation: ultraSpin 1.5s linear infinite; }
-@keyframes backPulse { to { filter: brightness(1.6); } }
-
-.epic-title {
-  position: relative; font-family: Bungee, Rubik, sans-serif; font-size: clamp(30px, 6.5vw, 82px); line-height: 1;
-  letter-spacing: 2px; text-align: center; opacity: 0;
-  background: linear-gradient(180deg, #fffbe0, #ffd54a 45%, #c98a00 55%, #ffe58a);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 18px #ffc531aa) drop-shadow(0 4px 0 #6b4700);
-}
-.epic.ultra .epic-title {
-  background: linear-gradient(90deg, #ff3b3b, #ff9f1a, #ffe53b, #3bff6b, #3bd5ff, #6b5bff, #ff3bd8, #ff3b3b);
-  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text;
-  filter: drop-shadow(0 0 18px #ff5cf0aa) drop-shadow(0 4px 0 #3a0a40);
-}
-.epic.burst .epic-title { animation: slam .6s cubic-bezier(.2, 1.5, .4, 1) .15s forwards; }
-.epic.ultra.burst .epic-title { animation: slam .6s cubic-bezier(.2, 1.5, .4, 1) .15s forwards, rainbowSlide 2s linear infinite; }
-@keyframes slam { 0% { opacity: 0; transform: scale(3.5); } 60% { opacity: 1; transform: scale(.92); } 100% { opacity: 1; transform: scale(1); } }
-.epic.ultra .epic-title::before, .epic.ultra .epic-title::after {
-  content: attr(data-text); position: absolute; inset: 0; background: none; -webkit-background-clip: initial;
-  mix-blend-mode: screen; opacity: 0;
-}
-.epic.ultra.burst .epic-title::before { color: #ff004c; animation: glitch 2.2s steps(1) .8s infinite; }
-.epic.ultra.burst .epic-title::after { color: #00e5ff; animation: glitch 2.2s steps(1) .9s infinite reverse; }
-@keyframes glitch {
-  0%, 82%, 100% { opacity: 0; transform: none; clip-path: inset(0); }
-  84% { opacity: .8; transform: translate(-6px, 2px); clip-path: inset(10% 0 55% 0); }
-  88% { opacity: .8; transform: translate(6px, -2px); clip-path: inset(60% 0 8% 0); }
-  92% { opacity: .8; transform: translate(-3px, 0); clip-path: inset(35% 0 35% 0); }
-}
-
-.epic-name { opacity: 0; font-size: clamp(16px, 2.4vw, 24px); font-weight: 900; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; text-shadow: 0 2px 10px #000; }
-.epic-name b { color: var(--good); font-family: Bungee, Rubik, sans-serif; font-weight: 400; }
-.epic-holo { background: var(--rainbow); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rainbowSlide 2s linear infinite; }
-.epic.burst .epic-name { animation: riseIn .5s .6s both; }
-.epic-hint { opacity: 0; color: #ffffffa0; font-size: 14px; }
-.epic.ready .epic-hint { animation: riseIn .4s both, blink 1.4s ease-in-out .4s infinite; }
-
-.epic-flash { position: absolute; inset: 0; z-index: 5; background: #fff; opacity: 0; pointer-events: none; }
-.epic.burst .epic-flash { animation: flash .9s ease-out; }
-.epic.ultra.burst .epic-flash { background: radial-gradient(circle, #fff 20%, #ff9ff3 50%, #9ff6ff); }
-.epic.ultra.burst { animation: shake .6s; }
+/* Rewers w stylu Gabloty: prawie czarna karta, delikatne ukośne linie, znak gry pośrodku. Kolor obwódki bierze się z --rc albo --hue. */
+.cback { width: 100%; height: 100%; border-radius: 4.5%/3.2%; padding: 2.4%; background: color-mix(in srgb, var(--rc, var(--hue)) 55%, #1f1f24); box-shadow: 0 6px 18px #000a; }
+.cback-inner { position: relative; height: 100%; border-radius: 3%/2.2%; overflow: hidden; container-type: inline-size;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6%;
+  background: repeating-linear-gradient(135deg, #ffffff06 0 2px, transparent 2px 9px), radial-gradient(circle at 50% 42%, #24242b, #0d0d10 72%); }
+.cback-inner::after { content: ""; position: absolute; inset: 5%; border: 1px solid #ffffff1a; border-radius: 3%; }
+.cback-swirl { display: none; }
+.cback-logo { position: relative; width: 34cqw; height: 34cqw; }
+.cback-logo svg { display: block; width: 100%; height: 100%; }
+.cback-title { position: relative; color: #ffffffcc; font: 800 11cqw/1 var(--display); letter-spacing: -.02em; }
 
 /* ============================================================ PODGLĄD KARTY */
 .viewer {
@@ -316,31 +158,7 @@ input[type=text]:focus, input[type=number]:focus, input[type=password]:focus { o
 .oc { width: 54px; text-align: center; font-size: 10px; font-weight: 700; color: var(--muted); }
 .oc img { width: 54px; height: 54px; object-fit: cover; object-position: 50% 18%; border-radius: 8px; border: 2px solid var(--nc); display: block; }
 
-/* animacja kontraktu */
-.forge-anim { position: fixed; inset: 0; z-index: 120; overflow: hidden; }
-.fa-bg { position: absolute; inset: 0; background: radial-gradient(circle, color-mix(in srgb, var(--nc) 25%, #0b0e18), #020308 70%); animation: fadeIn .3s; }
-.fa-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-.fa-title { position: absolute; top: 24px; left: 0; right: 0; text-align: center; font-family: Bungee, Rubik, sans-serif; font-size: 26px; color: var(--nc); text-shadow: 0 0 20px var(--nc); z-index: 4; }
-.fa-orb {
-  position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; border-radius: 50%; z-index: 1;
-  background: radial-gradient(circle, #fff 0%, var(--nc) 30%, color-mix(in srgb, var(--nc) 40%, transparent) 55%, transparent 70%);
-  transform: translate(-50%, -50%) scale(.2); opacity: .3; animation: orbPulse .25s ease-in-out infinite alternate;
-  will-change: transform, opacity, filter;
-}
-@keyframes orbPulse { to { filter: brightness(1.5) blur(3px); } }
-.fa-orb.pop { animation: orbPop .7s ease-out forwards; }
-@keyframes orbPop { to { transform: translate(-50%, -50%) scale(5); opacity: 0; } }
-.fa-ring { position: absolute; inset: 0; z-index: 2; }
-/* will-change: karty krążą i świecą (filter) w każdej klatce - osobna warstwa, bez przerysowywania karty */
-.fa-card { position: absolute; left: 50%; top: 50%; width: min(150px, 22vw); transform: translate(-50%, -50%); will-change: transform, opacity, filter; }
-.fa-card .card { width: 100%; --cw: 100%; }
-.fa-reel { position: absolute !important; left: 50%; top: 50%; translate: -50% -50%; width: min(900px, 94vw); z-index: 2; animation: fadeIn .3s; }
-.fa-result { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
-.fa-result-card { width: min(300px, 70vw, calc((100vh - 230px) * .716)); animation: popIn .6s cubic-bezier(.2, 1.6, .4, 1); }
-.fa-result-card .card { width: 100%; --cw: 100%; }
-.fa-result-name { font-family: Bungee, Rubik, sans-serif; font-size: 22px; text-align: center; }
 .fa-result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.fa-flash { z-index: 5; }
 
 /* ulepszacz */
 .upg-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }

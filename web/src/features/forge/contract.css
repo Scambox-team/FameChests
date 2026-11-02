@@ -1,0 +1,30 @@
+/* Animacja kontraktu: ciemna scena jak przy odsłonięciu, karty wjeżdżają do stosu, stos gaśnie w linię światła */
+.forge-anim { position: fixed; inset: 0; z-index: 120; overflow: hidden; background: #050506; }
+.fa-bg { position: absolute; inset: 0; opacity: 0; transition: opacity .8s;
+  background: radial-gradient(ellipse 60% 45% at 50% 50%, color-mix(in srgb, var(--nc) 16%, transparent), transparent 70%); }
+.forge-anim.charging .fa-bg, .forge-anim.lit .fa-bg { opacity: 1; }
+.fa-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+.fa-title { position: absolute; top: 28px; left: 0; right: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.fa-title span { color: var(--muted); font: 600 12px var(--body); letter-spacing: .24em; text-transform: uppercase; }
+.fa-title b { color: var(--nc); font: 800 26px/1.1 var(--display); letter-spacing: -.02em; }
+.fa-ring { position: absolute; inset: 0; z-index: 2; }
+.fa-card { position: absolute; left: 50%; top: 50%; width: min(150px, 22vw); transform: translate(-50%, -50%); opacity: 0; will-change: transform, opacity; }
+.fa-card .card { width: 100%; --cw: 100%; box-shadow: 0 10px 30px #000c; }
+
+/* linia światła: ładuje się razem ze stosem i rozbłyska, gdy stos znika */
+.fa-line { position: absolute; left: 50%; top: 50%; z-index: 1; width: 74vw; height: 1px; transform: translate(-50%, -50%) scaleX(0); opacity: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--nc), #fff, var(--nc), transparent); box-shadow: 0 0 24px var(--nc); }
+.forge-anim.charging .fa-line { animation: rvLine 2.4s cubic-bezier(.5, 0, .2, 1) forwards; }
+.forge-anim.lit .fa-line { animation: rvLineOut .6s ease-out forwards; }
+
+.fa-reel { position: absolute !important; left: 50%; top: 50%; translate: -50% -50%; width: min(900px, 94vw); z-index: 2; animation: fadeIn .3s; }
+.fa-result { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; }
+.fa-result-label { color: var(--nc); font: 600 13px var(--body); letter-spacing: .24em; text-transform: uppercase; animation: fadeIn .5s .1s both; }
+.fa-result-card { width: min(300px, 70vw, calc((100vh - 260px) * .716)); animation: faRise .7s cubic-bezier(.2, 1.1, .3, 1); }
+.fa-result-card .card { width: 100%; --cw: 100%; }
+.fa-result-name { font: 800 clamp(24px, 3.6vw, 34px)/1.1 var(--display); letter-spacing: -.02em; }
+.fa-result-meta { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 15px; }
+.fa-result-meta b { color: var(--good); font-weight: 600; }
+.fa-result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+@keyframes faRise { from { opacity: 0; transform: translateY(24px) scale(.94); } }
+.forge-anim:has(.fa-result:not([hidden])) .fa-title { opacity: 0; transition: opacity .3s; }

@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Card } from '../../cards/Card';
+import { openViewer } from '../../fx/effects';
 import { crateVariants, isExclusive, person, plural, variantEvent, vChance } from '../../game/rules';
 import { S } from '../../game/store';
 import type { Crate } from '../../game/types';
 import { fmt } from '../../lib/format';
+import { Sound } from '../../sound/sound';
+import { Modal } from '../../ui/Modal';
 import styles from './CratesPage.module.css';
 
 const pct = (x: number) => (x * 100).toLocaleString('pl-PL', { maximumFractionDigits: x < .001 ? 3 : 2, minimumFractionDigits: x < .001 ? 3 : 2 }) + '%';
@@ -33,9 +37,26 @@ function VariantRows({ crate }: { crate: Crate }) {
   );
 }
 
-/** Jawne szanse: główny element sklepu, który zastępuje dawne reklamowe hasła */
+/** Wszystkie karty jednej rzadkości w skrzynce; kliknięcie karty otwiera podgląd */
+function RarityCards({ crate, rarity, onClose }: { crate: Crate; rarity: string; onClose: () => void }) {
+  const R = S.cfg.rarities[rarity];
+  const ids = crate.people.filter(id => person(id).rarity === rarity && person(id).source !== 'ufo').sort((a, b) => person(a).name.localeCompare(person(b).name, 'pl'));
+  const zoom = (e: React.MouseEvent) => {
+    const c = (e.target as HTMLElement).closest<HTMLElement>('.card');
+    if (c) openViewer(c.dataset.pid, c.dataset.variant);
+  };
+  return (
+    <Modal title={`${R.name}: ${crate.name}`} onClose={onClose} wide>
+      <p className="muted small">{ids.length} {plural(ids.length, 'karta', 'karty', 'kart')} · wartość {fmt(R.value)} za sztukę. Kliknij kartę, żeby ją obejrzeć w każdym wariancie.</p>
+      <div className={styles.rarityCards} onClick={zoom}>{ids.map(id => <Card key={id} person={id} />)}</div>
+    </Modal>
+  );
+}
+
+/** Jawne szanse: główny element sklepu, który zastępuje dawne reklamowe hasła. Wiersz rzadkości pokazuje jej karty. */
 export function OddsLadder({ crate }: { crate: Crate }) {
   const [more, setMore] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
   const rs = crateRarities(crate), total = rs.reduce((a, r) => a + crate.weights[r], 0) || 1;
   const top = Math.max(...rs.map(r => crate.weights[r]), 1);
   const hasVariants = crateVariants(crate).length > 0;
@@ -46,12 +67,12 @@ export function OddsLadder({ crate }: { crate: Crate }) {
         const R = S.cfg.rarities[r], share = crate.weights[r] / total;
         const n = crate.people.filter(id => person(id).rarity === r).length;
         return (
-          <div key={r} className={styles.row} title={`${n} ${plural(n, 'karta', 'karty', 'kart')}, wartość ${fmt(R.value)}`}>
-            <span className={styles.rName}><i style={{ background: R.color }} />{R.name}</span>
+          <button key={r} type="button" className={styles.row} title={`${n} ${plural(n, 'karta', 'karty', 'kart')}, wartość ${fmt(R.value)}. Pokaż karty`} onClick={() => { Sound.click(); setOpen(r); }}>
+            <span className={styles.rName}><i style={{ background: R.color }} />{R.name}<ChevronRight className={styles.rGo} size={14} aria-hidden="true" /></span>
             <span className={styles.rEvery}>{share >= 1 ? 'zawsze' : `co ${Math.round(1 / share)}.`}</span>
             <span className={styles.rPct}>{pct(share)}</span>
             <u className={styles.rBar}><s style={{ width: `${Math.max(crate.weights[r] / top * 100, 1.2)}%`, background: R.color }} /></u>
-          </div>
+          </button>
         );
       })}
       {hasVariants && (
@@ -62,6 +83,7 @@ export function OddsLadder({ crate }: { crate: Crate }) {
           {more && <VariantRows crate={crate} />}
         </>
       )}
+      {open && <RarityCards crate={crate} rarity={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }

@@ -94,34 +94,76 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
     emblem: new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1 })
   };
 
-  const crate = new THREE.Group();
-  scene.add(crate);
-  const add = (geo, m, x, y, z, parent = crate) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
-
-  add(box(2.6, 1.2, 1.7, .06), mat.body, 0, .62, 0);
-  add(box(2.74, .12, 1.84, .05), mat.trim, 0, .06, 0);
-  add(box(2.68, .09, 1.78, .04), mat.trim, 0, 1.2, 0);
-  for (const sx of [-.86, .86]) add(box(.24, 1.24, 1.76, .03), mat.trim, sx, .62, 0);
-  add(box(.66, .72, .1, .04), mat.trim, 0, .86, .89);
-  const emblem = add(new THREE.CircleGeometry(.25, 40), mat.emblem, 0, .86, .945);
-
-  const lid = new THREE.Group();
-  lid.position.set(0, 1.25, -.86);
-  crate.add(lid);
-  add(lidGeo(2.6, 1.7, .68), mat.lid, 0, 0, .86, lid);
-  for (const sx of [-.86, .86]) add(lidGeo(.24, 1.76, .72), mat.trim, sx, 0, .86, lid);
-  add(box(.34, .3, .07, .03), mat.trim, 0, .02, 1.75, lid);
-
+  // jedna skrzynka: geometrie i materiały są wspólne, więc kolejne kopie są tanie
+  const geo = {
+    body: box(2.6, 1.2, 1.7, .06), base: box(2.74, .12, 1.84, .05), rimTop: box(2.68, .09, 1.78, .04), band: box(.24, 1.24, 1.76, .03), plate: box(.66, .72, .1, .04),
+    emblem: new THREE.CircleGeometry(.25, 40), lid: lidGeo(2.6, 1.7, .68), lidBand: lidGeo(.24, 1.76, .72), lock: box(.34, .3, .07, .03), inner: new THREE.PlaneGeometry(2.4, 1.5), shadow: new THREE.PlaneGeometry(5, 3)
+  };
   // światło ze środka widać dopiero po uchyleniu wieka
   const inner = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0 });
-  const innerPlane = add(new THREE.PlaneGeometry(2.4, 1.5), inner, 0, 1.23, 0);
-  innerPlane.rotation.x = -Math.PI / 2;
   const dot = softDot();
-  const flare = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  flare.position.set(0, 1.5, 0); flare.scale.setScalar(5); crate.add(flare);
+  const flareMat = new THREE.SpriteMaterial({ map: dot, color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const shadowMat = new THREE.MeshBasicMaterial({ map: dot, color: '#000000', transparent: true, opacity: .6, depthWrite: false });
 
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(5, 3), new THREE.MeshBasicMaterial({ map: dot, color: '#000000', transparent: true, opacity: .6, depthWrite: false }));
-  shadow.rotation.x = -Math.PI / 2; shadow.position.y = -.01; scene.add(shadow);
+  function buildCrate() {
+    const g = new THREE.Group();
+    const add = (geo, m, x, y, z, parent = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
+    add(geo.body, mat.body, 0, .62, 0);
+    add(geo.base, mat.trim, 0, .06, 0);
+    add(geo.rimTop, mat.trim, 0, 1.2, 0);
+    for (const sx of [-.86, .86]) add(geo.band, mat.trim, sx, .62, 0);
+    add(geo.plate, mat.trim, 0, .86, .89);
+    add(geo.emblem, mat.emblem, 0, .86, .945);
+    const lid = new THREE.Group();
+    lid.position.set(0, 1.25, -.86);
+    g.add(lid);
+    add(geo.lid, mat.lid, 0, 0, .86, lid);
+    for (const sx of [-.86, .86]) add(geo.lidBand, mat.trim, sx, 0, .86, lid);
+    add(geo.lock, mat.trim, 0, .02, 1.75, lid);
+    add(geo.inner, inner, 0, 1.23, 0).rotation.x = -Math.PI / 2;
+    const flare = new THREE.Sprite(flareMat);
+    flare.position.set(0, 1.5, 0); flare.scale.setScalar(5); g.add(flare);
+    const shadow = new THREE.Mesh(geo.shadow, shadowMat);
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -.01;
+    scene.add(g, shadow);
+    return { g, lid, shadow, x: 0, z: 0, y: 0, vy: 0, wait: 0, lidAt: 0, phase: Math.random() * 6, leaving: 0 };
+  }
+
+  // kilka skrzynek naraz: układ w rzędach, nowe spadają z góry, kamera odjeżdża tak, żeby zmieściły się wszystkie
+  const crates = [buildCrate()];
+  const cam = { dist: 1, distTo: 1, cols: 1, rows: 1 };
+  function layout(n) {
+    const cols = n <= 3 ? n : Math.ceil(Math.sqrt(n * 1.2)), rows = Math.ceil(n / cols);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), c = i - r * cols;
+      out.push([(c - (inRow - 1) / 2) * 3.2, -(r - (rows - 1) / 2) * 2.6 - (rows - 1) * .4]);
+    }
+    return { out, cols, rows };
+  }
+  // odległość kamery tak, żeby cały rząd zmieścił się w części sceny ze skrzynką (na szerokim ekranie lewa kolumna)
+  function fit() {
+    if (!W || !H) return;
+    const frac = W > 860 ? .34 : .9, half = Math.tan(camera.fov * Math.PI / 360);
+    const needW = (cam.cols * 3.2 + .4) / (2 * half * (W / H) * frac) / 8.2;
+    const needH = (1.9 + (cam.rows - 1) * 1.3) / (2 * half * .8) / 8.2;
+    cam.distTo = Math.max(1, needW, needH);
+  }
+  function setCount(n) {
+    n = Math.max(1, Math.min(20, n | 0));
+    const alive = crates.filter(c => !c.leaving);
+    for (let i = alive.length; i < n; i++) {
+      const c = buildCrate();
+      c.y = 7 + Math.random() * 1.5; c.wait = reduced ? 0 : (i - alive.length) * .07; c.lidAt = 0;
+      if (reduced) c.y = 0;
+      crates.push(c); alive.push(c);
+    }
+    alive.slice(n).forEach(c => { c.leaving = reduced ? 1e-3 : 1; });
+    const { out, cols, rows } = layout(n);
+    alive.slice(0, n).forEach((c, i) => { c.x = out[i][0]; c.z = out[i][1]; });
+    cam.cols = cols; cam.rows = rows;
+    fit();
+  }
 
   const rays = makeRays(16);
   rays.position.set(0, .9, -2.4);
@@ -152,7 +194,8 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
   function burst(hex, n) {
     pMat.color.set(hex);
     for (let i = 0; i < Math.min(n, N); i++) {
-      pPos[i * 3] = (Math.random() - .5) * 2; pPos[i * 3 + 1] = 1.3; pPos[i * 3 + 2] = (Math.random() - .5) * 1.2;
+      const from = crates.filter(c => !c.leaving)[i % crates.filter(c => !c.leaving).length] || crates[0];
+      pPos[i * 3] = from.x + (Math.random() - .5) * 2; pPos[i * 3 + 1] = 1.3; pPos[i * 3 + 2] = from.z + (Math.random() - .5) * 1.2;
       const a = Math.random() * Math.PI * 2, v = 1.2 + Math.random() * 3.4;
       pVel[i * 3] = Math.cos(a) * v * .55; pVel[i * 3 + 1] = 1.6 + Math.random() * 3.6; pVel[i * 3 + 2] = Math.sin(a) * v * .4;
       pLife[i] = 1 + Math.random() * .9;
@@ -164,8 +207,9 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
       color.raysTo.set(hex); s.raysPowTo = .2; s.shake = reduced ? 0 : 1; s.hover = false;
       setTimeout(() => {
         s.lidTo = LID_OPEN; s.glowTo = 1; s.raysPowTo = .2 + power * .5; s.open = true;
-        inner.color.set(hex); flare.material.color.set(hex);
-        burst(hex, 60 + power * 90);
+        inner.color.set(hex); flareMat.color.set(hex);
+        crates.forEach((c, i) => { c.lidAt = reduced ? 0 : i * .06; });
+        burst(hex, (60 + power * 90) * Math.min(3, Math.sqrt(crates.length)));
         setTimeout(done, reduced ? 0 : 420);
       }, wait);
     });
@@ -181,6 +225,7 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
     if (wide) camera.setViewOffset(W, H, W * sideShift, 0, W, H); else camera.clearViewOffset();
     camera.fov = wide ? 30 : 26;
     camera.updateProjectionMatrix();
+    fit();
   }
   const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
 
@@ -200,16 +245,39 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
     color.raysNow.lerp(color.raysTo, k(6)); rays.material.color.copy(color.raysNow);
     rays.material.opacity = s.raysPow; if (!reduced) rays.rotation.z = t * .05;
 
-    lid.rotation.x = s.lid;
     inner.opacity = Math.min(1, s.glow * 1.4);
-    flare.material.opacity = s.glow * .8;
+    flareMat.opacity = s.glow * .8 / Math.sqrt(crates.length);
 
-    const idle = reduced ? 0 : Math.sin(t * .6) * .07;
     const jolt = s.shake > 0 ? Math.sin(t * 62) * .035 * s.shake : 0;
-    crate.rotation.y = -.42 + s.yaw + idle + jolt;
-    crate.rotation.x = s.pitch;
-    crate.rotation.z = jolt * .7;
-    crate.position.y = Math.sin(Math.PI * s.hop) * .34 + (reduced ? 0 : Math.sin(t * 1.1) * .018);
+    for (let i = crates.length - 1; i >= 0; i--) {
+      const c = crates[i], idle = reduced ? 0 : Math.sin(t * .6 + c.phase) * .07;
+      if (c.wait > 0) c.wait -= dt;
+      else if (c.y > 0 || c.vy > 0) {   // spadanie z odbiciem
+        c.vy -= 26 * dt; c.y += c.vy * dt;
+        if (c.y <= 0) { c.y = 0; c.vy = Math.abs(c.vy) > 3 ? -c.vy * .32 : 0; if (c.vy) s.shake = Math.max(s.shake, .25); }
+      }
+      if (c.leaving) {
+        c.leaving -= dt * 2.6;
+        if (c.leaving <= 0) { scene.remove(c.g, c.shadow); crates.splice(i, 1); continue; }
+      }
+      c.lidAt = Math.max(0, c.lidAt - dt);
+      c.lid.rotation.x = c.lidAt > 0 ? 0 : s.lid;
+      const scale = c.leaving ? c.leaving : 1;
+      c.g.scale.setScalar(scale);
+      c.g.position.set(c.x, Math.max(0, c.y) + Math.sin(Math.PI * s.hop) * .34 + (reduced ? 0 : Math.sin(t * 1.1 + c.phase) * .018) + (c.leaving ? (1 - c.leaving) * 3 : 0), c.z);
+      c.g.rotation.y = -.42 + s.yaw + idle + jolt;
+      c.g.rotation.x = s.pitch;
+      c.g.rotation.z = jolt * .7;
+      c.shadow.position.set(c.x, -.01, c.z);
+      const air = Math.min(1, Math.max(0, c.y) / 7);
+      c.shadow.scale.setScalar(scale * (1 - air * .6));
+      c.shadow.material.opacity = .6;
+    }
+    cam.dist += (cam.distTo - cam.dist) * k(3);
+    // kamera odjeżdża wzdłuż tej samej osi, więc środek układu skrzynek zostaje w tym samym miejscu kadru
+    camera.position.set(0, .92 + 1.58 * cam.dist, 7.8 * cam.dist);
+    camera.lookAt(0, .92, 0);
+    rays.scale.setScalar(cam.dist);
 
     for (let i = 0; i < N; i++) {
       if (pLife[i] > 0) {
@@ -231,7 +299,7 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
   document.addEventListener('visibilitychange', vis);
 
   return {
-    setCrate, open, close, pointer,
+    setCrate, setCount, open, close, pointer,
     destroy() { running = false; ro.disconnect(); document.removeEventListener('visibilitychange', vis); renderer.dispose(); pmrem.dispose(); }
   };
 }

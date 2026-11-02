@@ -105,127 +105,105 @@ export function fx() { return FX ||= makeParticles($("#fxCanvas")); }
 
 export function cardBackHTML() {
   return `<div class="cback"><div class="cback-inner">
-    <div class="cback-swirl"></div>
-    <div class="cback-logo">ScamBox</div>
-    <div class="cback-title">SCAM<br>BOX</div>
+    <div class="cback-logo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="9" height="12" rx="1.5" fill="#fff"/><rect x="3" y="10" width="18" height="12" rx="2.5" fill="var(--rc, var(--hue))"/><rect x="3" y="10" width="18" height="3" fill="#00000040"/></svg></div>
+    <div class="cback-title">ScamBox</div>
   </div></div>`;
 }
 
 // ================================================================ WIELKIE ODSŁONIĘCIE
 
+// Odsłonięcie najlepszych kart (Legendarna, ULTRA, Specjalna, Tajna): ciemna scena, linia światła w kolorze rzadkości
+// ładuje się, karta wychodzi z cienia rewersem, odwraca się w snopie reflektora. ULTRA ma opalizującą obwódkę,
+// Tajna złotą ramkę rysowaną w ciemności i opadający pył. Kliknięcie albo spacja przyspiesza i zamyka.
 export function epicReveal(drop, { fast = false, auto = false } = {}) {
-  if (person(drop.person).rarity === "secret") return secretReveal(drop, { fast });
   return new Promise(resolve => {
     const p = person(drop.person);
-    const ultra = p.rarity === "ultra", special = p.rarity === "special";
-    const title = ultra ? "ULTRA LEGENDARNA!" : special ? (baseVariant(drop.variant) === "joker" ? "JOKER!" : "SPECJALNA!") : "LEGENDARNA!";
-    const colors = ultra ? RAINBOW : special ? SPECIAL_COLORS : GOLDS;
-    const chargeMs = ultra ? (fast ? 1300 : 2700) : (fast ? 800 : 1700);
+    const tier = p.rarity === "secret" ? "secret" : p.rarity === "ultra" ? "ultra" : p.rarity === "special" ? "special" : "gold";
+    const R = S.cfg.rarities[p.rarity];
+    const label = tier === "secret" ? "Tajna karta" : tier === "special" && baseVariant(drop.variant) === "joker" ? "Joker" : R.name;
+    const colors = tier === "ultra" ? RAINBOW : tier === "special" ? SPECIAL_COLORS : tier === "secret" ? SECRET_COLORS : GOLDS;
+    const chargeMs = { gold: 1500, special: 1500, ultra: 2300, secret: 2700 }[tier] * (fast ? .5 : 1);
 
     const el = document.createElement("div");
-    el.className = `epic ${ultra ? "ultra" : special ? "special" : "gold"}`;
+    el.className = `rv rv-${tier}`;
+    el.style.setProperty("--rc", R.color);
     el.style.setProperty("--charge", chargeMs + "ms");
     el.innerHTML = `
-      <div class="epic-bg"></div>
-      <div class="epic-vortex"></div>
-      <div class="epic-rays"></div>
-      <canvas class="epic-canvas"></canvas>
-      <div class="epic-rings"><i></i><i></i><i></i>${ultra ? "<i></i><i></i>" : ""}</div>
-      <div class="epic-lightning"></div>
-      <div class="epic-content">
-        <div class="epic-title" data-text="${title}">${title}</div>
-        <div class="epic-center">
-          <div class="epic-glow"></div>
-          <div class="epic-flipper">
-            <div class="epic-face epic-back">${cardBackHTML()}</div>
-            <div class="epic-face epic-front">${cardHTML(drop.person, drop.variant, drop.id)}</div>
+      <canvas class="rv-canvas"></canvas>
+      <div class="rv-spot"></div>
+      <div class="rv-line"></div>
+      <div class="rv-content">
+        <div class="rv-label">${esc(label)}</div>
+        <div class="rv-stage">
+          ${tier === "secret" ? '<svg class="rv-frame" aria-hidden="true"><rect pathLength="100"/></svg>' : ""}
+          ${tier === "ultra" ? '<div class="rv-edge"></div>' : ""}
+          <div class="rv-flip">
+            <div class="rv-face rv-back">${cardBackHTML()}</div>
+            <div class="rv-face rv-front">${cardHTML(drop.person, drop.variant, drop.id)}</div>
           </div>
+          <div class="rv-floor"></div>
         </div>
-        <div class="epic-name">${esc(p.name)}${isSpecial(drop.variant) ? ` <span class="epic-holo">${variantName(drop.variant)}</span>` : ""}<b>${fmt(drop.value)}</b></div>
-        <div class="epic-hint">Kliknij lub naciśnij spację, aby kontynuować</div>
-      </div>
-      <div class="epic-flash"></div>`;
+        <div class="rv-name">${esc(p.name)}</div>
+        <div class="rv-meta">${isSpecial(drop.variant) ? `<span>${esc(variantName(drop.variant))}</span>` : ""}<b>${fmt(drop.value)}</b></div>
+        <div class="rv-hint">Kliknij albo naciśnij spację</div>
+      </div>`;
     document.body.appendChild(el);
 
-    const P = makeParticles(el.querySelector(".epic-canvas"));
-    const center = () => {
-      const b = el.querySelector(".epic-center").getBoundingClientRect();
-      return [b.left + b.width / 2, b.top + b.height / 2];
-    };
-    let phase = "charge", ambient = null, chargeLoop = null, lightning = null;
+    const P = makeParticles(el.querySelector(".rv-canvas"));
+    const center = () => { const b = el.querySelector(".rv-stage").getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2, b]; };
+    let phase = "charge", dust = null;
 
-    // faza 1: ładowanie
     requestAnimationFrame(() => el.classList.add("charging"));
-    Sound.charge(chargeMs / 1000, ultra);
-    chargeLoop = setInterval(() => {
-      const [x, y] = center();
-      P.implode(x, y, ultra ? 14 : 8, colors, Math.max(innerWidth, innerHeight) * 0.5);
-    }, 50);
-    if (ultra) {
-      lightning = setInterval(() => {
-        const l = el.querySelector(".epic-lightning");
-        l.style.setProperty("--lx", rand(10, 90) + "%");
-        l.classList.remove("go"); void l.offsetWidth; l.classList.add("go");
-      }, fast ? 260 : 420);
-    }
-    const burstTimer = setTimeout(burst, chargeMs);
+    if (tier === "secret") Sound.drone(chargeMs); else Sound.charge(chargeMs / 1000, tier === "ultra");
+    const pull = setInterval(() => { const [x, y] = center(); P.implode(x, y, tier === "gold" ? 3 : 5, colors, Math.max(innerWidth, innerHeight) * .45); }, 70);
+    const timer = setTimeout(reveal, chargeMs);
 
-    // faza 2: wybuch
-    function burst() {
+    function reveal() {
       if (phase !== "charge") return;
-      phase = "burst";
-      clearTimeout(burstTimer); clearInterval(chargeLoop); clearInterval(lightning);
+      phase = "reveal";
+      clearTimeout(timer); clearInterval(pull);
       el.classList.remove("charging");
-      el.classList.add("burst");
-      Sound.boom(ultra);
-      ultra ? Sound.ultra(true) : Sound.gold();
+      el.classList.add("revealed");
+      Sound.boom(tier !== "gold");
+      if (tier === "secret") Sound.choir(); else if (tier === "ultra") Sound.ultra(true); else Sound.gold();
       const [x, y] = center();
-      P.burst(x, y, ultra ? 420 : 240, colors, { speed: ultra ? 22 : 16, stars: 0.25 });
-      if (ultra) {
-        setTimeout(() => P.burst(x, y, 260, RAINBOW, { speed: 28, g: 0.05, life: [80, 160], stars: 0.4 }), 350);
-        setTimeout(() => confetti(RAINBOW, 260), 500);
-      } else {
-        setTimeout(() => confetti(colors, special ? 200 : 140), 450);
-      }
-      // delikatne iskry unoszące się wokół karty
-      ambient = setInterval(() => {
-        const [cx, cy] = center();
-        for (let i = 0; i < (ultra ? 4 : 2); i++) {
-          P.add({ x: cx + rand(-220, 220), y: cy + rand(-60, 260), vx: rand(-0.4, 0.4), vy: rand(-2.5, -0.8),
-                  max: rand(50, 100), size: rand(1, 2.8), color: colors[Math.floor(Math.random() * colors.length)],
-                  kind: Math.random() < 0.3 ? "star" : "spark" });
-        }
-      }, 60);
-      setTimeout(() => { if (phase === "burst") { phase = "ready"; el.classList.add("ready"); } }, fast ? 500 : 1100);
+      P.burst(x, y, tier === "gold" ? 160 : 260, colors, { speed: tier === "gold" ? 12 : 16, stars: .3 });
+      if (tier !== "gold") setTimeout(() => confetti(colors, tier === "ultra" ? 180 : 120), 400);
+      // pył w snopie światła: spokojnie opada (Tajna) albo unosi się wokół karty
+      dust = setInterval(() => {
+        const [cx, cy, b] = center();
+        const fall = tier === "secret";
+        P.add({ x: cx + rand(-b.width, b.width), y: fall ? rand(-20, cy - b.height / 2) : cy + rand(-b.height / 2, b.height / 2),
+                vx: rand(-.25, .25), vy: fall ? rand(.5, 1.4) : rand(-1.6, -.4), max: rand(70, 140), size: rand(.8, 2.2),
+                color: colors[Math.floor(Math.random() * colors.length)], kind: Math.random() < .25 ? "star" : "spark" });
+      }, tier === "gold" ? 110 : 60);
+      setTimeout(() => { if (phase === "reveal") { phase = "ready"; el.classList.add("ready"); } }, fast ? 450 : 1000);
     }
-
     function close() {
       phase = "closing";
-      clearInterval(ambient);
+      clearInterval(dust);
       window.removeEventListener("keydown", onKey, true);
       el.classList.add("closing");
       setTimeout(() => { P.stop(); el.remove(); resolve(); }, 350);
     }
-
     function advance() {
-      if (phase === "charge") burst();
+      if (phase === "charge") reveal();
+      else if (phase === "reveal") { phase = "ready"; el.classList.add("ready"); }
       else if (phase === "ready") close();
-      else if (phase === "burst") { phase = "ready"; el.classList.add("ready"); }
     }
     function onKey(e) {
       if ([" ", "Enter", "Escape"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); advance(); }
     }
     window.addEventListener("keydown", onKey, true);
     el.addEventListener("click", advance);
-    // autootwieranie: odsłonięcie samo przechodzi dalej po chwili
-    if (auto) {
+    if (auto) {   // autootwieranie: odsłonięcie samo przechodzi dalej po chwili
       const tick = () => { if (phase !== "closing") { advance(); setTimeout(tick, fast ? 900 : 1500); } };
       setTimeout(tick, chargeMs + (fast ? 1200 : 2400));
     }
   });
 }
 
-export function epicOpen() { return !!document.querySelector(".epic, .sreveal, .rcp"); }
+export function epicOpen() { return !!document.querySelector(".rv, .rcp"); }
 // ================================================================ DRUKOWANIE PARAGONU
 
 // Paragon wypada z drukarki: karta wysuwa się ze szczeliny linia po linii (keyframes rcpFeed, tyle samo kroków co terkotów
@@ -426,101 +404,7 @@ export function starPoints(cx, cy, R, r, n) {
   return pts.join(" ");
 }
 
-export function secretReveal(drop, { fast = false } = {}) {
-  return new Promise(resolve => {
-    const p = person(drop.person);
-    const T = fast ? { sigil: 900, crack: 800, ready: 1500 } : { sigil: 2000, crack: 1700, ready: 3400 };
-    const title = "★ TAJNA KARTA ★";
-    const el = document.createElement("div");
-    el.className = "sreveal";
-    el.style.setProperty("--k", fast ? 0.45 : 1);
-    el.style.setProperty("--sig", T.sigil + "ms");
-    el.innerHTML = `
-      <div class="sr-stars s1"></div><div class="sr-stars s2"></div>
-      <div class="sr-beam"></div>
-      <canvas class="sr-canvas"></canvas>
-      <div class="sr-sigil">
-        <svg viewBox="0 0 200 200">
-          <circle class="sr-line" cx="100" cy="100" r="94"/>
-          <circle class="sr-line thin" cx="100" cy="100" r="84"/>
-          <polygon class="sr-line" points="${starPoints(100, 100, 80, 32, 5)}"/>
-          <polygon class="sr-line thin" points="${starPoints(100, 100, 80, 32, 5)}" transform="rotate(36 100 100)"/>
-          ${Array.from({ length: 24 }, (_, i) => `<line class="sr-line thin" x1="100" y1="2" x2="100" y2="${i % 2 ? 8 : 14}" transform="rotate(${i * 15} 100 100)"/>`).join("")}
-          <circle class="sr-core" cx="100" cy="100" r="10"/>
-        </svg>
-      </div>
-      <div class="sr-cracks">${Array.from({ length: 16 }, (_, i) =>
-        `<i style="--a:${(i * 22.5 + rand(-8, 8)).toFixed(1)}deg; --l:${rand(35, 70).toFixed(0)}vmax; --d:${rand(0, 0.6).toFixed(2)}s"></i>`).join("")}</div>
-      <div class="sr-content">
-        <div class="sr-title">${[...title].map((ch, i) => `<span style="--i:${i}">${ch === " " ? "&nbsp;" : ch}</span>`).join("")}</div>
-        <div class="sr-card"><div class="sr-halo"></div>${cardHTML(drop.person, drop.variant, drop.id)}</div>
-        <div class="sr-name">${esc(p.name)}</div>
-        <div class="sr-sub">${isSpecial(drop.variant) ? `<span class="holo-txt">${variantName(drop.variant)}</span> · ` : ""}<b>${fmt(drop.value)}</b></div>
-        <div class="sr-hint">Kliknij lub naciśnij spację, aby kontynuować</div>
-      </div>
-      <div class="sr-flash"></div>`;
-    document.body.appendChild(el);
-    const P = makeParticles(el.querySelector(".sr-canvas"));
-    let phase = "sigil", timers = [], loop = null;
-    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-    const cx = () => innerWidth / 2, cy = () => innerHeight / 2;
-
-    // faza 1: ciemność, rysuje się złota pieczęć, bije serce
-    requestAnimationFrame(() => el.classList.add("p-sigil"));
-    Sound.drone(T.sigil + T.crack);
-    later(crack, T.sigil);
-
-    // faza 2: pieczęć wiruje, z jej środka wystrzeliwują pęknięcia światła
-    function crack() {
-      if (phase !== "sigil") return;
-      phase = "crack";
-      el.classList.add("p-crack");
-      Sound.charge(T.crack / 1000, true);
-      loop = setInterval(() => P.implode(cx(), cy(), 10, SECRET_COLORS, Math.max(innerWidth, innerHeight) * 0.55), 40);
-      later(reveal, T.crack);
-    }
-
-    // faza 3: biały błysk, promień z nieba, karta zstępuje, litery tytułu spadają jedna po drugiej
-    function reveal() {
-      if (phase === "reveal" || phase === "ready" || phase === "closing") return;
-      timers.forEach(clearTimeout); timers = [];
-      clearInterval(loop);
-      phase = "reveal";
-      el.classList.remove("p-sigil", "p-crack");
-      el.classList.add("p-reveal");
-      Sound.boom(true);
-      Sound.choir();
-      P.burst(cx(), cy(), 420, SECRET_COLORS, { speed: 24, g: 0.06, life: [90, 170], stars: 0.45 });
-      later(() => P.burst(cx(), cy() * 0.8, 200, SECRET_COLORS, { speed: 14, g: -0.02, life: [120, 200], stars: 0.6 }), 600 * (fast ? 0.45 : 1));
-      later(() => confetti(SECRET_COLORS, 220), 900 * (fast ? 0.45 : 1));
-      loop = setInterval(() => {
-        // złoty pył opadający z promienia
-        P.add({ x: cx() + rand(-160, 160), y: rand(-20, innerHeight * 0.3), vx: rand(-0.3, 0.3), vy: rand(0.6, 1.8),
-                max: rand(90, 160), size: rand(1, 2.6), color: SECRET_COLORS[Math.floor(Math.random() * SECRET_COLORS.length)],
-                kind: Math.random() < 0.35 ? "star" : "spark" });
-      }, 45);
-      later(() => { if (phase === "reveal") { phase = "ready"; el.classList.add("ready"); } }, T.ready);
-    }
-
-    function close() {
-      phase = "closing";
-      timers.forEach(clearTimeout); clearInterval(loop);
-      window.removeEventListener("keydown", onKey, true);
-      el.classList.add("closing");
-      setTimeout(() => { P.stop(); el.remove(); resolve(); }, 450);
-    }
-    function advance() {
-      if (phase === "sigil" || phase === "crack") reveal();
-      else if (phase === "reveal") { phase = "ready"; el.classList.add("ready"); }
-      else if (phase === "ready") close();
-    }
-    function onKey(e) {
-      if ([" ", "Enter", "Escape"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); advance(); }
-    }
-    window.addEventListener("keydown", onKey, true);
-    el.addEventListener("click", advance);
-  });
-}
+export const secretReveal = epicReveal;
 
 
 // ================================================================ KONFETTI

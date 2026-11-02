@@ -166,7 +166,7 @@ export function CratesPage() {
         {crates.map(c => <CrateTile key={c.id} crate={c} active={c.id === crate.id} onPick={() => pick(c)} />)}
       </section>
       <section ref={hero} className={styles.hero} aria-label={`Wybrana skrzynka: ${crate.name}`}>
-        <CrateStage crate={crate} hero={hero} onOpen={openCrates} label={`Otwórz: ${crate.name}`} />
+        <CrateStage crate={crate} hero={hero} onOpen={openCrates} count={game.count} label={`Otwórz: ${crate.name}, kliknij dwa razy`} />
         <BuyPanel crate={crate} />
         <SpotlightCard className={styles.ladderBox} spotlightColor="#ffffff" intensity={.08} borderGlow={.35} style={{ '--spotlight-card-surface': '#000000a8', '--spotlight-card-shadow': 'none', '--spotlight-card-border': 'transparent' } as React.CSSProperties}>
           <OddsLadder crate={crate} />

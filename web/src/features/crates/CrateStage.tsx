@@ -11,15 +11,20 @@ interface Props {
   hero: RefObject<HTMLElement | null>;
   onOpen: () => void;
   label: string;
+  count: number;
 }
 
-/** Skrzynka 3D w panelu sklepu. Three.js wczytuje się dopiero tutaj; bez WebGL zostaje płaski rysunek. */
-export function CrateStage({ crate, hero, onOpen, label }: Props) {
+/** Skrzynka 3D w panelu sklepu. Three.js wczytuje się dopiero tutaj; bez WebGL zostaje płaski rysunek.
+ *  Model otwiera się dwuklikiem (pojedyncze kliknięcie łatwo zrobić przypadkiem), z klawiatury Enterem. */
+export function CrateStage({ crate, hero, onOpen, label, count }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<HTMLButtonElement>(null);
   const [flat, setFlat] = useState(false);
   const current = useRef(crate);
   current.current = crate;
+  const howMany = useRef(count);
+  howMany.current = count;
+  const lastClick = useRef(0);
 
   const look = (c: Crate) => ({ c1: c.color1, c2: c.color2, hue: crateHue(c).hue, d: crateIconPath(c.emoji) });
 
@@ -30,6 +35,7 @@ export function CrateStage({ crate, hero, onOpen, label }: Props) {
       try {
         const scene = createCrateScene(canvas.current);
         scene.setCrate(look(current.current));
+        scene.setCount(howMany.current);
         crate3d.scene = scene;
         destroy = () => { crate3d.scene = null; scene.destroy(); };
       } catch { setFlat(true); }
@@ -38,6 +44,13 @@ export function CrateStage({ crate, hero, onOpen, label }: Props) {
   }, []);
 
   useEffect(() => { crate3d.scene?.setCrate(look(crate)); }, [crate.id, crate.color1, crate.color2]);
+  useEffect(() => { crate3d.scene?.setCount(count); }, [count]);
+
+  const click = (e: React.MouseEvent) => {
+    if (e.detail === 0) return onOpen();   // Enter albo spacja
+    const now = performance.now();
+    if (now - lastClick.current < 400) { lastClick.current = 0; onOpen(); } else lastClick.current = now;
+  };
 
   useEffect(() => {
     const box = hero.current;
@@ -56,7 +69,7 @@ export function CrateStage({ crate, hero, onOpen, label }: Props) {
   return (
     <>
       {!flat && <canvas ref={canvas} className={styles.scene} aria-hidden="true" />}
-      <button ref={stage} className={styles.stage} type="button" aria-label={label} onClick={onOpen}>
+      <button ref={stage} className={styles.stage} type="button" aria-label={label} title="Kliknij dwa razy, żeby otworzyć" onClick={click}>
         {flat && <CrateArt crate={crate} className={styles.flat} />}
       </button>
     </>
