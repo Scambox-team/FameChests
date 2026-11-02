@@ -1,6 +1,6 @@
 // @ts-nocheck -- kod rysujący na canvasie i w DOM-ie, przeniesiony bez zmian; typy dochodzą przy dalszym porządkowaniu
-// Dźwięki: nagrania z paczek Kenney (CC0, static/sounds) tam, gdzie pasują, a reszta i zapas na czas wczytywania
-// to syntezator Web Audio API.
+// Dźwięki: nagrania CC0 w static/sounds (skrzynki i kasyno z freesound.org - lista w CREDITS-freesound.txt, interfejs i karty
+// z paczek Kenney - LICENSE.txt); reszta i zapas na czas wczytywania to syntezator Web Audio API.
 export const Sound = (() => {
   let ctx = null, master = null, noiseBuf = null;
   let enabled = true;
@@ -90,17 +90,28 @@ export const Sound = (() => {
 
   // nagrania: klucz dźwięku w grze -> pliki (losowany jeden, żeby powtórzenia nie brzmiały identycznie)
   const SAMPLES = {
-    click: ["click-1", "click-2"], select: ["select"], toggle: ["toggle"], tick: ["tick"], error: ["error"], win: ["confirm-1", "confirm-2"],
-    page: ["page-1", "page-2", "page-3"], open: ["pack-open-1", "pack-open-2"], land: ["card-place-1", "card-place-2", "card-place-3", "card-place-4"],
-    whoosh: ["card-slide-1", "card-slide-2", "card-slide-3", "card-slide-4"], deal: ["card-place-1", "card-place-2", "card-place-3", "card-place-4"],
-    coin: ["coins-1", "coins-2"], cash: ["chips-1", "chips-2", "chips-3"], chips: ["chips-collide"], move: ["chess-move-1", "chess-move-2", "chess-move-3"],
-    notify: ["pluck"], dice: ["dice-shake"], gold: ["jingle-gold"], ultra: ["jingle-ultra"], secret: ["jingle-secret"], bigwin: ["jingle-win"],
-    impact: ["impact"]
+    click: ["click-1", "click-2"], select: ["select"], toggle: ["toggle"], error: ["error"],
+    page: ["page-1", "page-2", "page-3"], whoosh: ["card-slide-1", "card-slide-2", "card-slide-3", "card-slide-4"],
+    move: ["chess-move-1", "chess-move-2", "chess-move-3"], notify: ["pluck"], dice: ["dice-shake"],
+    // skrzynki (freesound.org)
+    open: ["fs-open.mp3", "fs-open-2.mp3"], tick: ["fs-tick.mp3"], land: ["fs-land.mp3"], deal: ["fs-deal.mp3", "fs-land.mp3"],
+    rare: ["fs-rare.mp3"], epic: ["fs-epic.mp3"], mythic: ["fs-mythic.mp3"], charge: ["fs-charge.mp3"], boom: ["fs-boom.mp3"], stinger: ["fs-stinger.mp3"],
+    gold: ["fs-gold.mp3"], ultra: ["fs-ultra.mp3"], secret: ["fs-secret.mp3"],
+    // kasyno i wygrane (freesound.org)
+    win: ["fs-win.mp3"], chips: ["fs-chips.mp3"], cash: ["fs-cash.mp3"], coin: ["fs-coin.mp3"], coins: ["fs-coins.mp3"], payout: ["fs-payout.mp3"], lose: ["fs-lose.mp3"]
   };
-  const buffers = {}, loading = {};
+  const buffers = {}, loading = {}, norm = {};
+  // nagrania z różnych źródeł mają bardzo różną głośność: wyrównujemy je do podobnej średniej (RMS), bez przesterowania szczytu
+  function level(buf) {
+    const d = buf.getChannelData(0);
+    let peak = 0, sum = 0;
+    for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > peak) peak = v; sum += v * v; }
+    const rms = Math.sqrt(sum / d.length) || 1e-4;
+    return Math.min(.09 / rms, .95 / (peak || 1), 14);
+  }
   function load(name) {
     if (buffers[name] || loading[name]) return;
-    loading[name] = fetch(`/static/sounds/${name}.ogg`).then(r => r.arrayBuffer()).then(b => ac().decodeAudioData(b)).then(buf => { buffers[name] = buf; }).catch(() => {});
+    loading[name] = fetch(`/static/sounds/${/\.\w+$/.test(name) ? name : name + '.ogg'}`).then(r => r.arrayBuffer()).then(b => ac().decodeAudioData(b)).then(buf => { norm[name] = level(buf); buffers[name] = buf; }).catch(() => {});
   }
   function preload() { Object.values(SAMPLES).flat().forEach(load); }
   // odtwarza nagranie; false = jeszcze się nie wczytało (wtedy gra syntezator)
@@ -109,7 +120,7 @@ export const Sound = (() => {
     const name = list[Math.floor(Math.random() * list.length)], buf = buffers[name];
     if (!buf) { preload(); return false; }
     const c = ac(), src = c.createBufferSource(), g = c.createGain();
-    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol;
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol * (norm[name] ?? 1) * 2.5;
     src.connect(g).connect(master);
     src.start(c.currentTime + delay);
     return true;
@@ -121,6 +132,7 @@ export const Sound = (() => {
 
   const api = {
     get enabled() { return enabled; },
+    jackpot() { if (enabled && !sample("payout", { vol: .75 })) api.win(); },
     move(mine = true) { if (enabled && !sample("move", { vol: mine ? .7 : .9, rate: mine ? 1 : .92 })) api.click(); if (enabled && !mine) sample("notify", { vol: .45, delay: .06 }); },
     deal() { if (enabled && !sample("deal", { vol: .7 })) api.page(); },
     dice() { if (enabled && !sample("dice", { vol: .7 })) api.click(); },
@@ -145,7 +157,7 @@ export const Sound = (() => {
       const now = performance.now();
       if (now - lastTick < 28) return;
       lastTick = now;
-      if (sample("tick", { vol: .35, rate: .9 + speed * .3 })) return;
+      if (sample("tick", { vol: .5, rate: .85 + speed * .35 })) return;
       const t = ac().currentTime;
       noise(t, 0.03, { vol: 0.35, freq: 3500 + speed * 1500, q: 6 });
       tone(900 + speed * 500, t, 0.025, { type: "triangle", vol: 0.08 });
@@ -183,6 +195,7 @@ export const Sound = (() => {
       };
       if (rarity === "gold") return api.gold();
       if (rarity === "ultra") return api.ultra();
+      if ({ blue: "rare", purple: "epic", red: "mythic" }[rarity] && sample({ blue: "rare", purple: "epic", red: "mythic" }[rarity], { vol: .75 })) return;
       (seqs[rarity] || seqs.green).forEach((f, i) => {
         tone(f, t + i * 0.07, 0.35, { type: "triangle", vol: 0.18 });
         tone(f * 2, t + i * 0.07, 0.2, { type: "sine", vol: 0.05 });
@@ -286,7 +299,7 @@ export const Sound = (() => {
 
     coin(n = 1) {
       if (!enabled) return;
-      if (sample("coin", { vol: .7 })) return;
+      if (sample(n > 3 ? "coins" : "coin", { vol: .7 })) return;
       const t = ac().currentTime;
       const reps = Math.min(n, 5);
       for (let i = 0; i < reps; i++) {
@@ -313,6 +326,7 @@ export const Sound = (() => {
     // narastający dźwięk przed wielkim odsłonięciem
     charge(dur = 1.4, ultra = false) {
       if (!enabled) return;
+      if (sample("charge", { vol: ultra ? .8 : .65, rate: Math.max(.7, Math.min(2.2, 3.05 / dur)) })) return;   // nagranie trwa 3 s: dopasowujemy do czasu ładowania
       const t = ac().currentTime;
       tone(ultra ? 70 : 110, t, dur, { type: "sawtooth", vol: 0.12, slideTo: ultra ? 1400 : 880, attack: dur * 0.8 });
       tone(ultra ? 72 : 112, t, dur, { type: "square", vol: 0.05, slideTo: ultra ? 1420 : 890, attack: dur * 0.8 });
@@ -327,6 +341,7 @@ export const Sound = (() => {
 
     boom(ultra = false) {
       if (!enabled) return;
+      if (sample("boom", { vol: .9 })) { if (ultra) sample("stinger", { vol: .55 }); return; }
       const t = ac().currentTime;
       tone(ultra ? 45 : 60, t, ultra ? 2.2 : 1.4, { type: "sine", vol: 0.7, slideTo: 30 });
       noise(t, ultra ? 1.2 : 0.7, { vol: 0.7, freq: 900, q: 0.4, type: "lowpass", slideTo: 80 });
@@ -362,7 +377,7 @@ export const Sound = (() => {
 
     win() {
       if (!enabled) return;
-      if (sample("win", { vol: .7 })) { sample("chips", { vol: .35, delay: .08 }); return; }
+      if (sample("win", { vol: .7 })) { sample("chips", { vol: .5, delay: .12 }); return; }
       const t = ac().currentTime;
       [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => {
         tone(f, t + i * 0.06, 0.5, { type: "square", vol: 0.07 });
@@ -373,6 +388,7 @@ export const Sound = (() => {
 
     fail() {
       if (!enabled) return;
+      if (sample("lose", { vol: .55 })) return;
       const t = ac().currentTime;
       noise(t, 0.35, { vol: 0.6, freq: 2500, q: 0.8 });     // trzask
       noise(t + 0.05, 0.6, { vol: 0.3, freq: 600, q: 0.6, slideTo: 100 });
@@ -381,7 +397,7 @@ export const Sound = (() => {
 
     cash() {
       if (!enabled) return;
-      if (sample("cash", { vol: .75 })) { sample("coin", { vol: .45, delay: .1 }); return; }
+      if (sample("cash", { vol: .7 })) return;
       const t = ac().currentTime;
       noise(t, 0.08, { vol: 0.5, freq: 1800, q: 2 });
       tone(N.E6, t + 0.05, 0.6, { type: "sine", vol: 0.15 });
@@ -407,7 +423,7 @@ export const Sound = (() => {
     // chór + dzwony - wielkie odsłonięcie tajnej karty
     choir() {
       if (!enabled) return;
-      sample("secret", { vol: .7, delay: .15 });
+      if (sample("secret", { vol: .75 })) return;
       const c = ac(), t = c.currentTime;
       const chord = [N.C4, N.G4, N.C5, N.E5, N.G5, N.C6];
       chord.forEach((f, i) => {

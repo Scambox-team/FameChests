@@ -1,3 +1,5 @@
-Dźwięki: Kenney (www.kenney.nl), paczki Interface Sounds, Casino Audio, RPG Audio i Music Jingles.
+Pliki .ogg: Kenney (www.kenney.nl), paczki Interface Sounds, Casino Audio i RPG Audio.
 Licencja CC0 1.0 (domena publiczna): można ich używać bez ograniczeń, także komercyjnie.
 Pobrane z opengameart.org (konto Kenney). Nazwy plików zmienione na potrzeby gry.
+
+Pliki fs-*.mp3: freesound.org, licencja CC0 1.0, autorzy i źródła w CREDITS-freesound.txt.

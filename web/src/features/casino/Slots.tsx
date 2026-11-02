@@ -83,7 +83,7 @@ export function Slots() {
     SL.reels = full.map(x => x.slice(-ROWS));
     settleRound(res, SL.sel);
     if (res.win) {
-      Sound.win();
+      if (res.pays >= 14) Sound.jackpot(); else Sound.win();
       machine.current?.classList.add('won');
       confetti(['#ffcf3f', '#ff3b5c', '#fff', '#3ddc84'], res.pays >= 14 ? 240 : 110);
     } else Sound.fail();
