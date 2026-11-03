@@ -449,8 +449,16 @@ pub async fn load(c: &mut Conn) -> anyhow::Result<Catalog> {
     let variant_rows: Vec<(String, String)> =
         sqlx::query_as("SELECT id, data FROM catalog_variants WHERE deleted = 0").fetch_all(&mut *c).await?;
     let variants: Vec<VariantRow> = variant_rows.into_iter().map(|(id, d)| (id, parse(&d))).collect();
-    Ok(build_with_variants(&crates, &cards, &variants))
+    Ok(build_on(&crates, &cards, &variants, Local::now().date_naive(), shop_size(&mut *c).await?))
 }
+
+/// Ile skrzynek ma być dziś w sklepie (ustawia admin; domyślnie `crateRotation.shopSize` z game.json)
+pub async fn shop_size(c: &mut Conn) -> sqlx::Result<usize> {
+    let v: Option<i64> = sqlx::query_scalar("SELECT value FROM state WHERE key = 'shop_size'").fetch_optional(c).await?;
+    Ok(v.map_or(g().shop_size, |v| v.clamp(1, SHOP_SIZE_MAX) as usize))
+}
+
+pub const SHOP_SIZE_MAX: i64 = 50;
 
 /// Dane wbudowane + zmiany admina -> katalog (bez zmian wariantów)
 #[cfg(test)]
@@ -461,11 +469,11 @@ pub fn build(crate_rows: &[OverrideRow], card_rows: &[OverrideRow]) -> Catalog {
 /// Dane wbudowane + zmiany admina -> katalog. Najpierw warianty: projekty z kreatora i ustawienia z /variants
 /// trafiają do danych gry (data::set_game - jak rebuild w catalog.py), potem skrzynki i karty.
 pub fn build_with_variants(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_rows: &[VariantRow]) -> Catalog {
-    build_on(crate_rows, card_rows, variant_rows, Local::now().date_naive())
+    build_on(crate_rows, card_rows, variant_rows, Local::now().date_naive(), g().shop_size)
 }
 
-/// Katalog na dany dzień (sklep: rotacja i sezony)
-pub fn build_on(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_rows: &[VariantRow], today: NaiveDate) -> Catalog {
+/// Katalog na dany dzień (sklep: rotacja i sezony) przy `shop_size` skrzynkach w sklepie
+pub fn build_on(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_rows: &[VariantRow], today: NaiveDate, shop_size: usize) -> Catalog {
     let custom = VariantState::custom_designs(variant_rows);
     set_game(base_game().with_catalog_variants(&custom, &Default::default()));
     let vs = VariantState::read(variant_rows, custom);
@@ -501,9 +509,10 @@ pub fn build_on(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_r
         }
         out_crates.insert(cid, cr);
     }
-    // rotacja: dziś w sklepie tylko wylosowane skrzynki rotacyjne
+    // rotacja: stałe i sezonowe w sklepie są zawsze, skrzynki rotacyjne uzupełniają do `shop_size` (losowo, codziennie inne)
     let rotating: Vec<String> = out_crates.values().filter(|c| c.mode == "rotation").map(|c| c.id.clone()).collect();
-    let on = rotation(&rotating, g.rotation_slots, today);
+    let fixed = out_crates.values().filter(|c| c.shop && c.mode != "rotation").count();
+    let on = rotation(&rotating, shop_size.saturating_sub(fixed), today);
     for cid in &rotating {
         out_crates[cid].shop = on.contains(cid);
     }
@@ -709,6 +718,9 @@ fn check_card(id: String, p: RawCard, crates: &IndexMap<String, RawCrate>) -> Pe
 /// Skrzynki rotacyjne w sklepie danego dnia. Co cykl (tyle dni, ile trzeba, żeby każda skrzynka była raz) nowa
 /// losowa kolejność, a w cyklu kolejne okna po `slots` skrzynek - żadna nie czeka długo na swoją kolej.
 pub fn rotation(ids: &[String], slots: usize, day: NaiveDate) -> Vec<String> {
+    if slots == 0 {
+        return vec![];
+    }
     if ids.len() <= slots {
         return ids.to_vec();
     }
@@ -1143,14 +1155,17 @@ mod tests {
             row("sez", r#"{"name": "S", "mode": "seasonal", "seasonFrom": "2026-11-01", "seasonTo": "2026-11-03"}"#),
             row("stara", r#"{"name": "W", "shop": false}"#),
         ];
-        let cat = build_on(&rows, &[], &[], day);
+        let cat = build_on(&rows, &[], &[], day, 4);
         let c = &cat.crates;
         assert!(c["pl"].shop && c["pl"].mode == "fixed");
         assert!(!c["szachy"].shop && c["szachy"].mode == "offshop" && !c["szachy"].sold());
-        assert!(c["sez"].shop && !build_on(&rows, &[], &[], day.succ_opt().unwrap()).crates["sez"].shop);
+        assert!(c["sez"].shop && !build_on(&rows, &[], &[], day.succ_opt().unwrap(), 4).crates["sez"].shop);
         assert_eq!((c["stara"].mode.as_str(), c["stara"].shop), ("disabled", false));
         let rot: Vec<&Crate> = c.values().filter(|c| c.mode == "rotation").collect();
-        assert_eq!(rot.iter().filter(|c| c.shop).count(), g().rotation_slots.min(rot.len()));
+        // w sklepie dokładnie 4 skrzynki: stałe i sezonowa + rotacyjne do kompletu
+        assert_eq!(c.values().filter(|c| c.shop).count(), 4.min(c.values().filter(|c| c.shop || c.mode == "rotation").count()));
+        assert_eq!(rot.iter().filter(|c| c.shop).count(), 4 - 2);   // Polska (stała) i sezonowa
+        assert!(build_on(&rows, &[], &[], day, 1).crates.values().filter(|c| c.mode == "rotation").all(|c| !c.shop));
 
         // każda skrzynka rotacyjna pojawia się w każdym cyklu, okno bez powtórek
         let ids: Vec<String> = (0..5).map(|i| format!("r{i}")).collect();

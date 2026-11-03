@@ -87,7 +87,14 @@ export function startPanel() {
   
   // ================================================================ RENDER
   
+  function renderShopSize() {
+    const f = $("#shopSizeForm");
+    if (document.activeElement !== f.elements.size) f.elements.size.value = A.cat.shopSize;
+    $("#shopSizeInfo").textContent = `Stałe i sezonowe są zawsze w sklepie, rotacyjne uzupełniają do tej liczby. Dziś w sklepie: ${A.cat.shopCount}.`;
+  }
+
   function render() {
+    renderShopSize();
     renderCrates();
     renderCrateForm();
     renderCards();
@@ -898,6 +905,14 @@ export function startPanel() {
     $("#crateList").addEventListener("click", e => {
       const b = e.target.closest("[data-crate]"); if (!b) return;
       A.crate = b.dataset.crate; render();
+    });
+    $("#shopSizeForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      try {
+        await api("/api/admin/shop-size", { method: "POST", json: { size: e.target.elements.size.value } });
+        toast("Zapisano liczbę skrzynek w sklepie");
+        await load();
+      } catch (err) { toast(err.message, true); }
     });
     $("#newCrate").addEventListener("click", () => { A.crate = "__new"; render(); $("#crateForm [name=name]").focus(); });
     $("#cardsToggle").addEventListener("click", () => setCardsCollapsed(!$("#cardList").hidden));

@@ -2,6 +2,11 @@
 <main class="admin">
     <aside class="panel a-side">
       <h3>Skrzynki</h3>
+      <form id="shopSizeForm" class="a-shopsize a-both" autocomplete="off">
+        <label>Skrzynek w sklepie <input type="number" name="size" min="1" max="50" required></label>
+        <button class="btn" type="submit">Zapisz</button>
+        <small class="muted" id="shopSizeInfo"></small>
+      </form>
       <div id="crateList" class="a-crate-list"></div>
       <button class="btn primary" id="newCrate">+ Nowa skrzynka</button>
     </aside>

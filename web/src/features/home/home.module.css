@@ -64,6 +64,8 @@ a.casino:hover .wheel i { animation-duration: 4s; }
   background: radial-gradient(circle at 35% 30%, #e6e6ea, #8a8a92 45%, #3a3a40 75%); box-shadow: 0 3px 4px #000a, 0 0 0 1px #0006; }
 .poster { width: 132px; transform-origin: 50% 3%; rotate: -2deg; filter: drop-shadow(0 10px 12px #000b); animation: posterSway 6s ease-in-out infinite; }
 .poster :global(.card) { width: 100%; --cw: 132px; }
+.posterBtn { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; font: inherit; color: inherit; }
+.posterBtn:focus-visible { outline: 2px solid var(--hue, #fff); outline-offset: 4px; }
 .blankPoster { aspect-ratio: 63 / 88; display: grid; place-content: center; gap: 6px; text-align: center; border-radius: 8px; color: #2a1608;
   background: radial-gradient(130% 100% at 50% 40%, #f2e2b8, #ddc28a 70%, #b8955a); font-family: Rye, Georgia, serif; }
 .blankPoster b { font-size: 24px; font-weight: 400; } .blankPoster span { font-family: Georgia, serif; font-size: 13px; }

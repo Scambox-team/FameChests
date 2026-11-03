@@ -23,6 +23,10 @@
 .admin { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; max-width: 1400px; margin: 0 auto; padding: 22px 20px 60px; }
 .admin h3 { margin: 0 0 12px; font-family: var(--display); font-weight: 800; font-size: 18px; }
 /* lista skrzynek przewija się osobno (kółkiem nad nią), reszta strony stoi */
+.a-shopsize { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.a-shopsize label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.a-shopsize input { width: 64px; }
+.a-shopsize small { flex-basis: 100%; }
 .a-side { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 96px); }
 .a-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .btn.danger { background: linear-gradient(180deg, #e04358, #a51c30); border-color: #a51c30; color: #fff; font-weight: 700; }

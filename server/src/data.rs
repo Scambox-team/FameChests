@@ -279,8 +279,9 @@ pub struct GameData {
     pub money_chests_json: Value,
     pub daily_streak: i64,
     pub showcase_size: usize,
-    /// ile skrzynek rotacyjnych jest naraz w sklepie (zmiana codziennie o północy - catalog::rotation)
-    pub rotation_slots: usize,
+    /// domyślna liczba skrzynek w sklepie (admin zmienia w panelu: klucz `shop_size` w tabeli state);
+    /// skrzynki rotacyjne uzupełniają do niej stałe i sezonowe (zmiana o północy - catalog::rotation)
+    pub shop_size: usize,
     pub rarities: IndexMap<String, RarityDef>,
     pub rarities_json: Value,
     pub rarity_order: Vec<String>,
@@ -454,7 +455,7 @@ impl GameData {
             money_chests_json: v("moneyChests"),
             daily_streak: get(&raw, "dailyStreak")?,
             showcase_size: get(&raw, "showcaseSize")?,
-            rotation_slots: raw.get("crateRotation").and_then(|r| r.get("slots")).and_then(Value::as_u64).unwrap_or(2) as usize,
+            shop_size: raw.get("crateRotation").and_then(|r| r.get("shopSize")).and_then(Value::as_u64).unwrap_or(7) as usize,
             rarities,
             rarities_json,
             rarity_order,

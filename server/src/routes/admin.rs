@@ -240,6 +240,9 @@ enum AdminCard {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AdminCatalog<'a> {
+    /// ile skrzynek ma być dziś w sklepie (rotacyjne uzupełniają do tej liczby) i ile jest
+    shop_size: usize,
+    shop_count: usize,
     crates: Vec<AdminCrate>,
     cards: Vec<AdminCard>,
     rarities: &'a Value,
@@ -329,6 +332,8 @@ pub async fn admin_catalog(State(st): State<AppState>, Admin(_): Admin) -> Res {
     ));
     let users = sqlx::query_as!(User, "SELECT * FROM users ORDER BY LOWER(username)").fetch_all(&mut *c).await?;
     ok(AdminCatalog {
+        shop_size: catalog::shop_size(&mut c).await?,
+        shop_count: cat.crates.values().filter(|c| c.shop).count(),
         crates,
         cards,
         rarities: &g.rarities_json,
@@ -387,6 +392,28 @@ fn or<'a>(value: &'a str, default: &'a str) -> &'a str {
     } else {
         value
     }
+}
+
+#[derive(Deserialize)]
+pub struct ShopSizeRequest {
+    size: NumOrText,
+}
+
+/// Liczba skrzynek w sklepie: stałe i sezonowe są zawsze, rotacyjne uzupełniają do tej liczby
+pub async fn admin_shop_size(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<ShopSizeRequest>) -> Res {
+    let size = match req.size.integer() {
+        Ok(Some(n)) if (1..=catalog::SHOP_SIZE_MAX).contains(&n) => n,
+        _ => return bad("Liczba skrzynek w sklepie: od 1 do 50"),
+    };
+    let mut tx = st.db.begin().await?;
+    sqlx::query("INSERT INTO state (key, value) VALUES ('shop_size', $1) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
+        .bind(size)
+        .execute(&mut *tx)
+        .await?;
+    log_admin(&mut tx, &me, "shop_size", None, &format!("skrzynek w sklepie: {size}")).await?;
+    tx.commit().await?;
+    st.refresh_catalog().await?;
+    ok(json!({"ok": true, "shopCount": st.cat().crates.values().filter(|c| c.shop).count()}))
 }
 
 pub async fn admin_save_crate(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<CrateRequest>) -> Res {

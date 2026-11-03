@@ -188,6 +188,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/log", get(admin_log_list))
         .route("/api/admin/catalog", get(admin_catalog))
         .route("/api/admin/crates", post(admin_save_crate))
+        .route("/api/admin/shop-size", post(admin_shop_size))
         .route("/api/admin/crates/{cid}", delete(admin_delete_crate))
         .route("/api/admin/crates/{cid}/restore", post(admin_restore_crate))
         .route("/api/admin/crates/{cid}/clear", post(admin_clear_crate))

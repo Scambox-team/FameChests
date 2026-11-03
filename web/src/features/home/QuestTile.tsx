@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Timer, Trophy } from 'lucide-react';
 import { Card } from '../../cards/Card';
+import { openViewer } from '../../fx/effects';
 import { person, variantName } from '../../game/rules';
 import { useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
@@ -48,9 +49,13 @@ export function QuestTile() {
       <div className={`${s.plank} ${s[phase]}`}>
         <span className={s.nail} aria-hidden="true" />
         {q && phase !== 'torn' && (
-          <div className={s.poster}>
-            {target ? <Card person={q.person} variant="wanted" /> : <div className={s.blankPoster}><b>WANTED</b><span>dowolna karta</span></div>}
-          </div>
+          target ? (
+            <button type="button" className={`${s.poster} ${s.posterBtn}`} aria-label={`Podgląd listu gończego: ${target.name}`} onClick={() => openViewer(q.person, 'wanted')}>
+              <Card person={q.person} variant="wanted" />
+            </button>
+          ) : (
+            <div className={s.poster}><div className={s.blankPoster}><b>WANTED</b><span>dowolna karta</span></div></div>
+          )
         )}
         {q && phase !== 'pinned' && (
           <div className={s.scraps} aria-hidden="true"><i className={s.scrap} /><i className={s.bit} /><i className={`${s.bit} ${s.bit2}`} /></div>

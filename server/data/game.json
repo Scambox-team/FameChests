@@ -820,7 +820,7 @@
  "dailyStreak": 7,
  "showcaseSize": 6,
  "crateRotation": {
-  "slots": 2
+  "shopSize": 7
  },
  "rarities": {
   "green": {
