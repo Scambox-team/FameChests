@@ -256,8 +256,11 @@
 .hr3 > i { position: absolute; inset: 0; pointer-events: none; transition: opacity .25s; }
 .hr3-flash { background: #fff; opacity: 0; transition: none !important; }
 .hr3-vignette { box-shadow: inset 0 0 120px 30px #000c; }
-/* ręka dżokeja w widoku z pierwszej osoby: prawy dolny róg, nad obrazem, bez przechwytywania kliknięć */
-.hr3-hand { position: absolute; right: -2%; bottom: -3%; width: min(34%, 340px); height: auto; pointer-events: none; z-index: 1; filter: drop-shadow(0 10px 16px #000a); }
+/* ręka dżokeja w widoku z pierwszej osoby: sięga z prawego dolnego rogu i kładzie się na szyi konia (szyja jest
+   na dole, trochę na lewo od środka kadru); lekko kołysze się z galopem, bez przechwytywania kliknięć */
+.hr3-hand { position: absolute; right: 19%; bottom: -14%; width: 34%; height: auto; pointer-events: none; z-index: 1; transform-origin: 85% 100%; filter: drop-shadow(0 10px 16px #000a); animation: hr3Hand 1.1s ease-in-out infinite; }
+@keyframes hr3Hand { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-1.5%) rotate(-.8deg); } }
+@media (prefers-reduced-motion: reduce) { .hr3-hand { animation: none; } }
 /* linie prędkości przy turbo i grzybie */
 .hr3-speed {
   opacity: 0;
