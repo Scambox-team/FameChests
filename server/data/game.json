@@ -3791,6 +3791,14 @@
  },
  "patchNotes": [
   {
+   "v": 22,
+   "date": "2026-11-04",
+   "title": "Wyścigi konne",
+   "items": [
+    "🐎 <b>Wyścigi konne</b> w kasynie są już dla wszystkich: obstaw konia kartami i oglądaj wyścig w 3D."
+   ]
+  },
+  {
    "v": 21,
    "date": "2026-11-03",
    "title": "Rotacja skrzynek i nowe questy",
@@ -4085,7 +4093,7 @@
  },
  "cardTextMax": 60,
  "horseRace": {
-  "enabled": false,
+  "enabled": true,
   "period": 300,
   "minPlayers": 1,
   "betOpen": 300,
