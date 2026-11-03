@@ -4,6 +4,7 @@
 // mouth() mówi, w którym miejscu ekranu jest otwór skrzynki, żeby karta mogła z niego wylecieć.
 import * as THREE from 'three';
 import { crateEnvironment, crateKit, LID_OPEN, softDot, type CrateLook } from './crateModel';
+import { mountR3F } from './r3f';
 
 export interface RevealTier {
   /** kolor przewodni (dla ULTRA tęcza, dla Specjalnej neon migający między dwoma kolorami) */
@@ -70,13 +71,11 @@ function makeRays(n) {
 }
 
 export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, tier: RevealTier) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, .1, 150);
+  // renderer, rozmiar i pętla klatek: React Three Fiber (three/r3f.tsx)
+  const host = mountR3F(canvas, { scene, camera, maxDpr: 1.75, exposure: 1.05 });
+  const renderer = host.gl;
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
   scene.environmentIntensity = tier.dark ? .18 : .5;
@@ -243,12 +242,11 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
   function resize() {
     W = canvas.clientWidth; H = canvas.clientHeight;
     if (!W || !H) return;
-    renderer.setSize(W, H, false);
     camera.aspect = W / H;
     camera.fov = W / H < .8 ? 46 : 34;   // telefon w pionie: szerzej, żeby skrzynka się mieściła
     camera.updateProjectionMatrix();
   }
-  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+  host.onResize(resize); resize();
 
   function land() {
     s.landed = true; s.y = 0; s.vy = 0; s.shake = .55;
@@ -259,7 +257,6 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
 
   function frame(now) {
     if (!running) return;
-    requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, .05), t = now / 1000; last = now;
     s.t += dt;
     const k = r => 1 - Math.exp(-dt * r);
@@ -386,9 +383,8 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
     rays.rotation.z = t * .08;
     shadow.scale.setScalar(1 - Math.min(1, (Math.max(0, s.y) + s.lift) / 8) * .6);
 
-    renderer.render(scene, camera);
   }
-  requestAnimationFrame(frame);
+  host.run(frame);
   const vis = () => { if (!document.hidden && running) last = performance.now(); };
   document.addEventListener('visibilitychange', vis);
 
@@ -432,7 +428,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
       return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
     },
     destroy() {
-      running = false; ro.disconnect(); document.removeEventListener('visibilitychange', vis);
+      running = false; document.removeEventListener('visibilitychange', vis);
       scene.traverse(o => { if (o.geometry && o.geometry !== ringGeo) o.geometry.dispose(); });
       ringGeo.dispose(); kit.dispose(); env.dispose(); dot.dispose(); pTex.dispose();
       if (rig) {
@@ -441,7 +437,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
         for (const h of rig.halos) h.mat.dispose();
       }
       for (const m of [blazeMat, seamMat, leakMat, poolMat, pillarMat, coreMat, pMat, rays.material, shadow.material, floor.material]) m.dispose();
-      renderer.dispose();
+      host.dispose();
     }
   };
 }

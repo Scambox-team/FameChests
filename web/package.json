@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.8.2",
     "@tanstack/react-query": "^5.105.1",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",

@@ -4,6 +4,7 @@
 // z pierwszej osoby (oczami konia) i z góry. Przebieg liczy serwer; scena tylko odtwarza race.x i race.events w chwili T.
 import * as THREE from 'three';
 import { softDot } from './crateModel';
+import { mountR3F } from './r3f';
 
 const TAU = Math.PI * 2;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -141,16 +142,15 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
   itemIcon: (it: string) => string;
   info: () => { top: string; big: string; sub: string; color: string } | null;
 }) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
   const scene = new THREE.Scene();
   const SKY = new THREE.Color('#05060c');
   scene.background = SKY;
   scene.fog = new THREE.FogExp2(SKY, .0075);
   const camera = new THREE.PerspectiveCamera(42, 1, .05, 400);
   scene.add(camera);
+  // renderer, rozmiar i pętla klatek: React Three Fiber (three/r3f.tsx)
+  const host = mountR3F(canvas, { scene, camera, alpha: false, maxDpr: 1.75, exposure: 1.1 });
+  const renderer = host.gl;
   scene.add(new THREE.HemisphereLight('#9fb0ff', '#1c140a', .7));
   const sun = new THREE.DirectionalLight('#fff4e2', 2.4); sun.position.set(20, 45, 18); scene.add(sun);
   const fill = new THREE.DirectionalLight('#ff9fd0', .6); fill.position.set(-30, 18, -25); scene.add(fill);
@@ -337,9 +337,9 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
   function resize() {
     const r = canvas.getBoundingClientRect(); W = Math.round(r.width); HGT = Math.round(r.height);
     if (!W || !HGT) return;
-    renderer.setSize(W, HGT, false); camera.aspect = W / HGT; camera.updateProjectionMatrix();
+    camera.aspect = W / HGT; camera.updateProjectionMatrix();
   }
-  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+  host.onResize(resize); resize();
 
   const P = (i: number, x: number, out = new THREE.Vector3()) => { const a = ang(x), r = laneR(i); return out.set(Math.cos(a) * r, 0, Math.sin(a) * r); };
   const fwdOf = (x: number, dir: number, out = new THREE.Vector3()) => { const a = ang(x); return out.set(-Math.sin(a) * dir, 0, Math.cos(a) * dir); };
@@ -349,7 +349,6 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
 
   function frame(now: number) {
     if (!running) return;
-    raf = requestAnimationFrame(frame);
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     if (!visible) return;
     const t = now / 1000;
@@ -597,9 +596,8 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
     const fv = live ? (o.interp(race.x[f], T, race.dt, race.scale) - o.interp(race.x[f], T - .2, race.dt, race.scale)) / .2 * TAU * laneR(f) : 0;
     hud.speed = Math.max(0, Math.round(fv * 3.6 * 2.2));
     hud.fx = cam.mode === 'fpv' || cam.mode === 'chase' ? (fst.turbo ? 1 : fst.boost ? .6 : 0) : 0;
-    renderer.render(scene, camera);
   }
-  raf = requestAnimationFrame(frame);
+  host.run(frame);
   const vis = () => { visible = !document.hidden; last = performance.now(); };
   document.addEventListener('visibilitychange', vis);
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting && !document.hidden; last = performance.now(); });
@@ -609,10 +607,10 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
     setCam(mode: HorseCam, focus?: number) { cam.mode = mode; if (focus != null) cam.focus = focus; cam.blend = 0; cam.shotAt = performance.now() / 1000; },
     hud: () => hud,
     destroy() {
-      running = false; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
+      running = false; io.disconnect();
       document.removeEventListener('visibilitychange', vis);
       trash.forEach(x => x.dispose?.());
-      renderer.dispose();
+      host.dispose();
     }
   };
 }

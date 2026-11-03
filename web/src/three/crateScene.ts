@@ -2,6 +2,7 @@
 // Skrzynka 3D: scena na przezroczystym tle, kolory biorą się z danych skrzynki
 import * as THREE from 'three';
 import { crateEnvironment, crateKit, LID_OPEN, softDot } from './crateModel';
+import { mountR3F } from './r3f';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -38,16 +39,14 @@ export function pyramid(n) {
 export type CrateScene = ReturnType<typeof createCrateScene>;
 
 export function createCrateScene(canvas, { sideShift = .29 } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
-
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 80);
   camera.position.set(0, 2.5, 7.8);
   camera.lookAt(0, .92, 0);
 
+  // renderer, rozmiar i pętla klatek: React Three Fiber (three/r3f.tsx)
+  const host = mountR3F(canvas, { scene, camera, maxDpr: 2, exposure: 1.1 });
+  const renderer = host.gl;
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
   scene.environmentIntensity = .55;
@@ -171,7 +170,6 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
   function resize() {
     W = canvas.clientWidth; H = canvas.clientHeight;
     if (!W || !H) return;
-    renderer.setSize(W, H, false);
     camera.aspect = W / H;
     const wide = W > 860;
     if (wide && sideShift) camera.setViewOffset(W, H, W * sideShift, 0, W, H); else camera.clearViewOffset();
@@ -179,11 +177,10 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
     camera.updateProjectionMatrix();
     fit();
   }
-  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+  host.onResize(resize); resize();
 
   function frame(now) {
     if (!running) return;
-    requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, .05), t = now / 1000; last = now;
     const k = r => 1 - Math.exp(-dt * r);
 
@@ -249,20 +246,19 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
       }
     }
     pGeo.attributes.position.needsUpdate = true;
-    renderer.render(scene, camera);
   }
-  requestAnimationFrame(frame);
+  host.run(frame);
 
   function pointer(nx, ny, over) { s.yawTo = nx * .55; s.pitchTo = ny * .12; s.hover = over && !s.open; }
-  const vis = () => { const v = !document.hidden; if (v && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); } else if (!v) running = false; };
+  const vis = () => { last = performance.now(); };
   document.addEventListener('visibilitychange', vis);
 
   return {
     setCrate, setCount, dropIn, open, close, pointer,
     destroy() {
-      running = false; ro.disconnect(); document.removeEventListener('visibilitychange', vis);
+      running = false; document.removeEventListener('visibilitychange', vis);
       kit.dispose(); env.dispose(); dot.dispose(); shadowGeo.dispose(); stepGeo.dispose(); stepMat.dispose(); pGeo.dispose();
-      renderer.dispose();
+      host.dispose();
     }
   };
 }

@@ -3,6 +3,7 @@
 // zawsze z przodu, przy widzu (kąt 0 = oś +z). Kieszeń i to koło: kąt i * step w układzie koła.
 import * as THREE from 'three';
 import { crateEnvironment, softDot } from './crateModel';
+import { mountR3F } from './r3f';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = Math.PI * 2;
@@ -99,13 +100,11 @@ export interface RouletteScene {
 
 /** spot: miejsce na stronie, w którym ma stać koło (tło całej strony: płótno na cały ekran, koło w kadrze nad tym miejscem) */
 export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], red: number[], spot?: () => DOMRect | null): RouletteScene {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, spot ? 1.5 : 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, .1, 60);
+  // renderer, rozmiar i pętla klatek: React Three Fiber (three/r3f.tsx)
+  const host = mountR3F(canvas, { scene, camera, maxDpr: spot ? 1.5 : 2, exposure: 1.05 });
+  const renderer = host.gl;
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
   scene.environmentIntensity = .7;
@@ -226,7 +225,6 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     const r = canvas.getBoundingClientRect();
     W = Math.round(r.width); H = Math.round(r.height);
     if (!W || !H) return;
-    renderer.setSize(W, H, false);
     camera.aspect = spot ? 1 : W / H;
     aimed = '';
     camera.updateProjectionMatrix();
@@ -241,7 +239,7 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     aimed = k;
     camera.setViewOffset(V, V, V / 2 - cx, V / 2 - cy, W, H);
   }
-  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+  host.onResize(resize); resize();
 
   function place() {
     spinner.rotation.y = st.wheelA;
@@ -253,10 +251,9 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     shadow.material.opacity = .55 - Math.min(.4, (st.ballY - BALL - floor) * 2);
   }
 
-  let last = performance.now(), running = true, visible = true, raf = 0;
+  let last = performance.now(), running = true, visible = true;
   function frame(now: number) {
     if (!running) return;
-    raf = requestAnimationFrame(frame);
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     if (!visible) return;
     if (!st.spinning && st.win == null && !reduced) st.wheelA += dt * .18;   // w spoczynku koło powoli się obraca, kulka jedzie w kieszeni
@@ -277,9 +274,8 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     flare.position.set(front.x, front.y + .05, front.z);
     flare.material.opacity = st.glow * (st.win ? .9 : .35) * (1 + Math.sin(t * 6) * .2);
     if (spot) aim(spot());
-    renderer.render(scene, camera);
   }
-  raf = requestAnimationFrame(frame);
+  host.run(frame);
   const vis = () => { visible = !document.hidden; last = performance.now(); };
   document.addEventListener('visibilitychange', vis);
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting && !document.hidden; last = performance.now(); });
@@ -352,12 +348,12 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
       st.zoomTo = win == null || reduced ? 0 : .55;
     },
     destroy() {
-      running = false; cancelAnimationFrame(raf);
-      ro.disconnect(); io.disconnect();
+      running = false;
+      io.disconnect();
       document.removeEventListener('visibilitychange', vis);
       disposables.forEach(d => d.dispose());
       env.dispose();
-      renderer.dispose();
+      host.dispose();
     }
   };
 }

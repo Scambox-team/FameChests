@@ -3,6 +3,7 @@
 // Kąt bębna a: pole i jest z przodu, gdy a = kąt środka pola; rosnące a przesuwa symbole w dół.
 import * as THREE from 'three';
 import { crateEnvironment, softDot } from './crateModel';
+import { mountR3F } from './r3f';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = Math.PI * 2;
@@ -145,12 +146,11 @@ export interface SlotsScene {
 }
 
 export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotSymbol[], weights: Record<string, number>, hue: string): Promise<SlotsScene> {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 60);
+  // renderer, rozmiar i pętla klatek: React Three Fiber (three/r3f.tsx)
+  const host = mountR3F(canvas, { scene, camera, maxDpr: 2, exposure: 1.05 });
+  const renderer = host.gl;
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
   scene.environmentIntensity = .75;
@@ -328,7 +328,6 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
     const r = canvas.getBoundingClientRect();
     W = Math.round(r.width); H = Math.round(r.height);
     if (!W || !H) return;
-    renderer.setSize(W, H, false);
     camera.aspect = W / H;
     // całą szafę razem z dźwignią mieścimy w kadrze także w wąskim oknie
     const half = Math.tan(camera.fov * Math.PI / 360);
@@ -337,13 +336,12 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
     camera.lookAt(.2, REEL_Y + .55, 0);
     camera.updateProjectionMatrix();
   }
-  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+  host.onResize(resize); resize();
 
   const color = new THREE.Color(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1);
-  let last = performance.now(), running = true, visible = true, raf = 0;
+  let last = performance.now(), running = true, visible = true;
   function frame(now: number) {
     if (!running) return;
-    raf = requestAnimationFrame(frame);
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     if (!visible) return;
     const t = now / 1000;
@@ -387,10 +385,8 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
     }
     coinMesh.count = n;
     coinMesh.instanceMatrix.needsUpdate = true;
-    // lekki ruch kamery
-    renderer.render(scene, camera);
   }
-  raf = requestAnimationFrame(frame);
+  host.run(frame);
   const vis = () => { visible = !document.hidden; last = performance.now(); };
   document.addEventListener('visibilitychange', vis);
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting && !document.hidden; last = performance.now(); });
@@ -452,12 +448,12 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
     setHue(hex) { paint.color.set(hex); neonMat.color.set(hex); neonGlowMat.color.set(hex); poolMat.color.set(hex); },
     setArmed(on) { st.armed = on; },
     destroy() {
-      running = false; cancelAnimationFrame(raf);
-      ro.disconnect(); io.disconnect();
+      running = false;
+      io.disconnect();
       document.removeEventListener('visibilitychange', vis);
       disposables.forEach(d => d.dispose());
       env.dispose();
-      renderer.dispose();
+      host.dispose();
     }
   };
 }
