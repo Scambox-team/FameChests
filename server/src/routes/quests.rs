@@ -1,8 +1,9 @@
-//! Codzienny quest (domyślnie wyłączony, włącza admin w panelu): każdego dnia jeden wspólny cel dla wszystkich graczy -
-//! zdobyć konkretną kartę od Epickiej wzwyż: Epicką zawsze w rzadkim wariancie, wyższą zwykłą albo w wariancie (losowo).
-//! Kto pierwszy, dostaje tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
+//! Quest (domyślnie wyłączony, włącza admin w panelu): jeden wspólny cel dla wszystkich graczy - zdobyć konkretną kartę
+//! od Epickiej wzwyż: Epicką zawsze w rzadkim wariancie, wyższą zwykłą albo w wariancie (losowo). Kto pierwszy, dostaje
+//! tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
 //!
-//! Quest losuje się przy pierwszym zapytaniu danego dnia (`daily_quests`, klucz = dzień). Liczą się tylko karty, które
+//! Quest trwa `DURATION` (24 h), potem losuje się nowy; wypełniony - nowy po `AFTER_WIN` (6 h) od wypełnienia.
+//! Losuje się przy pierwszym zapytaniu po tym czasie (`daily_quests`, klucz = kolejny numer `q<n>`). Liczą się tylko karty, które
 //! dopiero powstają (skrzynki, kuźnia, ulepszacz, kasyno) - kupno na rynku albo wymiana nie wypełnia questa, inaczej
 //! wygrywałby ten, kto akurat ma najwięcej pieniędzy.
 
@@ -14,7 +15,6 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::shop::today;
 use super::{ok, JsonBody};
 use crate::achievements::{self, parts};
 use crate::auth::Admin;
@@ -37,17 +37,40 @@ const MIN_ODDS: f64 = 1e-5;
 /// „rzadki wariant”: szansa na wariant przy wypadnięciu karty
 const VARIANT_CHANCE: (f64, f64) = (0.002, 0.02);
 const HISTORY: i64 = 14;
+/// jak długo trwa quest i po jakim czasie od wypełnienia pojawia się nowy (sekundy)
+const DURATION: f64 = 24.0 * 3600.0;
+const AFTER_WIN: f64 = 6.0 * 3600.0;
 
-type QuestRow = (String, Option<String>, Option<String>, Option<i64>, Option<f64>, Option<String>, i64);
-const COLUMNS: &str = "day, person_id, variant, winner_id, won_at, won_person, money";
+#[derive(sqlx::FromRow)]
+struct QuestRow {
+    day: String,
+    person_id: Option<String>,
+    variant: Option<String>,
+    winner_id: Option<i64>,
+    won_at: Option<f64>,
+    won_person: Option<String>,
+    money: i64,
+    starts_at: Option<f64>,
+    ends_at: Option<f64>,
+}
+
+impl QuestRow {
+    /// Kiedy pojawi się następny quest: 6 h po wypełnieniu albo po końcu tego (stare questy dzienne bez czasu - od razu)
+    fn next_at(&self) -> f64 {
+        match self.won_at.filter(|_| self.winner_id.is_some()) {
+            Some(at) => at + AFTER_WIN,
+            None => self.ends_at.unwrap_or(0.0),
+        }
+    }
+}
+
+const COLUMNS: &str = "day, person_id, variant, winner_id, won_at, won_person, money, starts_at, ends_at";
+/// najnowszy quest (stare dzienne nie mają starts_at - idą na koniec)
+const LATEST: &str = "ORDER BY starts_at DESC NULLS LAST, day DESC";
 
 async fn enabled(c: &mut Conn) -> sqlx::Result<bool> {
     let v: Option<i64> = sqlx::query_scalar("SELECT value FROM state WHERE key = $1").bind(ENABLED_KEY).fetch_optional(c).await?;
     Ok(v.unwrap_or(0) != 0)
-}
-
-fn day() -> String {
-    today().to_string()
 }
 
 /// Szansa na tę kartę z jednej skrzynki (wśród kart tej rzadkości wszystkie są równie prawdopodobne)
@@ -102,30 +125,40 @@ fn pick(cat: &Catalog) -> Option<(Option<String>, Option<String>)> {
     Some((Some(pid.clone()), variant))
 }
 
-async fn row_of(c: &mut Conn, day: &str) -> sqlx::Result<Option<QuestRow>> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {COLUMNS} FROM daily_quests WHERE day = $1")))
-        .bind(day)
-        .fetch_optional(c)
-        .await
+async fn latest(c: &mut Conn) -> sqlx::Result<Option<QuestRow>> {
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {COLUMNS} FROM daily_quests {LATEST} LIMIT 1"))).fetch_optional(c).await
 }
 
-/// Dzisiejszy quest; pierwszy gracz danego dnia go losuje. None = questy wyłączone albo nie ma czego losować.
+/// Klucz następnego questa: q<n+1> po q<n> (po starych dziennych - q1). Dwa zapytania naraz liczą ten sam klucz,
+/// więc `ON CONFLICT` zostawia jeden quest.
+fn next_key(prev: Option<&QuestRow>) -> String {
+    let n = prev.and_then(|r| r.day.strip_prefix('q')?.parse::<u64>().ok()).unwrap_or(0);
+    format!("q{}", n + 1)
+}
+
+/// Aktualny quest (trwający albo wypełniony, dopóki nie minie AFTER_WIN); po jego czasie pierwsze zapytanie losuje nowy.
+/// None = questy wyłączone albo nie ma czego losować.
 async fn current(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<QuestRow>> {
     if !enabled(&mut *c).await? {
         return Ok(None);
     }
-    let day = day();
-    if let Some(r) = row_of(&mut *c, &day).await? {
-        return Ok(Some(r));
+    let prev = latest(&mut *c).await?;
+    let now = now();
+    if prev.as_ref().is_some_and(|r| now < r.next_at()) {
+        return Ok(prev);
     }
     let Some((person, variant)) = pick(cat) else { return Ok(None) };
-    sqlx::query("INSERT INTO daily_quests (day, person_id, variant) VALUES ($1, $2, $3) ON CONFLICT (day) DO NOTHING")
-        .bind(&day)
-        .bind(person)
-        .bind(variant)
-        .execute(&mut *c)
-        .await?;
-    row_of(c, &day).await
+    sqlx::query(
+        "INSERT INTO daily_quests (day, person_id, variant, starts_at, ends_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (day) DO NOTHING",
+    )
+    .bind(next_key(prev.as_ref()))
+    .bind(person)
+    .bind(variant)
+    .bind(now)
+    .bind(now + DURATION)
+    .execute(&mut *c)
+    .await?;
+    latest(c).await
 }
 
 #[derive(Serialize)]
@@ -141,6 +174,11 @@ pub struct QuestView {
     winner: Option<String>,
     won_person: Option<String>,
     money: i64,
+    /// czasy w sekundach: start, koniec (bez wypełnienia), wypełnienie, następny quest
+    starts_at: Option<f64>,
+    ends_at: Option<f64>,
+    won_at: Option<f64>,
+    next_at: f64,
 }
 
 fn reward_for(cat: &Catalog, pid: &str) -> Option<i64> {
@@ -148,25 +186,28 @@ fn reward_for(cat: &Catalog, pid: &str) -> Option<i64> {
 }
 
 async fn view(c: &mut Conn, cat: &Catalog, r: QuestRow, uid: i64) -> sqlx::Result<QuestView> {
-    let (day, person, variant, winner_id, _, won_person, money) = r;
-    let winner: Option<String> = match winner_id {
+    let winner: Option<String> = match r.winner_id {
         Some(id) => sqlx::query_scalar("SELECT username FROM users WHERE id = $1").bind(id).fetch_optional(c).await?,
         None => None,
     };
     Ok(QuestView {
-        day,
-        reward: person.as_deref().and_then(|p| reward_for(cat, p)),
-        person,
-        variant,
-        done: winner_id.is_some(),
-        mine: winner_id == Some(uid),
+        reward: r.person_id.as_deref().and_then(|p| reward_for(cat, p)),
+        done: r.winner_id.is_some(),
+        mine: r.winner_id == Some(uid),
+        next_at: r.next_at(),
+        day: r.day,
+        person: r.person_id,
+        variant: r.variant,
         winner,
-        won_person,
-        money,
+        won_person: r.won_person,
+        money: r.money,
+        starts_at: r.starts_at,
+        ends_at: r.ends_at,
+        won_at: r.won_at,
     })
 }
 
-/// Dzisiejszy quest dla /api/me
+/// Aktualny quest dla /api/me
 pub async fn quest_view(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<Option<QuestView>> {
     match current(&mut *c, cat).await? {
         Some(r) => Ok(Some(view(c, cat, r, uid).await?)),
@@ -174,18 +215,19 @@ pub async fn quest_view(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<O
     }
 }
 
-/// Po każdej nowej karcie: czy to cel dzisiejszego, jeszcze niewypełnionego questa. Pierwszy wygrywa - `UPDATE` z warunkiem
+/// Po każdej nowej karcie: czy to cel trwającego, jeszcze niewypełnionego questa. Pierwszy wygrywa - `UPDATE` z warunkiem
 /// `winner_id IS NULL` zadziała tylko dla jednego gracza, nawet gdy dwóch trafi kartę w tej samej chwili.
 pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source: &str) -> sqlx::Result<()> {
     if !SOURCES.contains(&source) || variant == REWARD_VARIANT {
         return Ok(());
     }
-    let open: Option<(Option<String>, Option<String>)> =
-        sqlx::query_as("SELECT person_id, variant FROM daily_quests WHERE day = $1 AND winner_id IS NULL")
-            .bind(day())
-            .fetch_optional(&mut *c)
-            .await?;
-    let Some((want_person, want_variant)) = open else { return Ok(()) };
+    let open: Option<(String, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT day, person_id, variant FROM daily_quests WHERE winner_id IS NULL AND ends_at > $1 ORDER BY starts_at DESC LIMIT 1",
+    )
+    .bind(now())
+    .fetch_optional(&mut *c)
+    .await?;
+    let Some((key, want_person, want_variant)) = open else { return Ok(()) };
     let fits =
         want_person.as_deref().is_none_or(|p| p == pid) && want_variant.as_deref().is_none_or(|v| parts(variant).contains(&v));
     let Some(money) = reward_for(&cx.cat, pid).filter(|_| fits) else { return Ok(()) };
@@ -196,7 +238,7 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
     .bind(now())
     .bind(pid)
     .bind(money)
-    .bind(day())
+    .bind(key)
     .execute(&mut *c)
     .await?
     .rows_affected();
@@ -210,7 +252,7 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
 
 async fn history(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<Vec<QuestView>> {
     let rows: Vec<QuestRow> =
-        sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {COLUMNS} FROM daily_quests ORDER BY day DESC LIMIT {HISTORY}")))
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {COLUMNS} FROM daily_quests {LATEST} LIMIT {HISTORY}")))
             .fetch_all(&mut *c)
             .await?;
     let mut out = vec![];
@@ -224,9 +266,7 @@ pub async fn admin_quests(State(st): State<AppState>, Admin(me): Admin) -> Res {
     let cat = st.cat();
     let mut c = st.db.acquire().await?;
     let on = enabled(&mut c).await?;
-    if on {
-        current(&mut c, &cat).await?;
-    }
+    let now_quest = if on { current(&mut c, &cat).await? } else { None };
     let list = candidates(&cat);
     let (cards, variants): (usize, BTreeSet<&String>) = (list.len(), list.iter().flat_map(|c| &c.2).collect());
     let names: HashMap<&str, &str> = cat.people.values().map(|p| (p.id.as_str(), p.name.as_str())).collect();
@@ -237,9 +277,20 @@ pub async fn admin_quests(State(st): State<AppState>, Admin(me): Admin) -> Res {
         (_, Some(v)) => format!("dowolna karta w wariancie {}", g().variant(v).name),
         _ => String::new(),
     };
-    let history: Vec<_> =
-        list.iter().map(|q| json!({"day": q.day, "target": label(q), "winner": q.winner, "money": q.money})).collect();
-    ok(json!({"enabled": on, "day": day(), "history": history, "cards": cards, "variants": variants.len()}))
+    let history: Vec<_> = list
+        .iter()
+        .map(|q| {
+            json!({"day": q.day, "startsAt": q.starts_at, "wonAt": q.won_at, "target": label(q), "winner": q.winner, "money": q.money})
+        })
+        .collect();
+    ok(json!({
+        "enabled": on,
+        "nextAt": now_quest.as_ref().map(QuestRow::next_at),
+        "done": now_quest.as_ref().is_some_and(|q| q.winner_id.is_some()),
+        "history": history,
+        "cards": cards,
+        "variants": variants.len(),
+    }))
 }
 
 #[derive(Deserialize)]
@@ -249,8 +300,11 @@ pub struct QuestSettings {
     reroll: bool,
 }
 
+/// Usuwa trwający, niewypełniony quest (następne zapytanie losuje nowy)
 async fn drop_open(c: &mut Conn) -> sqlx::Result<()> {
-    sqlx::query("DELETE FROM daily_quests WHERE day = $1 AND winner_id IS NULL").bind(day()).execute(c).await?;
+    if let Some(r) = latest(&mut *c).await?.filter(|r| r.winner_id.is_none()) {
+        sqlx::query("DELETE FROM daily_quests WHERE day = $1 AND winner_id IS NULL").bind(r.day).execute(c).await?;
+    }
     Ok(())
 }
 
@@ -263,17 +317,15 @@ pub async fn admin_quests_save(State(st): State<AppState>, Admin(me): Admin, Jso
             .execute(&mut *tx)
             .await?;
         if !on {
-            drop_open(&mut tx).await?; // po wyłączeniu nikt nie może już wypełnić dzisiejszego questa
+            drop_open(&mut tx).await?; // po wyłączeniu nikt nie może już wypełnić trwającego questa
         }
         log_admin(&mut tx, &me, "quests", None, if on { "włączone" } else { "wyłączone" }).await?;
     } else if req.reroll {
-        let done: Option<Option<i64>> =
-            sqlx::query_scalar("SELECT winner_id FROM daily_quests WHERE day = $1").bind(day()).fetch_optional(&mut *tx).await?;
-        if done.flatten().is_some() {
-            return bad("Dzisiejszy quest jest już wypełniony");
+        if latest(&mut tx).await?.is_some_and(|r| r.winner_id.is_some() && now() < r.next_at()) {
+            return bad("Ten quest jest już wypełniony - nowy pojawi się sam");
         }
         drop_open(&mut tx).await?;
-        log_admin(&mut tx, &me, "quests", None, "nowy cel na dziś").await?;
+        log_admin(&mut tx, &me, "quests", None, "nowy cel").await?;
     }
     tx.commit().await?;
     ok(json!({"ok": true}))

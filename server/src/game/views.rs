@@ -133,7 +133,14 @@ pub struct CrateJson {
     pub color2: String,
     pub price: i64,
     pub desc: String,
+    /// dziś w sklepie
     pub shop: bool,
+    /// tryb (catalog::CRATE_MODES) i sezon
+    pub mode: String,
+    #[serde(rename = "seasonFrom")]
+    pub season_from: String,
+    #[serde(rename = "seasonTo")]
+    pub season_to: String,
     pub restricted: bool,
     pub special: bool,
     pub people: Vec<String>,
@@ -155,6 +162,9 @@ impl CrateJson {
             price: c.price,
             desc: c.desc.clone(),
             shop: c.shop,
+            mode: c.mode.clone(),
+            season_from: c.season_from.clone(),
+            season_to: c.season_to.clone(),
             restricted: c.restricted,
             special: c.special,
             people: c.people.iter().filter(|p| cat.has(p)).cloned().collect(),
@@ -177,6 +187,9 @@ impl CrateJson {
             price: c.price.unwrap_or(g.crate_price),
             desc: c.desc.clone(),
             shop: c.shop.unwrap_or(true),
+            mode: c.mode.clone(),
+            season_from: c.season_from.clone(),
+            season_to: c.season_to.clone(),
             restricted: c.restricted.unwrap_or(false),
             special: g.crates.get(cid).is_some_and(|b| b.special),
             people: vec![],

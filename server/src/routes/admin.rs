@@ -368,6 +368,12 @@ pub struct CrateRequest {
     desc: String,
     #[serde(default = "yes")]
     shop: bool,
+    /// tryb (catalog::CRATE_MODES); brak = z pola "shop" (stary formularz)
+    mode: String,
+    #[serde(rename = "seasonFrom")]
+    season_from: String,
+    #[serde(rename = "seasonTo")]
+    season_to: String,
     restricted: bool,
     variants: Vec<String>,
     weights: IndexMap<String, NumOrText>,
@@ -417,7 +423,22 @@ pub async fn admin_save_crate(State(st): State<AppState>, Admin(me): Admin, Json
     fields.insert("color2".into(), json!(or(&req.color2, "#333333")));
     fields.insert("price".into(), json!(price));
     fields.insert("desc".into(), json!(clean(&req.desc, 120)));
-    fields.insert("shop".into(), json!(req.shop));
+    let mode = match req.mode.as_str() {
+        m if catalog::CRATE_MODES.contains(&m) => m,
+        _ if req.shop => "rotation",
+        _ => "disabled",
+    };
+    let (from, to) = (catalog::season_date(&req.season_from), catalog::season_date(&req.season_to));
+    if mode == "seasonal" && (from.is_empty() || to.is_empty()) {
+        return bad("Skrzynka sezonowa potrzebuje daty początku i końca");
+    }
+    if mode == "seasonal" && from > to {
+        return bad("Koniec sezonu jest przed jego początkiem");
+    }
+    fields.insert("shop".into(), json!(matches!(mode, "fixed" | "rotation" | "seasonal")));
+    fields.insert("mode".into(), json!(mode));
+    fields.insert("seasonFrom".into(), json!(from));
+    fields.insert("seasonTo".into(), json!(to));
     fields.insert("restricted".into(), json!(req.restricted));
     // warianty przypięte do skrzynki - każdy wariant wypada tylko ze skrzynek, do których jest przypięty
     fields.insert("variants".into(), json!(g.crate_variants.iter().filter(|v| req.variants.contains(v)).collect::<Vec<_>>()));

@@ -30,7 +30,13 @@ export interface Crate {
   price: number;
   color1: string;
   color2: string;
+  /** dziś w sklepie */
   shop: boolean;
+  /** stała / rotacyjna / sezonowa / poza sklepem / wyłączona */
+  mode?: 'fixed' | 'rotation' | 'seasonal' | 'offshop' | 'disabled';
+  /** sezon: RRRR-MM-DD, obie daty włącznie */
+  seasonFrom?: string;
+  seasonTo?: string;
   canBuy: boolean;
   restricted?: boolean;
   released?: boolean;

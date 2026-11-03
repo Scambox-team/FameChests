@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Lock, Zap, Repeat } from 'lucide-react';
+import { CalendarClock, Lock, Zap, Repeat } from 'lucide-react';
 
 import { api } from '../../api/client';
 import { crateList, crateOf, plural, testCrates } from '../../game/rules';
@@ -29,6 +29,11 @@ const shopCrates = () => [...crateList()
   .filter(c => !c.special && ((c.shop && (!c.restricted || c.canBuy)) || (S.chests[c.id] || 0) > 0 || S.me?.isAdmin))
   .sort((a, b) => Number(b.shop) - Number(a.shop)), ...Object.values(testCrates()) as Crate[]];
 const kart = (n: number) => `${n} ${plural(n, 'karta', 'karty', 'kart')}`;
+/** Jak długo skrzynka zostanie w sklepie: rotacyjna do północy, sezonowa do końca sezonu */
+const crateWhen = (c: Crate) =>
+  c.mode === 'rotation' ? 'W dzisiejszej rotacji, zniknie ze sklepu o północy.'
+    : c.mode === 'seasonal' && c.seasonTo ? `Skrzynka sezonowa, w sklepie do ${new Date(`${c.seasonTo}T00:00`).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' })}.`
+      : '';
 
 function BuyPanel({ crate }: { crate: Crate }) {
   const game = useGame();
@@ -62,6 +67,7 @@ function BuyPanel({ crate }: { crate: Crate }) {
     <div className={styles.info}>
       <h2>{crate.name}</h2>
       <p className="muted">{crate.desc ? `${crate.desc}. ` : ''}{kart(crate.people.length)}{ownedAll ? `, w ekwipunku masz ${ownedAll} ${plural(ownedAll, 'taką skrzynkę', 'takie skrzynki', 'takich skrzynek')}` : ''}.</p>
+      {crate.shop && crateWhen(crate) && <p className={styles.when}><CalendarClock size={15} aria-hidden="true" />{crateWhen(crate)}</p>}
       {!crate.canBuy && (
         <p className={styles.lock}><Lock size={15} aria-hidden="true" />{crate.shop ? 'Tę skrzynkę mogą kupować tylko wybrani gracze.' : 'Tej skrzynki nie ma teraz w sklepie.'}{ownedAll ? ` Możesz otworzyć swoje (najwyżej ${ownedAll}).` : ''}</p>
       )}

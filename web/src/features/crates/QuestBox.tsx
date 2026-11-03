@@ -5,6 +5,7 @@ import { S, touch, useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
+import { questTime } from '../home/QuestTile';
 import styles from './QuestBox.module.css';
 
 /** Stan questa z /api/me; wygrana pokazuje się raz, także gdy karta wypadła na innym ekranie */
@@ -16,7 +17,7 @@ export function noteQuest(q: any) {
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, '1');
   } catch { /* powiadomimy jeszcze raz */ }
-  toast(`Quest dnia wypełniony: ${person(q.wonPerson).name} w wariancie ${variantName('wanted')} i +${fmt(q.money)} są twoje`);
+  toast(`Quest wypełniony: ${person(q.wonPerson).name} w wariancie ${variantName('wanted')} i +${fmt(q.money)} są twoje`);
   Sound.win();
   confetti(['#ffcf3f', '#fff', '#c8402a'], 160);
 }
@@ -28,16 +29,16 @@ export function QuestBox() {
   const target = q.person ? person(q.person).name : 'dowolną kartę';
   const photo = who ? (person(who).masked ? `/img/${who}` : imgUrl(who, null, true)) : null;
   return (
-    <section className={styles.box} aria-label="Quest dnia">
+    <section className={styles.box} aria-label="Quest">
       <span className={styles.thumb}>{photo ? <img src={photo} alt="" /> : <Target size={20} aria-hidden="true" />}</span>
       <div className={styles.body}>
-        <b>Quest dnia</b>
+        <b>Quest</b>
         <p>Zdobądź {target}{q.variant ? ` w wariancie ${variantName(q.variant)}` : ''}. Kto pierwszy, ten wygrywa.</p>
         <small className="muted">Nagroda: ta karta w wariancie {variantName('wanted')}{reward ? ` + ${fmt(reward)}` : ' + jej wartość w groszach'}. Liczą się skrzynki, kuźnia, ulepszacz i kasyno.</small>
       </div>
       {q.done && (q.mine
-        ? <span className={styles.won}><Trophy size={16} aria-hidden="true" />Quest jest twój, +{fmt(q.money)}</span>
-        : <span className="muted small">Quest przepadł. Wygrana: {q.winner || 'nieznany gracz'}</span>)}
+        ? <span className={styles.won}><Trophy size={16} aria-hidden="true" />Quest jest twój, +{fmt(q.money)}{q.wonAt ? ` (${questTime(q.wonAt)})` : ''}</span>
+        : <span className="muted small">Quest przepadł. Wygrana: {q.winner || 'nieznany gracz'}{q.wonAt ? `, o ${questTime(q.wonAt)}` : ''}</span>)}
     </section>
   );
 }

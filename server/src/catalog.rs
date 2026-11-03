@@ -13,7 +13,11 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, LazyLock};
 
+use chrono::{Datelike, Local, NaiveDate};
 use indexmap::{IndexMap, IndexSet};
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -132,7 +136,13 @@ pub struct Crate {
     pub color2: String,
     pub price: i64,
     pub desc: String,
+    /// skrzynka jest DZIŚ w sklepie (wynika z trybu: stała, rotacja, sezon - zob. CRATE_MODES)
     pub shop: bool,
+    /// tryb: fixed / rotation / seasonal / offshop / disabled
+    pub mode: String,
+    /// sezon (RRRR-MM-DD, obie daty włącznie; pusta = bez granicy)
+    pub season_from: String,
+    pub season_to: String,
     pub restricted: bool,
     pub special: bool,
     pub variants: Vec<String>,
@@ -144,7 +154,17 @@ pub struct Crate {
     pub people: Vec<String>,
 }
 
+/// Tryby skrzynki: stała (zawsze w sklepie), rotacyjna (losowa codzienna rotacja), sezonowa (w sklepie od-do),
+/// poza sklepem (inne źródło, np. szachy), wyłączona (przeznaczona do sklepu, ale jej tam nie ma)
+pub const CRATE_MODES: &[&str] = &["fixed", "rotation", "seasonal", "offshop", "disabled"];
+
 impl Crate {
+    /// Skrzynka sprzedawana w sklepie (stała, rotacyjna albo sezonowa - także w dni, gdy jej akurat nie ma):
+    /// jej karty dają kuźnia i kasyno
+    pub fn sold(&self) -> bool {
+        matches!(self.mode.as_str(), "fixed" | "rotation" | "seasonal")
+    }
+
     /// Szansa (waga) rzadkości w danej skrzynce - własna albo domyślna
     pub fn weight(&self, rarity: &str) -> f64 {
         self.weights.get(rarity).copied().unwrap_or_else(|| default_weight(rarity))
@@ -292,6 +312,14 @@ pub struct RawCrate {
     #[serde_as(as = "DefaultOnError")]
     pub shop: Option<bool>,
     #[serde_as(as = "DefaultOnError")]
+    pub mode: String,
+    #[serde(rename = "seasonFrom")]
+    #[serde_as(as = "DefaultOnError")]
+    pub season_from: String,
+    #[serde(rename = "seasonTo")]
+    #[serde_as(as = "DefaultOnError")]
+    pub season_to: String,
+    #[serde_as(as = "DefaultOnError")]
     pub restricted: Option<bool>,
     /// None = admin nie wybierał (domyślne warianty z DEFAULT_CRATE_VARIANTS)
     #[serde_as(as = "DefaultOnError<Option<VecSkipError<_>>>")]
@@ -433,6 +461,11 @@ pub fn build(crate_rows: &[OverrideRow], card_rows: &[OverrideRow]) -> Catalog {
 /// Dane wbudowane + zmiany admina -> katalog. Najpierw warianty: projekty z kreatora i ustawienia z /variants
 /// trafiają do danych gry (data::set_game - jak rebuild w catalog.py), potem skrzynki i karty.
 pub fn build_with_variants(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_rows: &[VariantRow]) -> Catalog {
+    build_on(crate_rows, card_rows, variant_rows, Local::now().date_naive())
+}
+
+/// Katalog na dany dzień (sklep: rotacja i sezony)
+pub fn build_on(crate_rows: &[OverrideRow], card_rows: &[OverrideRow], variant_rows: &[VariantRow], today: NaiveDate) -> Catalog {
     let custom = VariantState::custom_designs(variant_rows);
     set_game(base_game().with_catalog_variants(&custom, &Default::default()));
     let vs = VariantState::read(variant_rows, custom);
@@ -459,7 +492,7 @@ pub fn build_with_variants(crate_rows: &[OverrideRow], card_rows: &[OverrideRow]
         let present: HashSet<String> = members.iter().map(|p| p.rarity.clone()).collect();
         let member_ids: Vec<String> = members.iter().map(|p| p.id.clone()).collect();
         final_ids.extend(member_ids.iter().cloned());
-        let cr = check_crate(&cid, c, &present, member_ids, &vs);
+        let cr = check_crate(&cid, c, &present, member_ids, &vs, today);
         // numer karty na skrzynce głównej
         for (n, id) in cr.people.iter().enumerate() {
             if let Some(p) = persons.get_mut(id).filter(|p| p.crate_.as_deref() == Some(cid.as_str())) {
@@ -468,16 +501,22 @@ pub fn build_with_variants(crate_rows: &[OverrideRow], card_rows: &[OverrideRow]
         }
         out_crates.insert(cid, cr);
     }
+    // rotacja: dziś w sklepie tylko wylosowane skrzynki rotacyjne
+    let rotating: Vec<String> = out_crates.values().filter(|c| c.mode == "rotation").map(|c| c.id.clone()).collect();
+    let on = rotation(&rotating, g.rotation_slots, today);
+    for cid in &rotating {
+        out_crates[cid].shop = on.contains(cid);
+    }
 
     // wartość karty rośnie z ceną NAJTAŃSZEJ skrzynki, w której można ją zdobyć; kuźnia i kasyno: tylko karty
-    // ze skrzynek, które są teraz w sklepie
+    // ze skrzynek sprzedawanych w sklepie (także rotacyjnych i sezonowych w dni, gdy ich nie ma)
     let people = final_ids
         .into_iter()
         .filter_map(|id| {
             let mut p = persons.swap_remove(&id)?;
             let cheapest = p.crates.iter().map(|c| out_crates[c].price).min().unwrap_or(g.crate_price);
             p.value_mult = (cheapest as f64 / g.crate_price as f64).max(1.0);
-            p.forge = p.crates.iter().any(|c| out_crates[c].shop && !p.exclusive.contains(c));
+            p.forge = p.crates.iter().any(|c| out_crates[c].sold() && !p.exclusive.contains(c));
             Some((id, Arc::new(p)))
         })
         .collect();
@@ -667,10 +706,53 @@ fn check_card(id: String, p: RawCard, crates: &IndexMap<String, RawCrate>) -> Pe
     }
 }
 
-fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<String>, vs: &VariantState) -> Crate {
+/// Skrzynki rotacyjne w sklepie danego dnia. Co cykl (tyle dni, ile trzeba, żeby każda skrzynka była raz) nowa
+/// losowa kolejność, a w cyklu kolejne okna po `slots` skrzynek - żadna nie czeka długo na swoją kolej.
+pub fn rotation(ids: &[String], slots: usize, day: NaiveDate) -> Vec<String> {
+    if ids.len() <= slots {
+        return ids.to_vec();
+    }
+    let mut order = ids.to_vec();
+    order.sort();
+    let days = day.num_days_from_ce().max(0) as u64;
+    let cycle = order.len().div_ceil(slots) as u64;
+    order.shuffle(&mut ChaCha8Rng::seed_from_u64((days / cycle) ^ 0x5c4a_b0c5));
+    let start = (days % cycle) as usize * slots;
+    (start..start + slots).map(|i| order[i % order.len()].clone()).collect()
+}
+
+/// Data sezonu z formularza (RRRR-MM-DD) albo pusty napis
+pub fn season_date(s: &str) -> String {
+    NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d").map(|d| d.to_string()).unwrap_or_default()
+}
+
+/// Czy dzień mieści się w sezonie (obie daty włącznie, pusta = bez granicy)
+fn in_season(from: &str, to: &str, day: NaiveDate) -> bool {
+    let d = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+    d(from).is_none_or(|f| day >= f) && d(to).is_none_or(|t| day <= t)
+}
+
+fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<String>, vs: &VariantState, today: NaiveDate) -> Crate {
     let g = g();
     // skrzynka kart specjalnych: nigdy w sklepie, nie da się jej kupić ani otworzyć
     let special = g.crates.get(cid).is_some_and(|b| b.special);
+    // tryb; zapisy sprzed trybów: "shop": false = wyłączona, inaczej rotacyjna
+    let mode = if special {
+        "offshop".to_owned()
+    } else if CRATE_MODES.contains(&c.mode.as_str()) {
+        c.mode.clone()
+    } else if c.shop == Some(false) {
+        "disabled".to_owned()
+    } else {
+        "rotation".to_owned()
+    };
+    let (season_from, season_to) = (season_date(&c.season_from), season_date(&c.season_to));
+    // rotacyjne: build_on wybiera dzisiejsze
+    let shop = match mode.as_str() {
+        "fixed" | "rotation" => true,
+        "seasonal" => in_season(&season_from, &season_to, today),
+        _ => false,
+    };
     // warianty przypięte do skrzynki; zapis sprzed przypinania (bez "variantsAll") - jak wtedy działała gra: wybrane
     // wyjątkowe (albo domyślne) + włączone zwykłe warianty, które wypadały ze wszystkich skrzynek (jak chosen_crate_variants)
     let mut chosen = c.variants.unwrap_or_else(|| g.default_crate_variants.get(cid).cloned().unwrap_or_default());
@@ -697,7 +779,10 @@ fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<St
         color2: c.color2,
         price: c.price.filter(|p| *p != 0).unwrap_or(g.crate_price).max(1),
         desc: c.desc,
-        shop: c.shop.unwrap_or(true) && !special,
+        shop,
+        mode,
+        season_from,
+        season_to,
         restricted: c.restricted.unwrap_or(false),
         special,
         variants: g.crate_variants.iter().filter(|v| chosen.contains(v)).cloned().collect(),
@@ -1048,5 +1133,35 @@ mod tests {
         assert_eq!((p.arena[0].visual.as_str(), p.arena[0].cost, p.arena[0].effects[0].turns), ("fire", None, 9));
         assert_eq!(p.arena[1].visual, "hit");
         assert!(!cat.has("pl_zenek") && cat.hidden_cards.contains_key("pl_zenek"));
+    }
+
+    #[test]
+    fn crate_modes() {
+        let day = NaiveDate::from_ymd_opt(2026, 11, 3).unwrap();
+        let row = |cid: &str, s: &str| (cid.to_owned(), serde_json::from_str::<Map<String, Value>>(s).unwrap(), false);
+        let rows = [
+            row("sez", r#"{"name": "S", "mode": "seasonal", "seasonFrom": "2026-11-01", "seasonTo": "2026-11-03"}"#),
+            row("stara", r#"{"name": "W", "shop": false}"#),
+        ];
+        let cat = build_on(&rows, &[], &[], day);
+        let c = &cat.crates;
+        assert!(c["pl"].shop && c["pl"].mode == "fixed");
+        assert!(!c["szachy"].shop && c["szachy"].mode == "offshop" && !c["szachy"].sold());
+        assert!(c["sez"].shop && !build_on(&rows, &[], &[], day.succ_opt().unwrap()).crates["sez"].shop);
+        assert_eq!((c["stara"].mode.as_str(), c["stara"].shop), ("disabled", false));
+        let rot: Vec<&Crate> = c.values().filter(|c| c.mode == "rotation").collect();
+        assert_eq!(rot.iter().filter(|c| c.shop).count(), g().rotation_slots.min(rot.len()));
+
+        // każda skrzynka rotacyjna pojawia się w każdym cyklu, okno bez powtórek
+        let ids: Vec<String> = (0..5).map(|i| format!("r{i}")).collect();
+        let mut seen = HashSet::new();
+        let start = day - chrono::Days::new(day.num_days_from_ce() as u64 % 3); // początek cyklu (3 dni)
+        for d in 0..3 {
+            let on = rotation(&ids, 2, start + chrono::Days::new(d));
+            assert!(on.len() == 2 && on[0] != on[1]);
+            seen.extend(on);
+        }
+        assert_eq!(seen.len(), 5);
+        assert_eq!(rotation(&ids[..2], 2, day).len(), 2);
     }
 }

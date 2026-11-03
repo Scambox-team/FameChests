@@ -240,7 +240,7 @@ function vrExtraHTML(v) {
   const metals = m.bonusSeller || [], sum = metals.reduce((a, x) => a + vrV(x).chance, 0);
   const off = vrCfg(v).enabled ? "" : " Ten wariant jest wyłączony, ale stąd i tak wypada.";
   const text = V.extraSource === "quest"
-    ? `Codzienne questy są teraz <b>${VR.questOn == null ? "…" : VR.questOn ? "włączone " : "wyłączone "}</b> (panel admina → Codzienne questy). Pierwszy gracz, który wypełni questa, dostaje kartę w tym wariancie.`
+    ? `Questy są teraz <b>${VR.questOn == null ? "…" : VR.questOn ? "włączone " : "wyłączone "}</b> (panel admina → Questy). Pierwszy gracz, który wypełni questa, dostaje kartę w tym wariancie.`
     : V.extraSource === "market"
     ? `Gdy ktoś kupi albo wylicytuje kartę na rynku, z szansą ${pct(m.bonusChance || 0)} dostaje też tę kartę w tym wariancie.`
     : `Gdy zakup na rynku da premię (${pct(m.bonusChance || 0)}), sprzedający dostaje jeden z metali; ten wariant to ${pct(sum ? V.chance / sum : 0)} tych premii.`;

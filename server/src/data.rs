@@ -279,6 +279,8 @@ pub struct GameData {
     pub money_chests_json: Value,
     pub daily_streak: i64,
     pub showcase_size: usize,
+    /// ile skrzynek rotacyjnych jest naraz w sklepie (zmiana codziennie o północy - catalog::rotation)
+    pub rotation_slots: usize,
     pub rarities: IndexMap<String, RarityDef>,
     pub rarities_json: Value,
     pub rarity_order: Vec<String>,
@@ -328,7 +330,7 @@ pub struct BuiltinCrate {
 }
 
 pub const CRATE_FIELDS: &[&str] =
-    &["name", "short", "code", "emoji", "color1", "color2", "price", "desc", "shop", "restricted", "weights", "variants"];
+    &["name", "short", "code", "emoji", "color1", "color2", "price", "desc", "shop", "mode", "seasonFrom", "seasonTo", "restricted", "weights", "variants"];
 
 /// round(x, nd) z Pythona (zaokrąglenie dokładnej wartości dziesiętnej)
 pub fn py_round(x: f64, nd: usize) -> f64 {
@@ -452,6 +454,7 @@ impl GameData {
             money_chests_json: v("moneyChests"),
             daily_streak: get(&raw, "dailyStreak")?,
             showcase_size: get(&raw, "showcaseSize")?,
+            rotation_slots: raw.get("crateRotation").and_then(|r| r.get("slots")).and_then(Value::as_u64).unwrap_or(2) as usize,
             rarities,
             rarities_json,
             rarity_order,

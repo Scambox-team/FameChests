@@ -819,6 +819,9 @@
  },
  "dailyStreak": 7,
  "showcaseSize": 6,
+ "crateRotation": {
+  "slots": 2
+ },
  "rarities": {
   "green": {
    "name": "Zwykła",
@@ -1144,6 +1147,7 @@
    "color2": "#1b1712",
    "price": 1000000,
    "shop": false,
+   "mode": "offshop",
    "restricted": false,
    "desc": "za wygraną białymi: karta w wariancie Biała i skin do figury",
    "people": [],
@@ -1158,6 +1162,7 @@
    "color2": "#f2e9d8",
    "price": 1000000,
    "shop": false,
+   "mode": "offshop",
    "restricted": false,
    "desc": "za wygraną czarnymi: karta w wariancie Czarna i skin do figury. Karty te same co w Skrzynce Białych",
    "people": [],
@@ -1172,6 +1177,7 @@
    "color2": "#dc143c",
    "price": 100,
    "shop": true,
+   "mode": "fixed",
    "restricted": false,
    "desc": "polskie gwiazdy, politycy i sportowcy",
    "people": [
@@ -3784,6 +3790,16 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 21,
+   "date": "2026-11-03",
+   "title": "Rotacja skrzynek i nowe questy",
+   "items": [
+    "🔄 Część skrzynek jest teraz w <b>codziennej rotacji</b>: o północy sklep losuje, które z nich są dziś do kupienia. Skrzynka Polska jest zawsze.",
+    "📅 Skrzynki <b>sezonowe</b> są w sklepie tylko w swoim terminie. Kupione wcześniej skrzynki zawsze możesz otworzyć.",
+    "🎯 Quest trwa teraz 24 godziny, a gdy ktoś go wykona, nowy pojawia się 6 godzin później. Widać też, o której quest został wykonany."
+   ]
+  },
   {
    "v": 20,
    "date": "2026-11-01",

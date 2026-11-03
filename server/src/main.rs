@@ -140,6 +140,22 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
             arena.inner.lock().await.cleanup();
         }
     });
+    // nowy dzień: katalog od nowa - rotacja skrzynek i sezony w sklepie
+    let daily = st.clone();
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(Duration::from_secs(20));
+        let mut day = chrono::Local::now().date_naive();
+        loop {
+            tick.tick().await;
+            let now = chrono::Local::now().date_naive();
+            if now != day {
+                match daily.refresh_catalog().await {
+                    Ok(()) => day = now,
+                    Err(e) => tracing::warn!("katalog na nowy dzień: {e:#}"),
+                }
+            }
+        }
+    });
 
     let app = routes::router(st.clone())
         .route("/static/{*path}", axum::routing::get(assets::serve_static))

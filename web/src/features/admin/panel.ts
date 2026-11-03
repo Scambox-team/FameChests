@@ -18,6 +18,21 @@ export function startPanel() {
   // zakładka Szachy (/admin/chess): ta sama strona, tylko skrzynki szachów i skiny; zwykła zakładka ich nie pokazuje
   const CHESS_TAB = location.pathname === "/admin/chess", CHESS_CRATES = ["szachy", "szachy_czarne"];
   const tabCrates = () => A.cat.crates.filter(c => CHESS_CRATES.includes(c.id) === CHESS_TAB);
+  // tryby skrzynki (catalog::CRATE_MODES): [klucz, nazwa, opis]
+  const CRATE_MODES = [
+    ["fixed", "Stała", "zawsze w sklepie"],
+    ["rotation", "Rotacyjna", "bierze udział w losowej codziennej rotacji (zmiana o północy)"],
+    ["seasonal", "Sezonowa", "w sklepie od wybranego dnia do wybranego dnia"],
+    ["offshop", "Poza sklepem", "zdobywa się ją inaczej niż w sklepie (np. skrzynki szachów)"],
+    ["disabled", "Wyłączona", "przeznaczona do sklepu, ale teraz jej tam nie ma"],
+  ];
+  const modeName = m => (CRATE_MODES.find(x => x[0] === m) || CRATE_MODES[1])[1];
+  const crateModeBadge = c => {
+    const name = modeName(c.mode);
+    if (c.mode === "rotation") return `<i class="${c.shop ? "own" : ""}">${name}${c.shop ? " · dziś w sklepie" : " · dziś poza"}</i>`;
+    if (c.mode === "seasonal") return `<i class="${c.shop ? "own" : "mod"}">${name} ${esc(c.seasonFrom)} – ${esc(c.seasonTo)}</i>`;
+    return `<i class="${c.shop ? "" : "hid"}">${name}</i>`;
+  };
   document.body.classList.toggle("a-chess", CHESS_TAB);
   try { A.showSecrets = localStorage.getItem("adminSecrets") === "1"; } catch (_) {}
   
@@ -87,7 +102,7 @@ export function startPanel() {
         <span class="a-crate-ico">${crateIconSvg(c.emoji)}</span>
         <span class="a-crate-txt"><b>${esc(c.name)}</b>
           <small>${c.hidden ? "ukryta" : `${counts[c.id] || 0} kart · ${fmt(c.price)}`}${c.builtin ? " · wbudowana" : " · własna"}${c.modified ? " · zmieniona" : ""}</small>
-          <span class="a-badges">${!c.hidden && !c.shop ? '<i class="hid">poza sklepem</i>' : ""}${c.restricted ? `<i class="mod">dla wybranych (${(c.allowed || []).length})</i>` : ""}</span></span>
+          <span class="a-badges">${!c.hidden && !c.special ? crateModeBadge(c) : ""}${c.restricted ? `<i class="mod">dla wybranych (${(c.allowed || []).length})</i>` : ""}</span></span>
       </button>`).join("");
   }
   
@@ -115,7 +130,12 @@ export function startPanel() {
         Karty z niej gracze dostają tylko w kasynie albo z linku od admina. Dodaj tu kartę z rzadkością „Specjalna”.</p>` : ""}
       <fieldset ${c.special ? "hidden" : ""}>
         <legend>Sklep i dostęp</legend>
-        <label class="chk"><input type="checkbox" name="shop" ${c.shop !== false ? "checked" : ""}> Dostępna w sklepie (można ją kupić)</label>
+        <div class="a-modes">${CRATE_MODES.map(([m, name, desc]) => `<label class="chk"><input type="radio" name="mode" value="${m}" ${(c.mode || "rotation") === m ? "checked" : ""}>
+          <b>${name}</b> <span class="muted small">· ${desc}</span></label>`).join("")}</div>
+        <div class="a-grid a-season" ${c.mode === "seasonal" ? "" : "hidden"}>
+          <label>Od (włącznie)<input type="date" name="seasonFrom" value="${esc(c.seasonFrom || "")}"></label>
+          <label>Do (włącznie)<input type="date" name="seasonTo" value="${esc(c.seasonTo || "")}"></label>
+        </div>
         <label class="chk"><input type="checkbox" name="restricted" ${c.restricted ? "checked" : ""}> Tylko dla wybranych graczy</label>
         <div class="a-allowed" ${c.restricted ? "" : "hidden"}>
           <div class="muted small">Gracze, którzy mogą kupować tę skrzynkę (admini mogą zawsze):</div>
@@ -152,7 +172,7 @@ export function startPanel() {
   function renderCrateForm() {
     const c = A.crate === "__new"
       ? { name: "", short: "", code: "", emoji: "📦", color1: "#ffcf3f", color2: "#7a3b00", price: A.cat.defaultPrice, desc: "",
-          shop: true, restricted: false, customWeights: {}, allowed: [], variants: [] }
+          shop: true, mode: "rotation", restricted: false, customWeights: {}, allowed: [], variants: [] }
       : A.cat.crates.find(x => x.id === A.crate);
     $("#crateForm").innerHTML = c ? crateFormHTML(c) : "<p class='muted'>Wybierz albo utwórz skrzynkę.</p>";
     $("#newCard").disabled = !c || A.crate === "__new" || c.hidden;
@@ -548,8 +568,10 @@ export function startPanel() {
     try { d = await api("/api/admin/quests"); } catch (e) { return toast(e.message, true); }
     $("#questOn").checked = d.enabled;
     $("#questReroll").hidden = !d.enabled;
-    $("#questInfo").innerHTML = `Można teraz wylosować ${d.cards} kart, ${d.variants} rzadkich wariantów.` + (d.history.length ? `<ul>${d.history.map(q =>
-      `<li><b>${esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr)` : "nikt"}</li>`).join("")}</ul>` : "");
+    $("#questReroll").disabled = d.done;
+    const next = d.nextAt ? `${d.done ? "Quest wypełniony, następny" : "Następny quest"} ${msgWhen(d.nextAt)}. ` : "";
+    $("#questInfo").innerHTML = next + `Można teraz wylosować ${d.cards} kart, ${d.variants} rzadkich wariantów.` + (d.history.length ? `<ul>${d.history.map(q =>
+      `<li><b>${q.startsAt ? msgWhen(q.startsAt) : esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr${q.wonAt ? `, wykonał(a) ${msgWhen(q.wonAt)}` : ""})` : "nikt"}</li>`).join("")}</ul>` : "");
   }
   
   async function saveQuests(body, msg) {
@@ -800,7 +822,7 @@ export function startPanel() {
       } catch (err) { toast(err.message, true); }
     });
     $("#questOn").addEventListener("change", e => saveQuests({ enabled: e.target.checked }, e.target.checked ? "Questy włączone" : "Questy wyłączone"));
-    $("#questReroll").addEventListener("click", () => saveQuests({ reroll: true }, "Nowy cel na dziś"));
+    $("#questReroll").addEventListener("click", () => saveQuests({ reroll: true }, "Nowy cel questa"));
     $("#horseRows").addEventListener("click", e => {
       const b = e.target.closest("[data-hreset]"); if (!b) return;
       const row = b.closest("[data-horse]"), def = A.horses.defaults[+row.dataset.horse];
@@ -890,6 +912,7 @@ export function startPanel() {
     // podgląd skrzynki na żywo
     $("#crateForm").addEventListener("change", e => {
       if (e.target.name === "restricted") $(".a-allowed").hidden = !e.target.checked;
+      if (e.target.name === "mode") $(".a-season").hidden = e.target.value !== "seasonal";
     });
     $("#crateForm").addEventListener("input", e => {
       if (!["color1", "color2", "emoji"].includes(e.target.name)) return;
@@ -903,7 +926,6 @@ export function startPanel() {
       e.preventDefault();
       const fd = new FormData(e.target);
       const data = Object.fromEntries(fd);
-      data.shop = fd.has("shop");
       data.restricted = fd.has("restricted");
       data.allowed = fd.getAll("allowed").map(Number);
       data.variants = fd.getAll("variants");

@@ -195,7 +195,8 @@ CREATE TABLE IF NOT EXISTS card_scratched (
     item_id BIGINT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
     at DOUBLE PRECISION NOT NULL
 );
--- codzienny quest: person_id albo variant = cel; winner_id = kto pierwszy go wypełnił
+-- quest: person_id albo variant = cel; winner_id = kto pierwszy go wypełnił. Klucz `day`: dawniej dzień (RRRR-MM-DD),
+-- teraz kolejny numer (q1, q2...); quest trwa od starts_at do ends_at (24 h), po wypełnieniu następny po 6 h
 CREATE TABLE IF NOT EXISTS daily_quests (
     day TEXT PRIMARY KEY,
     person_id TEXT,
@@ -205,6 +206,8 @@ CREATE TABLE IF NOT EXISTS daily_quests (
     won_person TEXT,
     money BIGINT NOT NULL DEFAULT 0
 );
+ALTER TABLE daily_quests ADD COLUMN IF NOT EXISTS starts_at DOUBLE PRECISION;
+ALTER TABLE daily_quests ADD COLUMN IF NOT EXISTS ends_at DOUBLE PRECISION;
 CREATE TABLE IF NOT EXISTS horse_settings (
     horse INTEGER PRIMARY KEY, name TEXT NOT NULL DEFAULT '', pays DOUBLE PRECISION NOT NULL DEFAULT 0
 );
