@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { PickTile } from '../../cards/PickTile';
 import type { RouletteScene } from '../../three/rouletteScene';
 import { api } from '../../api/client';
 import { announceFirsts } from '../../game/actions';
@@ -10,6 +11,7 @@ import { S, touch, useGame } from '../../game/store';
 import { fmt, sleep } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
+import { Modal } from '../../ui/Modal';
 import { toast } from '../../ui/Toaster';
 import { CardPicker, SpecialHint, WonCards } from './parts';
 import { addDuplicates, betOk, CS, csItems, csPct, csStake, dropMissing, isVabank, settleRound, specialChance, togglePick } from './state';
@@ -105,6 +107,7 @@ export function Roulette() {
   const game = useGame();
   const rot = useRef<HTMLDivElement>(null), ball = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), spot = useRef<HTMLDivElement>(null);
   const { scene, flat } = useWheel3d(canvas, spot);
+  const [picking, setPicking] = useState(false);
   const orbit = useOrbit(scene);
   dropMissing(CS.sel);
   const spinning = !!game.spinning, max = game.cfg.roulette.maxCards;
@@ -196,16 +199,32 @@ export function Roulette() {
             <span>Szansa: <b>{csPct(bet.numbers.length / 37)}</b></span>
             {stake > 0 && <SpecialHint chance={specialChance(stake * bet.pays)} />}
           </div>
+          <div className="rl-stake">
+            <div className="rl-stake-head">
+              <span>{CS.sel.size ? <>Postawione karty: <b>{isVabank(CS.sel.size, max) ? `VA BANK, ${CS.sel.size}` : `${CS.sel.size}/${max}`}</b> · {fmt(stake)}</> : <span className="muted">Nie wybrano jeszcze kart do postawienia.</span>}</span>
+              <Button disabled={spinning} onClick={() => { Sound.click(); setPicking(true); }}><Plus size={16} aria-hidden="true" />Dodaj karty</Button>
+            </div>
+            {CS.sel.size > 0 && <div className="pick-grid rl-sel">
+              {csItems().filter(i => CS.sel.has(i.id)).map(i => <PickTile key={i.id} item={i} selected onClick={spinning ? undefined : () => togglePick(CS.sel, i.id, max)} />)}
+            </div>}
+          </div>
           <Button kind="hue" big className="rl-spin" disabled={!CS.sel.size || spinning} onClick={spin}>Zakręć{stake ? `, stawka ${fmt(stake)}` : ''}</Button>
           <p className="muted small">Wygrana: twoje karty zostają, a dostajesz losowe karty o wartości stawki × wypłata (przy większych wygranych w droższych wariantach, końcówka w groszach). Przegrana: postawione karty przepadają.</p>
         </div>
-        <CardPicker set={CS.sel} zone="rl" max={max} q={CS.q} disabled={spinning}
-          onQ={q => { CS.q = q; touch(); }}
-          onPick={id => togglePick(CS.sel, id, max)}
-          onDupes={() => { const ids = addDuplicates([...CS.sel], max, 'rl'); if (ids) { CS.sel = new Set(ids); Sound.click(); touch(); } }}
-          onVabank={() => { CS.sel = new Set(csItems().map(i => i.id)); Sound.click(); touch(); }}
-          onClear={() => { CS.sel.clear(); touch(); }} />
       </div>
+      {picking && (
+        <Modal title="Dodaj karty do stawki" onClose={() => setPicking(false)} huge>
+          <div className="rl-picker">
+            <CardPicker set={CS.sel} zone="rl" max={max} q={CS.q} disabled={spinning}
+              onQ={q => { CS.q = q; touch(); }}
+              onPick={id => togglePick(CS.sel, id, max)}
+              onDupes={() => { const ids = addDuplicates([...CS.sel], max, 'rl'); if (ids) { CS.sel = new Set(ids); Sound.click(); touch(); } }}
+              onVabank={() => { CS.sel = new Set(csItems().map(i => i.id)); Sound.click(); touch(); }}
+              onClear={() => { CS.sel.clear(); touch(); }} />
+          </div>
+          <Button kind="hue" big onClick={() => setPicking(false)}>Gotowe{CS.sel.size ? `, stawka ${fmt(stake)}` : ''}</Button>
+        </Modal>
+      )}
     </div>
   );
 }

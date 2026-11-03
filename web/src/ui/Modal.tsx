@@ -8,9 +8,11 @@ interface Props {
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  /** bardzo duże okno (wybór kart) */
+  huge?: boolean;
 }
 
-export function Modal({ title, onClose, children, wide }: Props) {
+export function Modal({ title, onClose, children, wide, huge }: Props) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', key);
@@ -19,7 +21,7 @@ export function Modal({ title, onClose, children, wide }: Props) {
 
   return createPortal(
     <div className={styles.back} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <section className={`${styles.box}${wide ? ` ${styles.wide}` : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+      <section className={`${styles.box}${wide ? ` ${styles.wide}` : ''}${huge ? ` ${styles.huge}` : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <header className={styles.head}>
           <h2>{title}</h2>
           <button className={styles.close} type="button" aria-label="Zamknij" onClick={onClose}><X size={18} strokeWidth={1.8} /></button>

@@ -205,16 +205,13 @@
   .cs-page .rl-left { position: static; }
   .cs-stage { max-width: 600px; margin-inline: auto; }
 }
-/* Ruletka na szerokim ekranie: koło | stół | karty do postawienia. Karty to osobny panel z własnym przewijaniem, a baner
-   strony jest niższy, żeby wszystko mieściło się na ekranie i nie trzeba było zjeżdżać w dół po karty. */
-@media (min-width: 1360px) {
-  .cs-page .rl-cols { grid-template-columns: minmax(300px, 400px) minmax(0, 1fr) minmax(300px, 360px); align-items: start; }
-  .cs-page .rl-right { display: contents; }
-  .cs-page .rl-cols .cs-pick { position: sticky; top: 72px; display: flex; flex-direction: column; min-height: 360px; max-height: calc(100vh - 290px); }
-  .cs-page .rl-cols .cs-pick .cs-grid { flex: 1; min-height: 0; max-height: none; }
-  .cs-page:has(.rl-cols) > section:first-child { padding-block: 14px; min-height: 0; }
-  .cs-page:has(.rl-cols) > section:first-child p, .cs-page:has(.rl-cols) > section:first-child svg { display: none; }
-}
+/* Ruletka: karty na stawkę wybiera się w dużym oknie (przycisk „Dodaj karty”), na stronie zostaje tylko podsumowanie */
+.rl-stake { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-s); background: var(--raised); margin: 4px 0; }
+.rl-stake-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rl-stake-head b { color: var(--text); }
+.rl-sel { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: 148px; overflow-y: auto; }
+.rl-picker .cs-pick { background: none; padding: 0; box-shadow: none; border: 0; }
+.rl-picker .cs-grid { max-height: calc(100vh - 330px); min-height: 260px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
 @media (max-width: 560px) {
   .cs-games { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .cs-game { min-height: 54px; padding: 10px; gap: 8px; }
