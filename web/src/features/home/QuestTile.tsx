@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Timer, Trophy } from 'lucide-react';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
-import { person, variantName } from '../../game/rules';
+import { crateOf, person, variantName } from '../../game/rules';
 import { useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
 import s from './home.module.css';
@@ -69,6 +69,7 @@ export function QuestTile() {
             <>
               <h2 className={s.name}>{target ? target.name : 'Dowolna karta'}{q.variant ? <span className={s.qVariant}> · {variantName(q.variant)}</span> : null}</h2>
               <p className={s.lead}>Zdobądź tę kartę ze skrzynki, kuźni lub kasyna. Kto pierwszy, dostaje ją w wariancie {variantName('wanted')}{q.reward ? ` i ${fmt(q.reward)}` : ''}.</p>
+              {!!q.crates?.length && <p className={s.where}>Wypada ze skrzynek: {q.crates.map((id: string) => crateOf(id)?.short ?? id).join(', ')}.</p>}
             </>
           ) : q.mine ? (
             <p className={`${s.lead} ${s.won}`}><Trophy size={16} aria-hidden="true" />Quest jest twój: {person(q.wonPerson || q.person).name} w wariancie {variantName('wanted')} i {fmt(q.money)}.</p>

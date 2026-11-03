@@ -116,6 +116,17 @@ fn candidates(cat: &Catalog) -> Vec<(String, bool, Vec<String>)> {
     out
 }
 
+/// Skrzynki z teraz otwartego sklepu (dla wszystkich graczy), z których ta karta w tym wariancie naprawdę może wypaść
+fn drop_crates<'a>(cat: &'a Catalog, pid: &str, variant: Option<&str>) -> Vec<&'a Crate> {
+    let Some(p) = cat.person(pid) else { return vec![] };
+    cat.crates
+        .values()
+        .filter(|c| c.shop && !c.restricted && p.crates.contains(&c.id))
+        .filter(|c| card_odds(cat, c, p) >= MIN_ODDS)
+        .filter(|c| variant.is_none_or(|v| cat.drop_variants(c, Some(p)).0.iter().any(|x| x == v)))
+        .collect()
+}
+
 /// Cel questa: konkretna karta; epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (losowo)
 fn pick(cat: &Catalog) -> Option<(Option<String>, Option<String>)> {
     let list = candidates(cat);
@@ -144,8 +155,18 @@ async fn current(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<QuestRow>> 
     }
     let prev = latest(&mut *c).await?;
     let now = now();
-    if prev.as_ref().is_some_and(|r| now < r.next_at()) {
-        return Ok(prev);
+    if let Some(r) = prev.as_ref().filter(|r| now < r.next_at()) {
+        // quest musi dać się wykonać w sklepie: gdy cel zniknął (rotacja skrzynek, zmiana liczby skrzynek, wyłączony
+        // wariant), zamykamy go i losujemy nowy - dopóki ktoś go nie wykonał
+        let possible = r.person_id.as_deref().is_none_or(|p| !drop_crates(cat, p, r.variant.as_deref()).is_empty());
+        if r.winner_id.is_some() || possible {
+            return Ok(prev);
+        }
+        sqlx::query("UPDATE daily_quests SET ends_at = $1 WHERE day = $2 AND winner_id IS NULL")
+            .bind(now)
+            .bind(&r.day)
+            .execute(&mut *c)
+            .await?;
     }
     let Some((person, variant)) = pick(cat) else { return Ok(None) };
     sqlx::query(
@@ -171,6 +192,8 @@ pub struct QuestView {
     reward: Option<i64>,
     done: bool,
     mine: bool,
+    /// skrzynki ze sklepu (id), z których cel teraz wypada
+    crates: Vec<String>,
     winner: Option<String>,
     won_person: Option<String>,
     money: i64,
@@ -194,6 +217,10 @@ async fn view(c: &mut Conn, cat: &Catalog, r: QuestRow, uid: i64) -> sqlx::Resul
         reward: r.person_id.as_deref().and_then(|p| reward_for(cat, p)),
         done: r.winner_id.is_some(),
         mine: r.winner_id == Some(uid),
+        crates: match (&r.person_id, r.winner_id) {
+            (Some(p), None) => drop_crates(cat, p, r.variant.as_deref()).iter().map(|c| c.id.clone()).collect(),
+            _ => vec![],
+        },
         next_at: r.next_at(),
         day: r.day,
         person: r.person_id,
@@ -329,4 +356,21 @@ pub async fn admin_quests_save(State(st): State<AppState>, Admin(me): Admin, Jso
     }
     tx.commit().await?;
     ok(json!({"ok": true}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quest_target_must_drop_from_the_shop() {
+        let cat = crate::catalog::build(&[], &[]);
+        // karta ze stałej Skrzynki Polskiej (zawsze w sklepie) wypada z niej
+        let from = drop_crates(&cat, "pl_lewandowski", None);
+        assert!(from.iter().all(|c| c.shop && !c.restricted) && from.iter().any(|c| c.id == "pl"));
+        // nieznanej karty nie da się zdobyć; karty z ukrytej skrzynki kart specjalnych też nie
+        assert!(drop_crates(&cat, "nie_ma_takiej", None).is_empty());
+        // wariant, którego skrzynka nie wylosuje, nie jest możliwy
+        assert!(drop_crates(&cat, "pl_lewandowski", Some("wariant_ktorego_nie_ma")).is_empty());
+    }
 }

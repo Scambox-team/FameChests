@@ -129,5 +129,6 @@ a.casino:hover .wheel i { animation-duration: 4s; }
 @media (prefers-reduced-motion: reduce) { .crate.main, .poster, .wheel i { animation: none; } }
 .quest .name, .games .name, .casino .name { font-size: 24px; }
 .quest .lead, .games .lead, .casino .lead { font-size: 15px; }
+.where { margin: 0; color: var(--faint); font-size: 13px; }
 .timer { white-space: nowrap; flex-wrap: wrap; }
 .empty { justify-self: stretch; padding: 0 24px; text-align: center; text-wrap: balance; }
