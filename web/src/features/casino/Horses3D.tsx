@@ -49,6 +49,7 @@ export function Horses3D({ onFail }: { onFail: () => void }) {
       <i className="hr3-speed" style={{ opacity: hud?.fx ?? 0 }} />
       <i className="hr3-flash" style={{ opacity: (hud?.flash ?? 0) * .7 }} />
       {mode === 'fpv' && <i className="hr3-vignette" />}
+      {mode === 'fpv' && <img className="hr3-hand" src="/static/img/horse_hand.png" alt="" draggable={false} />}
       <div className="hr3-cams" role="group" aria-label="Kamera">
         {CAMS.map(({ id, label, icon: I }) => <button key={id} type="button" className={mode === id ? 'on' : ''} aria-pressed={mode === id} onClick={() => pick(id)}><I size={15} aria-hidden="true" />{label}</button>)}
       </div>
