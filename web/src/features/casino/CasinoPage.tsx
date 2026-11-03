@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Dices } from 'lucide-react';
+import { ChevronsUp, Cherry, Dices, Disc3, Flag, Spade, Swords, type LucideIcon } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 import { S, touch, useGame } from '../../game/store';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
-import { Tabs } from '../../ui/Field';
 import { Blackjack } from './Blackjack';
 import { Horses } from './Horses';
 import { Jackpot } from './Jackpot';
@@ -14,8 +13,21 @@ import { CS } from './state';
 import { Upgrade } from './Upgrade';
 import './casino.css';
 import './casino-theme.css';
+import './casino-fx.css';
 
-const GAMES = [['roulette', 'Ruletka'], ['blackjack', 'Blackjack'], ['slots', 'Jednoręki bandyta'], ['horses', 'Wyścigi konne'], ['upgrade', 'Ulepszacz'], ['jackpot', 'Jackpot (2 graczy)']].map(([id, label]) => ({ id, label }));
+const GAMES: { id: string; label: string; sub: string; icon: LucideIcon }[] = [
+  { id: 'roulette', label: 'Ruletka', sub: 'Czerwone, czarne, numer', icon: Disc3 },
+  { id: 'blackjack', label: 'Blackjack', sub: 'Do 21 z krupierem', icon: Spade },
+  { id: 'slots', label: 'Jednoręki bandyta', sub: 'Trzy bębny, jedna linia', icon: Cherry },
+  { id: 'horses', label: 'Wyścigi konne', sub: 'Obstaw konia', icon: Flag },
+  { id: 'upgrade', label: 'Ulepszacz', sub: 'Mnożnik w ciemno', icon: ChevronsUp },
+  { id: 'jackpot', label: 'Jackpot', sub: 'Pojedynek 2 graczy', icon: Swords }
+];
+
+/** Wyścigi wyłączone w game.json (`horseRace.enabled: false`) */
+const horsesOn = () => S.cfg.horses?.race?.enabled !== false;
+/** Wyłączone wyścigi widzi admin (i tryb dev) jako podgląd testowy bez zakładów */
+const horsesVisible = () => horsesOn() || !!S.me?.isAdmin || import.meta.env.DEV;
 
 /** Wyjście z kasyna po przegranej: pytamy, czy na pewno */
 function LeaveGuard() {
@@ -53,6 +65,7 @@ function LeaveGuard() {
 export function CasinoPage() {
   const game = useGame();
   useEffect(() => { document.title = 'Kasyno · ScamBox'; }, []);
+  const games = GAMES.filter(g => g.id !== 'horses' || horsesVisible()).map(g => g.id === 'horses' && !horsesOn() ? { ...g, sub: 'Podgląd 3D (test)' } : g);
   const pick = (t: string) => {
     if (S.spinning || t === CS.tab) return;
     CS.tab = t;
@@ -60,17 +73,22 @@ export function CasinoPage() {
     touch();
   };
   return (
-    <>
-      <PageHero icon={Dices} title="Graj kartami" lead="Stawką są twoje karty. Wygrana daje losowe karty o wartości stawki razy mnożnik, przegrana zabiera postawione. Ulubionych i specjalnych nie da się postawić.">
-        <Tabs label="Gry" value={CS.tab} onChange={pick} items={GAMES.map(g => ({ ...g, disabled: !!game.spinning }))} />
-      </PageHero>
+    <div className="cs-page">
+      <PageHero icon={Dices} title="Graj kartami" lead="Stawką są twoje karty. Wygrana daje losowe karty o wartości stawki razy mnożnik, przegrana zabiera postawione. Ulubionych i specjalnych nie da się postawić." />
+      <nav className="cs-games" aria-label="Gry">
+        {games.map(({ id, label, sub, icon: Icon }) => (
+          <button key={id} type="button" className={`cs-game${CS.tab === id ? ' on' : ''}`} aria-pressed={CS.tab === id} disabled={!!game.spinning && CS.tab !== id} onClick={() => pick(id)}>
+            <Icon strokeWidth={1.6} aria-hidden="true" /><span><b>{label}</b><small>{sub}</small></span>
+          </button>
+        ))}
+      </nav>
       {CS.tab === 'roulette' && <Roulette />}
       {CS.tab === 'blackjack' && <Blackjack />}
       {CS.tab === 'slots' && <Slots />}
-      {CS.tab === 'horses' && <Horses />}
+      {CS.tab === 'horses' && horsesVisible() && <Horses />}
       {CS.tab === 'upgrade' && <Upgrade />}
       {CS.tab === 'jackpot' && <Jackpot />}
       <LeaveGuard />
-    </>
+    </div>
   );
 }

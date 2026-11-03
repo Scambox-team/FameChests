@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { SlotsScene } from '../../three/slotsScene';
 import { Bell, Cherry, Citrus, Gem, Star, type LucideIcon } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { api } from '../../api/client';
@@ -22,6 +23,34 @@ const symHTML = (() => {
   return (id: string) => cache[id] ??= `<i class="sl-sym sl-${id}">${ICONS[id] ? renderToStaticMarkup(<span className="sl-ic">{(() => { const I = ICONS[id]; return <I size="1em" strokeWidth={1.8} />; })()}</span>) : '7'}</i>`;
 })();
 
+// kolory symboli jak w casino-theme.css (.sl-cherry itd.)
+const COLORS: Record<string, string> = { cherry: '#e5484d', lemon: '#f5c518', bell: '#e5a93b', star: '#ffd76a', diamond: '#55c7ff', seven: '#ff5cf0' };
+const hueNow = () => getComputedStyle(document.documentElement).getPropertyValue('--hue').trim() || '#e0264a';
+
+/** Automat 3D (Three.js wczytuje się dopiero tutaj); bez WebGL zostaje płaski automat z DOM-u */
+function useMachine3d(canvas: React.RefObject<HTMLCanvasElement | null>) {
+  const scene = useRef<SlotsScene | null>(null);
+  const [state, setState] = useState<'load' | '3d' | 'flat'>('load');
+  useEffect(() => {
+    let alive = true;
+    const syms = S.cfg.slots.symbols.map((s: any) => {
+      const I = ICONS[s.id];
+      return { id: s.id, color: COLORS[s.id] ?? '#fff', svg: I ? renderToStaticMarkup(<I size={176} color={COLORS[s.id]} strokeWidth={1.7} xmlns="http://www.w3.org/2000/svg" />) : undefined };
+    });
+    const weights = Object.fromEntries(S.cfg.slots.symbols.map((s: any) => [s.id, s.weight]));
+    import('../../three/slotsScene').then(({ createSlotsScene }) => {
+      if (!alive || !canvas.current) return;
+      return createSlotsScene(canvas.current, syms, weights, hueNow()).then(sc => {
+        if (!alive) return sc.destroy();
+        scene.current = sc;
+        setState('3d');
+      });
+    }).catch(() => { if (alive) setState('flat'); });
+    return () => { alive = false; scene.current?.destroy(); scene.current = null; };
+  }, []);
+  return { scene, state };
+}
+
 function Sym({ id }: { id: string }) {
   return <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: symHTML(id) }} />;
 }
@@ -43,21 +72,14 @@ export function Slots() {
   const SL = CS.sl, C = game.cfg.slots, spinning = !!game.spinning;
   const machine = useRef<HTMLDivElement>(null);
   const strips = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { scene, state } = useMachine3d(canvas);
+  useEffect(() => { scene.current?.setHue(hueNow()); scene.current?.setArmed(SL.sel.size > 0 && !game.spinning); });
   dropMissing(SL.sel);
   SL.reels ||= [0, 1, 2].map(() => strip(random(), ROWS));
   const stake = csStake(SL.sel), last = SL.last, armed = SL.sel.size > 0 && !spinning;
 
-  const spin = async () => {
-    if (S.spinning || !SL.sel.size) return;
-    const ids = [...SL.sel];
-    if (!betOk(ids, stake, C.maxCards, `Postawić ${ids.length} ${plural(ids.length, 'kartę', 'karty', 'kart')} o wartości ${fmt(stake)}?`)) return;
-    S.spinning = true;
-    touch();
-    Sound.unlock();
-    let res: any;
-    try { res = await api('/api/casino/slots', { ids, vabank: isVabank(ids.length, C.maxCards) }); }
-    catch (e: any) { S.spinning = false; Sound.error(); toast(e.message, true); return touch(); }
-    const fast = !!S.fast, full: string[][] = res.reels.map((r: string) => strip(r));
+  const spinFlat = async (full: string[][], fast: boolean) => {
     const els = strips.map(s => s.current!);
     els.forEach((el, k) => { el.innerHTML = full[k].map(symHTML).join(''); });
     const symH = els[0].firstElementChild!.getBoundingClientRect().height, endY = -(STRIP - ROWS) * symH;
@@ -78,6 +100,21 @@ export function Slots() {
       };
       requestAnimationFrame(frame);
     });
+  };
+
+  const spin = async () => {
+    if (S.spinning || !SL.sel.size || (state === 'load' && !scene.current)) { scene.current?.setPull(0); return; }
+    const ids = [...SL.sel];
+    if (!betOk(ids, stake, C.maxCards, `Postawić ${ids.length} ${plural(ids.length, 'kartę', 'karty', 'kart')} o wartości ${fmt(stake)}?`)) { scene.current?.setPull(0); return; }
+    S.spinning = true;
+    touch();
+    Sound.unlock();
+    let res: any;
+    try { res = await api('/api/casino/slots', { ids, vabank: isVabank(ids.length, C.maxCards) }); }
+    catch (e: any) { S.spinning = false; scene.current?.setPull(0); Sound.error(); toast(e.message, true); return touch(); }
+    const fast = !!S.fast, full: string[][] = res.reels.map((r: string) => strip(r));
+    if (scene.current) await scene.current.spin(res.reels, { fast, onTick: (_, k) => Sound.tick(k), onStop: () => Sound.land('blue') });
+    else await spinFlat(full, fast);
     SL.last = res;
     SL.history = [{ reels: res.reels, win: res.win }, ...SL.history].slice(0, 12);
     SL.reels = full.map(x => x.slice(-ROWS));
@@ -85,6 +122,7 @@ export function Slots() {
     if (res.win) {
       if (res.pays >= 14) Sound.jackpot(); else Sound.win();
       machine.current?.classList.add('won');
+      scene.current?.win(res.pays);
       confetti(['#ffcf3f', '#ff3b5c', '#fff', '#3ddc84'], res.pays >= 14 ? 240 : 110);
     } else Sound.fail();
     applyState(res.state);
@@ -95,6 +133,7 @@ export function Slots() {
     }
     await sleep(fast ? 150 : 500);
     S.spinning = false;
+    scene.current?.win(null);
     machine.current?.classList.remove('won');
     strips.forEach(s => { const el = s.current; if (el) { el.style.transform = ''; el.parentElement!.classList.remove('stop'); el.innerHTML = SL.reels![strips.indexOf(s)].map(symHTML).join(''); } });
     touch();
@@ -127,17 +166,49 @@ export function Slots() {
     lever.addEventListener('pointercancel', up);
   };
 
+  // dźwignia 3D: chwyć ją na scenie i pociągnij w dół
+  const grab3d = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const sc = scene.current, el = e.currentTarget;
+    if (!sc || S.spinning || !armed || !sc.hitLever(e.clientX, e.clientY)) return;
+    e.preventDefault();
+    const y0 = e.clientY;
+    let pull = 0;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('dragging');
+    const move = (ev: PointerEvent) => { pull = Math.max(0, Math.min(1, (ev.clientY - y0) / (TRAVEL * 1.4))); sc.setPull(pull); };
+    const up = () => {
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+      el.classList.remove('dragging');
+      if (pull >= PULL) { sc.setPull(1); Sound.click(); spin(); }
+      else { sc.setPull(0); if (pull > .1) toast('Pociągnij dźwignię do samego dołu'); }
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  };
+  const hover3d = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.buttons) return;
+    e.currentTarget.classList.toggle('grab', !!scene.current && armed && scene.current.hitLever(e.clientX, e.clientY));
+  };
+  const lever = <button type="button" className={`sl-lever${armed ? ' ready' : ''}${state !== 'flat' ? ' sl-lever-sr' : ''}`} title="Chwyć kulkę i pociągnij dźwignię w dół" aria-label="Dźwignia automatu (strzałka w dół)" disabled={!armed} onPointerDown={grab} onKeyDown={e => { if (e.key === 'ArrowDown' && armed) { e.preventDefault(); scene.current?.setPull(1); spin(); } }}><i /><b /></button>;
+
   return (
     <div className="rl-cols">
       <div className="panel rl-left">
-        <div ref={machine} className={`sl-machine${spinning ? ' spinning' : ''}`}>
+        {state === 'flat' ? <div ref={machine} className={`sl-machine${spinning ? ' spinning' : ''}`}>
           <div className="sl-top"><b>Jednoręki bandyta</b><span className="sl-bulbs" /></div>
           <div className="sl-window">
             {[0, 1, 2].map(k => <div key={k} className="sl-reel"><div className="sl-strip" ref={strips[k]} dangerouslySetInnerHTML={spinning ? undefined : { __html: SL.reels![k].slice(-ROWS).map(symHTML).join('') }} /></div>)}
             <i className="sl-line" />
           </div>
-          <button type="button" className={`sl-lever${armed ? ' ready' : ''}`} title="Chwyć kulkę i pociągnij dźwignię w dół" aria-label="Dźwignia automatu" disabled={!armed} onPointerDown={grab} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); spin(); } }}><i /><b /></button>
-        </div>
+          {lever}
+        </div> : <div className={`cs-stage sl-stage${spinning ? ' busy' : ''}${armed ? ' armed' : ''}`}>
+          <canvas ref={canvas} aria-label="Automat do gry" onPointerDown={grab3d} onPointerMove={hover3d} />
+          {armed && <span className="sl-pull-hint">Chwyć dźwignię i pociągnij w dół</span>}
+          {lever}
+        </div>}
         <div className="rl-result">
           {last ? <>
             <div className={`rl-res ${last.win ? 'win' : 'lose'}`}>

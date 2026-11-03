@@ -1,6 +1,5 @@
 Dźwięki z freesound.org na licencji CC0 1.0 (domena publiczna). Podglądy HQ (mp3), nazwy plików zmienione na potrzeby gry.
 
-fs-open.mp3  freesound.org/s/771164  "Treasure Chest Open by steprock" (steprock)
 fs-open-2.mp3  freesound.org/s/423518  "Loot box open.wav by NeoSpica" (NeoSpica)
 fs-tick.mp3  freesound.org/s/54405  "Button Click.wav by KorgMS2000B" (KorgMS2000B)
 fs-land.mp3  freesound.org/s/84322  "flipCard.wav by Splashdust" (Splashdust)

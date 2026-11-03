@@ -294,11 +294,19 @@ impl HorseRequest {
     }
 }
 
+/// Wyścigi wyłączone w game.json (`horseRace.enabled: false`): nowych zakładów nie przyjmujemy, stare rozliczają się normalnie
+fn horses_enabled() -> bool {
+    g().horse_race.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true)
+}
+
 pub async fn casino_horses_bet(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<HorseRequest>) -> Res {
     let cx = Ctx::new(st, me);
     let r = rules();
     let mut tx = cx.st.db.begin().await?;
     lock_me(&mut tx, cx.uid()).await?;
+    if !horses_enabled() {
+        return bad("Wyścigi konne są chwilowo wyłączone");
+    }
     let horse = req.horse()?;
     stake_error(&mut tx, &cx, &req.ids, r.max_cards, req.vabank, 1).await?;
     let now = now();
@@ -410,6 +418,9 @@ pub async fn casino_horses_solo(State(st): State<AppState>, Me(me): Me, JsonBody
     let cx = Ctx::new(st, me);
     let mut tx = cx.st.db.begin().await?;
     lock_me(&mut tx, cx.uid()).await?;
+    if !horses_enabled() {
+        return bad("Wyścigi konne są chwilowo wyłączone");
+    }
     let horse = req.horse()?;
     stake_error(&mut tx, &cx, &req.ids, rules().max_cards, req.vabank, 1).await?;
     let rows = take_my_items(&mut tx, &cx.cat, cx.uid(), &req.ids, Use::Stake).await?;

@@ -1,0 +1,317 @@
+/* Kasyno nocą: wspólny wygląd wszystkich gier (wczytywany po casino.css i casino-theme.css).
+   Złoto --cs-gold, sukno --cs-felt, scena 3D w .cs-stage. Wyścigi konne mają własny wygląd i tu ich nie ruszamy. */
+.cs-page {
+  --cs-gold: #e0bd62;
+  --cs-gold-dk: #8a6a26;
+  --cs-felt: #0c5a34;
+  --cs-felt-dk: #06331d;
+  --cs-glow: color-mix(in srgb, var(--hue) 55%, #ffcf5a);
+  display: flex; flex-direction: column; gap: var(--gap);
+}
+
+/* ---------------------------------------------------------------- wybór gry */
+.cs-games { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.cs-game {
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 14px; overflow: hidden;
+  border: 0; border-radius: var(--radius-m); background: var(--surface); color: var(--muted); text-align: left;
+  transition: color .2s, background .2s, transform .2s cubic-bezier(.2, .9, .3, 1.4);
+}
+.cs-game::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, #ffffff1a, #ffffff05 40%, #ffffff12);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.cs-game svg { flex: none; width: 26px; height: 26px; color: var(--faint); transition: color .2s, transform .3s; }
+.cs-game b { display: block; font: 700 15px/19px var(--display); letter-spacing: -.01em; color: var(--text); }
+.cs-game small { display: block; font-size: 12px; line-height: 16px; color: var(--faint); }
+.cs-game:hover:not(:disabled) { background: var(--raised); transform: translateY(-2px); }
+.cs-game:hover:not(:disabled) svg { color: var(--text); transform: rotate(-8deg) scale(1.08); }
+.cs-game.on { background: color-mix(in srgb, var(--hue) 18%, var(--surface)); }
+.cs-game.on::before { background: linear-gradient(135deg, var(--hue), color-mix(in srgb, var(--hue) 20%, transparent) 45%, var(--cs-gold)); }
+.cs-game.on svg { color: var(--hue); }
+.cs-game.on::after {
+  content: ""; position: absolute; inset: -40% -10%; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, #ffffff14 50%, transparent 60%); animation: csSweep 4.5s ease-in-out infinite;
+}
+.cs-game:disabled { cursor: default; opacity: .55; }
+@keyframes csSweep { 0%, 55% { translate: -70% 0; } 100% { translate: 70% 0; } }
+
+/* ---------------------------------------------------------------- panele gier: cienka złota/kolorowa obwódka i poświata */
+.cs-page .rl-cols { grid-template-columns: minmax(300px, 480px) minmax(0, 1fr); }
+.cs-page .panel { position: relative; isolation: isolate; }
+.cs-page .rl-left, .cs-page .upg-mid, .cs-page .jp-room, .cs-page .jp-left {
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--hue) 14%, transparent), transparent 70%),
+    var(--surface);
+}
+.cs-page .rl-left::before, .cs-page .upg-mid::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--cs-gold) 70%, transparent), transparent 30%, transparent 70%, color-mix(in srgb, var(--hue) 60%, transparent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+
+/* ---------------------------------------------------------------- scena 3D (ruletka, automat) */
+.cs-stage {
+  position: relative; width: 100%; aspect-ratio: 1 / .92; border-radius: var(--radius-m); overflow: hidden;
+  background:
+    radial-gradient(60% 55% at 50% 42%, color-mix(in srgb, var(--hue) 22%, transparent), transparent 75%),
+    radial-gradient(90% 70% at 50% 110%, #000, transparent 70%),
+    #0a0a0d;
+}
+.cs-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+/* winieta */
+.cs-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; box-shadow: inset 0 0 60px 10px #000c; border-radius: inherit; }
+.cs-stage.won { animation: csWonStage 1.4s ease-out; }
+.cs-stage.won::after { box-shadow: inset 0 0 60px 10px #000c, inset 0 0 0 2px color-mix(in srgb, var(--cs-gold) 70%, transparent), inset 0 0 50px color-mix(in srgb, var(--cs-gold) 35%, transparent); }
+.cs-stage.lost::after { box-shadow: inset 0 0 60px 10px #000c, inset 0 0 40px #e5484d22; }
+@keyframes csWonStage { 0% { filter: brightness(1.8) saturate(1.4); } 100% { filter: none; } }
+.sl-stage { aspect-ratio: 1 / 1.08; }
+.sl-stage canvas.grab { cursor: grab; }
+.sl-stage canvas.dragging { cursor: grabbing; }
+.sl-pull-hint {
+  position: absolute; right: 10px; top: 12px; z-index: 2; padding: 6px 12px; border-radius: 999px; pointer-events: none;
+  background: #000b; color: #ffe08a; font: 600 12px var(--body); box-shadow: 0 0 0 1px #ffe08a44;
+  animation: csHint 1.8s ease-in-out infinite;
+}
+@keyframes csHint { 0%, 100% { translate: 0 0; opacity: .75; } 50% { translate: 0 4px; opacity: 1; } }
+/* dźwignia z DOM-u zostaje dla klawiatury (strzałka w dół), na scenie 3D jest niewidoczna */
+.sl-lever.sl-lever-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.sl-lever.sl-lever-sr:focus-visible { position: absolute; right: 10px; bottom: 10px; width: auto; height: auto; clip-path: none; padding: 6px 10px; outline: 2px solid var(--hue); border-radius: 8px; background: #000b; }
+.sl-lever.sl-lever-sr:focus-visible::before { content: "Strzałka w dół: pociągnij"; color: #fff; font: 600 12px var(--body); }
+.sl-lever.sl-lever-sr :is(i, b), .sl-lever.sl-lever-sr::after { display: none; }
+
+/* ---------------------------------------------------------------- wynik rundy */
+.cs-page .rl-result { min-height: 64px; }
+.cs-page .rl-res { padding: 10px 18px; border-radius: 999px; background: #ffffff08; animation: csPop .45s cubic-bezier(.2, .9, .3, 1.4); }
+.cs-page .rl-res.win {
+  background: linear-gradient(90deg, #3fc07a14, #e0bd6226, #3fc07a14);
+  box-shadow: inset 0 0 0 1px #e0bd6255, 0 0 30px #e0bd6222;
+}
+.cs-page .rl-res.win b {
+  background: linear-gradient(90deg, #7df0b0, #ffe08a, #fff, #ffe08a, #7df0b0) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: csShine 2.4s linear infinite;
+}
+.cs-page .rl-res.lose { box-shadow: inset 0 0 0 1px #e5484d33; }
+@keyframes csPop { from { transform: scale(.7); opacity: 0; } }
+@keyframes csShine { to { background-position: -200% 0; } }
+.cs-page .rl-big { box-shadow: 0 0 0 3px var(--cs-gold), 0 0 0 6px #0008, 0 6px 18px #000a; animation: csPop .5s cubic-bezier(.2, .9, .3, 1.5); }
+.cs-page .rl-res.win .rl-big { box-shadow: 0 0 0 3px var(--cs-gold), 0 0 24px var(--cs-gold); }
+.cs-page .rl-history .rl-h, .cs-page .sl-h { animation: csIn .35s ease-out backwards; }
+.cs-page .rl-history > :first-child { animation-duration: .6s; }
+.cs-page .rl-h { border-radius: 50%; min-width: 28px; height: 28px; box-shadow: inset 0 -2px 0 #0006, inset 0 1px 0 #fff3; }
+@keyframes csIn { from { transform: translateY(-8px) scale(.6); opacity: 0; } }
+
+/* ---------------------------------------------------------------- stół ruletki: sukno, złota rama, żetony */
+.cs-page .rl-board {
+  border: 0; border-radius: 16px; padding: 8px; gap: 3px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #ffffff14, transparent 60%),
+    repeating-linear-gradient(45deg, #ffffff05 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, var(--cs-felt), var(--cs-felt-dk));
+  box-shadow: 0 0 0 2px var(--cs-gold-dk), 0 0 0 4px var(--cs-gold), 0 0 0 6px #2a1a07, inset 0 0 30px #000a, 0 14px 30px #000a;
+}
+.cs-page .rl-cell { border: 1px solid #ffffff2e; border-radius: 6px; transition: transform .15s cubic-bezier(.2, .9, .3, 1.5), filter .15s, box-shadow .15s; }
+.cs-page .rl-cell.c-out { background: #ffffff0a; }
+.cs-page .rl-cell.c-red { background: linear-gradient(180deg, #d93a34, #a81f1b); }
+.cs-page .rl-cell.c-black { background: linear-gradient(180deg, #24252b, #101115); }
+.cs-page .rl-cell.c-green { background: linear-gradient(180deg, #17b56c, #0b7a47); }
+.cs-page .rl-cell:hover:not(:disabled) { filter: brightness(1.3); transform: translateY(-2px); }
+/* wybrany zakład: na polu leży żeton w kolorze skrzynki */
+.cs-page .rl-cell.sel { position: relative; z-index: 1; transform: none; box-shadow: 0 0 0 2px var(--cs-gold), 0 0 16px color-mix(in srgb, var(--cs-gold) 60%, transparent); }
+.cs-page .rl-cell.sel::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background:
+    radial-gradient(circle, transparent 0 38%, #fff 39% 44%, transparent 45%),
+    repeating-conic-gradient(var(--hue) 0 30deg, #fff 30deg 45deg);
+  box-shadow: 0 3px 6px #000a, inset 0 0 0 2px #0003;
+  animation: csChip .45s cubic-bezier(.2, .9, .3, 1.6);
+}
+.cs-page .rl-cell.sel:is(.c-redbet, .c-blackbet, .c-out) { font-size: 0; }
+@keyframes csChip { from { transform: translateY(-26px) scale(1.4); opacity: 0; } }
+.cs-page .rl-cell.hit { animation: csHit .9s ease-in-out 3; }
+@keyframes csHit { 50% { box-shadow: 0 0 0 3px #fff, 0 0 26px #fff, 0 0 40px var(--cs-gold); filter: brightness(1.5); } }
+.cs-page .rl-bet-info { padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); margin: 4px 0; }
+.cs-page .rl-bet-info b { color: var(--text); }
+
+/* ---------------------------------------------------------------- duże przyciski gry */
+.cs-page .rl-spin, .cs-page .jp-accept { position: relative; overflow: hidden; }
+.cs-page .rl-spin:not(:disabled)::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, #fff4 50%, transparent 65%); animation: csSweep 2.8s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------- blackjack: stół z drewnianą bandą */
+.cs-page .bj-felt {
+  position: relative; min-height: 420px; border-radius: 200px 200px 24px 24px / 120px 120px 24px 24px; padding: 22px 14px 18px;
+  background:
+    radial-gradient(70% 55% at 50% 40%, #ffffff16, transparent 70%),
+    repeating-linear-gradient(45deg, #ffffff05 0 2px, transparent 2px 5px),
+    radial-gradient(ellipse at 50% 45%, #13874c, var(--cs-felt) 55%, var(--cs-felt-dk));
+  box-shadow: 0 0 0 3px var(--cs-gold), 0 0 0 12px #3b1a0d, 0 0 0 14px #1a0b05, inset 0 0 50px #000b, 0 20px 40px #000a;
+  margin: 14px;
+}
+.cs-page .bj-felt::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 62%; aspect-ratio: 2.6; translate: -50% -60%; pointer-events: none;
+  border: 2px solid #e0bd6233; border-radius: 50%; border-bottom-color: transparent; border-left-color: transparent; border-right-color: transparent;
+}
+.cs-page .bj-rules { color: #e0bd62cc; font: 700 12px var(--display); letter-spacing: .16em; text-transform: uppercase; }
+.cs-page .bj-label { color: #f2f7ef; }
+.cs-page .bj-total { background: #000b; box-shadow: inset 0 0 0 1px #e0bd6255; }
+.cs-page .bj-card { box-shadow: -3px 5px 12px #0009, inset 0 0 0 1px #fff; transition: transform .2s; }
+.cs-page .bj-hand:hover .bj-card { transform: translateY(-2px); }
+.cs-page .bj-card.back {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 22%, #e0bd6244 23% 25%, transparent 26%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--hue) 75%, #000) 0 5px, color-mix(in srgb, var(--hue) 55%, #000) 5px 10px);
+  border: 4px solid #f4efe2;
+}
+.cs-page .bj-new { animation: csDeal .5s cubic-bezier(.2, .8, .3, 1.15); }
+.cs-page .bj-flip { animation: csFlip .5s ease-out; }
+@keyframes csDeal { from { transform: translate(200px, -220px) rotate(35deg) scale(.8); opacity: 0; } 70% { opacity: 1; } }
+@keyframes csFlip { 0% { transform: perspective(500px) rotateY(90deg) scale(1.1); } 60% { transform: perspective(500px) rotateY(-12deg); } 100% { transform: none; } }
+.cs-page .bj-res { backdrop-filter: blur(4px); border-radius: 999px; animation: csPop .45s cubic-bezier(.2, .9, .3, 1.4); }
+.cs-page .bj-res.blackjack { box-shadow: 0 0 0 2px var(--cs-gold), 0 0 34px #e0bd6288; }
+.cs-page .bj-chip { border: 1px dashed #e0bd6288; background: #000a; }
+.cs-page .bj-actions button { transition: transform .15s cubic-bezier(.2, .9, .3, 1.6); }
+.cs-page .bj-actions button:hover:not(:disabled) { transform: translateY(-2px); }
+
+/* ---------------------------------------------------------------- automat (wersja płaska bez WebGL) */
+.cs-page .sl-machine { border-radius: 22px; background: linear-gradient(180deg, color-mix(in srgb, var(--hue) 40%, #1a0a10), #0d0508); padding: 14px 44px 18px 14px; box-shadow: inset 0 1px 0 #fff3, 0 20px 40px #000a; }
+.cs-page .sl-pays > div { transition: transform .2s, background .2s; }
+.cs-page .sl-pays > div:hover { transform: translateX(3px); background: color-mix(in srgb, var(--hue) 12%, var(--raised)); }
+.cs-page .sl-howto.ready { border-color: color-mix(in srgb, var(--cs-gold) 60%, transparent); box-shadow: 0 0 24px #e0bd6218; animation: csHint 1.8s ease-in-out infinite; }
+
+/* ---------------------------------------------------------------- ulepszacz i jackpot */
+.cs-page .upg-mid { overflow: hidden; }
+.cs-page .upg-wheel { filter: drop-shadow(0 0 22px color-mix(in srgb, var(--hue) 45%, transparent)); }
+.cs-page .upg-quick .chip { transition: transform .15s cubic-bezier(.2, .9, .3, 1.6), background .15s; }
+.cs-page .upg-quick .chip:hover:not(:disabled) { transform: translateY(-2px); }
+.cs-page .upg-quick .chip.active { background: linear-gradient(180deg, #fff, #ffe9b0); box-shadow: 0 0 18px #e0bd6255; }
+.cs-page .jp-seat { transition: border-color .25s, box-shadow .25s, transform .25s; }
+.cs-page .jp-seat.ready { transform: translateY(-2px); }
+.cs-page .jp-table { transition: transform .2s, border-color .2s; }
+.cs-page .jp-table:hover { transform: translateY(-2px); }
+.cs-page .jp-bar i, .cs-page .jp-track i { background-size: 200% 100%; animation: csShine 3s linear infinite; }
+.cs-page .jp-a { background-image: linear-gradient(90deg, #4b8bff, #7fb0ff, #2453c7, #4b8bff); }
+.cs-page .jp-b { background-image: linear-gradient(90deg, #ff5c8a, #ff9ab6, #c7244f, #ff5c8a); }
+
+/* ---------------------------------------------------------------- wybór kart na stawkę */
+.cs-page .cs-grid .pick { transition: transform .18s cubic-bezier(.2, .9, .3, 1.5); }
+.cs-page .cs-grid .pick:hover { transform: translateY(-3px); }
+.cs-page .cs-grid > p { grid-column: 1 / -1; }
+
+@media (max-width: 1240px) {
+  .cs-page .rl-cols { grid-template-columns: 1fr; }
+  .cs-page .rl-left { position: static; }
+  .cs-stage { max-width: 600px; margin-inline: auto; }
+}
+@media (max-width: 560px) {
+  .cs-games { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .cs-game { min-height: 54px; padding: 10px; gap: 8px; }
+  .cs-game small { display: none; }
+  .cs-page .bj-felt { margin: 10px 6px; border-radius: 120px 120px 18px 18px / 70px 70px 18px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-page *, .cs-page *::before, .cs-page *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* ---------------------------------------------------------------- ruletka jako tło całej zakładki
+   Płótno .rl-bg leży na cały ekran pod treścią (z-index -1 w .main), koło stoi nad pustym miejscem .rl-spot.
+   Żaden przodek .rl-bg poniżej .main nie może tworzyć własnego kontekstu warstw (sticky, isolation, filter, transform). */
+.rl-spot { width: 100%; aspect-ratio: 1 / .86; }
+.rl-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.rl-bg canvas { display: block; width: 100%; height: 100%; }
+.cs-page:has(.rl-bg) .rl-left { position: static; isolation: auto; background: none; padding: 0; }
+.cs-page:has(.rl-bg) .rl-left::before { display: none; }
+.cs-page:has(.rl-bg) :is(.panel, .cs-game):not(.rl-left) {
+  background: rgb(14 14 18 / .48); -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px #ffffff14;
+}
+.cs-page:has(.rl-bg) .cs-game.on { background: color-mix(in srgb, var(--hue) 26%, rgb(14 14 18 / .4)); }
+.cs-page:has(.rl-bg) > section:first-child { background: rgb(14 14 18 / .42); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px #ffffff14; }
+.cs-page:has(.rl-bg) .rl-left .rl-result, .cs-page:has(.rl-bg) .rl-left .rl-history { position: relative; }
+.cs-page:has(.rl-bg) .rl-history { padding: 8px 10px; border-radius: 999px; background: rgb(14 14 18 / .5); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.cs-page:has(.rl-bg) .rl-res { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background: rgb(14 14 18 / .55); }
+.cs-page:has(.rl-bg) .rl-board { background: linear-gradient(180deg, #0c5a3499, #06331d99); }
+.cs-page:has(.rl-bg) .rl-cell.c-out { background: #ffffff0d; }
+.cs-page:has(.rl-bg) .rl-cell.c-red { background: linear-gradient(180deg, #d93a34cc, #a81f1bcc); }
+.cs-page:has(.rl-bg) .rl-cell.c-black { background: linear-gradient(180deg, #24252bcc, #101115cc); }
+.cs-page:has(.rl-bg) .rl-cell.c-green { background: linear-gradient(180deg, #17b56ccc, #0b7a47cc); }
+.cs-page:has(.rl-bg) .rl-bet-info { background: #ffffff0a; }
+.cs-page:has(.rl-bg) .cs-grid .pick { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---------------------------------------------------------------- wyścigi konne 3D (Horses3D.tsx, three/horsesScene.ts) */
+.hr-view { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%; }
+.hr-view button, .hr3-cams button {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: #ffffff10; color: var(--muted); font: 600 13px var(--body); transition: background .15s, color .15s;
+}
+.hr-view button.on, .hr3-cams button.on { background: #fff; color: #000; }
+.hr-test { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: #e5a93b22; color: var(--warn); font-size: 12px; font-weight: 600; }
+.cs-page .hr-cols.hr-3d { grid-template-columns: 1fr; }
+.cs-page .hr-cols.hr-3d .rl-left { position: static; }
+.hr-cols.hr-3d .hr-stage { width: 100%; }
+.hr3 { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 72vh; border-radius: var(--radius-m); overflow: hidden; background: #05060c; user-select: none; }
+.hr3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hr3 > i { position: absolute; inset: 0; pointer-events: none; transition: opacity .25s; }
+.hr3-flash { background: #fff; opacity: 0; transition: none !important; }
+.hr3-vignette { box-shadow: inset 0 0 120px 30px #000c; }
+/* linie prędkości przy turbo i grzybie */
+.hr3-speed {
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, #fff0 0deg 3deg, #ffffff38 3deg 3.6deg, #fff0 3.6deg 9deg);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 22%, #000 60%); mask: radial-gradient(circle at 50% 50%, transparent 22%, #000 60%);
+  animation: hrSpeed .18s steps(3) infinite;
+}
+@keyframes hrSpeed { 33% { transform: rotate(1.2deg) scale(1.02); } 66% { transform: rotate(-1deg) scale(1.01); } }
+.hr3-cams { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; }
+.hr3-cams button { background: #000a; color: #fff; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.hr3-pick { position: absolute; left: 10px; top: 50px; display: flex; gap: 5px; flex-wrap: wrap; z-index: 2; max-width: 60%; }
+.hr3-pick button {
+  width: 28px; height: 28px; padding: 0; border: 2px solid #0008; border-radius: 50%; background: var(--c); color: #fff;
+  font: 800 12px var(--display); text-shadow: 0 1px 2px #000; opacity: .7; transition: transform .15s, opacity .15s;
+}
+.hr3-pick button:hover { opacity: 1; transform: translateY(-2px); }
+.hr3-pick button.on { opacity: 1; border-color: #fff; transform: scale(1.15); box-shadow: 0 0 12px var(--c); }
+.hr3-order {
+  position: absolute; right: 10px; top: 10px; z-index: 2; margin: 0; padding: 6px; list-style: none; display: flex; flex-direction: column; gap: 2px;
+  border-radius: 12px; background: #000a; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-size: 12px; min-width: 150px;
+}
+.hr3-order li { display: flex; align-items: center; gap: 6px; padding: 2px 6px; border-radius: 6px; transition: transform .3s; }
+.hr3-order li:first-child { background: #e0bd6226; }
+.hr3-order li b { width: 14px; color: var(--faint); font: 700 11px var(--body); text-align: right; }
+.hr3-order li i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 800 10px var(--display); font-style: normal; color: #fff; text-shadow: 0 1px 2px #000; }
+.hr3-order li span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+.hr3-order li.out { opacity: .45; text-decoration: line-through; }
+.hr3-banner {
+  position: absolute; left: 50%; bottom: 14px; translate: -50% 0; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 6px 18px; border-radius: 14px; background: #000b; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); text-align: center; pointer-events: none;
+}
+.hr3-banner small { color: #ffe9a8; font: 700 11px var(--body); letter-spacing: .12em; text-transform: uppercase; }
+.hr3-banner b { font: 800 20px/24px var(--display); letter-spacing: -.01em; }
+.hr3-speedo { position: absolute; left: 14px; bottom: 14px; z-index: 2; display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 4px; padding: 8px 14px; border-radius: 14px; background: #000b; pointer-events: none; }
+.hr3-speedo b { font: 800 30px/32px var(--display); color: #fff; font-variant-numeric: tabular-nums; }
+.hr3-speedo small { color: var(--muted); font-size: 12px; }
+.hr3-speedo span { grid-column: 1 / -1; color: var(--faint); font-size: 12px; }
+@media (max-width: 700px) {
+  .hr3 { aspect-ratio: 4 / 5; max-height: none; }
+  .hr3-order { font-size: 11px; min-width: 0; }
+  .hr3-order li span { display: none; }
+  .hr3-cams button { height: 30px; padding: 0 9px; font-size: 12px; }
+  .hr3-pick { top: auto; bottom: 74px; max-width: 70%; }
+}
+.hr-cols.hr-3d .hr-stage { aspect-ratio: auto; background: none; box-shadow: 0 10px 34px #000b; }
+
+/* sterowanie kamerą ruletki nad kołem */
+.rl-spot { position: relative; cursor: grab; touch-action: pan-y; }
+.rl-spot.dragging { cursor: grabbing; }
+.rl-cam { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 6px; z-index: 1; }
+.rl-cam button {
+  width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #fff;
+  background: rgb(14 14 18 / .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px #ffffff1c;
+  transition: background .15s, transform .15s;
+}
+.rl-cam button:hover { background: rgb(40 40 48 / .7); transform: translateY(-1px); }
+.rl-cam-hint { position: absolute; left: 10px; bottom: 14px; padding: 4px 10px; border-radius: 999px; background: rgb(14 14 18 / .45); color: var(--muted); font-size: 12px; pointer-events: none; opacity: .8; transition: opacity .3s; }
+.rl-spot.dragging .rl-cam-hint { opacity: 0; }
+@media (max-width: 560px) { .rl-cam-hint { display: none; } }

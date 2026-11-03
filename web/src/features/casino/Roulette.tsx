@@ -1,4 +1,6 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
+import type { RouletteScene } from '../../three/rouletteScene';
 import { api } from '../../api/client';
 import { announceFirsts } from '../../game/actions';
 import { confetti, epicReveal } from '../../fx/effects';
@@ -51,26 +53,67 @@ function Board({ disabled }: { disabled: boolean }) {
   return <div className="rl-board">{cells}</div>;
 }
 
+/** Koło 3D (Three.js wczytuje się dopiero tutaj); bez WebGL zostaje płaskie koło z SVG */
+function useWheel3d(canvas: React.RefObject<HTMLCanvasElement | null>, spot: React.RefObject<HTMLDivElement | null>) {
+  const scene = useRef<RouletteScene | null>(null);
+  const [flat, setFlat] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    import('../../three/rouletteScene').then(({ createRouletteScene }) => {
+      if (!alive || !canvas.current) return;
+      try {
+        scene.current = createRouletteScene(canvas.current, S.cfg.roulette.wheel, S.cfg.roulette.red, () => spot.current?.getBoundingClientRect() ?? null);
+        if (CS.last) scene.current.result(CS.last.win);
+      } catch { setFlat(true); }
+    }).catch(() => setFlat(true));
+    return () => { alive = false; scene.current?.destroy(); scene.current = null; };
+  }, []);
+  // kamera gracza: przeciąganie obraca, kółko przybliża (na granicy zoomu strona przewija się dalej), dwuklik wraca do widoku
+  useEffect(() => {
+    const el = spot.current;
+    if (!el) return;
+    const wheel = (e: WheelEvent) => { if (scene.current?.zoom(Math.sign(e.deltaY) * .12)) e.preventDefault(); };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, [flat]);
+  return { scene, flat };
+}
+
+function useOrbit(scene: React.RefObject<RouletteScene | null>) {
+  return {
+    onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+      if (!scene.current || (e.target as HTMLElement).closest('button')) return;
+      const el = e.currentTarget;
+      let x = e.clientX, y = e.clientY;
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('dragging');
+      const move = (ev: PointerEvent) => {
+        scene.current?.orbit(-(ev.clientX - x) * .008, (ev.clientY - y) * .006);
+        x = ev.clientX; y = ev.clientY;
+      };
+      const up = () => {
+        el.classList.remove('dragging');
+        el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+      };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    },
+    onDoubleClick() { scene.current?.resetView(); }
+  };
+}
+
 export function Roulette() {
   const game = useGame();
-  const rot = useRef<HTMLDivElement>(null), ball = useRef<HTMLDivElement>(null);
+  const rot = useRef<HTMLDivElement>(null), ball = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), spot = useRef<HTMLDivElement>(null);
+  const { scene, flat } = useWheel3d(canvas, spot);
+  const orbit = useOrbit(scene);
   dropMissing(CS.sel);
   const spinning = !!game.spinning, max = game.cfg.roulette.maxCards;
   const bet = game.cfg.roulette.bets[CS.bet], stake = csStake(CS.sel), last = CS.last;
 
-  const spin = async () => {
-    if (S.spinning || !CS.sel.size) return;
-    const ids = [...CS.sel];
-    if (!betOk(ids, stake, max, `Postawić ${ids.length} ${plural(ids.length, 'kartę', 'karty', 'kart')} o wartości ${fmt(stake)} na „${bet.name}”?`)) return;
-    S.spinning = true;
-    touch();
-    Sound.unlock();
-    let res: any;
-    try { res = await api('/api/casino/roulette', { ids, bet: CS.bet, vabank: isVabank(ids.length, max) }); }
-    catch (e: any) { S.spinning = false; Sound.error(); toast(e.message, true); return touch(); }
+  const spinFlat = async (number: number, fast: boolean) => {
     // koło kręci się w prawo, kulka w lewo; obie stają tak, że wylosowane pole jest pod wskaźnikiem u góry
-    const W: number[] = S.cfg.roulette.wheel, step = 360 / W.length, idx = W.indexOf(res.number);
-    const fast = !!S.fast, D = fast ? 1800 : 5200, turns = fast ? 3 : 6;
+    const W: number[] = S.cfg.roulette.wheel, step = 360 / W.length, idx = W.indexOf(number);
+    const D = fast ? 1800 : 5200, turns = fast ? 3 : 6;
     const start = CS.angle, target = -idx * step + rand(-.3, .3) * step;
     const end = start + turns * 360 + ((((target - start) % 360) + 360) % 360);
     const t0 = performance.now();
@@ -87,9 +130,25 @@ export function Roulette() {
       requestAnimationFrame(frame);
     });
     CS.angle = end % 360;
+  };
+
+  const spin = async () => {
+    if (S.spinning || !CS.sel.size) return;
+    const ids = [...CS.sel];
+    if (!betOk(ids, stake, max, `Postawić ${ids.length} ${plural(ids.length, 'kartę', 'karty', 'kart')} o wartości ${fmt(stake)} na „${bet.name}”?`)) return;
+    S.spinning = true;
+    touch();
+    Sound.unlock();
+    let res: any;
+    try { res = await api('/api/casino/roulette', { ids, bet: CS.bet, vabank: isVabank(ids.length, max) }); }
+    catch (e: any) { S.spinning = false; Sound.error(); toast(e.message, true); return touch(); }
+    const fast = !!S.fast;
+    if (scene.current) await scene.current.spin(res.number, { fast, onTick: k => Sound.tick(k) });
+    else await spinFlat(res.number, fast);
     CS.history = [res.number, ...CS.history].slice(0, 14);
     CS.last = res;
     settleRound(res, CS.sel);
+    scene.current?.result(res.win);
     if (res.win) { Sound.win(); confetti(['#0f9d58', '#ffcf3f', '#c62828', '#fff'], res.payout >= stake * 2 ? 220 : 110); } else Sound.fail();
     applyState(res.state);
     if (res.special) {
@@ -104,11 +163,19 @@ export function Roulette() {
   return (
     <div className="rl-cols">
       <div className="panel rl-left">
-        <div className="rl-wheel-wrap">
+        {flat ? <div className="rl-wheel-wrap">
           <div className="rl-rot" ref={rot} style={{ transform: `rotate(${CS.angle}deg)` }}><Wheel /></div>
           <div className="rl-ball-rot" ref={ball}><i /></div>
           <div className="rl-pointer" />
-        </div>
+        </div> : <div ref={spot} className={`rl-spot${last ? (last.win ? ' won' : ' lost') : ''}`} {...orbit} title="Przeciągnij, żeby obrócić koło. Kółko myszy przybliża, dwuklik wraca do widoku.">
+          <div className="rl-bg"><canvas ref={canvas} aria-label="Koło ruletki" /></div>
+          <div className="rl-cam" role="group" aria-label="Kamera">
+            <button type="button" aria-label="Przybliż" onClick={() => scene.current?.zoom(-.18)}><Plus size={16} /></button>
+            <button type="button" aria-label="Oddal" onClick={() => scene.current?.zoom(.18)}><Minus size={16} /></button>
+            <button type="button" aria-label="Wróć do widoku" onClick={() => scene.current?.resetView()}><RotateCcw size={15} /></button>
+          </div>
+          <span className="rl-cam-hint">Przeciągnij, żeby obrócić · kółko: zoom</span>
+        </div>}
         <div className="rl-result">
           {last ? <>
             <div className={`rl-res ${last.win ? 'win' : 'lose'}`}>

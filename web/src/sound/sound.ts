@@ -94,7 +94,7 @@ export const Sound = (() => {
     page: ["page-1", "page-2", "page-3"], whoosh: ["card-slide-1", "card-slide-2", "card-slide-3", "card-slide-4"],
     move: ["chess-move-1", "chess-move-2", "chess-move-3"], notify: ["pluck"], dice: ["dice-shake"],
     // skrzynki (freesound.org)
-    open: ["fs-open.mp3", "fs-open-2.mp3"], tick: ["fs-tick.mp3"], land: ["fs-land.mp3"], deal: ["fs-deal.mp3", "fs-land.mp3"],
+    open: ["fs-open-2.mp3"], tick: ["fs-tick.mp3"], land: ["fs-land.mp3"], deal: ["fs-deal.mp3", "fs-land.mp3"],
     rare: ["fs-rare.mp3"], epic: ["fs-epic.mp3"], mythic: ["fs-mythic.mp3"], charge: ["fs-charge.mp3"], boom: ["fs-boom.mp3"], stinger: ["fs-stinger.mp3"],
     gold: ["fs-gold.mp3"], ultra: ["fs-ultra.mp3"], secret: ["fs-secret.mp3"],
     // kasyno i wygrane (freesound.org)

@@ -6,6 +6,7 @@ import { S, useGame } from '../game/store';
 import { Sound } from '../sound/sound';
 import { Avatar } from '../ui/UserLink';
 import { Money } from '../ui/Money';
+import { Ambient } from './Ambient';
 import { InstallButton } from './InstallButton';
 import { NAV, type NavItem } from './nav';
 import { Logo } from './Logo';
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.app}>
+      <Ambient />
       <aside className={styles.side}>
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
         <nav className={styles.nav} aria-label="Główna">

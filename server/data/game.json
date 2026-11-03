@@ -4085,6 +4085,7 @@
  },
  "cardTextMax": 60,
  "horseRace": {
+  "enabled": false,
   "period": 300,
   "minPlayers": 1,
   "betOpen": 300,

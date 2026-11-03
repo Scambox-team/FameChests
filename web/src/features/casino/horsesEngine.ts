@@ -148,7 +148,7 @@ function hrBackground() {
   return cv;
 }
 
-function hrInterp(arr, T, dt, scale) {
+export function hrInterp(arr, T, dt, scale) {
   const f = Math.max(0, T) / dt, i = Math.min(arr.length - 1, Math.floor(f)), j = Math.min(arr.length - 1, i + 1), k = f - i;
   return (arr[i] + (arr[j] - arr[i]) * (f >= arr.length - 1 ? 0 : k)) / scale;
 }
@@ -194,7 +194,7 @@ function hrDrawFlag(g) {
 }
 
 // samochód: pozycja w okrążeniach od linii startu (jak konie), null - jeszcze go nie ma
-function hrCarX(race, T) {
+export function hrCarX(race, T) {
   const a = race.car, f = Math.max(0, T) / race.dt, i = Math.min(a.length - 1, Math.floor(f)), j = Math.min(a.length - 1, i + 1);
   if (a[i] == null) return null;
   const x0 = a[i] / race.scale, x1 = (a[j] ?? a[i]) / race.scale;
@@ -202,7 +202,7 @@ function hrCarX(race, T) {
 }
 
 // stan konia w chwili T, wyliczony ze zdarzeń
-function hrHorseState(race, h, T) {
+export function hrHorseState(race, h, T) {
   const s = { dead: null, left: null, fall: null, turbo: false, turboAt: 0, carDeath: false, held: null, boost: false, slow: false, star: false };
   for (const e of race.events) {
     if (e.t > T) continue;
@@ -222,7 +222,7 @@ function hrHorseState(race, h, T) {
   return s;
 }
 
-function hrFinishTime(race) {
+export function hrFinishTime(race) {
   if (race._fin === undefined) {
     race._fin = null;
     if (race.winner >= 0) {
@@ -545,6 +545,7 @@ function hrInfield(g, race, T, solo, sprites) {
     if (race.winner >= 0) { const w = H[race.winner]; top = "WYGRAŁ"; big = w.name; sub = `numer ${w.id + 1} · ×${w.pays}`; color = w.color; }
     else { top = "SAMOCHÓD WYGRAŁ"; big = ""; sub = "nikt inny nie dojechał · stawki wracają"; }
   }
+  HR.info = { top, big, sub, color };   // to samo pokazuje telebim w widoku 3D
   g.save();
   g.textAlign = "center"; g.textBaseline = "middle";
   g.shadowColor = "#000c"; g.shadowBlur = 6;
@@ -569,7 +570,7 @@ export function hrStart() {
 
 function hrVisible() { return !!HR.canvas?.isConnected; }
 
-function hrClock() {
+export function hrClock() {
   if (HR.solo) return { race: HR.solo.race, T: (performance.now() - HR.solo.t0) / 1000 - HR_INTRO, solo: true, key: "solo" + HR.solo.t0 };
   const L = HR.d?.live;
   if (L && hrNow() - L.start < L.dur + 12) return { race: L, T: hrNow() - L.start, solo: false, key: "r" + L.id };

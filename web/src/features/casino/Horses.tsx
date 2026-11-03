@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Car, CircleX, Skull, Trophy, Wrench } from 'lucide-react';
+import { Box, Car, CircleX, Skull, Square, Trophy, Wrench } from 'lucide-react';
+import { Horses3D } from './Horses3D';
 import { plural } from '../../game/rules';
 import { touch, useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
@@ -26,6 +27,8 @@ export function Horses() {
   const game = useGame();
   const canvas = useRef<HTMLCanvasElement>(null);
   const [, tick] = useState(0);
+  const [view3d, setView3d] = useState<boolean>(HR.view3d ?? true);
+  const betsOff = game.cfg.horses?.race?.enabled === false;   // wyścigi wyłączone: tylko podgląd (admin, tryb dev)
   const C = game.cfg.horses.race, d = HR.d;
   dropMissing(HR.sel);
 
@@ -44,10 +47,16 @@ export function Horses() {
   const left = hrClockText(d.next.start - hrNow());
 
   return (
-    <div className="rl-cols hr-cols">
+    <div className={`rl-cols hr-cols${view3d ? ' hr-3d' : ''}`}>
       <div className="panel rl-left hr-left">
+        <div className="hr-view" role="group" aria-label="Widok wyścigu">
+          <button type="button" className={view3d ? 'on' : ''} aria-pressed={view3d} onClick={() => { HR.view3d = true; setView3d(true); }}><Box size={15} aria-hidden="true" />3D</button>
+          <button type="button" className={view3d ? '' : 'on'} aria-pressed={!view3d} onClick={() => { HR.view3d = false; setView3d(false); }}><Square size={15} aria-hidden="true" />Z góry 2D</button>
+          {betsOff && <span className="hr-test">Podgląd testowy: zakłady wyłączone</span>}
+        </div>
         <div className="hr-stage">
-          <canvas ref={canvas} id="hrCanvas" width={HR_SIZE * 2} height={HR_SIZE * 2} />
+          {view3d && <Horses3D onFail={() => { HR.view3d = false; setView3d(false); }} />}
+          <canvas ref={canvas} id="hrCanvas" width={HR_SIZE * 2} height={HR_SIZE * 2} style={view3d ? { position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' } : undefined} />
           {HR.solo && <Button className="hr-skip" onClick={hrSkip}>Przewiń do końca</Button>}
         </div>
         <div className="rl-result"><ResultBox r={HR.last} /></div>
@@ -77,8 +86,8 @@ export function Horses() {
             return <span key={b.id} className="hr-chip mine"><i className="hr-dot sm" style={{ background: h.color }} />{h.name} · {b.cards} {plural(b.cards, 'karta', 'karty', 'kart')} · {fmt(b.stake)}{open && <button type="button" className="hr-x" aria-label="Wycofaj zakład" onClick={() => hrCancel(b.id)}><CircleX size={14} /></button>}</span>;
           })}</div>}
           <div className="hr-actions">
-            <Button kind="hue" big disabled={!sel || !HR.sel.size || !open || busy} onClick={hrBet}>{open ? 'Postaw na wyścig' : 'Zakłady zamknięte'}, start za {left}{stake ? `, ${fmt(stake)}` : ''}</Button>
-            <Button big disabled={!sel || !HR.sel.size || busy} onClick={hrSolo}>Wyścig solo{stake ? `, ${fmt(stake)}` : ''}</Button>
+            <Button kind="hue" big disabled={betsOff || !sel || !HR.sel.size || !open || busy} onClick={hrBet}>{open ? 'Postaw na wyścig' : 'Zakłady zamknięte'}, start za {left}{stake ? `, ${fmt(stake)}` : ''}</Button>
+            <Button big disabled={betsOff || !sel || !HR.sel.size || busy} onClick={hrSolo}>Wyścig solo{stake ? `, ${fmt(stake)}` : ''}</Button>
           </div>
           {game.me?.isAdmin && <div className="hr-debug"><b>Debug (admin)</b>
             {([['car', 'samochód'], ['turbo', 'turbo'], ['turn', 'ucieczka'], ['die', 'śmierć']] as [string, string][]).map(([k, n]) => <label key={k}><input type="checkbox" defaultChecked={HR.force.has(k)} onChange={e => { if (e.target.checked) HR.force.add(k); else HR.force.delete(k); }} /> {n} 100%</label>)}
