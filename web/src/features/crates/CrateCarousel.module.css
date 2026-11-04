@@ -13,8 +13,10 @@
 @keyframes bob { 50% { transform: translateY(-4%); } }
 .owned { position: absolute; top: 8%; right: 10%; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; display: grid; place-items: center; background: #fff; color: #000; font-size: 14px; font-weight: 700; }
 .test { position: absolute; top: 6%; left: 8%; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 12px; background: var(--warn); color: #000; font-size: 13px; font-weight: 700; }
-.bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 16px; }
+/* strzałki stoją zawsze w tym samym miejscu: środkowa kolumna ma stałą szerokość, długa nazwa się skraca */
+.bar { display: grid; grid-template-columns: 44px min(320px, calc(100% - 120px)) 44px; align-items: center; justify-content: center; gap: 16px; padding: 0 16px; }
 .label { display: grid; justify-items: center; gap: 2px; min-width: 0; text-align: center; }
+.label b, .label span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label b { font: 800 22px/1.15 var(--display); letter-spacing: -.02em; }
 .label span { color: var(--muted); font-size: 14px; }
 .arrow { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #ffffff14; color: #fff; cursor: pointer; transition: background .15s; }

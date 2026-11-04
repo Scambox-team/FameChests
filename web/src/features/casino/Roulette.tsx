@@ -177,7 +177,6 @@ export function Roulette() {
             <button type="button" aria-label="Oddal" onClick={() => scene.current?.zoom(.18)}><Minus size={16} /></button>
             <button type="button" aria-label="Wróć do widoku" onClick={() => scene.current?.resetView()}><RotateCcw size={15} /></button>
           </div>
-          <span className="rl-cam-hint">Przeciągnij, żeby obrócić · kółko: zoom</span>
         </div>}
         <div className="rl-result">
           {last ? <>

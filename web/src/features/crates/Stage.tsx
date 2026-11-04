@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { closeStage, openAgain, openCrates, sellDrops, setDropFavorite, skipSpin, stopAutoRun } from './opening';
 import { Button } from '../../ui/Button';
 import { closeViewer, epicOpen, openViewer, viewerOpen } from '../../fx/effects';
-import { S } from '../../game/store';
+import { S, useGame } from '../../game/store';
+import { Money } from '../../ui/Money';
 import './Stage.css';
 
 // klawiatura: Spacja/Enter = otwórz / pomiń / otwórz ponownie, Esc = pomiń / zamknij
@@ -29,6 +31,7 @@ function onStageKey(e: KeyboardEvent) {
 
 // Scena otwierania. Układ jest stały, a zawartość bębnów i wyników wstawia opening.ts.
 export function Stage() {
+  const game = useGame();
   useEffect(() => {
     document.addEventListener('keydown', onStageKey);
     return () => document.removeEventListener('keydown', onStageKey);
@@ -47,9 +50,11 @@ export function Stage() {
     const ids = S.opening?.drops.filter((d: any) => !d.sold && !d.fav).map((d: any) => d.id) ?? [];
     if (ids.length) sellDrops(ids);
   };
-  return (
+  // w <body>, nie w <main>: scena musi przykryć też panel boczny (ma własny kontekst warstw)
+  return createPortal(
     <div className="stage" id="stage" hidden>
       <div className="stage-bg" />
+      <div className="stage-money" aria-label="Twoje grosze"><Money value={game.state.balance} /></div>
       <div className="stage-inner">
         <div className="stage-title" id="stageTitle" />
         <div className="reels" id="reels" />
@@ -64,6 +69,7 @@ export function Stage() {
         </div>
       </div>
       <div className="flash" id="flash" />
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -289,6 +289,7 @@ function runStage() {
 async function afterSpin(o: Opening) {
   await sleep(o.fast ? 150 : 700);
   if (S.opening !== o) return;
+  $('#skipBtn').hidden = true;   // przy „Ultraszybko” bęben nie woła tego sam
   const drops = o.drops!;
   if (S.autoRun && drops.some(d => person(d.person).rarity === 'secret')) stopAuto('Tajna karta! Auto zatrzymane');
   const rankOf = (d: Drop) => rarityIdx(person(d.person).rarity);

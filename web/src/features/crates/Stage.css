@@ -1,6 +1,21 @@
 /* Scena otwierania w kolorach Gabloty. Pozycje bębnów i kart są w fx/css/stage.css, tu tylko wygląd. */
 .stage-bg { background: color-mix(in srgb, var(--hue) 10%, #070709); }
 .stage-title { font: 800 26px/32px var(--display); letter-spacing: -.02em; }
+.stage { height: 100dvh; }   /* pasek adresu na telefonie nie może zasłaniać dolnych przycisków */
+/* telefon: pasek przycisków jest zwarty i zawsze na dole, wyniki przewijają się nad nim */
+@media (max-width: 820px) {
+  .stage .stage-inner { padding: 56px 12px calc(10px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+  .stage .stage-title { font-size: 20px; line-height: 26px; }
+  .stage .stage-money { top: 10px; right: 10px; font-size: 16px; }
+  .stage .results { overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+  .stage .stage-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: none; }
+  .stage .stage-bar [hidden] { display: none !important; }
+  .stage .stage-bar > * { min-width: 0; }
+  .stage .stage-bar .stage-sum { grid-column: 1 / -1; margin: 0; text-align: center; }
+  .stage .stage-bar #closeBtn, .stage .stage-bar #skipBtn { grid-column: 1 / -1; }
+}
+/* grosze są widoczne przez cały czas otwierania */
+.stage-money { position: absolute; z-index: 3; top: 14px; right: 16px; padding: 6px 14px; border-radius: 999px; background: #0009; font: 800 18px var(--display); letter-spacing: -.02em; pointer-events: none; }
 .stage-sum { font: 800 20px var(--display); color: var(--text); margin-right: 10px; }
 .reel { background: var(--surface); border-radius: var(--radius-m); box-shadow: none; }
 .result .rbtns { gap: 6px; }

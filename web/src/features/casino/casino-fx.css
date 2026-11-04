@@ -316,6 +316,9 @@
 
 /* sterowanie kamerą ruletki nad kołem */
 .rl-spot { position: relative; cursor: grab; touch-action: pan-y; }
+/* przeciąganie koła nie może zaznaczać tekstu wokół (zaznaczenie blokowało obracanie) */
+.rl-left, .rl-spot { -webkit-user-select: none; user-select: none; }
+.rl-spot * { -webkit-user-drag: none; }
 .rl-spot.dragging { cursor: grabbing; }
 .rl-cam { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 6px; z-index: 1; }
 .rl-cam button {
@@ -324,6 +327,3 @@
   transition: background .15s, transform .15s;
 }
 .rl-cam button:hover { background: rgb(40 40 48 / .7); transform: translateY(-1px); }
-.rl-cam-hint { position: absolute; left: 10px; bottom: 14px; padding: 4px 10px; border-radius: 999px; background: rgb(14 14 18 / .45); color: var(--muted); font-size: 12px; pointer-events: none; opacity: .8; transition: opacity .3s; }
-.rl-spot.dragging .rl-cam-hint { opacity: 0; }
-@media (max-width: 560px) { .rl-cam-hint { display: none; } }

@@ -15,7 +15,8 @@
 .icon:hover { background: var(--raised); color: #fff; }
 
 .main { position: relative; z-index: 1; min-width: 0; padding-block: 16px 40px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
-.top { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 40px; }
+/* nagłówek z groszami zostaje na górze podczas przewijania */
+.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 40px; margin-top: -16px; padding-block: 16px 8px; background: color-mix(in srgb, var(--ground) 82%, transparent); }
 .title { font: 800 30px/36px var(--display); letter-spacing: -.025em; }
 .topRight { display: flex; align-items: center; gap: 14px; }
 .money { font: 800 22px var(--display); letter-spacing: -.02em; }
@@ -28,7 +29,7 @@
 @media (max-width: 820px) {
   .app { display: block; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   .side, .topRight { display: none; }
-  .top { min-height: 0; }
+  .top { position: static; min-height: 0; margin-top: 0; padding-block: 0; background: none; }
   .title { font-size: 26px; line-height: 32px; }
   .main { padding-block: 8px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .phoneTop { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 10px; height: 52px; background: color-mix(in srgb, var(--ground) 80%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
