@@ -3,15 +3,16 @@
 // z paczek Kenney - LICENSE.txt); reszta i zapas na czas wczytywania to syntezator Web Audio API.
 export const Sound = (() => {
   let ctx = null, master = null, noiseBuf = null;
-  let enabled = true;
+  let enabled = true, volume = 1;   // głośność 0-1 (suwak przy ikonie dźwięku), mnoży główne wzmocnienie
   try { enabled = localStorage.getItem("sound") !== "off"; } catch (e) {}
+  try { const v = parseFloat(localStorage.getItem("volume")); if (v >= 0 && v <= 1) volume = v; } catch (e) {}
   let lastTick = 0;
 
   function ac() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
-      master.gain.value = 0.5;
+      master.gain.value = 0.5 * volume;
       const comp = ctx.createDynamicsCompressor();
       master.connect(comp).connect(ctx.destination);
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -132,6 +133,12 @@ export const Sound = (() => {
 
   const api = {
     get enabled() { return enabled; },
+    get volume() { return volume; },
+    setVolume(v) {
+      volume = Math.max(0, Math.min(1, +v || 0));
+      try { localStorage.setItem("volume", String(volume)); } catch (e) {}
+      if (master) master.gain.setTargetAtTime(0.5 * volume, ctx.currentTime, 0.02);
+    },
     jackpot() { if (enabled && !sample("payout", { vol: .75 })) api.win(); },
     move(mine = true) { if (enabled && !sample("move", { vol: mine ? .7 : .9, rate: mine ? 1 : .92 })) api.click(); if (enabled && !mine) sample("notify", { vol: .45, delay: .06 }); },
     deal() { if (enabled && !sample("deal", { vol: .7 })) api.page(); },

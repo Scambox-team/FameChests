@@ -1,0 +1,12 @@
+/* Ustawienia przy profilu w pasku bocznym: dźwięk z głośnością i język */
+/* okienko zajmuje szerokość stopki paska (stopka ma position: relative), więc nie wychodzi poza ekran */
+.wrap { position: static; }
+.pop { position: absolute; z-index: 30; bottom: calc(100% + 8px); left: 4px; right: 4px; max-width: 260px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-m); background: var(--raised); box-shadow: 0 18px 40px #000b, inset 0 0 0 1px #ffffff12; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.langRow { align-items: center; padding-top: 10px; border-top: 1px solid #ffffff12; }
+.row span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.pop input[type="range"] { width: 100%; accent-color: var(--hue); }
+.mute { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; cursor: pointer; }
+.lang { display: inline-flex; flex: none; padding: 2px; border-radius: 999px; background: #ffffff0d; }
+.lang button { height: 26px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 600 12px var(--body); cursor: pointer; }
+.lang button[aria-pressed="true"] { background: #fff; color: #000; }

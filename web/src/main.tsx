@@ -17,8 +17,11 @@ import './styles/tokens.css';
 import './styles/base.css';
 
 import { App } from './app/App';
+import { startI18n } from './i18n/i18n';
 
 const queries = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } } });
+
+void startI18n();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

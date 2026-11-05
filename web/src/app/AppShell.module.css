@@ -8,7 +8,7 @@
 .link.on { color: #fff; background: var(--raised); font-weight: 500; }
 .link.on svg { color: var(--hue); transition: color .3s; }
 .badge { margin-left: auto; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; display: grid; place-items: center; font-size: 12px; line-height: 1; font-weight: 600; background: var(--bad); color: #fff; }
-.foot { margin-top: auto; padding: 0 4px 0 10px; display: flex; align-items: center; gap: 8px; }
+.foot { position: relative; margin-top: auto; padding: 0 4px 0 10px; display: flex; align-items: center; gap: 8px; }
 .user { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ava { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--raised); font-weight: 600; font-size: 13px; flex: none; }
 .icon { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border: 0; border-radius: var(--radius-s); background: none; color: var(--muted); transition: background .12s, color .12s; }

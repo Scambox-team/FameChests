@@ -3791,6 +3791,15 @@
  },
  "patchNotes": [
   {
+   "v": 23,
+   "date": "2026-11-05",
+   "title": "Angielski i głośność",
+   "items": [
+    "🌐 Grę można przełączyć na <b>angielski</b>: kliknij ikonę dźwięku w pasku bocznym i wybierz język.",
+    "🔊 W tym samym okienku jest <b>suwak głośności</b> i wyciszenie gry."
+   ]
+  },
+  {
    "v": 22,
    "date": "2026-11-04",
    "title": "Wyścigi konne",

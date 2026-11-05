@@ -1,13 +1,13 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Gift, Menu, Settings, Volume2, VolumeX, X } from 'lucide-react';
+import { Gift, Menu, Settings, X } from 'lucide-react';
 
 import { S, useGame } from '../game/store';
-import { Sound } from '../sound/sound';
 import { Avatar } from '../ui/UserLink';
 import { Money } from '../ui/Money';
 import { Ambient } from './Ambient';
 import { InstallButton } from './InstallButton';
+import { SoundControl } from './Settings';
 import { NAV, type NavItem } from './nav';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
@@ -40,11 +40,9 @@ function MyAvatar() {
 export function AppShell({ children }: { children: ReactNode }) {
   const game = useGame();
   const [sheet, setSheet] = useState(false);
-  const [sound, setSound] = useState(Sound.enabled);
   const { pathname } = useLocation();
   const items = NAV.filter(i => !i.admin || game.cfg.arena);
   const title = pathname.startsWith('/player/') ? 'Profil' : NAV.find(i => i.path === '/' ? pathname === '/' : pathname.startsWith(i.path))?.label ?? 'ScamBox';
-  const toggleSound = () => { Sound.toggle(); setSound(Sound.enabled); };
 
   return (
     <div className={styles.app}>
@@ -58,9 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={styles.foot}>
           <Link className={styles.user} to={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><MyAvatar /><span>{game.me?.username}</span></Link>
           <InstallButton className={styles.icon} />
-          <button className={styles.icon} type="button" onClick={toggleSound} aria-label={sound ? 'Wyłącz dźwięk' : 'Włącz dźwięk'}>
-            {sound ? <Volume2 size={17} strokeWidth={1.6} /> : <VolumeX size={17} strokeWidth={1.6} />}
-          </button>
+          <SoundControl className={styles.icon} />
         </div>
       </aside>
 
@@ -96,9 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
           <div className={styles.foot}>
             <button className={styles.daily} type="button" onClick={() => { setSheet(false); S.openDaily?.(); }}><Gift size={17} strokeWidth={1.6} aria-hidden="true" />Codzienna skrzynka</button>
-            <button className={styles.icon} type="button" onClick={toggleSound} aria-label={sound ? 'Wyłącz dźwięk' : 'Włącz dźwięk'}>
-              {sound ? <Volume2 size={17} strokeWidth={1.6} /> : <VolumeX size={17} strokeWidth={1.6} />}
-            </button>
+            <SoundControl className={styles.icon} />
           </div>
         </div>
       )}

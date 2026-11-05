@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Crown } from 'lucide-react';
 import { Logo } from '../../app/Logo';
+import { LangSwitch } from '../../app/Settings';
 import { Button } from '../../ui/Button';
 import styles from './LoginPage.module.css';
 
@@ -46,6 +47,7 @@ export function LoginPage() {
         </Suspense>
       </div>
       <section className={styles.box}>
+        <div className={styles.lang}><LangSwitch /></div>
         <h1 className={styles.brand}><Logo />ScamBox</h1>
         <p className="muted">Otwieraj skrzynki, zbieraj karty znanych osób i wymieniaj się ze znajomymi.</p>
         <div className={styles.seg} role="group" aria-label="Rodzaj formularza">
