@@ -75,6 +75,10 @@ sprawdzane przy budowaniu z `server/.sqlx/` - baza nie jest potrzebna do zbudowa
 | `PORT`, `BIND` | 8000, 0.0.0.0 | adres serwera |
 | `COOKIE_SECURE` | 1 | ciasteczko tylko po HTTPS |
 | `TRUST_PROXY` | 1 | adres gracza z `X-Forwarded-For` (limit nieudanych logowań) - serwer za proxy z HTTPS |
+| `OPERATOR_NAME` | Jan Kowalski | kto prowadzi stronę - pokazuje się w regulaminie i polityce prywatności (wymagane przed publikacją) |
+| `CONTACT_EMAIL` | kontakt@example.pl | kontakt w regulaminie i polityce prywatności (wymagane przed publikacją) |
+| `NOTIFY_EMAIL` | admin@example.pl | dokąd idą powiadomienia o nowych zgłoszeniach kart (domyślnie `CONTACT_EMAIL`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS` | | poczta wychodząca dla powiadomień (`SMTP_TLS`: `starttls` na 587, `tls` na 465). Bez `SMTP_HOST` powiadomień nie ma, zgłoszenia są wtedy tylko w panelu admina. W mailu jest sam numer i rodzaj zgłoszenia, bez danych osobowych |
 | `METRICS_ADDR` | 127.0.0.1:9100 | metryki Prometheus (`/metrics`); pusty = wyłączone |
 | `RUST_LOG` | scambox=info | poziom logów |
 

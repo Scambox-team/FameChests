@@ -54,6 +54,11 @@ pub async fn index(Me(me): Me, uri: Uri) -> Res {
     Ok(app_page())
 }
 
+/// Strony prawne i formularz zgłoszeń: bez logowania
+pub async fn public_page() -> Response {
+    app_page()
+}
+
 pub async fn admin_page(Admin(_): Admin) -> Response {
     app_page()
 }

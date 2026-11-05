@@ -897,6 +897,8 @@ struct MeResponse {
     ach_unseen: i64,
     /// rozliczone zakłady na wyścigi konne, których gracz jeszcze nie widział
     horse_news: Vec<Value>,
+    /// gracz nie zaakceptował aktualnej wersji regulaminu (okienko z akceptacją)
+    needs_terms: bool,
 }
 
 /// Odpytywane co 30 s (w lobby co 5 s) przez każdy otwarty ekran gry. Odnawia też ciasteczko logowania.
@@ -956,6 +958,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         messages: active_messages(&mut c, uid).await?,
         ach_unseen: crate::achievements::unseen(&mut c, uid).await?,
         horse_news: super::horses::horse_news(&mut c, uid).await?,
+        needs_terms: !super::reports::terms_ok(&mut c, uid).await?,
     };
     let jar = jar.add(session_cookie(uid, st.cfg.cookie_secure));
     Ok((jar, Json(body)).into_response())

@@ -32,6 +32,17 @@ function NavEntry({ item, onPick }: { item: NavItem; onPick?: () => void }) {
   );
 }
 
+function LegalLinks({ className, onPick }: { className: string; onPick?: () => void }) {
+  return (
+    <nav className={className} aria-label="Informacje prawne">
+      <Link to="/regulamin" onClick={onPick}>Regulamin</Link>
+      <Link to="/prywatnosc" onClick={onPick}>Prywatność</Link>
+      <Link to="/o-stronie" onClick={onPick}>O stronie</Link>
+      <Link to="/zglos" onClick={onPick}>Zgłoś problem</Link>
+    </nav>
+  );
+}
+
 function MyAvatar() {
   const { me } = useGame();
   return me ? <Avatar user={me} size={32} /> : null;
@@ -58,6 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <InstallButton className={styles.icon} />
           <SoundControl className={styles.icon} />
         </div>
+        <LegalLinks className={styles.legal} />
       </aside>
 
       <header className={styles.phoneTop}>
@@ -94,6 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button className={styles.daily} type="button" onClick={() => { setSheet(false); S.openDaily?.(); }}><Gift size={17} strokeWidth={1.6} aria-hidden="true" />Codzienna skrzynka</button>
             <SoundControl className={styles.icon} />
           </div>
+          <LegalLinks className={styles.legal} onPick={() => setSheet(false)} />
         </div>
       )}
     </div>

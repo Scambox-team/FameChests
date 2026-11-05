@@ -3791,6 +3791,16 @@
  },
  "patchNotes": [
   {
+   "v": 24,
+   "date": "2026-11-05",
+   "title": "Regulamin i zgłaszanie problemów z kartami",
+   "items": [
+    "📜 Dodaliśmy <b>Regulamin</b>, <b>Politykę prywatności</b> i stronę <b>O stronie</b>. Linki są na dole menu.",
+    "🚩 W podglądzie każdej karty jest teraz <b>„Zgłoś problem z kartą”</b>: błąd, obraźliwy opis albo prośba o usunięcie karty. Zgłoszenie może wysłać też ktoś bez konta (<b>/zglos</b>).",
+    "✅ Nowe konta akceptują regulamin przy rejestracji. Gdy regulamin się zmieni, zapytamy o ponowną akceptację."
+   ]
+  },
+  {
    "v": 23,
    "date": "2026-11-05",
    "title": "Angielski i głośność",

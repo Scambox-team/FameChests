@@ -51,3 +51,5 @@
   .viewer { gap: 18px; padding: 16px; }
   .viewer-info { padding: 16px; }
 }
+.vi-link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.vi-link:hover { color: #fff; }

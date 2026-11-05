@@ -383,6 +383,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
           ${scratchable(variant, uid) ? '<button class="btn primary" data-act="scratch">Zdrap kartę</button>' : ""}
         </div>` : ""}
         <div class="muted small">Porusz kursorem nad kartą, aby ją przechylić. Kliknij kartę, aby ją obrócić.</div>
+        <button type="button" class="vi-link" data-act="report">Zgłoś problem z kartą</button>
       </div>`;
   }
   document.body.appendChild(el);
@@ -401,6 +402,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
       if (next !== variant) { Sound.click(); return openViewer(pid, next, next === variant ? uid : null); }
       return;
     }
+    if (act === "report") return viewerActions.openReport?.(pid, variant);
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "draw") return viewerActions.openDrawing?.(+uid);

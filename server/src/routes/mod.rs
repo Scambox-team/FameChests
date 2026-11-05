@@ -12,6 +12,7 @@ pub mod horses;
 pub mod market;
 pub mod pages;
 pub mod quests;
+pub mod reports;
 pub mod shop;
 pub mod social;
 pub mod variants;
@@ -73,10 +74,16 @@ pub fn router(st: AppState) -> Router {
         .route("/player/{name}", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))
+        // strony prawne i formularz zgłoszeń: dostępne bez logowania (osoba z karty nie musi mieć konta)
+        .route("/regulamin", get(public_page))
+        .route("/prywatnosc", get(public_page))
+        .route("/o-stronie", get(public_page))
+        .route("/zglos", get(public_page))
         .route("/manifest.webmanifest", get(manifest))
         .route("/sw.js", get(service_worker))
         .route("/admin", get(admin_page))
         .route("/admin/chess", get(admin_page))
+        .route("/admin/reports", get(admin_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -88,6 +95,12 @@ pub fn router(st: AppState) -> Router {
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         .route("/api/password", post(change_password))
+        // regulamin i zgłoszenia problemów z kartami
+        .route("/api/legal", get(reports::legal))
+        .route("/api/terms/accept", post(reports::accept_terms))
+        .route("/api/reports", post(reports::report_create))
+        .route("/api/admin/reports", get(reports::admin_reports))
+        .route("/api/admin/reports/{id}", post(reports::admin_report_update).delete(reports::admin_report_delete))
         // skrzynki, kuźnia, codzienna nagroda
         .route("/api/config", get(config))
         .route("/api/state", get(state))

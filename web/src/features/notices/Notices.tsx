@@ -4,15 +4,26 @@ import { S, touch, useGame } from '../../game/store';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { DailyDialog } from '../daily/DailyDialog';
+import { TermsDialog } from '../legal/TermsDialog';
 import styles from './Notices.module.css';
 
 // Okienka gry pokazywane jedno po drugim: wiadomości od adminów, lista zmian, codzienna skrzynka.
-type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' };
+type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' };
 
 const seenMessages = new Set<number>();
 
 export function queueNotice(n: Notice) {
   S.notices = [...(S.notices ?? []), n];
+  touch();
+}
+
+let termsQueued = false;
+
+/** Nowa wersja regulaminu: okienko z akceptacją idzie przed wszystkimi innymi i czeka, aż gracz wybierze */
+export function showTerms(me: any) {
+  if (!me.needsTerms || termsQueued) return;
+  termsQueued = true;
+  S.notices = [{ kind: 'terms' }, ...(S.notices ?? [])];
   touch();
 }
 
@@ -25,6 +36,7 @@ export function showMessages(list: any[] = []) {
 
 /** Okienka na start gry, w tej samej kolejności co zawsze */
 export function startNotices(me: any) {
+  showTerms(me);
   showMessages(me.messages);
   if (me.patchNotes?.length) queueNotice({ kind: 'patch', notes: me.patchNotes });
   if (me.dailyClaimable) queueNotice({ kind: 'daily' });
@@ -70,6 +82,7 @@ export function Notices() {
 
   if (manualDaily) return <DailyDialog onClose={() => setManualDaily(false)} />;
   if (!next || game.opening) return null;
+  if (next.kind === 'terms') return <TermsDialog onDone={() => { termsQueued = false; close(); }} />;
   if (next.kind === 'messages') return <Messages list={next.list} onClose={close} />;
   if (next.kind === 'patch') return <PatchNotes notes={next.notes} onClose={close} />;
   return <DailyDialog onClose={close} />;

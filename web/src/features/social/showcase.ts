@@ -34,6 +34,11 @@ async function toggleShowcase(pid: string, variant: string) {
 export function installViewerActions() {
   Object.assign(viewerActions, {
     myItemFor, showcaseHas, toggleShowcase, openDrawing, openScratch,
+    openReport(pid: string, variant: string) {
+      closeViewer();
+      S.reportCard = { pid, variant };
+      touch();
+    },
     openShowDialog(pid: string, variant: string) {
       if (!myItemFor(pid, variant)) return toast('Nie masz tej karty', true);
       closeViewer();

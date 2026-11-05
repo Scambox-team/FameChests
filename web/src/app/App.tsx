@@ -30,7 +30,9 @@ import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
-import { Notices, showMessages, startNotices } from '../features/notices/Notices';
+import { Notices, showMessages, showTerms, startNotices } from '../features/notices/Notices';
+import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
+import { ReportDialog } from '../features/legal/ReportDialog';
 import { achPoll } from '../features/achievements/popups';
 import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
@@ -46,6 +48,7 @@ function onMe(me: any) {
   if (me.achUnseen && !S.opening) achPoll();
   if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
+  showTerms(me);
 }
 
 installViewerActions();
@@ -101,6 +104,7 @@ function Game() {
       <Stage />
       <Notices />
       <ShareDialog />
+      <ReportDialog />
     </AppShell>
   );
 }
@@ -113,7 +117,7 @@ export function App() {
   return (
     <>
       <div className="svg-defs" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svgDefs }} />
-      {pathname === '/login' ? <LoginPage /> : <Game />}
+      {pathname === '/login' ? <LoginPage /> : LEGAL_PATHS.includes(pathname.replace(/\/$/, '')) ? <LegalPage /> : <Game />}
       <Toaster />
       <canvas id="confetti" />
       <canvas id="fxCanvas" />

@@ -3,6 +3,8 @@ import { Crown } from 'lucide-react';
 import { Logo } from '../../app/Logo';
 import { LangSwitch } from '../../app/Settings';
 import { Button } from '../../ui/Button';
+import { Link } from 'react-router-dom';
+import { useLegal } from '../legal/useLegal';
 import styles from './LoginPage.module.css';
 
 const Galaxy: any = lazy(() => import('../../ui/reactbits/Galaxy/Galaxy') as any);
@@ -19,6 +21,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const register = mode === 'register';
+  const legal = useLegal();
 
   useEffect(() => { document.title = 'Logowanie · ScamBox'; }, []);
 
@@ -26,10 +29,11 @@ export function LoginPage() {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     if (register && f.password !== f.password2) return setError('Hasła nie są takie same');
+    if (register && !f.terms) return setError('Zaakceptuj regulamin i politykę prywatności');
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: f.username, password: f.password }) });
+      const res = await fetch(`/api/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: f.username, password: f.password, terms: register && !!f.terms }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Błąd logowania');
       location.href = nextPath();
@@ -59,9 +63,21 @@ export function LoginPage() {
           <label>Nazwa gracza<input name="username" type="text" required minLength={3} maxLength={20} autoComplete="username" autoFocus /></label>
           <label>Hasło<input name="password" type="password" required minLength={register ? 8 : 1} autoComplete={register ? 'new-password' : 'current-password'} /></label>
           {register && <label>Powtórz hasło<input name="password2" type="password" required autoComplete="new-password" /></label>}
+          {register && (
+            <label className={styles.check}>
+              <input name="terms" type="checkbox" required />
+              <span>Mam co najmniej {legal?.minAge ?? 16} lat i akceptuję <Link to="/regulamin" target="_blank">Regulamin</Link> oraz <Link to="/prywatnosc" target="_blank">Politykę prywatności</Link>.</span>
+            </label>
+          )}
           <p className={styles.err} role="alert">{error}</p>
           <Button kind="hue" big type="submit" disabled={busy}>{register ? 'Załóż konto' : 'Zaloguj'}</Button>
         </form>
+        <nav className={styles.legal} aria-label="Informacje prawne">
+          <Link to="/o-stronie">O stronie (to parodia)</Link>
+          <Link to="/regulamin">Regulamin</Link>
+          <Link to="/prywatnosc">Prywatność</Link>
+          <Link to="/zglos">Zgłoś problem z kartą</Link>
+        </nav>
       </section>
     </main>
   );

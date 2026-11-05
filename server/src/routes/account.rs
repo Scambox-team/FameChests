@@ -31,6 +31,8 @@ static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_
 pub struct Credentials {
     username: String,
     password: String,
+    /// zgoda na regulamin i politykę prywatności oraz potwierdzenie wieku (tylko przy rejestracji)
+    terms: bool,
 }
 
 #[derive(Deserialize, Default)]
@@ -69,6 +71,9 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
     if body.password.chars().count() < MIN_PASSWORD {
         return bad(password_error());
     }
+    if !body.terms {
+        return bad(format!("Zaakceptuj regulamin i politykę prywatności oraz potwierdź, że masz co najmniej {} lat", super::reports::MIN_AGE));
+    }
     let hash = hash_password_async(body.password).await;
     let mut tx = st.db.begin().await?;
     if find_user(&mut tx, name).await?.is_some() {
@@ -88,6 +93,12 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
         adopt_legacy_save(&mut tx, new_id).await?;
     }
     ensure_state(&mut tx, new_id).await?;
+    sqlx::query("INSERT INTO terms_accepted (user_id, version, accepted_at) VALUES ($1, $2, $3)")
+        .bind(new_id)
+        .bind(super::reports::TERMS_VERSION)
+        .bind(now())
+        .execute(&mut *tx)
+        .await?;
     // nowy gracz nie musi czytać starych list zmian - zobaczy dopiero następną aktualizację
     sqlx::query!("UPDATE user_state SET value = $1 WHERE user_id = $2 AND key = 'patch_seen'", g().patch_version(), new_id)
         .execute(&mut *tx)

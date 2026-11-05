@@ -17,6 +17,7 @@ dotenvy = "0.15"
 form_urlencoded = "1"
 hex = "0.4"
 hmac = "0.12"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls", "ring", "webpki-roots"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif"] }
 indexmap = { version = "2", features = ["serde"] }
 metrics = "0.24"

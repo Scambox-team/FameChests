@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Logo } from '../../app/Logo';
@@ -8,10 +8,12 @@ import panelHtml from './panel.html?raw';
 import { startPanel } from './panel';
 import { renderStickers } from './stickers';
 import { renderVariants } from './variants';
+
+const ReportsAdmin = lazy(() => import('./ReportsAdmin'));
 import './admin.css';
 import styles from './AdminApp.module.css';
 
-const TABS: [string, string][] = [['/admin', 'Skrzynki i karty'], ['/admin/chess', 'Szachy'], ['/variants', 'Warianty'], ['/stickers', 'Naklejki'], ['/designer', 'Kreator wariantów'], ['/mockups', 'Karty specjalne']];
+const TABS: [string, string][] = [['/admin', 'Skrzynki i karty'], ['/admin/chess', 'Szachy'], ['/variants', 'Warianty'], ['/stickers', 'Naklejki'], ['/designer', 'Kreator wariantów'], ['/mockups', 'Karty specjalne'], ['/admin/reports', 'Zgłoszenia']];
 
 // Formularze panelu są gotowym HTML, a każdy widok rysuje się sam w swoim elemencie.
 // Zakładki przeładowują stronę, więc każdy widok startuje raz.
@@ -42,6 +44,7 @@ function page(path: string): [string, ReactNode] {
   if (path === '/stickers') return ['Naklejki', <View id="stickersBody" start={renderStickers} />];
   if (path === '/designer') return ['Kreator wariantów', <View id="designerBody" start={startDesigner} />];
   if (path === '/mockups') return ['Karty specjalne', <View id="mockupsBody" start={renderMockups} />];
+  if (path === '/admin/reports') return ['Zgłoszenia', <Suspense fallback={null}><ReportsAdmin /></Suspense>];
   return [path === '/admin/chess' ? 'Szachy' : 'Panel admina', <Panel />];
 }
 

@@ -44,3 +44,5 @@
   .sheetNav { display: flex; flex-direction: column; gap: 2px; }
   .sheetNav .link { height: 46px; font-size: 17px; }
 }
+.legal { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 0 10px; font-size: 12px; line-height: 18px; color: var(--faint); }
+.legal a:hover { color: #fff; }
