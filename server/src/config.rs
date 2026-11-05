@@ -13,9 +13,6 @@
 //!   METRICS_ADDR   127.0.0.1:9100             metryki Prometheus (pusty = wyłączone)
 //!   OPERATOR_NAME  Jan Kowalski / Nazwa grupy   kto prowadzi stronę (regulamin, polityka prywatności)
 //!   CONTACT_EMAIL  kontakt@example.pl          adres do kontaktu (regulamin, zgłoszenia, RODO); trzymaj w zmiennych, nie w repozytorium
-//!   NOTIFY_EMAIL   admin@example.pl            dokąd wysyłać powiadomienia o nowych zgłoszeniach kart (domyślnie CONTACT_EMAIL)
-//!   SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SMTP_TLS (starttls | tls | none)
-//!                                              poczta wychodząca; bez SMTP_HOST powiadomień nie ma (zgłoszenia są w panelu admina)
 //!
 //! Azure App Service (Windows, scambox.exe za IIS - web.config z HttpPlatformHandler): port z HTTP_PLATFORM_PORT,
 //! DATA_DIR domyślnie %HOME%\data (folder, który przetrwa restart i wdrożenie), COOKIE_SECURE i TRUST_PROXY domyślnie
@@ -55,33 +52,6 @@ pub enum Command {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SmtpTls {
-    /// połączenie zwykłe, potem STARTTLS (port 587)
-    StartTls,
-    /// TLS od początku (port 465)
-    Tls,
-    /// bez szyfrowania: tylko do testów na własnym komputerze
-    None,
-}
-
-/// Poczta wychodząca (powiadomienia dla admina). Hasło nie trafia do logów.
-#[derive(Clone)]
-pub struct Smtp {
-    pub host: String,
-    pub port: u16,
-    pub tls: SmtpTls,
-    pub user: Option<String>,
-    pub password: Option<String>,
-    pub from: String,
-}
-
-impl std::fmt::Debug for Smtp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Smtp({}:{})", self.host, self.port)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
@@ -96,8 +66,6 @@ pub struct Config {
     pub metrics_addr: Option<SocketAddr>,
     pub operator_name: Option<String>,
     pub contact_email: Option<String>,
-    pub notify_email: Option<String>,
-    pub smtp: Option<Smtp>,
     pub dev: bool,
     pub lan: bool,
 }
@@ -136,27 +104,6 @@ fn detect_base_dir() -> PathBuf {
         }
     }
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
-}
-
-/// SMTP z zmiennych środowiskowych; bez SMTP_HOST poczta jest wyłączona
-fn load_smtp() -> anyhow::Result<Option<Smtp>> {
-    let Some(host) = env("SMTP_HOST") else { return Ok(None) };
-    let tls = match env("SMTP_TLS").as_deref().map(str::to_lowercase).as_deref() {
-        None | Some("starttls") => SmtpTls::StartTls,
-        Some("tls") => SmtpTls::Tls,
-        Some("none") => SmtpTls::None,
-        Some(other) => anyhow::bail!("SMTP_TLS: starttls, tls albo none (jest: {other})"),
-    };
-    let port = match env("SMTP_PORT") {
-        Some(p) => p.parse()?,
-        None if tls == SmtpTls::Tls => 465,
-        None => 587,
-    };
-    let user = env("SMTP_USER");
-    let from = env("SMTP_FROM")
-        .or_else(|| user.clone().filter(|u| u.contains('@')))
-        .ok_or_else(|| anyhow::anyhow!("SMTP_HOST jest ustawiony, ale brak SMTP_FROM (adres nadawcy)"))?;
-    Ok(Some(Smtp { host, port, tls, user, password: env("SMTP_PASSWORD"), from }))
 }
 
 fn test_url(url: &str) -> String {
@@ -227,8 +174,6 @@ impl Config {
             metrics_addr,
             operator_name: env("OPERATOR_NAME"),
             contact_email: env("CONTACT_EMAIL"),
-            notify_email: env("NOTIFY_EMAIL").or_else(|| env("CONTACT_EMAIL")),
-            smtp: load_smtp()?,
             dev: cli.dev,
             lan: cli.lan,
         })

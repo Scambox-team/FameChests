@@ -23,7 +23,6 @@ mod game;
 mod ids;
 mod images;
 mod lenient;
-mod mail;
 mod routes;
 mod startup;
 mod state;
@@ -175,9 +174,6 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
     }
     if cfg.operator_name.is_none() || cfg.contact_email.is_none() {
         tracing::warn!("brak OPERATOR_NAME lub CONTACT_EMAIL: regulamin i polityka prywatnosci pokaza znacznik do uzupelnienia");
-    }
-    if !mail::enabled(&cfg) {
-        tracing::info!("powiadomienia e-mail o zgloszeniach wylaczone (brak SMTP_HOST / NOTIFY_EMAIL): zgloszenia sa tylko w panelu admina");
     }
     println!("\n  Gra działa na:  http://127.0.0.1:{}   (baza: {})\n", cfg.addr.port(), cfg.describe_db());
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())

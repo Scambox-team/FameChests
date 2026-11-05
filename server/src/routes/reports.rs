@@ -158,9 +158,9 @@ pub async fn report_create(
         return fail(StatusCode::TOO_MANY_REQUESTS, "Wysłano już sporo zgłoszeń. Spróbuj ponownie za godzinę.");
     }
 
-    let id: i64 = sqlx::query_scalar(
+    sqlx::query(
         "INSERT INTO card_reports (created_at, user_id, username, person_id, card_name, variant, category, message, contact)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     )
     .bind(now())
     .bind(me.as_ref().map(|u| u.id))
@@ -171,16 +171,8 @@ pub async fn report_create(
     .bind(category)
     .bind(message)
     .bind(contact)
-    .fetch_one(&st.db)
+    .execute(&st.db)
     .await?;
-    // powiadomienie bez danych osobowych: tylko numer i rodzaj, resztę admin widzi w panelu
-    crate::mail::notify_admin(
-        &st.cfg,
-        format!("ScamBox: nowe zgłoszenie karty #{id}"),
-        format!("Nowe zgłoszenie #{id}: {}.
-
-Szczegóły są w panelu admina, w zakładce „Zgłoszenia”.", category_label(category)),
-    );
     ok(json!({"ok": true}))
 }
 
