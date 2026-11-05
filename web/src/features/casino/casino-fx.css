@@ -39,6 +39,9 @@
 /* ---------------------------------------------------------------- panele gier: cienka złota/kolorowa obwódka i poświata */
 .cs-page .rl-cols { grid-template-columns: minmax(300px, 480px) minmax(0, 1fr); }
 .cs-page .panel { position: relative; isolation: isolate; }
+/* koło 2D: zaczyna się równo ze stołem i zostaje pod przyklejonym paskiem przy przewijaniu
+   (samo .panel z position: relative zostawiało top: 80px z casino.css jako przesunięcie w dół) */
+.cs-page .rl-left { position: sticky; top: 76px; }
 .cs-page .rl-left, .cs-page .upg-mid, .cs-page .jp-room, .cs-page .jp-left {
   background:
     radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--hue) 14%, transparent), transparent 70%),
