@@ -12,6 +12,11 @@
 .art { display: block; width: 100%; height: auto; pointer-events: none; }
 @keyframes bob { 50% { transform: translateY(-4%); } }
 .owned { position: absolute; top: 8%; right: 10%; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; display: grid; place-items: center; background: #fff; color: #000; font-size: 14px; font-weight: 700; }
+/* tylko admin: czy skrzynka jest dziś w sklepie */
+.shopTag { position: absolute; left: 50%; bottom: 2%; translate: -50% 0; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 12px; background: #000b; color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.shopTag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8a8a94; }
+.shopOn { color: #d9ffe9; }
+.shopOn::before { background: #3fc07a; box-shadow: 0 0 6px #3fc07a; }
 .test { position: absolute; top: 6%; left: 8%; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 12px; background: var(--warn); color: #000; font-size: 13px; font-weight: 700; }
 /* strzałki stoją zawsze w tym samym miejscu: środkowa kolumna ma stałą szerokość, długa nazwa się skraca */
 .bar { display: grid; grid-template-columns: 44px min(320px, calc(100% - 120px)) 44px; align-items: center; justify-content: center; gap: 16px; padding: 0 16px; }

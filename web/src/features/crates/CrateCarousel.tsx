@@ -23,6 +23,8 @@ export function CrateCarousel({ crates, active, onPick }: { crates: Crate[]; act
   const n = crates.length, at = Math.max(0, crates.findIndex(c => c.id === active));
   const step = (d: number) => onPick(crates[(at + d + n) % n]);
   const half = Math.max(1, Math.floor(n / 2)), size = Math.min(230, W * .36);
+  // admin widzi też skrzynki spoza sklepu - zaznaczamy, które są dziś do kupienia
+  const admin = !!S.me?.isAdmin, inShop = (c: Crate) => c.shop && !c.special;
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
     if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
@@ -51,6 +53,7 @@ export function CrateCarousel({ crates, active, onPick }: { crates: Crate[]; act
               <CrateArt crate={c} className={styles.art} />
               {owned > 0 && <span className={styles.owned}>{owned}</span>}
               {c.test && <span className={styles.test}><FlaskConical size={13} aria-hidden="true" />Test</span>}
+              {admin && !c.test && <span className={`${styles.shopTag}${inShop(c) ? ` ${styles.shopOn}` : ''}`}>{inShop(c) ? 'W sklepie' : 'Poza sklepem'}</span>}
             </button>
           );
         })}
@@ -59,7 +62,7 @@ export function CrateCarousel({ crates, active, onPick }: { crates: Crate[]; act
         <button type="button" className={styles.arrow} onClick={() => step(-1)} aria-label="Poprzednia skrzynka"><ChevronLeft size={22} /></button>
         <div className={styles.label} aria-live="polite">
           <b>{crates[at]?.name}</b>
-          <span>{crates[at]?.test ? 'Tylko dla adminów, bez nagród' : `${crates[at]?.people.length} kart · ${fmt(crates[at]?.price ?? 0)}`}</span>
+          <span>{crates[at]?.test ? 'Tylko dla adminów, bez nagród' : `${crates[at]?.people.length} kart · ${fmt(crates[at]?.price ?? 0)}${admin && crates[at] && !inShop(crates[at]) ? ' · poza sklepem' : ''}`}</span>
         </div>
         <button type="button" className={styles.arrow} onClick={() => step(1)} aria-label="Następna skrzynka"><ChevronRight size={22} /></button>
       </div>

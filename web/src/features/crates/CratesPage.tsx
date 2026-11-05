@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { CalendarClock, Lock, Zap, Repeat } from 'lucide-react';
+import { CalendarClock, Lock, Minus, Plus, Zap, Repeat } from 'lucide-react';
 
 import { api } from '../../api/client';
 import { crateList, crateOf, plural, testCrates } from '../../game/rules';
@@ -74,6 +74,12 @@ function BuyPanel({ crate }: { crate: Crate }) {
       <div className={styles.qty} role="group" aria-label="Ilość skrzynek">
         <span>Ilość</span>
         {COUNTS.map(n => <button key={n} type="button" aria-pressed={count === n} onClick={() => setCount(n)}>{n}</button>)}
+        <span className={styles.step}>
+          <button type="button" aria-label="O jedną skrzynkę mniej" disabled={count <= 1} onClick={() => setCount(count - 1)}><Minus size={15} aria-hidden="true" /></button>
+          <input type="number" inputMode="numeric" min={1} max={game.cfg.maxOpen} value={count} aria-label="Dokładna ilość skrzynek"
+            onChange={e => setCount(Math.floor(+e.target.value) || 1)} onFocus={e => e.target.select()} />
+          <button type="button" aria-label="O jedną skrzynkę więcej" disabled={count >= game.cfg.maxOpen} onClick={() => setCount(count + 1)}><Plus size={15} aria-hidden="true" /></button>
+        </span>
       </div>
       <div className={styles.switches}>
         <label><input type="checkbox" checked={!!game.fast} onChange={e => setFlag('fast', e.target.checked)} /><Zap size={15} aria-hidden="true" />Ultraszybko</label>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Box, Minus, Plus, RotateCcw, Square } from 'lucide-react';
 import { PickTile } from '../../cards/PickTile';
 import type { RouletteScene } from '../../three/rouletteScene';
 import { api } from '../../api/client';
@@ -55,21 +55,27 @@ function Board({ disabled }: { disabled: boolean }) {
   return <div className="rl-board">{cells}</div>;
 }
 
-/** Koło 3D (Three.js wczytuje się dopiero tutaj); bez WebGL zostaje płaskie koło z SVG */
-function useWheel3d(canvas: React.RefObject<HTMLCanvasElement | null>, spot: React.RefObject<HTMLDivElement | null>) {
+// widok koła wybrany przez gracza (domyślnie 3D), zapamiętany w przeglądarce
+const VIEW_KEY = 'rouletteView';
+const savedView3d = () => { try { return localStorage.getItem(VIEW_KEY) !== '2d'; } catch { return true; } };
+
+/** Koło 3D (Three.js wczytuje się dopiero tutaj); w widoku 2D albo bez WebGL płaskie koło z SVG */
+function useWheel3d(canvas: React.RefObject<HTMLCanvasElement | null>, spot: React.RefObject<HTMLDivElement | null>, want3d: boolean) {
   const scene = useRef<RouletteScene | null>(null);
-  const [flat, setFlat] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const flat = failed || !want3d;
   useEffect(() => {
+    if (!want3d) return;
     let alive = true;
     import('../../three/rouletteScene').then(({ createRouletteScene }) => {
       if (!alive || !canvas.current) return;
       try {
         scene.current = createRouletteScene(canvas.current, S.cfg.roulette.wheel, S.cfg.roulette.red, () => spot.current?.getBoundingClientRect() ?? null);
         if (CS.last) scene.current.result(CS.last.win);
-      } catch { setFlat(true); }
-    }).catch(() => setFlat(true));
+      } catch { setFailed(true); }
+    }).catch(() => setFailed(true));
     return () => { alive = false; scene.current?.destroy(); scene.current = null; };
-  }, []);
+  }, [want3d]);
   // kamera gracza: przeciąganie obraca, kółko przybliża (na granicy zoomu strona przewija się dalej), dwuklik wraca do widoku
   useEffect(() => {
     const el = spot.current;
@@ -106,7 +112,14 @@ function useOrbit(scene: React.RefObject<RouletteScene | null>) {
 export function Roulette() {
   const game = useGame();
   const rot = useRef<HTMLDivElement>(null), ball = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), spot = useRef<HTMLDivElement>(null);
-  const { scene, flat } = useWheel3d(canvas, spot);
+  const [view3d, setView3d] = useState(savedView3d);
+  const { scene, flat } = useWheel3d(canvas, spot, view3d);
+  const pickView = (v: boolean) => {
+    if (S.spinning || v === view3d) return;
+    try { localStorage.setItem(VIEW_KEY, v ? '3d' : '2d'); } catch { /* bez zapamiętania */ }
+    Sound.click();
+    setView3d(v);
+  };
   const [picking, setPicking] = useState(false);
   const orbit = useOrbit(scene);
   dropMissing(CS.sel);
@@ -166,6 +179,10 @@ export function Roulette() {
   return (
     <div className="rl-cols">
       <div className="panel rl-left">
+        <div className="hr-view rl-view" role="group" aria-label="Widok koła">
+          <button type="button" className={view3d ? 'on' : ''} aria-pressed={view3d} disabled={spinning} onClick={() => pickView(true)}><Box size={15} aria-hidden="true" />3D</button>
+          <button type="button" className={view3d ? '' : 'on'} aria-pressed={!view3d} disabled={spinning} onClick={() => pickView(false)}><Square size={15} aria-hidden="true" />2D</button>
+        </div>
         {flat ? <div className="rl-wheel-wrap">
           <div className="rl-rot" ref={rot} style={{ transform: `rotate(${CS.angle}deg)` }}><Wheel /></div>
           <div className="rl-ball-rot" ref={ball}><i /></div>

@@ -327,3 +327,5 @@
   transition: background .15s, transform .15s;
 }
 .rl-cam button:hover { background: rgb(40 40 48 / .7); transform: translateY(-1px); }
+/* przełącznik 3D / 2D nad kołem ruletki */
+.rl-view { position: relative; z-index: 1; width: auto; }
