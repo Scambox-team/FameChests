@@ -38,6 +38,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # gra działa = strona logowania odpowiada 200 (update.sh czeka na to i w razie czego wraca do poprzedniej wersji)
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /login HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      # pierwszy start na pustej bazie wczytuje katalog i uzupełnia tabele - kilka minut
+      start_period: 10m
     environment:
       # prosto do Postgresa (nie przez pooler): serwer używa przygotowanych zapytań, a w sieci Dockera nie ma po co
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}

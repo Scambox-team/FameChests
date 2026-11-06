@@ -6,5 +6,6 @@
 .list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px; border-radius: var(--radius-m); background: var(--surface); }
 .chip { padding: 2px 10px; border-radius: 999px; background: #e5a93b33; color: var(--warn); font-size: 12px; font-weight: 600; }
 .chip.auto { background: var(--raised); color: var(--text); }
+.chip.update { background: #3b82e533; color: #8ab4ff; }
 .dl { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 12px; border-radius: var(--radius-s); background: var(--raised); color: var(--text); font-weight: 600; }
 .dl:hover { background: var(--control); }

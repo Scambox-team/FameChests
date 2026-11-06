@@ -5,7 +5,8 @@ import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import s from './BackupsAdmin.module.css';
 
-interface Backup { name: string; kind: 'auto' | 'manual'; size: number; createdAt: number }
+interface Backup { name: string; kind: 'auto' | 'manual' | 'update'; size: number; createdAt: number }
+const KIND: Record<Backup['kind'], string> = { auto: 'Automatyczna', manual: 'Ręczna', update: 'Przed aktualizacją' };
 interface BackupList { backups: Backup[]; everyHours: number; keep: number; dir: string; schema: string; pgDump: string | null }
 
 const date = (t: number) => new Date(t * 1000).toLocaleString('pl-PL', { dateStyle: 'medium', timeStyle: 'short' });
@@ -49,7 +50,7 @@ export default function BackupsAdmin() {
       <ul className={s.list}>
         {data.backups.map(b => (
           <li key={b.name}>
-            <span className={`${s.chip} ${b.kind === 'auto' ? s.auto : ''}`}>{b.kind === 'auto' ? 'Automatyczna' : 'Ręczna'}</span>
+            <span className={`${s.chip} ${s[b.kind] ?? ''}`}>{KIND[b.kind] ?? b.kind}</span>
             <b>{date(b.createdAt)}</b>
             <span className="muted small">{size(b.size)}</span>
             <a className={s.dl} href={`/api/admin/backups/${encodeURIComponent(b.name)}`} download><Download size={15} aria-hidden="true" /> Pobierz</a>

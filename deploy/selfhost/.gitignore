@@ -7,3 +7,7 @@ volumes/storage/*
 volumes/snippets/*
 !volumes/snippets/.gitkeep
 backups/
+# stan update.sh
+.update.lock
+.update.failed
+update.log

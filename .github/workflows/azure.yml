@@ -3,6 +3,8 @@
 #   zmienne:  AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID (logowanie OIDC, bez hasła - to nie są tajne dane)
 #             AZURE_WEBAPP_NAME
 # Jednorazowa konfiguracja aplikacji: docs/hosting.md, sekcja "Azure App Service (Linux)".
+# Bez zmiennej AZURE_WEBAPP_NAME (po przenosinach na własny serwer) workflow tylko buduje obraz do ghcr.io -
+# serwer pobiera go sam: deploy/selfhost/update.sh.
 name: Azure
 
 on:
@@ -53,12 +55,14 @@ jobs:
           cache-to: type=gha,mode=max
 
       - uses: azure/login@v2
+        if: vars.AZURE_WEBAPP_NAME != ''
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - uses: azure/webapps-deploy@v3
+        if: vars.AZURE_WEBAPP_NAME != ''
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           images: ${{ env.IMAGE }}:${{ github.sha }}
