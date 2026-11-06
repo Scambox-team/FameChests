@@ -4,6 +4,7 @@
 pub mod account;
 pub mod admin;
 pub mod arena;
+pub mod backups;
 pub mod casino;
 pub mod chess;
 pub mod drawings;
@@ -84,6 +85,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin", get(admin_page))
         .route("/admin/chess", get(admin_page))
         .route("/admin/reports", get(admin_page))
+        .route("/admin/backups", get(admin_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -101,6 +103,10 @@ pub fn router(st: AppState) -> Router {
         .route("/api/reports", post(reports::report_create))
         .route("/api/admin/reports", get(reports::admin_reports))
         .route("/api/admin/reports/{id}", post(reports::admin_report_update).delete(reports::admin_report_delete))
+        // kopie zapasowe bazy: tylko właściciel (OWNER_IDS)
+        .route("/api/admin/role", get(backups::admin_role))
+        .route("/api/admin/backups", get(backups::backups_list).post(backups::backup_create))
+        .route("/api/admin/backups/{name}", get(backups::backup_download))
         // skrzynki, kuźnia, codzienna nagroda
         .route("/api/config", get(config))
         .route("/api/state", get(state))

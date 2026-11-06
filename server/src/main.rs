@@ -9,6 +9,7 @@
 mod arena;
 mod achievements;
 mod assets;
+mod backup;
 mod horses;
 mod auth;
 mod catalog;
@@ -126,7 +127,13 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
         login: Arc::default(),
         cookie_key: auth::cookie_key(&cfg.secret_key),
         online: Default::default(),
+        backups: Arc::new(backup::Backups::new(&cfg).await),
     };
+    if cfg.owner_ids.is_empty() {
+        tracing::warn!("brak OWNER_IDS: nikt nie pobierze kopii bazy z panelu (automatyczne kopie i tak się robią)");
+    }
+    // automatyczne kopie bazy (BACKUP_EVERY_HOURS)
+    tokio::spawn(st.backups.clone().run_schedule());
 
     // zdjęcia kart i miniatury - w tle
     let people: Vec<_> = st.cat().people.values().map(|p| (p.id.clone(), p.wiki.clone())).collect();

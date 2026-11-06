@@ -30,7 +30,14 @@ ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# pg_dump do kopii zapasowych z panelu (src/backup.rs) - z repozytorium PostgreSQL, ta sama wersja (17) co baza Supabase
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-17 \
+    && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /src/server/target/release/scambox /usr/local/bin/scambox
 COPY static ./static

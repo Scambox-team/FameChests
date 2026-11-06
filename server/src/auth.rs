@@ -218,6 +218,10 @@ pub struct Me(pub User);
 #[derive(Clone)]
 pub struct Admin(pub User);
 
+/// Zalogowany właściciel: admin, którego id jest w OWNER_IDS (ustawienia serwera, nie baza ani panel)
+#[derive(Clone)]
+pub struct Owner(pub User);
+
 /// Gracz, jeśli jest zalogowany (zdjęcia, strona logowania)
 pub struct MaybeUser(pub Option<User>);
 
@@ -225,6 +229,7 @@ pub enum AuthReject {
     Api(SignedCookieJar),
     Page(SignedCookieJar, String),
     Forbidden(bool),
+    OwnerOnly,
     Internal,
 }
 
@@ -244,6 +249,7 @@ impl IntoResponse for AuthReject {
             }
             AuthReject::Forbidden(true) => (StatusCode::FORBIDDEN, Json(json!({"error": "Tylko dla admina"}))).into_response(),
             AuthReject::Forbidden(false) => Redirect::to("/").into_response(),
+            AuthReject::OwnerOnly => (StatusCode::FORBIDDEN, Json(json!({"error": "Tylko dla właściciela"}))).into_response(),
             AuthReject::Internal => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Błąd serwera"}))).into_response(),
         }
     }
@@ -286,6 +292,18 @@ impl FromRequestParts<AppState> for Admin {
             return Err(AuthReject::Forbidden(parts.uri.path().starts_with("/api/")));
         }
         Ok(Admin(u))
+    }
+}
+
+impl FromRequestParts<AppState> for Owner {
+    type Rejection = AuthReject;
+
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
+        let Admin(u) = Admin::from_request_parts(parts, st).await?;
+        if !st.cfg.is_owner(u.id) {
+            return Err(AuthReject::OwnerOnly);
+        }
+        Ok(Owner(u))
     }
 }
 

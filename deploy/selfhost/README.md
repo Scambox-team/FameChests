@@ -52,7 +52,8 @@ docker compose pull game
 Robi to ktoś z zespołu, kto ma dostęp do Azure (adres bazy i klucze są tam).
 
 1. **Zatrzymaj grę na Azure** (portal -> App Service -> *Stop*) - od tej chwili gracze nic nie zmieniają.
-2. Z Azure (*Configuration / Environment variables*) przepisz do `.env`:
+2. Ustaw właściciela gry (`GAME_OWNER_IDS`, sekcja [Kopie zapasowe](#kopie-zapasowe)).
+   Z Azure (*Configuration / Environment variables*) przepisz do `.env`:
    - `SECRET_KEY` -> `GAME_SECRET_KEY` (inaczej wszyscy zostaną wylogowani)
    - `DB_SCHEMA` -> `GAME_DB_SCHEMA` (zwykle `famechests`)
    - `OPERATOR_NAME`, `CONTACT_EMAIL` -> `GAME_OPERATOR_NAME`, `GAME_CONTACT_EMAIL`
@@ -100,15 +101,41 @@ docker compose logs -f game                                            # logi
 docker compose restart game
 ```
 
-**Kopia zapasowa** (codziennie z crona, trzymaj ją też poza serwerem):
+## Kopie zapasowe
+
+Gra sama robi kopię bazy (`pg_dump` schematu gry) **co 24 h** do `./backups/game/` i trzyma 14 najnowszych
+(`GAME_BACKUP_EVERY_HOURS`, `GAME_BACKUP_KEEP` w `.env`). Właściciel może też w panelu admina, w zakładce
+**Kopie zapasowe**, zrobić kopię od razu i pobrać dowolną z nich.
+
+**Właściciel (owner)** to osobna rola ponad adminem, ustawiana **tylko** w `.env` (`GAME_OWNER_IDS=1,5` - id kont):
+- tylko on widzi zakładkę i pobiera kopie (inni admini: 403, gracze i niezalogowani: brak dostępu);
+- jego konta nie zmieni żaden inny admin: hasło, odebranie admina, blokada, usunięcie konta i kart;
+- nie da się go nadać z panelu ani zmianą w bazie - przejęte konto admina nie dobierze się do kopii;
+- każde utworzenie i pobranie kopii zapisuje się w dzienniku adminów.
+
+Id konta (właściciel musi też być adminem w grze):
 
 ```sh
-docker compose exec -T db pg_dump -h localhost -U postgres -d postgres --schema=famechests -Fc \
-  > backups/scambox-$(date +%F).dump
+docker compose exec -T db psql -h localhost -U postgres -d postgres -c "SELECT id, username FROM famechests.users WHERE is_admin = 1"
 ```
 
-Odtworzenie: `docker compose stop game`, potem
-`docker compose exec -T db pg_restore -h localhost -U postgres -d postgres --clean --if-exists --no-owner < plik.dump`.
+Wpisz id do `GAME_OWNER_IDS` i `docker compose up -d game`.
+
+**Kopie trzymaj też poza serwerem** (awaria dysku zabiera i bazę, i kopie) - np. co noc z innego komputera:
+
+```sh
+rsync -a <użytkownik>@<serwer>:FameChests/deploy/selfhost/backups/game/ ./scambox-kopie/
+```
+
+W kopii są hashe haseł i dane graczy - nie wysyłaj jej nikomu i nie wrzucaj do internetu.
+
+**Odtworzenie** z pliku `.dump` (z panelu albo z `backups/game/`) - zastępuje obecne dane gry:
+
+```sh
+docker compose stop game
+docker compose exec -T db pg_restore -h localhost -U postgres -d postgres --clean --if-exists --no-owner < backups/game/<plik>.dump
+docker compose up -d game
+```
 
 ## Bezpieczeństwo
 

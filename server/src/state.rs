@@ -24,6 +24,8 @@ pub struct AppState {
     pub login: Limiter,
     pub cookie_key: Key,
     pub online: Arc<Online>,
+    /// kopie zapasowe bazy (tylko właściciel, `routes/backups.rs`)
+    pub backups: Arc<crate::backup::Backups>,
 }
 
 /// Gracze online: kiedy ostatnio coś wysłali (otwarta gra odpytuje /api/me co 30 s, w ukrytej karcie nie).

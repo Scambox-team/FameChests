@@ -82,6 +82,10 @@ sprawdzane przy budowaniu z `server/.sqlx/` - baza nie jest potrzebna do zbudowa
 | `TRUST_PROXY` | 1 | adres gracza z `X-Forwarded-For` (limit nieudanych logowań) - serwer za proxy z HTTPS |
 | `OPERATOR_NAME` | Jan Kowalski | kto prowadzi stronę - pokazuje się w regulaminie i polityce prywatności (wymagane przed publikacją) |
 | `CONTACT_EMAIL` | kontakt@example.pl | kontakt w regulaminie i polityce prywatności (wymagane przed publikacją) |
+| `OWNER_IDS` | - | id kont właścicieli (po przecinku): tylko oni pobierają kopie bazy w panelu, ich kont nie zmieni inny admin |
+| `BACKUP_DIR` | `DATA_DIR/backups` | kopie bazy (`pg_dump`, potrzebny w systemie - obraz Dockera go ma) |
+| `BACKUP_EVERY_HOURS` | 24 | co ile godzin automatyczna kopia; 0 = wyłączone |
+| `BACKUP_KEEP` | 14 | ile najnowszych kopii każdego rodzaju (automatyczne / ręczne) zostaje |
 | `METRICS_ADDR` | 127.0.0.1:9100 | metryki Prometheus (`/metrics`); pusty = wyłączone |
 | `RUST_LOG` | scambox=info | poziom logów |
 

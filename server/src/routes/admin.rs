@@ -34,6 +34,15 @@ fn not_found(msg: &str) -> AppError {
     AppError::with_status(StatusCode::NOT_FOUND, msg)
 }
 
+/// Konto właściciela (OWNER_IDS) zmienia tylko właściciel: inaczej zwykły admin zmieniłby mu hasło, zalogował się
+/// na jego konto i pobrał kopię bazy. Dotyczy hasła, admina, blokady, usunięcia konta i kart.
+fn guard_owner(st: &AppState, me: &User, target: i64) -> Res<()> {
+    if st.cfg.is_owner(target) && !st.cfg.is_owner(me.id) {
+        return fail(StatusCode::FORBIDDEN, "To konto właściciela - może je zmieniać tylko właściciel");
+    }
+    Ok(())
+}
+
 /// Identyfikator z nazwy: "Skrzynia Królów" -> "skrzynia_krolow"
 fn slug(text: &str) -> String {
     static NON_ALNUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-zA-Z0-9]+").unwrap());
@@ -1041,6 +1050,7 @@ pub async fn admin_ban(
     if uid == me.id {
         return bad("Nie możesz zablokować samego siebie");
     }
+    guard_owner(&st, &me, uid)?;
     let reason = if req.ban { clean(&req.reason, 200) } else { String::new() };
     let mut tx = st.db.begin().await?;
     sqlx::query!("UPDATE users SET banned = $1, ban_reason = $2 WHERE id = $3", i32::from(req.ban), reason, uid)
@@ -1130,6 +1140,7 @@ pub async fn admin_delete_user_cards(
     Path(uid): Path<i64>,
     JsonBody(req): JsonBody<DeleteCardsRequest>,
 ) -> Res {
+    guard_owner(&st, &me, uid)?;
     let cat = st.cat();
     let mut tx = st.db.begin().await?;
     let ids: Vec<i64> = if req.all {
@@ -1260,6 +1271,7 @@ pub async fn admin_toggle(State(st): State<AppState>, Admin(me): Admin, Path(uid
     if uid == me.id {
         return bad("Nie możesz odebrać uprawnień samemu sobie");
     }
+    guard_owner(&st, &me, uid)?;
     let mut tx = st.db.begin().await?;
     let now_admin = sqlx::query_scalar!("UPDATE users SET is_admin = 1 - is_admin WHERE id = $1 RETURNING is_admin", uid)
         .fetch_optional(&mut *tx)
@@ -1282,6 +1294,7 @@ pub async fn admin_password(
     Path(uid): Path<i64>,
     JsonBody(req): JsonBody<NewPassword>,
 ) -> Res {
+    guard_owner(&st, &me, uid)?;
     if req.password.chars().count() < MIN_PASSWORD {
         return bad(password_error());
     }
@@ -1297,6 +1310,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     if uid == me.id {
         return bad("Nie możesz usunąć samego siebie");
     }
+    guard_owner(&st, &me, uid)?;
     let mut tx = st.db.begin().await?;
     log_admin(&mut tx, &me, "user_delete", Some(uid), "").await?; // przed usunięciem - żeby zapisać nazwę gracza
     super::market::market_forget_user(&mut tx, uid).await?; // jego oferty na rynku i lobby jackpota

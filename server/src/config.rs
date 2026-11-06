@@ -13,6 +13,11 @@
 //!   METRICS_ADDR   127.0.0.1:9100             metryki Prometheus (pusty = wyłączone)
 //!   OPERATOR_NAME  Jan Kowalski / Nazwa grupy   kto prowadzi stronę (regulamin, polityka prywatności)
 //!   CONTACT_EMAIL  kontakt@example.pl          adres do kontaktu (regulamin, zgłoszenia, RODO); trzymaj w zmiennych, nie w repozytorium
+//!   OWNER_IDS      1,5                        id kont właścicieli (kopie bazy, ochrona ich kont przed innymi adminami);
+//!                                             tylko tutaj - nie da się ich nadać z panelu ani z bazy
+//!   BACKUP_DIR     /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
+//!   BACKUP_EVERY_HOURS 24                     co ile godzin automatyczna kopia (0 = wyłączone)
+//!   BACKUP_KEEP    14                         ile kopii każdego rodzaju (automatyczne / ręczne) trzymać
 //!
 //! Azure App Service (Windows, scambox.exe za IIS - web.config z HttpPlatformHandler): port z HTTP_PLATFORM_PORT,
 //! DATA_DIR domyślnie %HOME%\data (folder, który przetrwa restart i wdrożenie), COOKIE_SECURE i TRUST_PROXY domyślnie
@@ -66,8 +71,21 @@ pub struct Config {
     pub metrics_addr: Option<SocketAddr>,
     pub operator_name: Option<String>,
     pub contact_email: Option<String>,
+    pub owner_ids: Vec<i64>,
+    pub backup_dir: PathBuf,
+    pub backup_every_hours: f64,
+    pub backup_keep: usize,
     pub dev: bool,
     pub lan: bool,
+}
+
+/// "1, 5,12" -> [1, 5, 12]; błędny wpis zatrzymuje start (literówka nie może po cichu odebrać ownera)
+fn parse_ids(s: &str) -> anyhow::Result<Vec<i64>> {
+    s.split(',')
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(|p| p.parse::<i64>().ok().filter(|id| *id > 0).ok_or_else(|| anyhow::anyhow!("OWNER_IDS: \"{p}\" to nie id konta")))
+        .collect()
 }
 
 fn env(key: &str) -> Option<String> {
@@ -161,6 +179,7 @@ impl Config {
             Err(_) if azure => None,
             Err(_) => Some(([127, 0, 0, 1], 9100).into()),
         };
+        let backup_dir = env("BACKUP_DIR").map(PathBuf::from).unwrap_or_else(|| data_dir.join("backups"));
         Ok(Config {
             database_url,
             db_schema,
@@ -174,9 +193,18 @@ impl Config {
             metrics_addr,
             operator_name: env("OPERATOR_NAME"),
             contact_email: env("CONTACT_EMAIL"),
+            owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
+            backup_dir,
+            backup_every_hours: env("BACKUP_EVERY_HOURS").map(|h| h.parse()).transpose()?.unwrap_or(24.0),
+            backup_keep: env("BACKUP_KEEP").map(|k| k.parse()).transpose()?.unwrap_or(14).max(1),
             dev: cli.dev,
             lan: cli.lan,
         })
+    }
+
+    /// Właściciel (OWNER_IDS): kopie bazy, a jego konta nie zmieni inny admin
+    pub fn is_owner(&self, uid: i64) -> bool {
+        self.owner_ids.contains(&uid)
     }
 
     /// Opis bazy do wypisania przy starcie (bez hasła)
@@ -195,7 +223,16 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::test_url;
+    use super::{parse_ids, test_url};
+
+    #[test]
+    fn owner_ids() {
+        assert_eq!(parse_ids("").unwrap(), Vec::<i64>::new());
+        assert_eq!(parse_ids(" 1, 5,12 ,").unwrap(), vec![1, 5, 12]);
+        assert!(parse_ids("1,admin").is_err());
+        assert!(parse_ids("0").is_err());
+        assert!(parse_ids("-3").is_err());
+    }
 
     #[test]
     fn test_database_name() {
