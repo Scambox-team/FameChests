@@ -39,7 +39,18 @@ NEW_HEAD=$(git rev-parse HEAD)
 # 2. nowy obraz gry. Obecny oznaczamy PRZED pobraniem: pull przenosi etykietę na nowy obraz, a stary bez etykiety
 #    bywa od razu usuwany (Docker z magazynem containerd) - nie byłoby do czego wrócić
 CUR=$(docker inspect -f '{{.Image}}' scambox-game 2>/dev/null || true)
-[ -n "$CUR" ] && docker tag "$CUR" scambox:rollback
+ROLLBACK=0
+if [ -n "$CUR" ]; then
+    if docker tag "$CUR" scambox:rollback 2>/dev/null; then
+        ROLLBACK=1
+    elif [ "$AUTO" = 1 ]; then
+        # np. ktoś ręcznie przebudował / pobrał obraz i stary zniknął - bez możliwości powrotu nie ryzykujemy z crona
+        log "Nie ma już obrazu, na którym działa gra - nie byłoby do czego wrócić. Zaktualizuj ręcznie: sh update.sh"
+        exit 1
+    else
+        log "UWAGA: nie ma już obrazu, na którym działa gra - jeśli nowa wersja nie wstanie, nie będzie powrotu"
+    fi
+fi
 case "$IMAGE" in
     */*)
         log "Pobieram $IMAGE"
@@ -86,7 +97,7 @@ fi
 echo "$NEW" > .update.failed
 log "NOWA WERSJA NIE DZIAŁA - ostatnie logi:"
 docker compose logs --tail 30 game || true
-if [ -n "$CUR" ]; then
+if [ "$ROLLBACK" = 1 ]; then
     log "Wracam do poprzedniej wersji"
     docker tag scambox:rollback "$IMAGE"
     if docker compose up -d --no-build --wait --wait-timeout "$WAIT" game; then

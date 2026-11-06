@@ -16,6 +16,7 @@ SSH tunel ──127.0.0.1:8000──> Supabase Studio / API ┘   (z internetu n
 | `.env.example` | wzór ustawień; `setup.sh` robi z niego `.env` z losowymi hasłami |
 | `migrate-from-supabase.sh` | dane graczy z Supabase w chmurze -> lokalna baza |
 | `import-data.sh` | zdjęcia (`DATA_DIR` z Azure) -> wolumen gry |
+| `update.sh` | aktualizacja gry: kopia bazy, nowa wersja, sprawdzenie, w razie błędu powrót (też z crona) |
 | `caddy/Caddyfile` | HTTPS dla domeny gry |
 
 ## Wymagania
@@ -92,14 +93,45 @@ i w przeglądarce `http://localhost:8000` - login `DASHBOARD_USERNAME` / `DASHBO
 Tabele gry są w schemacie `famechests`. Postgres bezpośrednio (np. DBeaver, przez ten sam tunel z `-L 5432:127.0.0.1:5432`):
 użytkownik `postgres.<POOLER_TENANT_ID>`, hasło `POSTGRES_PASSWORD`.
 
-## Na co dzień
+## Aktualizacje
+
+Każdy push do `main` na GitHubie buduje nowy obraz gry (`ghcr.io/scambox-team/famechests:latest`, workflow
+`.github/workflows/azure.yml`). Serwer pobiera go sam - z zewnątrz nie trzeba się do niego łączyć (działa za CGNAT).
 
 ```sh
-git pull && docker compose build game && docker compose up -d game     # nowa wersja gry (A)
-docker compose pull game && docker compose up -d game                  # nowa wersja gry (B)
-docker compose logs -f game                                            # logi
+sh update.sh            # aktualizuj teraz
+sh update.sh --auto     # tylko gdy jest nowa wersja (do crona)
+```
+
+Co robi `update.sh`: `git pull` (zmiany w compose i skryptach) -> nowy obraz -> **kopia bazy** (`backups/game/update-*.dump`,
+w panelu „Przed aktualizacją”) -> start nowej wersji -> czeka, aż strona logowania odpowie (healthcheck). Jeśli nowa wersja
+padnie albo nie odpowie w 10 min, **sam wraca do poprzedniej**, a z crona tej samej zepsutej wersji już nie próbuje
+(dopiero następną; ręcznie `sh update.sh` próbuje zawsze). Gdy coś się nie uda, przed zmianą nic nie zostaje ruszone.
+
+**Automatycznie co noc** (`crontab -e`):
+
+```
+30 4 * * * cd /home/<użytkownik>/FameChests/deploy/selfhost && sh update.sh --auto >> update.log 2>&1
+```
+
+**Skąd obraz** (`GAME_IMAGE` w `.env`):
+- `ghcr.io/scambox-team/famechests:latest` - **polecane**: gotowy obraz z CI, aktualizacja trwa kilkanaście sekund.
+  Pakiet jest prywatny - raz na serwerze `echo <token> | docker login ghcr.io -u <login-github> --password-stdin`
+  (token GitHub *classic* tylko z `read:packages`; albo w ustawieniach pakietu na GitHubie zmień widoczność na publiczną).
+- `scambox:local` - budowany na serwerze z repozytorium (`update.sh` robi `git pull` + `docker compose build`):
+  bez tokena, ale każda aktualizacja to ~10-15 min budowania i kilka GB RAM.
+
+Powrót dotyczy obrazu gry - zmiany w bazie, które zrobi nowa wersja (nowe tabele i kolumny), zostają; starsza wersja je
+pomija. Gdyby trzeba było cofnąć też dane: kopia `update-*.dump` sprzed aktualizacji (sekcja niżej, „Odtworzenie”).
+
+Inne:
+
+```sh
+docker compose logs -f game      # logi gry
 docker compose restart game
 ```
+
+Supabase (`docker-compose.yml`) aktualizuje się osobno i rzadko - sekcja „Aktualizacja Supabase” na końcu.
 
 ## Kopie zapasowe
 
