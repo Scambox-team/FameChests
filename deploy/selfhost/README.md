@@ -1,29 +1,37 @@
 # ScamBox na własnym serwerze (Docker + self-hosted Supabase)
 
 Cała gra w jednym `docker compose`: serwer gry (obraz z `server/Dockerfile`), Supabase z Postgresem 17
-(oficjalny zestaw self-hosted) i Caddy, który sam wystawia certyfikat HTTPS.
+(oficjalny zestaw self-hosted) i HTTPS - **Cloudflare Tunnel** (domyślnie, działa za CGNAT) albo Caddy.
 
 ```
-internet ──80/443──> Caddy ──> gra (scambox) ──> Postgres (supabase-db)
-                                                   ^
-SSH tunel ──127.0.0.1:8000──> Supabase Studio / API ┘   (z internetu niewidoczne)
+gracz ─HTTPS─> Cloudflare ═tunel (wychodzący z serwera)═> cloudflared ─> gra (scambox) ─> Postgres (supabase-db)
+                                                                                            ^
+SSH tunel ──127.0.0.1:8000──> Supabase Studio / API ─────────────────────────────────────────┘ (z internetu niewidoczne)
 ```
+
+HTTPS wybiera `COMPOSE_PROFILES` w `.env`:
+- `tunnel` - **Cloudflare Tunnel**: serwer sam łączy się z Cloudflare, na routerze nic się nie otwiera (CGNAT nie
+  przeszkadza). Domena w Cloudflare, token tunelu w `CLOUDFLARE_TUNNEL_TOKEN`, trasa w panelu: sekcja
+  [Cloudflare Tunnel](#cloudflare-tunnel).
+- `caddy` - Caddy z certyfikatem Let's Encrypt: publiczne IP, rekord A domeny na serwer, otwarte porty 80 i 443,
+  domena w `GAME_DOMAIN`.
 
 | Plik | Co |
 |---|---|
 | `docker-compose.yml` | oficjalny plik Supabase - **bez zmian** (wersja: `SUPABASE_VERSION`) |
-| `docker-compose.override.yml` | gra + Caddy, porty Supabase zamknięte na 127.0.0.1 (docker compose dokleja go sam) |
+| `docker-compose.override.yml` | gra + cloudflared / Caddy, porty Supabase zamknięte na 127.0.0.1 (docker compose dokleja go sam) |
 | `.env.example` | wzór ustawień; `setup.sh` robi z niego `.env` z losowymi hasłami |
 | `migrate-from-supabase.sh` | dane graczy z Supabase w chmurze -> lokalna baza |
 | `import-data.sh` | zdjęcia (`DATA_DIR` z Azure) -> wolumen gry |
 | `update.sh` | aktualizacja gry: kopia bazy, nowa wersja, sprawdzenie, w razie błędu powrót (też z crona) |
-| `caddy/Caddyfile` | HTTPS dla domeny gry |
+| `caddy/Caddyfile` | HTTPS dla domeny gry (tylko wariant `caddy`) |
 
 ## Wymagania
 
 - Linux z Dockerem (Docker Engine + plugin `docker compose` v2.24+), `git`, `openssl`
 - ~4 GB RAM wolne (sam Supabase to kilkanaście kontenerów), kilka GB na dysku
-- domena (rekord A na IP serwera) i otwarte porty **80 i 443**. Żadnych innych portów nie otwieraj.
+- domena w Cloudflare (wariant `tunnel`, nic nie otwierasz) albo publiczne IP i otwarte porty **80 i 443** (wariant
+  `caddy`). Żadnych innych portów nie otwieraj.
 
 ## Instalacja
 
@@ -31,8 +39,24 @@ SSH tunel ──127.0.0.1:8000──> Supabase Studio / API ┘   (z internetu n
 git clone https://github.com/Scambox-team/FameChests.git
 cd FameChests/deploy/selfhost
 sh setup.sh                  # .env z losowymi hasłami i kluczami
-nano .env                    # GAME_DOMAIN, GAME_SECRET_KEY, GAME_OPERATOR_NAME, GAME_CONTACT_EMAIL
+nano .env                    # CLOUDFLARE_TUNNEL_TOKEN, GAME_SECRET_KEY, GAME_OWNER_IDS, GAME_OPERATOR_NAME, GAME_CONTACT_EMAIL
 ```
+
+`.env` z wcześniejszej instalacji (sprzed tunelu)? Dopisz do niego `COMPOSE_PROFILES=tunnel` i `CLOUDFLARE_TUNNEL_TOKEN=...`
+(albo `COMPOSE_PROFILES=caddy`, jeśli zostajesz przy Caddy).
+
+## Cloudflare Tunnel
+
+1. Domena w Cloudflare (serwery DNS u rejestratora przestawione na Cloudflare).
+2. Zero Trust -> Networks -> Tunnels -> *Create a tunnel* (Cloudflared) -> przy instalacji wybierz **Docker** i skopiuj
+   token (wszystko po `--token `) do `CLOUDFLARE_TUNNEL_TOKEN` w `.env`. Nie uruchamiaj pokazanego polecenia -
+   `cloudflared` startuje razem z resztą (`docker compose up -d`).
+3. W tunelu -> **Routes** -> *Add route* -> *Published application*: domena (np. `scambox.pl`, puste Subdomain),
+   **Service URL `http://game:8000`**. Cloudflare sam założy rekord DNS - wcześniej usuń rekordy A tej domeny
+   wskazujące gdzie indziej (np. stary hosting).
+4. Po `docker compose up -d` tunel w panelu ma status **Healthy**. Logi: `docker compose logs -f cloudflared`.
+
+Wyciekł token? W tunelu *Rotate token*, nowy do `.env`, `docker compose up -d cloudflared`.
 
 Obraz gry - jedno z dwóch:
 
@@ -79,7 +103,8 @@ docker compose ps            # wszystko "healthy" / "running"
 docker compose logs -f game  # pierwszy start uzupełnia tabele - może trwać kilka minut
 ```
 
-Gra: `https://<GAME_DOMAIN>`. Po sprawdzeniu przełącz domenę / poinformuj graczy i usuń aplikację z Azure.
+Na serwerze `curl -I http://127.0.0.1:5000/login` -> `200` = gra działa. Potem z internetu `https://<domena>`
+(przy tunelu: dopiero po dodaniu trasy w Cloudflare).
 
 ## Supabase Studio (podgląd bazy)
 
@@ -171,9 +196,11 @@ docker compose up -d game
 
 ## Bezpieczeństwo
 
-- Z internetu widać tylko Caddy (80/443). Supabase, Postgres, pooler i port gry 5000 słuchają **tylko na 127.0.0.1** -
-  nie zmieniaj `127.0.0.1:` w `docker-compose.override.yml` (nasz Postgres był już atakowany, gdy stał otwarty).
-- Docker omija `ufw` przy publikowanych portach - tym bardziej nie publikuj niczego poza 80/443.
+- Przy tunelu z internetu nie widać żadnego portu serwera, przy Caddy tylko 80/443. Supabase, Postgres, pooler i port
+  gry 5000 słuchają **tylko na 127.0.0.1** - nie zmieniaj `127.0.0.1:` w `docker-compose.override.yml` (nasz Postgres
+  był już atakowany, gdy stał otwarty).
+- Docker omija `ufw` przy publikowanych portach - tym bardziej nie publikuj niczego więcej.
+- `CLOUDFLARE_TUNNEL_TOKEN` to hasło do domeny: kto go ma, podepnie własny serwer pod `scambox.pl`.
 - `.env` (wszystkie hasła) ma prawa `600` i nie trafia do gita. Nie wklejaj go nigdzie.
 - Rejestracja w Supabase Auth jest wyłączona (`DISABLE_SIGNUP=true`) - gra ma własne konta.
 - Gra działa jako **jeden** proces (Arena, katalog w pamięci) - nie skaluj `game` do kilku kopii.

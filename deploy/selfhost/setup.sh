@@ -28,8 +28,9 @@ rm -f .env.old
 echo "Gotowe: .env z losowymi hasłami (tylko dla właściciela pliku)."
 echo
 echo "Teraz uzupełnij w .env:"
-echo "  GAME_DOMAIN          domena gry"
-echo "  GAME_SECRET_KEY      SECRET_KEY z Azure (wpisany losowy = wszyscy gracze zostaną wylogowani)"
+echo "  CLOUDFLARE_TUNNEL_TOKEN  token tunelu Cloudflare (albo COMPOSE_PROFILES=caddy + GAME_DOMAIN)"
+echo "  GAME_SECRET_KEY          SECRET_KEY z Azure (wpisany losowy = wszyscy gracze zostaną wylogowani)"
+echo "  GAME_OWNER_IDS           id konta właściciela (kopie bazy w panelu)"
 echo "  GAME_OPERATOR_NAME, GAME_CONTACT_EMAIL"
 echo
 echo "Login do Supabase Studio: DASHBOARD_USERNAME / DASHBOARD_PASSWORD z .env"

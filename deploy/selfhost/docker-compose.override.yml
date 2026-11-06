@@ -1,10 +1,14 @@
 # ScamBox na własnym serwerze: self-hosted Supabase (docker-compose.yml - oficjalny plik Supabase, bez zmian)
-# + serwer gry + Caddy (HTTPS). Docker Compose sam dokleja ten plik do docker-compose.yml:
+# + serwer gry + HTTPS. Docker Compose sam dokleja ten plik do docker-compose.yml:
 #   docker compose up -d
 # Instrukcja: README.md w tym folderze.
 #
-# BEZPIECZEŃSTWO: z internetu widać TYLKO porty 80/443 (Caddy -> gra). Supabase (Studio, API, Postgres, pooler)
-# słucha wyłącznie na 127.0.0.1 - dostęp przez tunel SSH. Nie zmieniaj "127.0.0.1:" na samo "port:"
+# HTTPS - jedno z dwóch (COMPOSE_PROFILES w .env):
+#   tunnel  Cloudflare Tunnel (cloudflared): serwer sam łączy się z Cloudflare - działa za CGNAT, żadnych otwartych portów
+#   caddy   Caddy z certyfikatem Let's Encrypt: publiczne IP i otwarte porty 80/443
+#
+# BEZPIECZEŃSTWO: z internetu widać co najwyżej porty 80/443 Caddy (przy tunelu - nic). Supabase (Studio, API, Postgres,
+# pooler) słucha wyłącznie na 127.0.0.1 - dostęp przez tunel SSH. Nie zmieniaj "127.0.0.1:" na samo "port:"
 # (baza Postgres była już atakowana z internetu).
 
 services:
@@ -73,11 +77,27 @@ services:
       # tylko localhost: do testów (curl) albo dla własnego reverse proxy zamiast Caddy
       - "127.0.0.1:${GAME_PORT:-5000}:8000"
 
-  # --- HTTPS dla gry (certyfikat Let's Encrypt wystawia się sam) ---
+  # --- HTTPS, wariant "tunnel": Cloudflare Tunnel ---
+  # Trasy (scambox.pl -> http://game:8000) ustawia się w panelu Cloudflare: Zero Trust -> Networks -> Tunnels -> Routes
+
+  cloudflared:
+    container_name: scambox-cloudflared
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [tunnel]
+    restart: unless-stopped
+    depends_on:
+      - game
+    command: tunnel --no-autoupdate run
+    environment:
+      # token z panelu Cloudflare (polecenie "docker run ... --token <TO>") - tajny, tylko w .env
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+
+  # --- HTTPS, wariant "caddy": certyfikat Let's Encrypt wystawia się sam (wymaga publicznego IP) ---
 
   caddy:
     container_name: scambox-caddy
     image: caddy:2.10
+    profiles: [caddy]
     restart: unless-stopped
     depends_on:
       - game
@@ -86,7 +106,7 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
-      GAME_DOMAIN: ${GAME_DOMAIN:?ustaw GAME_DOMAIN w .env (domena wskazująca na ten serwer)}
+      GAME_DOMAIN: ${GAME_DOMAIN:-localhost}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
