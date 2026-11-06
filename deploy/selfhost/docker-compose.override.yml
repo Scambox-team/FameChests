@@ -1,0 +1,82 @@
+# ScamBox na własnym serwerze: self-hosted Supabase (docker-compose.yml - oficjalny plik Supabase, bez zmian)
+# + serwer gry + Caddy (HTTPS). Docker Compose sam dokleja ten plik do docker-compose.yml:
+#   docker compose up -d
+# Instrukcja: README.md w tym folderze.
+#
+# BEZPIECZEŃSTWO: z internetu widać TYLKO porty 80/443 (Caddy -> gra). Supabase (Studio, API, Postgres, pooler)
+# słucha wyłącznie na 127.0.0.1 - dostęp przez tunel SSH. Nie zmieniaj "127.0.0.1:" na samo "port:"
+# (baza Postgres była już atakowana z internetu).
+
+services:
+
+  # pierwsza inicjalizacja bazy (migracje Supabase) na wolnym dysku trwa dłużej niż healthcheck z oficjalnego pliku
+  db:
+    healthcheck:
+      start_period: 5m
+
+  # --- Supabase: porty tylko na localhost (w oficjalnym pliku są otwarte na wszystkie adresy) ---
+
+  api-gw:
+    ports: !override
+      - "127.0.0.1:${API_GW_HTTP_PORT:-8000}:8000/tcp"
+
+  supavisor:
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POOLER_PROXY_PORT_TRANSACTION}:6543"
+
+  # --- Gra ---
+
+  game:
+    container_name: scambox-game
+    # Obraz: budowany z repozytorium (server/Dockerfile) albo pobrany gotowy z ghcr.io - patrz README.md
+    image: ${GAME_IMAGE:-scambox:local}
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # prosto do Postgresa (nie przez pooler): serwer używa przygotowanych zapytań, a w sieci Dockera nie ma po co
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DB_SCHEMA: ${GAME_DB_SCHEMA:-famechests}
+      SECRET_KEY: ${GAME_SECRET_KEY:?ustaw GAME_SECRET_KEY w .env (ten sam co na Azure, inaczej wszyscy zostaną wylogowani)}
+      DATA_DIR: /data
+      OPERATOR_NAME: ${GAME_OPERATOR_NAME:-}
+      CONTACT_EMAIL: ${GAME_CONTACT_EMAIL:-}
+      COOKIE_SECURE: ${GAME_COOKIE_SECURE:-1}
+      TRUST_PROXY: "1"
+      METRICS_ADDR: ""
+      RUST_LOG: ${GAME_RUST_LOG:-scambox=info}
+    volumes:
+      # zdjęcia (image_cache/) i pliki od admina - przetrwają restart i aktualizację obrazu
+      - game-data:/data
+    ports:
+      # tylko localhost: do testów (curl) albo dla własnego reverse proxy zamiast Caddy
+      - "127.0.0.1:${GAME_PORT:-5000}:8000"
+
+  # --- HTTPS dla gry (certyfikat Let's Encrypt wystawia się sam) ---
+
+  caddy:
+    container_name: scambox-caddy
+    image: caddy:2.10
+    restart: unless-stopped
+    depends_on:
+      - game
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      GAME_DOMAIN: ${GAME_DOMAIN:?ustaw GAME_DOMAIN w .env (domena wskazująca na ten serwer)}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  game-data:
+  caddy-data:
+  caddy-config:

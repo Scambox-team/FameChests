@@ -1,5 +1,10 @@
 # Hosting (serwer w internecie)
 
+## Własny serwer - Docker z self-hosted Supabase
+
+Gra + Supabase (Postgres 17) + HTTPS (Caddy) w jednym `docker compose`, z migracją danych z Supabase w chmurze:
+[deploy/selfhost/README.md](../deploy/selfhost/README.md).
+
 ## Azure App Service (Windows) - sam plik .exe
 
 Cała gra to jeden plik `scambox.exe`: w środku są `web/`, `static/`, `custom_images/`, `catalog_export.json` i

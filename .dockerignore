@@ -6,3 +6,7 @@ image_cache/
 secret_key.txt
 web/node_modules/
 web/dist/
+# serwer kolegi: sekrety i dane bazy nie trafiają do kontekstu budowania obrazu
+deploy/selfhost/.env
+deploy/selfhost/volumes/
+deploy/selfhost/backups/

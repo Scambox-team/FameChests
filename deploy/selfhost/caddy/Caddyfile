@@ -1,0 +1,10 @@
+# HTTPS dla gry. Domena z GAME_DOMAIN (.env); certyfikat Let's Encrypt - porty 80 i 443 muszą być otwarte.
+{$GAME_DOMAIN} {
+	encode zstd gzip
+	# zdjęcia od admina do 20 MB (limit serwera gry)
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy game:8000
+	header -Server
+}
