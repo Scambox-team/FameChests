@@ -116,15 +116,8 @@ pub struct ChessCfg {
 pub struct PinballCfg {
     /// ile punktów = 1 gr
     pub points_per_gr: i64,
-    /// najwięcej groszy za jedną grę
-    pub max_per_run: i64,
-    /// najwięcej groszy z Pinballa na gracza na 24 h
-    pub max_per_day: i64,
     /// gra krótsza niż tyle sekund (od startu do końca, liczone przez serwer) nie daje nagrody
     pub min_seconds: f64,
-    /// wiarygodny wynik: najwyżej tyle punktów na sekundę gry (plus `slack_points` zapasu na jackpot)
-    pub max_points_per_second: f64,
-    pub slack_points: i64,
     /// wariant karty za wyjątkowy wynik (Synthwave)
     pub card_variant: String,
     /// najwięcej kart z Pinballa na gracza na 24 h

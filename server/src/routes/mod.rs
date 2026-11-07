@@ -14,6 +14,8 @@ pub mod horses;
 pub mod market;
 pub mod pinball;
 pub mod pages;
+pub mod aim;
+pub mod game_rankings;
 pub mod quests;
 pub mod reports;
 pub mod shop;
@@ -189,6 +191,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/horses", get(horses::admin_horses).post(horses::admin_horses_save))
         .route("/api/admin/chess-skins", get(chess::admin_skins).post(chess::admin_skins_save))
         .route("/api/admin/quests", get(quests::admin_quests).post(quests::admin_quests_save))
+        .route("/api/games/ranking", get(game_rankings::game_ranking))
+        .route("/api/aim/start", post(aim::aim_start))
+        .route("/api/aim/finish", post(aim::aim_finish))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
         .route("/api/pinball/finish", post(pinball::pinball_finish))

@@ -23,6 +23,10 @@ const CASTLE: Record<string, [string, string]> = { e1g1: ['h1', 'f1'], e1c1: ['a
 const pieceAt = (fen: string, sq: string) => squares(fen)[(8 - +sq[1]) * 8 + FILES.indexOf(sq[0])];
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
+import { GameRanking } from './GameRanking';
+const AimPage = lazy(() => import('../aim/AimPage').then(m => ({ default: m.AimPage })));
+const FLAPPY_ON = false;   // Flappy jest gotowy, ale na razie wyłączony (zakładka i adres /games/flappy)
+const FlappyPage = lazy(() => import('../flappy/FlappyPage').then(m => ({ default: m.FlappyPage })));
 const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
@@ -316,6 +320,7 @@ function Lobby({ onOpen }: { onOpen: (id: number) => void }) {
       <div className="panel"><h3>Otwarte partie</h3>
         {others.length ? <div className="ch-list">{others.map((o: any) => <div key={o.id} className="ch-row"><span><b>{o.by}</b> · {o.minutes} min{o.invited && <> · <span className="pos-txt">zaproszenie dla ciebie</span></>}</span><Button kind="hue" onClick={() => start(`/api/games/chess/${o.id}/join`)}>Dołącz</Button></div>)}</div> : <p className="muted">Nikt teraz nie czeka. Załóż partię.</p>}
       </div>
+      <GameRanking game="chess" title="Ranking szachów: wygrane z ludźmi" refresh={d.history.length} />
       {d.history.length > 0 && <div className="panel"><h3>Ostatnie partie</h3><div className="ch-list">
         {d.history.map((h: any) => <div key={h.id} className="ch-row"><span>{h.outcome === 'win' ? 'Wygrana' : h.outcome === 'loss' ? 'Przegrana' : 'Remis'} · {h.rival} <small className="muted">{h.reason}</small></span>{h.rewarded && <small className="muted">nagroda</small>}<Button onClick={() => onOpen(h.id)}>Zobacz</Button></div>)}
       </div></div>}
@@ -329,13 +334,13 @@ export function ChessPage() {
   const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  const view = tab === 'figures' || tab === 'pinball' ? tab : 'games';
+  const view = tab === 'figures' || tab === 'pinball' || tab === 'aim' || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
   if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
   return (
     <div id="view-games">
       <Tabs label="Gry" value={view} onChange={v => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); }}
-        items={[{ id: 'games', label: 'Szachy' }, { id: 'figures', label: 'Figury' }, { id: 'pinball', label: 'Pinball' }]} />
-      {view === 'figures' ? <Figures /> : view === 'pinball' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><PinballPage /></Suspense> : <Lobby onOpen={open} />}
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'figures', label: 'Figury' }, { id: 'pinball', label: 'Pinball' }, { id: 'aim', label: 'Strzelnica' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
+      {view === 'figures' ? <Figures /> : view === 'flappy' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><FlappyPage /></Suspense> : view === 'aim' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><AimPage /></Suspense> : view === 'pinball' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><PinballPage /></Suspense> : <Lobby onOpen={open} />}
     </div>
   );
 }

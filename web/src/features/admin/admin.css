@@ -504,6 +504,90 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
 @keyframes vmBlink { 50% { opacity: .15; } }
 @keyframes vmSpin { to { transform: rotate(360deg); } }
 
+/* ------------------------------------------------------------ CZARNA DZIURA (sześć propozycji) */
+.card.vm-blackhole { --frame: linear-gradient(160deg, #8c6cff, #05010c 45%, #4d2bd0); box-shadow: 0 6px 18px #000c, 0 0 18px #6a4bd066; }
+.card.vm-blackhole .card-inner { background: #04010a; color: #ece6ff; }
+.card.vm-blackhole :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #efeaff; }
+.card.vm-blackhole .card-name { color: #fff; text-shadow: 0 0 .5em #000; }
+.bh-star { position: absolute; border-radius: 50%; background: #fff; animation: vmPulse 3.2s ease-in-out infinite; }
+@keyframes bhDisk { to { transform: translate(-50%, -50%) perspective(32em) rotateX(76deg) rotateZ(360deg); } }
+@keyframes bhOrbit { to { transform: rotate(360deg) scale(var(--s, 1)); } }
+@keyframes bhStretch { 50% { opacity: .35; } }
+
+/* 1. dysk akrecyjny */
+.card.vm-blackhole-1 { --frame: linear-gradient(160deg, #ffb347, #1a0a00 42%, #ff6a1a); box-shadow: 0 6px 18px #000c, 0 0 22px #ff8a2a88; }
+.card.vm-blackhole-1 .card-inner { background: radial-gradient(ellipse at 50% 38%, #2a0e00, #060200 62%, #000); }
+.card.vm-blackhole-1 .card-photo > img { filter: sepia(1) saturate(2.2) hue-rotate(-18deg) brightness(.5) contrast(1.25); }
+.bh1-disk { left: 50%; top: 37%; width: 168%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%) perspective(32em) rotateX(76deg);
+  background: conic-gradient(from 0deg, transparent 0 8%, #ff8a2a 20%, #fff1c0 29%, #ff7a1a 38%, transparent 52%, #ff5a0a 68%, #ffd08a 80%, transparent 94%);
+  -webkit-mask: radial-gradient(circle, transparent 17%, #000 22%, #000 52%, transparent 66%); mask: radial-gradient(circle, transparent 17%, #000 22%, #000 52%, transparent 66%);
+  animation: bhDisk 9s linear infinite; filter: blur(.4px) saturate(1.3); }
+.bh1-disk.b { width: 112%; opacity: .9; animation-duration: 5s; animation-direction: reverse; }
+.bh1-photo { background: radial-gradient(circle at 50% 50%, transparent 0 18%, #0009 70%); }
+.bh1-core { left: 50%; top: 37%; width: 20%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: #000;
+  box-shadow: 0 0 0 .1em #fff3d0, 0 0 1em #ff9a3c, 0 0 2.6em #ff6a1a, inset 0 0 1em #000; }
+.bh1-halo { left: 50%; top: 37%; width: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, transparent 55%, #ffb14d66 62%, transparent 72%); animation: vmPulse 3s infinite; }
+.vm-blackhole-1 .card-sub { background: linear-gradient(90deg, transparent, #ff8a2a44, transparent); }
+
+/* 2. soczewka grawitacyjna */
+.card.vm-blackhole-2 { --frame: linear-gradient(160deg, #9fd0ff, #07102a 45%, #5b8cff); box-shadow: 0 6px 18px #000c, 0 0 20px #5b8cff77; }
+.card.vm-blackhole-2 .card-inner { background: linear-gradient(180deg, #02050f, #0a1738 72%, #060b22); }
+.card.vm-blackhole-2 .card-photo > img { filter: grayscale(.55) contrast(1.15) brightness(.82) hue-rotate(185deg) saturate(.8); }
+.bh2-svg { filter: drop-shadow(0 0 .25em #9fd0ff); }
+.bh2-flare { left: 52%; top: 36%; width: 70%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #9fd0ff44, transparent 62%); animation: vmPulse 4s infinite; }
+.vm-blackhole-2 .card-sub { background: linear-gradient(90deg, transparent, #5b8cff44, transparent); }
+
+/* 3. spaghettifikacja */
+.card.vm-blackhole-3 { --frame: linear-gradient(160deg, #c04bff, #10001f 40%, #6a1bff); box-shadow: 0 6px 18px #000c, 0 0 20px #8a3bff88; }
+.card.vm-blackhole-3 .card-inner { background: #080012; }
+.bh3-spiral { left: 50%; top: 58%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, #5a0fb0 0 6deg, #0a0014 6deg 14deg); animation: vmSpin 16s linear infinite;
+  -webkit-mask: radial-gradient(circle, #000 4%, transparent 46%); mask: radial-gradient(circle, #000 4%, transparent 46%); opacity: .75; }
+.card.vm-blackhole-3 .card-photo > img { transform-origin: 50% 0; transform: scaleY(1.2) skewX(-4deg); filter: saturate(1.3) contrast(1.1) hue-rotate(250deg) brightness(.9);
+  -webkit-mask: linear-gradient(#000 38%, transparent 99%); mask: linear-gradient(#000 38%, transparent 99%); }
+.bh3-photo i { left: 50%; bottom: -6%; width: 1px; height: 118%; transform-origin: 50% 100%; background: linear-gradient(transparent, #e3b8ff 60%, transparent); animation: bhStretch 2.4s ease-in-out infinite; }
+.bh3-photo i:nth-child(1) { transform: rotate(-22deg); animation-delay: -.2s; } .bh3-photo i:nth-child(2) { transform: rotate(-13deg); animation-delay: -.9s; }
+.bh3-photo i:nth-child(3) { transform: rotate(-5deg); animation-delay: -1.5s; } .bh3-photo i:nth-child(4) { transform: rotate(5deg); animation-delay: -.6s; }
+.bh3-photo i:nth-child(5) { transform: rotate(13deg); animation-delay: -1.2s; } .bh3-photo i:nth-child(6) { transform: rotate(22deg); animation-delay: -1.9s; }
+.bh3-maw { left: 50%; top: 55%; width: 44%; height: 8%; transform: translateX(-50%); border-radius: 50%; background: #000; box-shadow: 0 0 .9em #c04bff, 0 0 2.4em #6a1bff; }
+.bh3-rim { left: 50%; top: 54%; width: 54%; height: 10%; transform: translateX(-50%); border-radius: 50%; border: .12em solid #e3b8ff99; border-bottom-color: transparent; animation: vmPulse 2.6s infinite; }
+.vm-blackhole-3 .card-sub { background: linear-gradient(90deg, transparent, #8a3bff55, transparent); }
+
+/* 4. Gargantua */
+.card.vm-blackhole-4 { --frame: linear-gradient(160deg, #f2c46d, #120a02 42%, #c98a2b); box-shadow: 0 6px 18px #000c, 0 0 20px #e8a63a66; }
+.card.vm-blackhole-4 .card-inner { background: radial-gradient(ellipse at 50% 40%, #3a2208, #0a0502 62%, #000); }
+.card.vm-blackhole-4 .card-photo > img { filter: sepia(.6) contrast(1.15) brightness(.7); }
+.bh4-bar { position: absolute; left: 0; right: 0; height: 6%; background: #000; } .bh4-bar.t { top: 0; } .bh4-bar.b { bottom: 0; }
+.bh4-photo { overflow: hidden; }
+.bh4-ring { left: 50%; top: 50%; width: 64%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #000 0 50%, transparent 52%);
+  border: 1px solid #ffe3a3; box-shadow: 0 0 .5em #ffcf70, 0 0 2em #ff9a2a66, inset 0 0 1.6em #000; }
+.bh4-band { left: 2%; right: 2%; top: 50%; height: 3px; transform: translateY(-50%); background: linear-gradient(90deg, transparent, #ffd48a 18%, #fff7e0 50%, #ffd48a 82%, transparent); filter: blur(.5px); box-shadow: 0 0 .8em #ffae42, 0 0 2em #ff8a1a; }
+.bh4-sun { left: 50%; top: 18%; width: 12%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff, #ffcf70 38%, transparent 70%); animation: vmPulse 3s infinite; }
+.bh4-top { display: flex; justify-content: space-between; padding: 0 .7em; font: 700 .5em/1 Orbitron, Rubik, sans-serif; letter-spacing: .3em; color: #ffd48a; margin-bottom: .3em; }
+.vm-blackhole-4 .card-sub { background: linear-gradient(90deg, transparent, #ffb14d44, transparent); letter-spacing: .1em; }
+
+/* 5. lej czasoprzestrzeni */
+.card.vm-blackhole-5 { --frame: linear-gradient(160deg, #00e5ff, #12031f 42%, #ff2bd6); box-shadow: 0 6px 18px #000c, 0 0 18px #ff2bd699, 0 0 30px #00e5ff55; }
+.card.vm-blackhole-5 .card-inner { background: linear-gradient(180deg, #020008, #12031f 50%, #2a0538); }
+.bh5-svg { filter: drop-shadow(0 0 .25em #00e5ff); }
+.card.vm-blackhole-5 .card-photo { border: .12em solid #00e5ff; box-shadow: 0 0 .7em #00e5ff, 0 0 1.5em #ff2bd666; transform: perspective(40em) rotateX(9deg); transform-origin: 50% 100%; }
+.card.vm-blackhole-5 .card-photo > img { filter: grayscale(1) sepia(1) hue-rotate(150deg) saturate(3) contrast(1.15); }
+.bh5-photo { background: linear-gradient(180deg, transparent 45%, #12031fdd); }
+.card.vm-blackhole-5 :is(.card-name, .card-sub, .atk-name, .atk-dmg) { font-family: Orbitron, Rubik, sans-serif; text-shadow: 0 0 .3em #ff2bd6; }
+.vm-blackhole-5 .card-sub { background: #12031fcc; border: 1px solid #00e5ff66; }
+
+/* 6. pochłonięta karta */
+.card.vm-blackhole-6 { --frame: linear-gradient(160deg, #c9a7ff, #0b0418 42%, #7b3cff); box-shadow: 0 6px 18px #000c, 0 0 20px #7b3cff88; }
+.card.vm-blackhole-6 .card-inner { background: radial-gradient(ellipse at 100% 30%, #2a0a5e, #070212 62%); }
+.card.vm-blackhole-6 .card-photo > img { filter: saturate(.9) contrast(1.1) brightness(.88); }
+.bh6-hole { right: -14%; top: 24%; width: 46%; aspect-ratio: 1; border-radius: 50%; background: #000; box-shadow: 0 0 0 .1em #fff, 0 0 1.2em #b48cff, 0 0 3.2em #7b3cff; }
+.bh6-ring { right: -22%; top: 16%; width: 62%; aspect-ratio: 1; border-radius: 50%; border: .3em solid transparent;
+  background: conic-gradient(from 0deg, #fff0, #d9c2ff, #7b3cff, #fff0 70%) border-box; -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%, #000 78%, transparent 80%); mask: radial-gradient(circle, transparent 62%, #000 64%, #000 78%, transparent 80%);
+  animation: vmSpin 6s linear infinite; opacity: .9; }
+.bh6-shard { left: 91%; top: 40.5%; width: 3.2%; aspect-ratio: .7; background: #e6dcff; border: 1px solid #fff; border-radius: 1px; box-shadow: 0 0 .4em #b48cff;
+  transform-origin: calc(-810% - var(--k) * 35%) 50%; animation: bhOrbit var(--d) linear infinite; animation-delay: calc(var(--k) * -.55s); --s: .8; }
+.vm-blackhole-6 .card-sub { background: linear-gradient(90deg, transparent, #7b3cff55, transparent); }
+
 /* naklejki pod zdjęciem w makietach ("stickers": "under" / "both") - jak .v-stickers.under w cards2.css */
 .card.vm .card-inner > .v-stickers.under { position: absolute; z-index: 0; }
 

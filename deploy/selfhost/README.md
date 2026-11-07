@@ -208,10 +208,10 @@ Gra sama robi kopię bazy (`pg_dump` schematu gry) **co 24 h** do `./backups/gam
 - nie da się go nadać z panelu ani zmianą w bazie - przejęte konto admina nie dobierze się do kopii;
 - każde utworzenie i pobranie kopii zapisuje się w dzienniku adminów.
 
-Id konta (właściciel musi też być adminem w grze):
+Pierwsze zarejestrowane konto **nie jest** już adminem z automatu. Właściciel dostaje uprawnienia admina przy starcie gry (potem może nadawać admina innym w panelu), więc: załóż konto, sprawdź jego id, wpisz je w `GAME_OWNER_IDS` i zrestartuj grę (`docker compose up -d game`). Id konta:
 
 ```sh
-docker compose exec -T db psql -h localhost -U postgres -d postgres -c "SELECT id, username FROM famechests.users WHERE is_admin = 1"
+docker compose exec -T db psql -h localhost -U postgres -d postgres -c "SELECT id, username FROM famechests.users ORDER BY id"
 ```
 
 Wpisz id do `GAME_OWNER_IDS` i `docker compose up -d game`.

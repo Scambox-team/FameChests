@@ -29,7 +29,7 @@ Deploy the zip and set `DATABASE_URL` / `SECRET_KEY` in the app settings: [docs/
 
 ## Accounts
 - Each player has their own account (username + password), balance, cards, binder and discovered secret cards.
-- **The first account registered becomes admin.**
+- **No account is admin automatically.** Accounts listed in `OWNER_IDS` (server setting) become admins at startup; an admin can then grant admin rights to others in the panel.
 - Admin: ⚙️ admin panel — crates (shop, access, custom odds), cards (several crates per card), players (ban, browse/delete cards, crate access, money, chests, passwords, admin rights), variants, achievements, horse races and the 💸 bank.
 - Odds, prices, variants and built-in cards are in `server/data/game.json`.
 

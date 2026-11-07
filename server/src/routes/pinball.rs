@@ -1,6 +1,8 @@
-//! Pinball (zakładka Gry): nagrody w groszach za wynik. Grę liczy przeglądarka (`web/src/features/pinball/`), więc serwer
-//! nie wierzy jej na słowo: czas gry mierzy sam (`start` -> `finish`), wiarygodny wynik ma sufit na sekundę, a wypłata ma
-//! limit na grę i na dobę (`pinball` w game.json). Fałszerz może więc co najwyżej wyciągnąć dzienny limit.
+//! Pinball (zakładka Gry): nagrody w groszach za wynik. Grę liczy przeglądarka (`web/src/features/pinball/core.ts`), ale serwer
+//! nie wierzy jej na słowo: przy starcie losuje ziarno gry, a przy końcu dostaje tylko zapis wciśnięć (tick + zdarzenie) i
+//! ODTWARZA całą grę (`pinball_sim.rs`, ten sam deterministyczny rdzeń w Rust), sam licząc punkty. Wynik, który gracz zobaczył,
+//! nie ma znaczenia - liczy się wynik serwera. Czas sprawdza się też zegarem: gra nie może trwać krócej niż jej zapis (ticki).
+//! Wypłata nie ma limitu na grę ani na dobę (`pinball` w game.json); limit ma tylko liczba kart na dobę.
 //! Za wyjątkowy wynik jest też karta w wariancie Synthwave (`card_tiers`): im wyższy wynik, tym wyższa rzadkość,
 //! losowana ze skrzynek, które dziś są w sklepie (rotacja), a gdy ich nie ma - z domyślnych (stałych i sezonowych).
 
@@ -16,18 +18,10 @@ use crate::auth::Me;
 use crate::catalog::Catalog;
 use crate::data::g;
 use crate::db::{lock_me, now, Conn};
-use crate::error::Res;
+use crate::error::{bad, Res};
 use crate::game::{add_state, balance, insert_for};
+use crate::pinball_sim::{self, TICK};
 use crate::state::AppState;
-
-/// Ile groszy z Pinballa gracz dostał w ostatnich 24 h
-async fn earned_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
-    sqlx::query_scalar::<_, i64>("SELECT COALESCE(SUM(reward), 0)::BIGINT FROM pinball_runs WHERE user_id = $1 AND finished_at > $2")
-        .bind(uid)
-        .bind(now() - 86400.0)
-        .fetch_one(c)
-        .await
-}
 
 /// Ile kart z Pinballa gracz dostał w ostatnich 24 h
 async fn cards_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
@@ -38,7 +32,7 @@ async fn cards_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
         .await
 }
 
-fn info(earned: i64, cards: i64) -> serde_json::Value {
+fn info(cards: i64) -> serde_json::Value {
     let g = g();
     let cfg = &g.pinball;
     let tiers: Vec<_> = cfg
@@ -46,8 +40,7 @@ fn info(earned: i64, cards: i64) -> serde_json::Value {
         .iter()
         .map(|t| json!({"score": t.score, "rarity": t.rarity, "name": g.rarities.get(&t.rarity).map(|r| r.name.as_str()).unwrap_or("")}))
         .collect();
-    json!({"pointsPerGr": cfg.points_per_gr, "maxPerRun": cfg.max_per_run, "maxPerDay": cfg.max_per_day,
-           "left": (cfg.max_per_day - earned).max(0), "cardVariant": cfg.card_variant, "cardTiers": tiers,
+    json!({"pointsPerGr": cfg.points_per_gr, "cardVariant": cfg.card_variant, "cardTiers": tiers,
            "cardsLeft": (cfg.cards_per_day - cards).max(0)})
 }
 
@@ -77,40 +70,46 @@ fn pick_card(cat: &Catalog, score: i64) -> Option<String> {
     None
 }
 
-/// Wynik, który da się zdobyć w `secs` sekund gry (z zapasem na jackpot)
-fn plausible(score: i64, secs: f64) -> bool {
-    let cfg = &g().pinball;
-    (score as f64) <= secs * cfg.max_points_per_second + cfg.slack_points as f64
+/// Nagroda w groszach: punkty / `points_per_gr`, bez limitu
+fn reward_for(score: i64) -> i64 {
+    score.max(0) / g().pinball.points_per_gr.max(1)
 }
 
-/// Nagroda w groszach: punkty / `points_per_gr`, najwyżej `max_per_run` i tyle, ile zostało z dziennego limitu
-fn reward_for(score: i64, left_today: i64) -> i64 {
-    let cfg = &g().pinball;
-    (score.max(0) / cfg.points_per_gr.max(1)).min(cfg.max_per_run).min(left_today.max(0))
-}
-
-/// Ustawienia i ile gracz może jeszcze dziś zarobić
+/// Ustawienia i ile kart gracz może jeszcze dziś dostać
 pub async fn pinball_status(State(st): State<AppState>, Me(me): Me) -> Res {
     let mut c = st.db.acquire().await?;
-    let earned = earned_today(&mut c, me.id).await?;
-    ok(info(earned, cards_today(&mut c, me.id).await?))
+    ok(info(cards_today(&mut c, me.id).await?))
 }
 
-/// Początek gry: serwer zapisuje czas (jedna otwarta gra na gracza)
-pub async fn pinball_start(State(st): State<AppState>, Me(me): Me) -> Res {
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct Start {
+    level: usize,
+}
+
+/// Początek gry: serwer zapisuje czas i losuje ziarno (jedna otwarta gra na gracza). Bez ziarna od serwera nie da się
+/// wyliczyć nagrody, więc gracz nie może przygotować sobie „dobrej” gry wcześniej.
+pub async fn pinball_start(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<Start>) -> Res {
+    let level = req.level.max(1);
+    if level > pinball_sim::level_count() {
+        return bad("Nie ma takiego poziomu");
+    }
+    let seed: u32 = rand::random();
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
     sqlx::query("DELETE FROM pinball_runs WHERE user_id = $1 AND finished_at = 0").bind(me.id).execute(&mut *tx).await?;
-    let id: i64 = sqlx::query_scalar("INSERT INTO pinball_runs (user_id, started_at) VALUES ($1, $2) RETURNING id")
+    let id: i64 = sqlx::query_scalar("INSERT INTO pinball_runs (user_id, started_at, seed, level) VALUES ($1, $2, $3, $4) RETURNING id")
         .bind(me.id)
         .bind(now())
+        .bind(i64::from(seed))
+        .bind(level as i32)
         .fetch_one(&mut *tx)
         .await?;
-    let earned = earned_today(&mut tx, me.id).await?;
     let cards = cards_today(&mut tx, me.id).await?;
     tx.commit().await?;
-    let mut v = info(earned, cards);
+    let mut v = info(cards);
     v["run"] = json!(id);
+    v["seed"] = json!(seed);
     ok(v)
 }
 
@@ -118,42 +117,58 @@ pub async fn pinball_start(State(st): State<AppState>, Me(me): Me) -> Res {
 #[serde(default)]
 pub struct Finish {
     run: i64,
-    score: i64,
+    /// zapis gry: naprzemiennie tick i kod zdarzenia (`INPUT_CODES` w core.ts)
+    log: Vec<u64>,
+    /// ile ticków trwała gra według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
+    ticks: u64,
 }
 
-/// Koniec gry: wypłata, jeśli gra trwała dość długo, wynik jest wiarygodny i jest jeszcze dzienny limit
+/// Koniec gry: serwer odtwarza zapis i sam liczy wynik; płaci, jeśli gra trwała dość długo i nie szybciej niż w prawdziwym czasie
 pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<Finish>) -> Res {
     let cfg = &g().pinball;
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
-    let started: Option<f64> =
-        sqlx::query_scalar("SELECT started_at FROM pinball_runs WHERE id = $1 AND user_id = $2 AND finished_at = 0")
+    let run: Option<(f64, i64, i32)> =
+        sqlx::query_as("SELECT started_at, seed, level FROM pinball_runs WHERE id = $1 AND user_id = $2 AND finished_at = 0")
             .bind(req.run)
             .bind(me.id)
             .fetch_optional(&mut *tx)
             .await?;
-    let Some(started) = started else { return ok(json!({"reward": 0, "reason": "no_run"})) };
-    let secs = now() - started;
-    let earned = earned_today(&mut tx, me.id).await?;
-    let (reward, reason) = if secs < cfg.min_seconds {
-        (0, "too_short")
-    } else if !plausible(req.score, secs) {
-        (0, "implausible")
-    } else if earned >= cfg.max_per_day {
-        (0, "daily_limit")
-    } else {
-        (reward_for(req.score, cfg.max_per_day - earned), "ok")
+    let Some((started, seed, level)) = run else { return ok(json!({"reward": 0, "reason": "no_run"})) };
+    let elapsed = now() - started;
+    // odtwarzanie to praca dla procesora (do minuty gry na milisekundy, ale zapis bywa długi) - poza wątkami asynchronicznymi
+    let (log, seed32, level_n) = (req.log, seed as u32, level.max(1) as usize);
+    let outcome = tokio::task::spawn_blocking(move || pinball_sim::replay(level_n, seed32, &log)).await.ok().flatten();
+    let (score, reward, reason) = match outcome {
+        None => (0, 0, "invalid"),
+        Some(o) if !o.over => (o.score.max(0), 0, "invalid"),
+        Some(o) => {
+            if u64::from(o.ticks) != req.ticks {
+                tracing::warn!(user = me.id, claimed = req.ticks, ticks = o.ticks, level, "pinball: przeglądarka i serwer policzyły różną długość gry");
+            }
+            let secs = f64::from(o.ticks) * TICK;
+            let score = o.score.max(0);
+            if secs < cfg.min_seconds {
+                (score, 0, "too_short")
+            } else if elapsed + 3.0 < secs * 0.9 {
+                // zapis jest dłuższy niż czas, który naprawdę minął: gra nie mogła się odbyć w prawdziwym czasie
+                (score, 0, "implausible")
+            } else {
+                (score, reward_for(score), "ok")
+            }
+        }
     };
-    // karta za wyjątkowy wynik: tylko przy wiarygodnej, dość długiej grze i w dziennym limicie kart
+    // karta za wyjątkowy wynik: tylko przy poprawnie odtworzonej, dość długiej grze i w dziennym limicie kart (jedyny limit Pinballa)
     let cards = cards_today(&mut tx, me.id).await?;
     let cat = st.cat();
-    let card_pid = if matches!(reason, "ok" | "daily_limit") && cards < cfg.cards_per_day { pick_card(&cat, req.score) } else { None };
-    sqlx::query("UPDATE pinball_runs SET finished_at = $1, score = $2, reward = $3, card = $4 WHERE id = $5")
+    let card_pid = if reason == "ok" && cards < cfg.cards_per_day { pick_card(&cat, score) } else { None };
+    sqlx::query("UPDATE pinball_runs SET finished_at = $1, score = $2, reward = $3, card = $4, verified = $6 WHERE id = $5")
         .bind(now())
-        .bind(req.score.max(0))
+        .bind(score)
         .bind(reward)
         .bind(card_pid.as_deref().unwrap_or(""))
         .bind(req.run)
+        .bind(i32::from(reason == "ok"))
         .execute(&mut *tx)
         .await?;
     if reward > 0 {
@@ -169,10 +184,11 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
     };
     let bal = balance(&mut tx, me.id).await?;
     tx.commit().await?;
-    let mut v = info(earned + reward, cards + card.is_some() as i64);
+    let mut v = info(cards + card.is_some() as i64);
     v["card"] = json!(card);
     v["reward"] = json!(reward);
     v["reason"] = json!(reason);
+    v["score"] = json!(score);
     v["balance"] = json!(bal);
     ok(v)
 }
@@ -182,13 +198,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reward_is_capped_per_run_and_per_day() {
-        let cfg = &g().pinball;
-        assert_eq!(reward_for(5_000, 10_000), 5_000 / cfg.points_per_gr);
-        assert_eq!(reward_for(i64::MAX / 2, i64::MAX), cfg.max_per_run);
-        assert_eq!(reward_for(1_000_000, 40), 40);
-        assert_eq!(reward_for(-5, 100), 0);
-        assert_eq!(reward_for(1_000_000, 0), 0);
+    fn reward_has_no_cap() {
+        let per = g().pinball.points_per_gr;
+        assert_eq!(reward_for(5_000), 5_000 / per);
+        assert_eq!(reward_for(100_000_000), 100_000_000 / per);
+        assert_eq!(reward_for(-5), 0);
     }
 
     #[test]
@@ -210,12 +224,5 @@ mod tests {
     fn pinball_variant_is_real_and_dropped_outside_crates() {
         let v = g().pinball.card_variant.clone();
         assert!(g().is_variant(&v) && g().variant(&v).extra_source.as_deref() == Some("pinball"));
-    }
-
-    #[test]
-    fn score_must_fit_the_play_time() {
-        assert!(plausible(30_000, 60.0));
-        assert!(!plausible(10_000_000, 60.0));
-        assert!(!plausible(100_000, 1.0));
     }
 }

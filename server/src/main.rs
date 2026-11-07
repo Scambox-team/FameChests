@@ -25,6 +25,8 @@ mod gotrue;
 mod ids;
 mod images;
 mod lenient;
+mod aim_sim;
+mod pinball_sim;
 mod routes;
 mod startup;
 mod state;

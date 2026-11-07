@@ -609,6 +609,24 @@ export const Sound = (() => {
         case "start": [N.A4, N.C5, N.E5, N.A5].forEach((f, i) => tone(f, t + i * 0.12, 0.3, { type: "sawtooth", vol: 0.06 })); break;
         case "over": [N.A4, N.F4, N.D4, N.A4 / 2].forEach((f, i) => tone(f, t + i * 0.22, 0.4, { type: "sawtooth", vol: 0.07 })); break;
         case "tilt": tone(90, t, 0.8, { type: "square", vol: 0.1 }); break;
+        // poziomy 2-5: teleport, czarna dziura, wiatraczek, trampolina, pałeczka, wiatr, maź, kaczka, skała, fanfara poziomu
+        case "portal": tone(300, t, 0.22, { type: "sine", vol: 0.07, slideTo: 1300 }); tone(1300, t + 0.1, 0.22, { type: "triangle", vol: 0.05, slideTo: 380 }); break;
+        case "hole": tone(260, t, 0.55, { type: "sawtooth", vol: 0.08, slideTo: 38 }); noise(t, 0.5, { vol: 0.16, freq: 350, q: 1, type: "lowpass" }); break;
+        case "holeout": noise(t, 0.3, { vol: 0.26, freq: 400, q: 1, slideTo: 3200 }); tone(60, t, 0.25, { type: "square", vol: 0.09, slideTo: 320 }); break;
+        case "spinner": tone(1400 * p, t, 0.03, { type: "square", vol: 0.035 }); tone(1900 * p, t + 0.035, 0.03, { type: "square", vol: 0.03 }); break;
+        case "boing": tone(180 * p, t, 0.32, { type: "sine", vol: 0.1, slideTo: 640 * p }); tone(360 * p, t + 0.05, 0.28, { type: "triangle", vol: 0.05, slideTo: 900 * p }); break;
+        case "blade": noise(t, 0.08, { vol: 0.2, freq: 4200, q: 3 }); tone(950, t, 0.07, { type: "sawtooth", vol: 0.05, slideTo: 300 }); break;
+        case "fan": noise(t, 0.6, { vol: 0.07, freq: 800, q: 0.7, type: "bandpass", slideTo: 1500 }); break;
+        case "goo": tone(150, t, 0.18, { type: "sine", vol: 0.06, slideTo: 85 }); tone(110, t + 0.1, 0.16, { type: "sine", vol: 0.04, slideTo: 70 }); break;
+        case "quack": tone(720 * p, t, 0.07, { type: "sawtooth", vol: 0.06, slideTo: 360 }); tone(520 * p, t + 0.08, 0.1, { type: "sawtooth", vol: 0.05, slideTo: 250 }); break;
+        case "rock": noise(t, 0.09, { vol: 0.2, freq: 450, q: 1, type: "lowpass" }); tone(120 * p, t, 0.09, { type: "square", vol: 0.05, slideTo: 70 }); break;
+        // strzelnica: wystrzał, blaszana kaczka, złota kaczka, pudło, sygnał końca czasu
+        case "shot": noise(t, 0.09, { vol: 0.3, freq: 2600, q: 0.8, type: "highpass" }); tone(170, t, 0.07, { type: "square", vol: 0.08, slideTo: 60 }); break;
+        case "clang": tone(1250 * p, t, 0.22, { type: "triangle", vol: 0.1, slideTo: 900 * p }); tone(1900 * p, t, 0.1, { type: "square", vol: 0.04 }); noise(t, 0.04, { vol: 0.1, freq: 4200, q: 2 }); break;
+        case "goldduck": [N.C6, N.E6, N.G6, N.C6 * 2].forEach((f, i) => tone(f, t + i * 0.05, 0.2, { type: "triangle", vol: 0.07 })); tone(1250, t, 0.2, { type: "triangle", vol: 0.08, slideTo: 900 }); break;
+        case "miss": noise(t, 0.05, { vol: 0.12, freq: 700, q: 1, type: "lowpass" }); break;
+        case "tick": tone(1100, t, 0.05, { type: "square", vol: 0.05 }); break;
+        case "level": for (let i = 0; i < 3 + p; i++) tone(N.C5 * Math.pow(2, [0, 4, 7, 12, 16, 19][i % 6] / 12), t + 0.5 + i * 0.09, 0.2, { type: "square", vol: 0.05 }); break;
       }
     },
   };

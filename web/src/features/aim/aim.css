@@ -1,0 +1,18 @@
+/* STRZELNICA (zakładka Gry): płótno z jarmarczną strzelnicą i panel wyniku */
+.aim-page { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 22px; align-items: start; }
+.aim-stage { border-radius: 18px; overflow: hidden; border: 3px solid #d6283a; box-shadow: 0 0 30px rgba(214, 40, 58, .35), 0 0 70px rgba(255, 211, 25, .1); background: #0b0a2a; }
+.aim-canvas { display: block; width: 100%; aspect-ratio: 8 / 5; height: auto; cursor: none; touch-action: none; user-select: none; -webkit-user-select: none; }
+.aim-side { display: flex; flex-direction: column; gap: 12px; }
+.aim-board { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 12px; border: 2px solid #5a1a24; background: linear-gradient(180deg, #2a0b14, #14040a); box-shadow: inset 0 0 22px rgba(0, 0, 0, .8); }
+.aim-label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: #ffb0b8; }
+.aim-score { font-size: clamp(30px, 3.4vw, 42px); font-weight: 800; line-height: 1.05; color: #ffd319; text-shadow: 0 0 12px rgba(255, 211, 25, .6); font-variant-numeric: tabular-nums; }
+.aim-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 13px; color: #fff; font-variant-numeric: tabular-nums; }
+.aim-bar { height: 8px; border-radius: 4px; background: #3a1018; overflow: hidden; }
+.aim-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff3b4e, #ffd319); transition: width .25s linear; }
+.aim-best { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, .05); }
+.aim-result { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-radius: 12px; font-size: 13px; color: var(--muted); border: 1px solid rgba(214, 40, 58, .4); background: rgba(214, 40, 58, .08); }
+.aim-ok { color: #9cff9c; font-weight: 700; }
+.aim-help { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.aim-help h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.aim-help ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
+@media (max-width: 900px) { .aim-page { grid-template-columns: 1fr; } }

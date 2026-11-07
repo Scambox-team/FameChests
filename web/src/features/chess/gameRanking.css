@@ -1,0 +1,13 @@
+/* ranking gry (szachy, pinball) */
+.gr-box { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--radius-s, 12px); border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .03); }
+.gr-box h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.gr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.gr-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px; font-size: 14px; }
+.gr-list li.gap { margin-top: 6px; border-top: 1px dashed rgba(255, 255, 255, .15); padding-top: 9px; }
+.gr-list li.is-me { background: rgba(255, 255, 255, .08); }
+.gr-place { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.gr-list li:nth-child(-n+3) .gr-place { color: var(--hue, #ffd319); font-weight: 800; }
+.gr-name { color: inherit; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gr-name:hover { text-decoration: underline; }
+.gr-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gr-val small { color: var(--muted); }

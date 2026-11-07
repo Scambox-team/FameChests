@@ -1,0 +1,745 @@
+[
+ {
+  "id": 1,
+  "name": "Neon Drive",
+  "blurb": "Klasyk: neony, trzy bumpery i słońce.",
+  "theme": "neon",
+  "H": 840,
+  "palette": {
+   "cyan": "#2de2e6",
+   "pink": "#ff3cac",
+   "magenta": "#f706cf",
+   "purple": "#9d4edd",
+   "yellow": "#ffd319",
+   "orange": "#ff901f",
+   "blue": "#3a86ff"
+  },
+  "title": "SCAMBOX",
+  "tagline": "N E O N   D R I V E   ·   1 9 8 6",
+  "saucer": 470,
+  "bumpers": [
+   [
+    154,
+    290
+   ],
+   [
+    274,
+    290
+   ],
+   [
+    214,
+    360,
+    22,
+    true
+   ]
+  ],
+  "drops": {
+   "labels": "VHS",
+   "ys": [
+    380,
+    420,
+    460
+   ]
+  },
+  "stands": {
+   "labels": "RAD",
+   "ys": [
+    380,
+    420,
+    460
+   ]
+  },
+  "lanes": "NEON"
+ },
+ {
+  "id": 2,
+  "name": "Kosmiczny Kadet",
+  "blurb": "Wyższy stół: teleporty, czarna dziura i latająca skała.",
+  "theme": "space",
+  "H": 1100,
+  "palette": {
+   "cyan": "#6ee7ff",
+   "pink": "#ff6bd6",
+   "magenta": "#b36bff",
+   "purple": "#6a5cff",
+   "yellow": "#ffe066",
+   "orange": "#ff9f43",
+   "blue": "#4d8bff"
+  },
+  "title": "KADET",
+  "tagline": "M I S J A   K O S M I C Z N A",
+  "saucer": 560,
+  "bumpers": [
+   [
+    154,
+    300
+   ],
+   [
+    274,
+    300
+   ],
+   [
+    214,
+    370,
+    22,
+    true
+   ],
+   [
+    96,
+    470,
+    20
+   ],
+   [
+    332,
+    470,
+    20
+   ]
+  ],
+  "drops": {
+   "labels": "LUN",
+   "ys": [
+    440,
+    480,
+    520
+   ]
+  },
+  "stands": {
+   "labels": "MAR",
+   "ys": [
+    440,
+    480,
+    520
+   ]
+  },
+  "lanes": "STAR",
+  "portals": [
+   {
+    "a": [
+     46,
+     330
+    ],
+    "b": [
+     382,
+     790
+    ]
+   }
+  ],
+  "holes": [
+   {
+    "x": 214,
+    "y": 720,
+    "pull": 110
+   }
+  ],
+  "spinners": [
+   {
+    "x": 120,
+    "y": 650,
+    "w": 50
+   },
+   {
+    "x": 308,
+    "y": 650,
+    "w": 50
+   }
+  ],
+  "movers": [
+   {
+    "cx": 214,
+    "cy": 450,
+    "ax": 100,
+    "period": 4.5,
+    "r": 15,
+    "skin": "rock"
+   }
+  ]
+ },
+ {
+  "id": 3,
+  "name": "Pizzeria Chaos",
+  "blurb": "Ser, który klei, wentylator z pieprzem i ostrze do pizzy.",
+  "theme": "pizza",
+  "H": 1300,
+  "palette": {
+   "cyan": "#7bd88f",
+   "pink": "#ff5d5d",
+   "magenta": "#ff3d00",
+   "purple": "#d4a373",
+   "yellow": "#ffd23f",
+   "orange": "#ff9a3c",
+   "blue": "#4ea8de"
+  },
+  "title": "PIZZA",
+  "tagline": "D O   D O M U   0 , 5   M I N",
+  "saucer": 720,
+  "bumpers": [
+   [
+    110,
+    300
+   ],
+   [
+    214,
+    340,
+    22,
+    true
+   ],
+   [
+    318,
+    300
+   ],
+   [
+    150,
+    480
+   ],
+   [
+    278,
+    480
+   ]
+  ],
+  "drops": {
+   "labels": "SER",
+   "ys": [
+    400,
+    440,
+    480
+   ]
+  },
+  "stands": {
+   "labels": "SOS",
+   "ys": [
+    400,
+    440,
+    480
+   ]
+  },
+  "lanes": "MAMA",
+  "blades": [
+   {
+    "x": 214,
+    "y": 600,
+    "len": 120,
+    "w": 2.4
+   }
+  ],
+  "sticky": [
+   {
+    "x": 20,
+    "y": 760,
+    "w": 110,
+    "h": 70
+   },
+   {
+    "x": 298,
+    "y": 760,
+    "w": 100,
+    "h": 70
+   }
+  ],
+  "fans": [
+   {
+    "x": 320,
+    "y": 900,
+    "w": 80,
+    "h": 140,
+    "fx": 0,
+    "fy": -2400
+   }
+  ],
+  "portals": [
+   {
+    "a": [
+     46,
+     680
+    ],
+    "b": [
+     372,
+     430
+    ]
+   }
+  ],
+  "spinners": [
+   {
+    "x": 110,
+    "y": 880,
+    "w": 50
+   },
+   {
+    "x": 318,
+    "y": 880,
+    "w": 50
+   }
+  ],
+  "movers": [
+   {
+    "cx": 214,
+    "cy": 420,
+    "ax": 70,
+    "period": 3.2,
+    "r": 14,
+    "skin": "orb"
+   }
+  ],
+  "pads": [
+   {
+    "a": [
+     18,
+     960
+    ],
+    "b": [
+     64,
+     1000
+    ]
+   },
+   {
+    "a": [
+     410,
+     960
+    ],
+    "b": [
+     364,
+     1000
+    ]
+   }
+  ]
+ },
+ {
+  "id": 4,
+  "name": "Wesołe Miasteczko",
+  "blurb": "Kaczki na strzelnicy, diabelski młyn, druga para łap i dziura w ziemi.",
+  "theme": "carnival",
+  "H": 1500,
+  "palette": {
+   "cyan": "#00d4ff",
+   "pink": "#ff4fa3",
+   "magenta": "#ff1744",
+   "purple": "#7c4dff",
+   "yellow": "#ffeb3b",
+   "orange": "#ff9100",
+   "blue": "#2979ff"
+  },
+  "title": "CYRK",
+  "tagline": "W E S O Ł O   I   G Ł O Ś N O",
+  "saucer": 1180,
+  "bumpers": [
+   [
+    140,
+    300
+   ],
+   [
+    288,
+    300
+   ],
+   [
+    214,
+    370,
+    22,
+    true
+   ],
+   [
+    100,
+    1120
+   ],
+   [
+    328,
+    1120
+   ]
+  ],
+  "drops": {
+   "labels": "HOP",
+   "ys": [
+    650,
+    690,
+    730
+   ]
+  },
+  "stands": {
+   "labels": "CYR",
+   "ys": [
+    650,
+    690,
+    730
+   ]
+  },
+  "lanes": "WOW!",
+  "walls": [
+   [
+    [
+     10,
+     880
+    ],
+    [
+     100,
+     980
+    ]
+   ],
+   [
+    [
+     418,
+     880
+    ],
+    [
+     328,
+     980
+    ]
+   ]
+  ],
+  "uppers": [
+   {
+    "x": 100,
+    "y": 980,
+    "side": "l"
+   },
+   {
+    "x": 328,
+    "y": 980,
+    "side": "r"
+   }
+  ],
+  "movers": [
+   {
+    "cx": 214,
+    "cy": 470,
+    "ax": 150,
+    "period": 5,
+    "r": 13,
+    "skin": "duck"
+   },
+   {
+    "cx": 214,
+    "cy": 520,
+    "ax": 150,
+    "period": 4,
+    "phase": 3.141592653589793,
+    "r": 13,
+    "skin": "duck"
+   },
+   {
+    "cx": 214,
+    "cy": 570,
+    "ax": 150,
+    "period": 6,
+    "r": 13,
+    "skin": "duck"
+   }
+  ],
+  "fans": [
+   {
+    "x": 322,
+    "y": 640,
+    "w": 76,
+    "h": 220,
+    "fx": 0,
+    "fy": -2600
+   }
+  ],
+  "blades": [
+   {
+    "x": 130,
+    "y": 800,
+    "len": 130,
+    "w": 2
+   },
+   {
+    "x": 298,
+    "y": 800,
+    "len": 130,
+    "w": -2
+   }
+  ],
+  "spinners": [
+   {
+    "x": 214,
+    "y": 860,
+    "w": 60
+   }
+  ],
+  "holes": [
+   {
+    "x": 214,
+    "y": 1060,
+    "pull": 90
+   }
+  ],
+  "portals": [
+   {
+    "a": [
+     46,
+     300
+    ],
+    "b": [
+     382,
+     1160
+    ]
+   }
+  ]
+ },
+ {
+  "id": 5,
+  "name": "Piekło Pinballa",
+  "blurb": "Finał: trzy piętra, dwie czarne dziury, śmigło i antygrawitacja.",
+  "theme": "chaos",
+  "H": 1800,
+  "palette": {
+   "cyan": "#00ffa3",
+   "pink": "#ff2d55",
+   "magenta": "#ff00ff",
+   "purple": "#8e2de2",
+   "yellow": "#fff200",
+   "orange": "#ff6a00",
+   "blue": "#00b3ff"
+  },
+  "title": "PIEKŁO",
+  "tagline": "P O W O D Z E N I A   !",
+  "saucer": 1500,
+  "bumpers": [
+   [
+    120,
+    290
+   ],
+   [
+    308,
+    290
+   ],
+   [
+    214,
+    350,
+    22,
+    true
+   ],
+   [
+    110,
+    1330
+   ],
+   [
+    318,
+    1330
+   ],
+   [
+    214,
+    1400,
+    22,
+    true
+   ],
+   [
+    150,
+    930,
+    20
+   ],
+   [
+    278,
+    930,
+    20
+   ]
+  ],
+  "drops": {
+   "labels": "HEL",
+   "ys": [
+    450,
+    490,
+    530
+   ]
+  },
+  "stands": {
+   "labels": "OMG",
+   "ys": [
+    450,
+    490,
+    530
+   ]
+  },
+  "lanes": "BOOM",
+  "walls": [
+   [
+    [
+     10,
+     600
+    ],
+    [
+     100,
+     700
+    ]
+   ],
+   [
+    [
+     418,
+     600
+    ],
+    [
+     328,
+     700
+    ]
+   ],
+   [
+    [
+     10,
+     1150
+    ],
+    [
+     100,
+     1250
+    ]
+   ],
+   [
+    [
+     418,
+     1150
+    ],
+    [
+     328,
+     1250
+    ]
+   ]
+  ],
+  "uppers": [
+   {
+    "x": 100,
+    "y": 700,
+    "side": "l"
+   },
+   {
+    "x": 328,
+    "y": 700,
+    "side": "r"
+   },
+   {
+    "x": 100,
+    "y": 1250,
+    "side": "l"
+   },
+   {
+    "x": 328,
+    "y": 1250,
+    "side": "r"
+   }
+  ],
+  "fans": [
+   {
+    "x": 150,
+    "y": 400,
+    "w": 128,
+    "h": 170,
+    "fx": 0,
+    "fy": -3200
+   },
+   {
+    "x": 20,
+    "y": 850,
+    "w": 150,
+    "h": 60,
+    "fx": 2200,
+    "fy": 0
+   },
+   {
+    "x": 258,
+    "y": 850,
+    "w": 150,
+    "h": 60,
+    "fx": -2200,
+    "fy": 0
+   }
+  ],
+  "movers": [
+   {
+    "cx": 214,
+    "cy": 520,
+    "ax": 120,
+    "period": 3.5,
+    "r": 15,
+    "skin": "orb"
+   },
+   {
+    "cx": 214,
+    "cy": 1470,
+    "ax": 130,
+    "period": 3,
+    "r": 13,
+    "skin": "duck"
+   }
+  ],
+  "blades": [
+   {
+    "x": 214,
+    "y": 800,
+    "len": 200,
+    "w": 1.6
+   }
+  ],
+  "holes": [
+   {
+    "x": 80,
+    "y": 1000,
+    "pull": 80
+   },
+   {
+    "x": 348,
+    "y": 1000,
+    "pull": 80
+   }
+  ],
+  "portals": [
+   {
+    "a": [
+     46,
+     780
+    ],
+    "b": [
+     382,
+     1380
+    ]
+   },
+   {
+    "a": [
+     370,
+     560
+    ],
+    "b": [
+     46,
+     1480
+    ]
+   }
+  ],
+  "spinners": [
+   {
+    "x": 214,
+    "y": 1050,
+    "w": 60
+   }
+  ],
+  "pads": [
+   {
+    "a": [
+     18,
+     1060
+    ],
+    "b": [
+     64,
+     1100
+    ]
+   },
+   {
+    "a": [
+     410,
+     1060
+    ],
+    "b": [
+     364,
+     1100
+    ]
+   }
+  ],
+  "sticky": [
+   {
+    "x": 20,
+    "y": 1450,
+    "w": 100,
+    "h": 60
+   },
+   {
+    "x": 308,
+    "y": 1450,
+    "w": 100,
+    "h": 60
+   }
+  ]
+ }
+]

@@ -224,7 +224,7 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
             "INSERT INTO users (username, password_hash, is_admin, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
             name,
             hash,
-            i32::from(first),
+            0, // nikt nie jest adminem z automatu: admina nadaje inny admin w panelu, właściciela (OWNER_IDS) startup
             now()
         )
         .fetch_one(&mut *tx)

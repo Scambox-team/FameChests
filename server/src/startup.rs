@@ -34,6 +34,9 @@ impl FirstDrop {
 pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Catalog> {
     db::init_schema(pool).await?;
     drop_removed_variants(pool).await?;
+    // pierwsze konto nie dostaje już admina samo: właściciele z OWNER_IDS są adminami (inaczej na świeżej bazie nie byłoby
+    // kto ma nadać pierwszego admina), reszta - jak dotąd - z panelu
+    sqlx::query("UPDATE users SET is_admin = 1 WHERE is_admin = 0 AND id = ANY($1)").bind(&cfg.owner_ids).execute(pool).await?;
     let mut tx = pool.begin().await?;
     // klaser pamięta karty, które gracz kiedykolwiek miał: uzupełniamy z obecnych kart i z aktywności
     sqlx::query!(

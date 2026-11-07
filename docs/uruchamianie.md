@@ -51,8 +51,8 @@ nix shell nixpkgs#cargo nixpkgs#rustc nixpkgs#gcc nixpkgs#pkg-config -c cargo ru
 Potrzebne: [Rust (rustup)](https://rustup.rs) i Visual Studio Build Tools (kompilator C dla biblioteki WebP).
 Potem dwuklik `start.bat` w głównym folderze gry.
 
-Pierwsze budowanie trwa kilka minut. Gra działa na **http://127.0.0.1:5000**. Pierwsze zarejestrowane konto jest
-adminem.
+Pierwsze budowanie trwa kilka minut. Gra działa na **http://127.0.0.1:5000**. Pierwsze zarejestrowane konto przejmuje
+stary zapis, ale nie jest adminem: wpisz jego id w `OWNER_IDS` w `server/.env` i zrestartuj grę (właściciele dostają admina przy starcie).
 
 ## Opcje
 

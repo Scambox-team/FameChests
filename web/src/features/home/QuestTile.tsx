@@ -68,7 +68,7 @@ export function QuestTile() {
           : !done ? (
             <>
               <h2 className={s.name}>{target ? target.name : 'Dowolna karta'}{q.variant ? <span className={s.qVariant}> · {variantName(q.variant)}</span> : null}</h2>
-              <p className={s.lead}>Zdobądź tę kartę ze skrzynki, kuźni lub kasyna. Kto pierwszy, dostaje ją w wariancie {variantName('wanted')}{q.reward ? ` i ${fmt(q.reward)}` : ''}.</p>
+              <p className={s.lead}>Zdobądź tę kartę ze skrzynki, kuźni lub kasyna.{q.minMult ? ` Potrzebny wariant z mnożnikiem wartości co najmniej ${q.minMult}x.` : ''} Kto pierwszy, dostaje ją w wariancie {variantName('wanted')}{q.reward ? ` i ${fmt(q.reward)}` : ''}.</p>
               {!!q.crates?.length && <p className={s.where}>Wypada ze skrzynek: {q.crates.map((id: string) => crateOf(id)?.short ?? id).join(', ')}.</p>}
             </>
           ) : q.mine ? (

@@ -1,89 +1,32 @@
-// Pinball „Neon Drive” (zakładka Gry -> Pinball): fizyka, zasady i rysowanie na jednym płótnie 2D.
-// Wszystko liczy przeglądarka, bez serwera i bez nagród - rekord zostaje w localStorage (`pinballBest`).
+// Pinball (zakładka Gry -> Pinball): rysowanie, dźwięk i sterowanie na jednym płótnie 2D. Fizykę i zasady liczy core.ts (ten sam
+// kod w Rust sprawdza wynik na serwerze: przeglądarka zapisuje wciśnięcia, serwer odtwarza grę i sam liczy punkty).
 // Stół ma stały układ współrzędnych W x H (y w dół); płótno skaluje go do miejsca na ekranie.
 // Warstwy: tło (niebo, słońce, góry) i stół (ściany, prowadnice) rysujemy raz do osobnych płócien,
 // co klatkę dochodzą siatka, lampki, bumpery, łapy, kulki i iskry.
 import { Sound } from '../../sound/sound';
+import { ARC, AXIS, BALLS, DIVIDERS, FR0, FR1, GATE, INPUT_CODES, LANE_X, R, Sim, TICK, W, geoOf, mirror, type Ball, type Flip, type Fx, type Input } from './core';
 
-export const W = 460, H = 840;
-const R = 9;                 // promień kulki
-const G = 1450;              // grawitacja wzdłuż pochylonego stołu, px/s²
-const SUB = 8;               // pod-kroki fizyki na klatkę (bez przelatywania przez ściany)
-const VMAX = 2600;
-const AXIS = 214;            // oś symetrii pola gry (bez toru wyrzutni)
-const HORIZON = 520;
-const LANE_X = 418;          // ściana toru wyrzutni
-const BALLS = 3;
-const SAVE_TIME = 9;         // s ochrony kulki po wyrzucie
+export { W };
+const VH = 840;             // wysokość widoku: wyższy stół przewija się za kulką
+const ZMAX = 2.6;            // największe przybliżenie
 
-const C = { cyan: '#2de2e6', pink: '#ff3cac', magenta: '#f706cf', purple: '#9d4edd', yellow: '#ffd319', orange: '#ff901f', blue: '#3a86ff' };
-
-type P = { x: number; y: number };
-type Seg = { a: P; b: P; r: number };
-type Ball = { x: number; y: number; vx: number; vy: number; trail: P[]; held: number; cool: number; auto: number; gone: boolean; still: number };
-type Flip = { x: number; y: number; rest: number; up: number; ang: number; w: number; on: boolean };
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number };
 type Pop = { x: number; y: number; text: string; life: number; color: string };
 
-export type PinHud = { phase: 'attract' | 'play' | 'over'; score: number; ball: number; balls: number; mult: number; best: number; multiball: boolean; save: boolean; tilt: boolean };
-export type PinballGame = { destroy(): void; start(): void; resize(): void; state(): { balls: { x: number; y: number; vx: number; vy: number }[]; score: number; phase: string; ball: number } };
-
-// ---------- układ stołu ----------
-const pt = (x: number, y: number): P => ({ x, y });
-const seg = (ax: number, ay: number, bx: number, by: number, r = 3): Seg => ({ a: pt(ax, ay), b: pt(bx, by), r });
-const polyline = (pts: number[][], r = 3) => pts.slice(1).map((p, i) => seg(pts[i][0], pts[i][1], p[0], p[1], r));
-const mirror = (pts: number[][]) => pts.map(([x, y]) => [AXIS * 2 - x, y]);
-
-const ARC = Array.from({ length: 33 }, (_, i) => { const t = Math.PI + Math.PI * i / 32; return [230 + 220 * Math.cos(t), 230 + 220 * Math.sin(t)]; });
-// koniec prowadnicy leży tuż nad górną krawędzią łapy w spoczynku - niżej kulka klinowała się przy osi łapy
-const GUIDE_L = [[45, 590], [45, 676], [128, 720]], GUIDE_R = mirror(GUIDE_L);
-const SLING_L = [[78, 612], [78, 662], [110, 680]], SLING_R = mirror(SLING_L);   // pod procą zostaje >= 24 px przejścia do łapy
-const DIVIDERS = [114, 164, 214, 264, 314].map(x => seg(x, 92, x, 132, 4));
-const GATE = seg(449, 188, LANE_X, 206, 2);   // przepuszcza kulkę z wyrzutni, nie wpuszcza z powrotem
-
-const WALLS: Seg[] = [
-  ...polyline(ARC), seg(10, 230, 10, 900), seg(450, 230, 450, 900), seg(LANE_X, 206, LANE_X, 900),
-  ...polyline(GUIDE_L), ...polyline(GUIDE_R),
-  ...polyline(SLING_L.slice(0, 2)), ...polyline(SLING_L.slice(1)), ...polyline(SLING_R.slice(0, 2)), ...polyline(SLING_R.slice(1)),
-  ...DIVIDERS,
-];
-const POSTS = [pt(45, 590), pt(383, 590)].map(p => ({ ...p, r: 5 }));
-
-function slingOf(pts: number[][]) {
-  const s = seg(pts[0][0], pts[0][1], pts[2][0], pts[2][1], 3);
-  const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y, l = Math.hypot(dx, dy);
-  let nx = dy / l, ny = -dx / l;
-  if (nx * (AXIS - s.a.x) < 0) { nx = -nx; ny = -ny; }
-  return { s, nx, ny, flash: 0 };
-}
-
-const LEN = 70, FR0 = 11, FR1 = 6;
-const SAUCER = pt(AXIS, 470);
-const ORBIT = pt(230, 24);
-const LANES = [139, 189, 239, 289];
-const LANE_Y = 112;
-
-// ---------- pomocnicze ----------
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-function closest(p: P, a: P, b: P): P {
-  const abx = b.x - a.x, aby = b.y - a.y;
-  const t = clamp(((p.x - a.x) * abx + (p.y - a.y) * aby) / (abx * abx + aby * aby), 0, 1);
-  return pt(a.x + abx * t, a.y + aby * t);
-}
-// kulka o okrąg (cx, cy, rad), który może się ruszać z prędkością (svx, svy); zwraca siłę uderzenia albo -1
-function collide(b: Ball, cx: number, cy: number, rad: number, rest: number, kick = 0, svx = 0, svy = 0): number {
-  const dx = b.x - cx, dy = b.y - cy, min = R + rad, d2 = dx * dx + dy * dy;
-  if (d2 >= min * min) return -1;
-  const d = Math.sqrt(d2) || 1e-4, nx = dx / d, ny = dy / d;
-  b.x = cx + nx * min; b.y = cy + ny * min;
-  const rvx = b.vx - svx, rvy = b.vy - svy, vn = rvx * nx + rvy * ny;
-  if (vn >= 0) return 0;
-  const tx = -ny, ty = nx, vt = (rvx * tx + rvy * ty) * 0.985;
-  const out = -vn * rest + kick;
-  b.vx = svx + nx * out + tx * vt; b.vy = svy + ny * out + ty * vt;
-  return -vn;
-}
-const segHit = (b: Ball, s: Seg, rest: number, kick = 0) => { const c = closest(b, s.a, s.b); return collide(b, c.x, c.y, s.r, rest, kick); };
+export type PinHud = { level: number; phase: 'attract' | 'play' | 'over'; score: number; ball: number; balls: number; mult: number; best: number; multiball: boolean; save: boolean; tilt: boolean };
+/** Zapis gry do sprawdzenia przez serwer: ziarno od serwera, zdarzenia (tick, kod) i liczba ticków do końca gry */
+export type PinRun = { seed: number; ticks: number; log: number[]; verified: boolean };
+export type PinballGame = {
+  destroy(): void; start(): void; resize(): void; zoom(delta: number): boolean; resetZoom(): void;
+  getRun(): PinRun | null;
+  state(): { balls: { x: number; y: number; vx: number; vy: number }[]; score: number; phase: string; ball: number; tick: number };
+};
+export type PinOptions = {
+  /** Wołane przy starcie gry: zwraca ziarno od serwera (gra od razu po tym) albo null = gra bez weryfikacji i bez nagród */
+  begin?: () => Promise<number | null>;
+  /** Tylko do testów: stały generator czasu (ms) zamiast requestAnimationFrame */
+  seed?: number;
+};
 
 // powtarzalny „losowy” układ gwiazd
 function rng(seed: number) { return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
@@ -91,55 +34,26 @@ function rng(seed: number) { return () => { seed = (seed * 16807) % 2147483647; 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FONT = '"Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif';
 
-export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => void): PinballGame {
+export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => void, level = 1, opts: PinOptions = {}): PinballGame {
+  const geo = geoOf(level);
+  const LV = geo.spec, H = geo.H, DY = geo.DY;
+  const HORIZON = 520;
+  const GUIDE_L = geo.guideL, GUIDE_R = geo.guideR, SLING_L = geo.slingL, SLING_R = geo.slingR, POSTS = geo.posts;
+  const SAUCER = geo.saucer;
+  const C: Record<string, string> = { ...LV.palette };
   const ctx = canvas.getContext('2d')!;
+  const bestKey = level === 1 ? 'pinballBest' : `pinballBest${level}`;
   let k = 1;                                  // piksele urządzenia na jednostkę stołu
   let bg: HTMLCanvasElement, fg: HTMLCanvasElement;
 
-  // ---------- stan gry ----------
-  let phase: PinHud['phase'] = 'attract';
-  let score = 0, ballNo = 1, mult = 1, extra = 0;
+  // ---------- efekty z rdzenia ----------
   let best = 0;
-  try { best = +(localStorage.getItem('pinballBest') ?? 0) || 0; } catch { /* prywatne okno */ }
-  let balls: Ball[] = [];
-  let queue = 0, queueT = 0;                  // kulki multiballa do wyrzucenia
-  let saveT = 0, saveArmed = false;
-  let multiball = false, jackpots = 0;
-  let tilted = false, nudges: number[] = [];
-  let charge = 0, charging = false, plungerKick = 0;
-  let shake = 0, time = 0, overT = 0;
-  let wallSnd = 0;
-  const keys = { l: false, r: false };
-  const pointers = new Map<number, 'l' | 'r' | 'p'>();
-
-  const fl: Flip = { x: 134, y: 735, rest: 0.52, up: -0.52, ang: 0.52, w: 0, on: false };
-  const fr: Flip = { x: 294, y: 735, rest: Math.PI - 0.52, up: Math.PI + 0.52, ang: Math.PI - 0.52, w: 0, on: false };
-  const bumpers = [pt(154, 290), pt(274, 290), pt(AXIS, 360)].map(p => ({ ...p, r: 22, flash: 0 }));
-  const slings = [slingOf(SLING_L), slingOf(SLING_R)];
-  const drops = [380, 420, 460].map((y, i) => ({ s: seg(30, y - 13, 30, y + 13, 4), down: false, label: 'VHS'[i], flash: 0 }));
-  const stands = [380, 420, 460].map((y, i) => ({ s: seg(404, y - 13, 404, y + 13, 4), lit: false, label: 'RAD'[i], flash: 0 }));
-  const lanes = LANES.map((x, i) => ({ x, lit: false, label: 'NEON'[i], cool: 0, flash: 0 }));
-  let dropsReset = 0, vhsDone = false, radDone = false;
-  let saucerFlash = 0, orbitCool = 0;
+  try { best = +(localStorage.getItem(bestKey) ?? 0) || 0; } catch { /* prywatne okno */ }
   const sparks: Spark[] = [];
   const pops: Pop[] = [];
   let msg: { text: string; sub: string; t: number; dur: number; color: string } | null = null;
-
-  // ---------- HUD ----------
-  let hudSig = '';
-  function hud() {
-    const h: PinHud = { phase, score, ball: Math.min(ballNo, BALLS), balls: BALLS, mult, best, multiball, save: saveT > 0, tilt: tilted };
-    const sig = JSON.stringify(h);
-    if (sig !== hudSig) { hudSig = sig; onHud(h); }
-  }
-
-  const say = (text: string, sub = '', color = C.pink, dur = 2) => { msg = { text, sub, t: 0, dur, color }; };
-  function add(pts: number, x?: number, y?: number, color = C.yellow) {
-    if (phase !== 'play' || tilted) return;
-    const v = pts * mult;
-    score += v;
-    if (x !== undefined && y !== undefined && v >= 1000) pops.push({ x, y, text: v.toLocaleString('pl-PL'), life: 1.1, color });
-  }
+  let shake = 0, time = 0;
+  const bump = (v: number) => { if (!reduced()) shake = Math.max(shake, v); };
   function burst(x: number, y: number, color: string, n = 14, speed = 260) {
     if (reduced()) n = Math.ceil(n / 3);
     for (let i = 0; i < n; i++) {
@@ -147,274 +61,90 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
       sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0, max: 0.35 + Math.random() * 0.4, color, size: 1.5 + Math.random() * 2 });
     }
   }
-  const bump = (v: number) => { if (!reduced()) shake = Math.max(shake, v); };
-
-  // ---------- przebieg gry ----------
-  function newBall(): Ball { return { x: 434, y: 780, vx: 0, vy: 0, trail: [], held: 0, cool: 0, auto: 0, gone: false, still: 0 }; }
-  function serve() { balls = [newBall()]; saveArmed = true; tilted = false; nudges = []; }
-  function start() {
-    if (phase === 'play') return;
-    phase = 'play'; score = 0; ballNo = 1; mult = 1; extra = 0; jackpots = 0; multiball = false; queue = 0;
-    lanes.forEach(l => l.lit = false); drops.forEach(d => d.down = false); stands.forEach(s => s.lit = false);
-    vhsDone = radDone = false;
-    serve();
-    Sound.unlock(); Sound.pin('start');
-    say('START', 'wyrzuć kulkę: spacja', C.cyan, 2.2);
-    hud();
-  }
-  function endBall() {
-    if (extra > 0) { extra--; say('JESZCZE RAZ', 'dodatkowa kulka', C.cyan); serve(); return; }
-    ballNo++;
-    mult = 1;
-    if (ballNo > BALLS) {
-      phase = 'over'; overT = 0;
+  const fx: Fx = {
+    sound: (kind, p = 1) => Sound.pin(kind, p),
+    burst: (x, y, color, n, speed) => burst(x, y, C[color] ?? color, n, speed),
+    say: (text, sub, color, dur) => { msg = { text, sub, t: 0, dur, color: C[color] ?? color }; },
+    clearMsg: () => { msg = null; },
+    pop: (x, y, value, color) => { pops.push({ x, y, text: value.toLocaleString('pl-PL'), life: 1.1, color: C[color] ?? color }); },
+    bump,
+    over: score => {
       const record = score > best;
-      if (record) { best = score; try { localStorage.setItem('pinballBest', String(best)); } catch { /* bez zapisu */ } }
-      Sound.pin('over');
-      say(record ? 'NOWY REKORD' : 'KONIEC GRY', score.toLocaleString('pl-PL'), record ? C.yellow : C.pink, 99);
-    } else {
-      Sound.pin('drain');
-      say(`KULKA ${ballNo}`, '', C.cyan, 1.6);
-      serve();
-    }
-  }
-  function drained(b: Ball) {
-    b.gone = true;
-    const left = balls.filter(x => !x.gone).length + queue;
-    if (multiball && left <= 1) { multiball = false; say('KONIEC MULTIBALLA', `jackpoty: ${jackpots}`, C.purple); }
-    if (left > 0) return;
-    if (saveT > 0 && !tilted) {
-      Sound.pin('save'); say('KULKA URATOWANA', '', C.cyan, 1.5);
-      queue = 1; queueT = 0.5; saveT = 0;
-      return;
-    }
-    endBall();
-  }
-  function startMultiball() {
-    multiball = true; jackpots = 0; vhsDone = radDone = false;
-    stands.forEach(s => s.lit = false);
-    queue += 2; queueT = 1.2; saveT = Math.max(saveT, 15);
-    Sound.pin('jackpot'); bump(10);
-    say('MULTIBALL', 'strzelaj w słońce: JACKPOT', C.yellow, 2.6);
-    burst(SAUCER.x, SAUCER.y, C.yellow, 50, 500);
-  }
-  function launch(b: Ball, power: number) {
-    b.vy = -(950 + 1650 * power) - Math.random() * 40; b.vx = 0;
-    plungerKick = 0.18;
-    Sound.pin('launch', power);
-    if (saveArmed) { saveT = SAVE_TIME; saveArmed = false; }
-  }
-  const inLane = (b: Ball) => b.x > LANE_X && b.y > 560;
+      if (record) { best = score; try { localStorage.setItem(bestKey, String(best)); } catch { /* bez zapisu */ } }
+      msg = { text: record ? 'NOWY REKORD' : 'KONIEC GRY', sub: score.toLocaleString('pl-PL'), t: 0, dur: 99, color: record ? C.yellow : C.pink };
+      if (run) run.ticks = sim.tick;
+    },
+  };
 
-  function flipperPressed(side: 'l' | 'r') {
-    if (phase !== 'play' || tilted) return;
-    Sound.pin('flip');
-    // tory NEON przesuwają się łapami, jak w automatach
-    const lit = lanes.map(l => l.lit);
-    if (side === 'l') lit.push(lit.shift()!); else lit.unshift(lit.pop()!);
-    lanes.forEach((l, i) => l.lit = lit[i]);
+  // ---------- gra ----------
+  let sim = new Sim(level, 0, fx);              // pusty stół na ekranie startowym; prawdziwa gra dostaje ziarno od serwera
+  let run: PinRun | null = null;
+  let starting = false, destroyed = false;
+  const held = { l: false, r: false };           // klawisze naprawdę wciśnięte (żeby przenieść je do nowej gry)
+
+  // lokalne odnośniki do stanu rdzenia (rysowanie czyta je jak zmienne); tablice dostają nowe wartości przy każdej grze
+  let phase = sim.phase, score = 0, ballNo = 1, mult = 1, multiball = false, vhsDone = false, radDone = false, saveT = 0, tilted = false;
+  let charge = 0, charging = false, plungerKick = 0, saucerFlash = 0;
+  let balls: Ball[] = [];
+  let fl: Flip, fr: Flip, ups: Sim['ups'], bumpers: Sim['bumpers'], slings: Sim['slings'], drops: Sim['drops'], stands: Sim['stands'], lanes: Sim['lanes'];
+  let portals: Sim['portals'], holes: Sim['holes'], spinners: Sim['spinners'], movers: Sim['movers'], blades: Sim['blades'], fans: Sim['fans'], sticky: Sim['sticky'];
+  function bind() {
+    ({ fl, fr, ups, bumpers, slings, drops, stands, lanes, portals, holes, spinners, movers, blades, fans, sticky } = sim);
   }
-  function setFlip(side: 'l' | 'r', on: boolean) {
-    if (keys[side] === on) return;
-    keys[side] = on;
-    if (on) flipperPressed(side);
+  function sync() {
+    ({ phase, score, mult, multiball, vhsDone, radDone, tilted, charge, charging, plungerKick, saucerFlash, balls, ballNo } = sim);
+    saveT = sim.saveT;
   }
-  function nudge() {
-    if (phase !== 'play' || tilted) return;
-    const now = time;
-    nudges = nudges.filter(t => now - t < 4); nudges.push(now);
-    balls.forEach(b => { if (!b.held && !inLane(b)) { b.vx += (Math.random() - 0.5) * 160; b.vy -= 90; } });
-    bump(7);
-    if (nudges.length === 3) { say('UWAGA', 'jeszcze raz i TILT', C.orange, 1.4); Sound.pin('target', 0.6); }
-    if (nudges.length >= 4) { tilted = true; Sound.pin('tilt'); say('TILT', 'łapy nie działają do końca kulki', C.orange, 3); }
-  }
-  function plungerDown() {
-    if (phase !== 'play') { start(); return; }
-    if (balls.some(b => inLane(b) && !b.auto)) charging = true; else nudge();
-  }
-  function plungerUp() {
-    if (!charging) return;
-    charging = false;
-    const b = balls.find(x => inLane(x) && !x.gone && !x.auto);
-    if (b && b.y > 740) launch(b, charge);
-    charge = 0;
+  bind(); sync();
+
+  // kamera: bez przybliżenia stała (wyższy stół przewija się za kulką), z przybliżeniem jedzie za kulką
+  let camY = Math.max(0, H - VH);               // góra widoku (stół wyższy niż okno przewija się)
+  let zm = 1, zmTo = 1, camCX = W / 2, camCY = camY + VH / 2;
+
+  // ---------- HUD ----------
+  let hudSig = '';
+  function hud() {
+    const h: PinHud = { level, phase, score, ball: Math.min(ballNo, BALLS), balls: BALLS, mult, best, multiball, save: saveT > 0, tilt: tilted };
+    const sig = JSON.stringify(h);
+    if (sig !== hudSig) { hudSig = sig; onHud(h); }
   }
 
-  // ---------- zasady przy trafieniach ----------
-  function laneHit(i: number) {
-    const l = lanes[i];
-    if (l.cool > 0) return;
-    l.cool = 0.5; l.flash = 1;
-    if (l.lit) { add(100); Sound.pin('target', 0.8); return; }
-    l.lit = true; add(500, l.x, LANE_Y + 20, C.cyan); Sound.pin('lane', 1 + i * 0.06);
-    if (lanes.every(x => x.lit)) {
-      lanes.forEach(x => x.lit = false);
-      if (mult < 5) { mult++; say(`MNOŻNIK x${mult}`, 'tory N E O N', C.cyan); } else { add(10000); say('NEON MAX', '+10 000', C.cyan); }
-      Sound.pin('bank'); burst(AXIS, LANE_Y, C.cyan, 30, 400);
-    }
+  /** Jedno zdarzenie gracza: trafia do rdzenia i do zapisu gry (serwer odtworzy je w tym samym ticku) */
+  function inp(code: Input) {
+    if (sim.phase !== 'play' || !run) return;
+    run.log.push(sim.tick, INPUT_CODES.indexOf(code));
+    sim.input(code);
   }
-  function bankCheck() {
-    if (!vhsDone && drops.every(d => d.down)) {
-      vhsDone = true; add(5000, 60, 420, C.pink); Sound.pin('bank'); dropsReset = 1.6;
-      say('V H S', radDone ? 'słońce: MULTIBALL' : 'cel: R A D', C.pink);
-    }
-    if (!radDone && stands.every(s => s.lit)) {
-      radDone = true; add(5000, 370, 420, C.cyan); Sound.pin('bank');
-      say('R A D', vhsDone ? 'słońce: MULTIBALL' : 'cel: V H S', C.cyan);
-    }
+  function beginGame(seed: number, verified: boolean) {
+    sim = new Sim(level, seed, fx);
+    run = { seed, ticks: 0, log: [], verified };
+    bind();
+    sim.start();
+    sparks.length = 0; pops.length = 0;
+    // klawisze wciśnięte jeszcze przed startem działają od pierwszego ticku
+    if (held.l) inp('l+');
+    if (held.r) inp('r+');
+    sync(); hud();
   }
-  function saucerHit(b: Ball) {
-    b.held = 1.3; b.vx = b.vy = 0; b.x = SAUCER.x; b.y = SAUCER.y;
-    saucerFlash = 1; Sound.pin('saucer'); bump(4);
-    if (multiball) {
-      jackpots++;
-      const v = 25000 * jackpots;
-      add(v, SAUCER.x, SAUCER.y - 30, C.yellow);
-      say('JACKPOT', (v * mult).toLocaleString('pl-PL'), C.yellow, 2.2);
-      Sound.pin('jackpot'); bump(12); burst(SAUCER.x, SAUCER.y, C.yellow, 60, 600);
-    } else if (vhsDone && radDone && phase === 'play' && !tilted) {
-      b.held = 2.2;
-      startMultiball();
-    } else {
-      add(2500, SAUCER.x, SAUCER.y - 30, C.orange);
-      say('SŁOŃCE', vhsDone || radDone ? 'skończ V H S i R A D' : 'zbij V H S i R A D: multiball', C.orange, 1.6);
-      burst(SAUCER.x, SAUCER.y, C.orange, 20, 300);
-    }
-  }
-
-  // ---------- fizyka ----------
-  function stepFlip(f: Flip, on: boolean, dt: number) {
-    f.on = on;
-    const target = on ? f.up : f.rest, sp = on ? 24 : 14, prev = f.ang;
-    f.ang = f.ang < target ? Math.min(target, f.ang + sp * dt) : Math.max(target, f.ang - sp * dt);
-    f.w = (f.ang - prev) / dt;
-  }
-  function flipHit(b: Ball, f: Flip) {
-    const tip = pt(f.x + Math.cos(f.ang) * LEN, f.y + Math.sin(f.ang) * LEN);
-    const c = closest(b, f, tip);
-    const t = Math.hypot(c.x - f.x, c.y - f.y) / LEN;
-    const rad = FR0 + (FR1 - FR0) * t;
-    const svx = -f.w * (c.y - f.y), svy = f.w * (c.x - f.x);
-    collide(b, c.x, c.y, rad, 0.28, 0, svx, svy);
-  }
-  function stepBall(b: Ball, dt: number) {
-    if (b.gone) return;
-    if (b.held > 0) return;
-    b.vy += G * dt;
-    const sp = Math.hypot(b.vx, b.vy);
-    if (sp > VMAX) { b.vx *= VMAX / sp; b.vy *= VMAX / sp; }
-    b.x += b.vx * dt; b.y += b.vy * dt;
-
-    for (const s of WALLS) {
-      const hit = segHit(b, s, 0.45);
-      if (hit > 380 && time - wallSnd > 0.06) { wallSnd = time; Sound.pin('wall', hit / 400); }
-    }
-    for (const p of POSTS) collide(b, p.x, p.y, p.r, 0.6);
-    if (b.vy > 0 && b.y < 206 && b.x > LANE_X - R) segHit(b, GATE, 0.3);
-    // tłok wyrzutni
-    if (b.x > LANE_X && b.y > 800 + charge * 28 - R) { b.y = 800 + charge * 28 - R; if (b.vy > 0) b.vy = 0; b.vx = 0; b.x = 434; }
-
-    bumpers.forEach((u, i) => {
-      if (collide(b, u.x, u.y, u.r, 0.6, 420) > 0) {
-        u.flash = 1; add(100); Sound.pin('bumper', 0.85 + i * 0.18); burst(b.x, b.y, i === 2 ? C.cyan : C.pink, 10, 240); bump(3);
-      }
-    });
-    for (const s of slings) {
-      const hit = segHit(b, s.s, 0.4);
-      if (hit > 60) {
-        b.vx += s.nx * 520; b.vy += s.ny * 520;
-        s.flash = 1; add(10); Sound.pin('sling'); bump(2);
-      }
-    }
-    for (const d of drops) {
-      if (d.down) continue;
-      if (segHit(b, d.s, 0.35) > 40) { d.down = true; d.flash = 1; add(1000, 50, d.s.a.y + 13, C.pink); Sound.pin('drop'); burst(32, d.s.a.y + 13, C.pink, 8); bankCheck(); }
-    }
-    for (const s of stands) {
-      if (segHit(b, s.s, 0.35) > 40) {
-        s.flash = 1;
-        if (!s.lit) { s.lit = true; add(750, 380, s.s.a.y + 13, C.cyan); Sound.pin('target', 1.2); bankCheck(); } else { add(150); Sound.pin('target', 0.9); }
-      }
-    }
-    flipHit(b, fl); flipHit(b, fr);   // po TILT łapy leżą, ale dalej są przeszkodą
-
-    // czujniki
-    lanes.forEach((l, i) => { if (Math.abs(b.x - l.x) < 14 && Math.abs(b.y - LANE_Y) < 12) laneHit(i); });
-    if (b.cool <= 0 && Math.hypot(b.x - SAUCER.x, b.y - SAUCER.y) < 14 && sp < 900) saucerHit(b);
-    if (orbitCool <= 0 && Math.hypot(b.x - ORBIT.x, b.y - ORBIT.y) < 22 && Math.abs(b.vx) > 250) {
-      orbitCool = 1.2; add(1500, ORBIT.x, 60, C.purple); Sound.pin('lane', 1.4); say('ORBITA', '', C.purple, 1.1);
-    }
-    if (b.y > H + 30) drained(b);
-  }
-  function ballsCollide() {
-    const live = balls.filter(b => !b.gone && b.held <= 0);
-    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
-      const a = live[i], b = live[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
-      if (d >= R * 2 || d === 0) continue;
-      const nx = dx / d, ny = dy / d, o = (R * 2 - d) / 2;
-      a.x -= nx * o; a.y -= ny * o; b.x += nx * o; b.y += ny * o;
-      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-      if (rv < 0) { a.vx += rv * nx * 0.95; a.vy += rv * ny * 0.95; b.vx -= rv * nx * 0.95; b.vy -= rv * ny * 0.95; }
-    }
-  }
-
-  function update(dt: number) {
-    time += dt;
-    const on = phase === 'play' && !tilted;
-    const dts = dt / SUB;
-    for (let s = 0; s < SUB; s++) {
-      stepFlip(fl, on && keys.l, dts);
-      stepFlip(fr, on && keys.r, dts);
-      for (const b of balls) stepBall(b, dts);
-      ballsCollide();
-    }
-    balls = balls.filter(b => !b.gone);
-
-    for (const b of balls) {
-      if (b.cool > 0) b.cool -= dt;
-      if (b.held > 0) {
-        b.held -= dt;
-        if (b.held <= 0) { b.cool = 0.7; b.vx = (Math.random() < 0.5 ? -1 : 1) * (120 + Math.random() * 160); b.vy = 520; Sound.pin('sling'); }
-      }
-      if (b.auto > 0) { b.auto -= dt; if (b.auto <= 0 && inLane(b)) launch(b, 0.85 + Math.random() * 0.15); }
-      b.trail.push(pt(b.x, b.y)); if (b.trail.length > 10) b.trail.shift();
-      // kulka zaklinowana gdzieś na stole: po chwili sama dostaje szturchnięcie
-      if (b.held <= 0 && !inLane(b) && !keys.l && !keys.r && Math.hypot(b.vx, b.vy) < 15) {
-        b.still += dt;
-        if (b.still > 2.5) { b.still = 0; b.vx += (b.x < AXIS ? 1 : -1) * (80 + Math.random() * 80); b.vy -= 220; bump(5); }
-      } else b.still = 0;
-    }
-    if (queue > 0) {
-      queueT -= dt;
-      if (queueT <= 0 && !balls.some(inLane)) { const nb = newBall(); nb.auto = 0.45; balls.push(nb); queue--; queueT = 0.9; }
-    }
-    if (charging) { const c0 = charge; charge = Math.min(1, charge + dt * 1.1); if (Math.floor(c0 * 8) !== Math.floor(charge * 8)) Sound.pin('charge', charge); }
-    if (saveT > 0 && !balls.some(inLane)) saveT -= dt;
-    if (dropsReset > 0) { dropsReset -= dt; if (dropsReset <= 0) drops.forEach(d => d.down = false); }
-    if (orbitCool > 0) orbitCool -= dt;
-    plungerKick = Math.max(0, plungerKick - dt);
-    shake = Math.max(0, shake - dt * 40);
-    bumpers.forEach(u => u.flash = Math.max(0, u.flash - dt * 4));
-    slings.forEach(s => s.flash = Math.max(0, s.flash - dt * 5));
-    drops.forEach(d => d.flash = Math.max(0, d.flash - dt * 3));
-    stands.forEach(d => d.flash = Math.max(0, d.flash - dt * 3));
-    lanes.forEach(l => { l.flash = Math.max(0, l.flash - dt * 3); l.cool -= dt; });
-    saucerFlash = Math.max(0, saucerFlash - dt * 1.5);
-    for (const p of sparks) { p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy = p.vy * 0.96 + 300 * dt; }
-    for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life > sparks[i].max) sparks.splice(i, 1);
-    for (const p of pops) { p.life -= dt; p.y -= 40 * dt; }
-    for (let i = pops.length - 1; i >= 0; i--) if (pops[i].life <= 0) pops.splice(i, 1);
-    if (msg) { msg.t += dt; if (msg.t > msg.dur) msg = null; }
-    if (phase === 'over') { overT += dt; if (overT > 5) { phase = 'attract'; msg = null; } }
-    hud();
+  async function start() {
+    if (sim.phase === 'play' || starting) return;
+    starting = true;
+    Sound.unlock();
+    msg = { text: 'ŁĄCZĘ…', sub: '', t: 0, dur: 8, color: C.cyan };
+    let seed: number | null = null;
+    try { seed = opts.begin ? await opts.begin() : null; } catch { seed = null; }
+    starting = false;
+    if (destroyed) return;
+    msg = null;
+    beginGame(seed ?? (opts.seed ?? Math.floor(Math.random() * 4294967296)) >>> 0, seed !== null);
   }
 
   // ---------- rysowanie ----------
   function tablePath(c: CanvasRenderingContext2D) {
     c.beginPath();
-    c.moveTo(10, 840);
+    c.moveTo(10, H);
     ARC.forEach(([x, y]) => c.lineTo(x, y));
-    c.lineTo(450, 840); c.closePath();
+    c.lineTo(450, H); c.closePath();
   }
   function stroke(c: CanvasRenderingContext2D, color: string, width: number, blur: number, core = 0.35) {
     c.save();
@@ -426,10 +156,83 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
   }
   function line(c: CanvasRenderingContext2D, pts: number[][]) { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); }
-  function layer() { const cv = document.createElement('canvas'); cv.width = canvas.width; cv.height = canvas.height; const c = cv.getContext('2d')!; c.setTransform(k, 0, 0, k, 0, 0); return [cv, c] as const; }
+  function layer() { const cv = document.createElement('canvas'); cv.width = Math.round(W * k); cv.height = Math.round(H * k); const c = cv.getContext('2d')!; c.setTransform(k, 0, 0, k, 0, 0); return [cv, c] as const; }
+
+  // tła poziomów innych niż Neon Drive: kosmos, pizzeria, wesołe miasteczko, piekło
+  function bgOther(c: CanvasRenderingContext2D) {
+    const rnd = rng(LV.id * 977);
+    const grad = (a: string, b: string, cc?: string) => {
+      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, a); if (cc) g.addColorStop(0.5, cc); g.addColorStop(1, b); return g;
+    };
+    c.fillStyle = '#05010c'; c.fillRect(0, 0, W, H);
+    c.save(); tablePath(c); c.clip();
+    if (LV.theme === 'space') {
+      c.fillStyle = grad('#02030f', '#1a0a3a', '#0b0830'); c.fillRect(0, 0, W, H);
+      for (let i = 0; i < 3 + H / 350; i++) {
+        const x = rnd() * W, y = rnd() * H, g = c.createRadialGradient(x, y, 10, x, y, 230);
+        g.addColorStop(0, [C.magenta, C.blue, C.pink][i % 3] + '33'); g.addColorStop(1, 'transparent');
+        c.fillStyle = g; c.fillRect(0, 0, W, H);
+      }
+      for (let i = 0; i < H / 5; i++) { const s0 = rnd() * 1.4 + 0.3; c.fillStyle = `rgba(255,255,255,${0.2 + rnd() * 0.7})`; c.fillRect(rnd() * W, rnd() * H, s0, s0); }
+      // planeta z pierścieniem i mały księżyc
+      const py = H * 0.42, pg = c.createRadialGradient(AXIS + 90, py - 30, 8, AXIS + 110, py, 90);
+      pg.addColorStop(0, '#ffd9a8'); pg.addColorStop(0.55, '#c0663d'); pg.addColorStop(1, '#3a1226');
+      c.fillStyle = pg; c.beginPath(); c.arc(AXIS + 110, py, 80, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(255,224,168,.55)'; c.lineWidth = 6; c.beginPath(); c.ellipse(AXIS + 110, py, 140, 28, -0.35, 0, Math.PI * 2); c.stroke();
+      c.fillStyle = '#9aa3c7'; c.beginPath(); c.arc(70, H * 0.7, 26, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(110,231,255,.25)'; c.lineWidth = 1;
+      for (let i = 0; i < 3; i++) { c.beginPath(); let x = rnd() * W, y = rnd() * H; c.moveTo(x, y); for (let j = 0; j < 5; j++) { x += (rnd() - 0.5) * 120; y += (rnd() - 0.2) * 90; c.lineTo(x, y); } c.stroke(); }
+    } else if (LV.theme === 'pizza') {
+      c.fillStyle = grad('#2a0a06', '#4a1a0c'); c.fillRect(0, 0, W, H);
+      for (let y = 0; y < H; y += 44) for (let x = 0; x < W; x += 44) {
+        if (((x / 44) + (y / 44)) % 2 === 0) { c.fillStyle = 'rgba(255,60,60,.09)'; c.fillRect(x, y, 44, 44); }
+      }
+      c.globalAlpha = 0.5;
+      const cy = H * 0.5;
+      c.fillStyle = '#b8731f'; c.beginPath(); c.arc(AXIS, cy, 200, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffc94d'; c.beginPath(); c.arc(AXIS, cy, 180, 0, Math.PI * 2); c.fill();
+      for (let i = 0; i < 14; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 150; c.fillStyle = '#c1272d'; c.beginPath(); c.arc(AXIS + Math.cos(a) * d, cy + Math.sin(a) * d, 17, 0, 6.28); c.fill(); }
+      for (let i = 0; i < 10; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 160; c.fillStyle = '#2f9e44'; c.beginPath(); c.ellipse(AXIS + Math.cos(a) * d, cy + Math.sin(a) * d, 9, 5, a, 0, 6.28); c.fill(); }
+      c.globalAlpha = 1;
+    } else if (LV.theme === 'carnival') {
+      c.fillStyle = grad('#0d0538', '#2a0a4d'); c.fillRect(0, 0, W, H);
+      for (let x = 0; x < W; x += 46) { c.fillStyle = (x / 46) % 2 ? 'rgba(255,60,120,.1)' : 'rgba(255,255,255,.05)'; c.fillRect(x, 0, 46, H); }
+      c.globalAlpha = 0.4; c.strokeStyle = C.cyan; c.lineWidth = 4;
+      const cy = H * 0.5; c.beginPath(); c.arc(AXIS, cy, 170, 0, Math.PI * 2); c.stroke();
+      for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6; c.beginPath(); c.moveTo(AXIS, cy); c.lineTo(AXIS + Math.cos(a) * 170, cy + Math.sin(a) * 170); c.stroke();
+        c.fillStyle = [C.pink, C.yellow, C.cyan][i % 3]; c.beginPath(); c.arc(AXIS + Math.cos(a) * 170, cy + Math.sin(a) * 170, 12, 0, 6.28); c.fill();
+      }
+      c.globalAlpha = 1;
+      for (let y = 250; y < H; y += 320) for (let x = 14; x < W; x += 24) {
+        c.fillStyle = [C.yellow, C.pink, C.cyan, C.orange][(x / 24) % 4 | 0]; c.beginPath(); c.arc(x, y + Math.sin(x / W * Math.PI) * 24, 4, 0, 6.28); c.fill();
+      }
+    } else {
+      c.fillStyle = grad('#0a0000', '#2a0010', '#14000a'); c.fillRect(0, 0, W, H);
+      for (let i = 0; i < 5; i++) {
+        const y = H * (0.1 + i * 0.2), g = c.createRadialGradient(AXIS, y, 10, AXIS, y, 260);
+        g.addColorStop(0, 'rgba(255,45,85,.28)'); g.addColorStop(1, 'transparent'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+      }
+      c.strokeStyle = C.orange; c.lineWidth = 2; c.shadowColor = C.orange; c.shadowBlur = 10 * k; c.globalAlpha = 0.5;
+      for (let i = 0; i < 9; i++) {
+        let x = rnd() < 0.5 ? 12 : 448, y = rnd() * H; c.beginPath(); c.moveTo(x, y);
+        for (let j = 0; j < 6; j++) { x += (x < 200 ? 1 : -1) * rnd() * 40; y += (rnd() - 0.5) * 70; c.lineTo(x, y); }
+        c.stroke();
+      }
+      c.shadowBlur = 0; c.strokeStyle = C.pink; c.lineWidth = 3; c.globalAlpha = 0.4;
+      const cy = H * 0.5; c.beginPath(); c.arc(AXIS, cy, 160, 0, 6.28); c.stroke();
+      c.beginPath(); for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * 4 * Math.PI / 5; c.lineTo(AXIS + Math.cos(a) * 160, cy + Math.sin(a) * 160); } c.stroke();
+      c.globalAlpha = 1;
+    }
+    // poświata dolnej części, żeby łapy i prowadnice się odcinały
+    const fg2 = c.createLinearGradient(0, H - 240, 0, H); fg2.addColorStop(0, 'transparent'); fg2.addColorStop(1, 'rgba(0,0,0,.5)');
+    c.fillStyle = fg2; c.fillRect(0, H - 240, W, 240);
+    c.restore();
+  }
 
   function drawBg() {
     const [cv, c] = layer();
+    if (LV.theme !== 'neon') { bgOther(c); bg = cv; return; }
     c.fillStyle = '#05010c'; c.fillRect(0, 0, W, H);
     c.save(); tablePath(c); c.clip();
     const g = c.createLinearGradient(0, 0, 0, H);
@@ -478,10 +281,10 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   function drawFg() {
     const [cv, c] = layer();
     // tor wyrzutni ciemniejszy
-    c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(LANE_X, 200, 32, 640);
+    c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(LANE_X, 200, 32, H - 200);
     // ściany
-    line(c, [[10, 840], ...ARC, [450, 840]]); stroke(c, C.cyan, 3.5, 14);
-    line(c, [[LANE_X, 206], [LANE_X, 840]]); stroke(c, C.cyan, 3, 12);
+    line(c, [[10, H], ...ARC, [450, H]]); stroke(c, C.cyan, 3.5, 14);
+    line(c, [[LANE_X, 206], [LANE_X, H]]); stroke(c, C.cyan, 3, 12);
     line(c, [[GATE.a.x, GATE.a.y], [GATE.b.x, GATE.b.y]]); stroke(c, C.purple, 2, 8);
     line(c, GUIDE_L); stroke(c, C.pink, 4, 14); line(c, GUIDE_R); stroke(c, C.pink, 4, 14);
     POSTS.forEach(p => { c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fillStyle = '#fff'; c.shadowColor = C.pink; c.shadowBlur = 10 * k; c.fill(); c.shadowBlur = 0; });
@@ -495,12 +298,12 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     // napis i strzałki
     c.save();
     c.font = `italic 800 38px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    const tg = c.createLinearGradient(0, 578, 0, 612);
+    const tg = c.createLinearGradient(0, 578 + DY, 0, 612 + DY);
     tg.addColorStop(0, '#9be7ff'); tg.addColorStop(0.48, '#ffffff'); tg.addColorStop(0.5, '#3a1a6e'); tg.addColorStop(0.7, '#ff7ac6'); tg.addColorStop(1, '#ffd2ef');
     c.shadowColor = C.magenta; c.shadowBlur = 18 * k;
-    c.fillStyle = tg; c.fillText('SCAMBOX', AXIS, 596);
-    c.shadowBlur = 0; c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.7)'; c.strokeText('SCAMBOX', AXIS, 596);
-    c.font = `600 9px ${FONT}`; c.fillStyle = C.cyan; c.fillText('N E O N   D R I V E   ·   1 9 8 6', AXIS, 620);
+    c.fillStyle = tg; c.fillText(LV.title, AXIS, 596 + DY);
+    c.shadowBlur = 0; c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.7)'; c.strokeText(LV.title, AXIS, 596 + DY);
+    c.font = `600 9px ${FONT}`; c.fillStyle = C.cyan; c.fillText(LV.tagline, AXIS, 620 + DY);
     c.restore();
     // zgaszone lampki
     allLamps().forEach(l => lamp(c, l, false));
@@ -515,10 +318,10 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     lanes.forEach((l, i) => L.push({ x: l.x, y: 154, label: l.label, color: C.cyan, on: chase ? Math.floor(t * 6 + i) % 4 === 0 : l.lit || l.flash > 0.5, shape: 'dot' }));
     drops.forEach((d, i) => L.push({ x: 58, y: d.s.a.y + 13, label: d.label, color: C.pink, on: chase ? Math.floor(t * 5 + i) % 3 === 0 : d.down, shape: 'dot' }));
     stands.forEach((s, i) => L.push({ x: 376, y: s.s.a.y + 13, label: s.label, color: C.cyan, on: chase ? Math.floor(t * 5 + i + 1) % 3 === 0 : s.lit, shape: 'dot' }));
-    [2, 3, 4, 5].forEach((m, i) => L.push({ x: 169 + i * 30, y: 648, label: `x${m}`, color: C.yellow, on: chase ? Math.floor(t * 4 + i) % 4 === 0 : mult >= m, shape: 'tag' }));
+    [2, 3, 4, 5].forEach((m, i) => L.push({ x: 169 + i * 30, y: 648 + DY, label: `x${m}`, color: C.yellow, on: chase ? Math.floor(t * 4 + i) % 4 === 0 : mult >= m, shape: 'tag' }));
     const sunLit = multiball || (vhsDone && radDone);
-    L.push({ x: AXIS, y: 532, label: multiball ? 'JACKPOT' : sunLit ? 'MULTIBALL' : 'SŁOŃCE', color: C.yellow, on: chase ? Math.floor(t * 3) % 2 === 0 : sunLit ? Math.floor(t * 4) % 2 === 0 : false, shape: 'arrow' });
-    L.push({ x: AXIS, y: 824, label: 'KULKA CHRONIONA', color: C.cyan, on: saveT > 0 && (saveT > 2 || Math.floor(t * 8) % 2 === 0), shape: 'tag' });
+    L.push({ x: AXIS, y: SAUCER.y + 62, label: multiball ? 'JACKPOT' : sunLit ? 'MULTIBALL' : 'SŁOŃCE', color: C.yellow, on: chase ? Math.floor(t * 3) % 2 === 0 : sunLit ? Math.floor(t * 4) % 2 === 0 : false, shape: 'arrow' });
+    L.push({ x: AXIS, y: H - 16, label: 'KULKA CHRONIONA', color: C.cyan, on: saveT > 0 && (saveT > 2 || Math.floor(t * 8) % 2 === 0), shape: 'tag' });
     return L;
   }
   function lamp(c: CanvasRenderingContext2D, l: Lamp, on: boolean) {
@@ -561,7 +364,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   }
   function drawFlipper(c: CanvasRenderingContext2D, f: Flip) {
     const ca = Math.cos(f.ang), sa = Math.sin(f.ang), nx = -sa, ny = ca;
-    const tx = f.x + ca * LEN, ty = f.y + sa * LEN;
+    const tx = f.x + ca * f.len, ty = f.y + sa * f.len;
     c.save();
     c.beginPath();
     c.arc(f.x, f.y, FR0, f.ang + Math.PI / 2, f.ang - Math.PI / 2);
@@ -605,14 +408,100 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
   }
 
+  // dodatki poziomów: wiatr, maź, teleporty, czarne dziury, wiatraczki, ruchome cele, pałeczki, trampoliny
+  function drawExtras(c: CanvasRenderingContext2D) {
+    const t = time;
+    for (const z of sticky) {
+      c.save();
+      c.fillStyle = 'rgba(255,196,60,.22)'; c.strokeStyle = 'rgba(255,214,102,.75)'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect(z.x, z.y, z.w, z.h, 12); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,236,170,.6)';
+      for (let i = 0; i < 6; i++) { const ph = (t * 0.35 + i / 6) % 1; c.beginPath(); c.arc(z.x + 10 + ((i * 37) % (z.w - 20)), z.y + z.h - ph * z.h, 2 + (i % 3), 0, 6.28); c.fill(); }
+      c.restore();
+    }
+    for (const f of fans) {
+      const mag = Math.hypot(f.fx, f.fy) || 1, dx = f.fx / mag, dy = f.fy / mag;
+      const cx = f.x + f.w / 2, cy = f.y + f.h / 2, len = Math.abs(dx) * f.w + Math.abs(dy) * f.h;
+      c.save();
+      c.beginPath(); c.roundRect(f.x, f.y, f.w, f.h, 10); c.fillStyle = 'rgba(45,226,230,.09)'; c.fill();
+      c.clip();
+      c.strokeStyle = C.cyan; c.lineWidth = 2.5; c.lineCap = 'round';
+      for (let i = 0; i < 5; i++) {
+        const u = (t * 0.7 + i / 5) % 1, px = cx + dx * len * (u - 0.5), py = cy + dy * len * (u - 0.5);
+        c.globalAlpha = Math.sin(u * Math.PI) * 0.8;
+        c.beginPath(); c.moveTo(px - dy * 14 - dx * 8, py + dx * 14 - dy * 8); c.lineTo(px, py); c.lineTo(px + dy * 14 - dx * 8, py - dx * 14 - dy * 8); c.stroke();
+      }
+      c.restore();
+    }
+    for (const pd of geo.pads) {
+      c.save(); c.beginPath(); c.moveTo(pd.a.x, pd.a.y); c.lineTo(pd.b.x, pd.b.y);
+      stroke(c, C.orange, 8, 14, 0.3); c.restore();
+    }
+    for (const p of portals) {
+      [[p.a, C.purple], [p.b, C.cyan]].forEach(([e, col]: any) => {
+        c.save(); c.translate(e.x, e.y);
+        const g = c.createRadialGradient(0, 0, 2, 0, 0, 24 + p.flash * 12);
+        g.addColorStop(0, '#fff'); g.addColorStop(0.35, col); g.addColorStop(1, 'transparent');
+        c.globalAlpha = 0.55 + p.flash * 0.4; c.fillStyle = g; c.beginPath(); c.arc(0, 0, 24 + p.flash * 12, 0, 6.28); c.fill();
+        c.globalAlpha = 1; c.strokeStyle = col; c.lineWidth = 2.5; c.shadowColor = col; c.shadowBlur = 12 * k;
+        for (let j = 0; j < 3; j++) { c.beginPath(); c.arc(0, 0, 17 - j * 4, t * (3 + j) + j * 2, t * (3 + j) + j * 2 + 2.2); c.stroke(); }
+        c.restore();
+      });
+    }
+    for (const h of holes) {
+      c.save(); c.translate(h.x, h.y);
+      const g = c.createRadialGradient(0, 0, 8, 0, 0, h.pull);
+      g.addColorStop(0, 'rgba(247,6,207,.28)'); g.addColorStop(1, 'transparent'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, h.pull, 0, 6.28); c.fill();
+      c.strokeStyle = C.magenta; c.lineWidth = 2; c.shadowColor = C.magenta; c.shadowBlur = 12 * k;
+      for (let j = 0; j < 4; j++) { c.beginPath(); c.arc(0, 0, 18 + j * 7 + h.flash * 8, -t * (2 + j * 0.5) + j, -t * (2 + j * 0.5) + j + 1.8); c.stroke(); }
+      c.shadowBlur = 0; c.fillStyle = '#000'; c.beginPath(); c.arc(0, 0, 14, 0, 6.28); c.fill();
+      c.lineWidth = 2; c.strokeStyle = h.flash > 0 ? '#fff' : C.magenta; c.stroke();
+      c.restore();
+    }
+    for (const s of spinners) {
+      c.save(); c.translate(s.x, s.y);
+      const th = 3 + 9 * Math.abs(Math.sin(s.ang));
+      c.fillStyle = C.yellow; c.shadowColor = C.yellow; c.shadowBlur = (6 + Math.abs(s.spin)) * k;
+      c.beginPath(); c.roundRect(-s.w / 2, -th / 2, s.w, th, 2); c.fill();
+      c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(-s.w / 2, 0, 3, 0, 6.28); c.arc(s.w / 2, 0, 3, 0, 6.28); c.fill();
+      c.restore();
+    }
+    for (const bl of blades) {
+      const ca = Math.cos(bl.ang) * bl.len / 2, sa = Math.sin(bl.ang) * bl.len / 2;
+      c.save(); c.beginPath(); c.moveTo(bl.x - ca, bl.y - sa); c.lineTo(bl.x + ca, bl.y + sa);
+      stroke(c, bl.flash > 0 ? '#fff' : C.orange, 9, 16, 0.3);
+      c.beginPath(); c.arc(bl.x, bl.y, 8, 0, 6.28); c.fillStyle = '#2a0b3e'; c.fill(); c.lineWidth = 2; c.strokeStyle = C.orange; c.stroke();
+      c.restore();
+    }
+    for (const m of movers) {
+      c.save(); c.translate(m.x, m.y);
+      if (m.skin === 'duck') {
+        c.fillStyle = m.flash > 0 ? '#fff' : C.yellow; c.shadowColor = C.yellow; c.shadowBlur = 10 * k;
+        c.beginPath(); c.arc(0, 0, m.r, 0, 6.28); c.fill();
+        c.shadowBlur = 0; const d = m.vx >= 0 ? 1 : -1;
+        c.fillStyle = C.orange; c.beginPath(); c.moveTo(d * m.r * 0.8, -2); c.lineTo(d * (m.r + 8), 2); c.lineTo(d * m.r * 0.8, 5); c.fill();
+        c.fillStyle = '#000'; c.beginPath(); c.arc(d * 3, -4, 2, 0, 6.28); c.fill();
+      } else if (m.skin === 'rock') {
+        c.rotate(t * 1.3); c.fillStyle = m.flash > 0 ? '#fff' : '#7d6b5d'; c.shadowColor = C.orange; c.shadowBlur = 8 * k;
+        c.beginPath(); for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28, r = m.r * (0.82 + ((i * 5) % 3) * 0.1); c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill();
+        c.shadowBlur = 0; c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(-4, -3, 3, 0, 6.28); c.arc(4, 4, 2.4, 0, 6.28); c.fill();
+      } else {
+        const g = c.createRadialGradient(-3, -3, 1, 0, 0, m.r);
+        g.addColorStop(0, '#fff'); g.addColorStop(0.5, m.flash > 0 ? C.yellow : C.pink); g.addColorStop(1, '#2a0b3e');
+        c.fillStyle = g; c.shadowColor = C.pink; c.shadowBlur = 12 * k; c.beginPath(); c.arc(0, 0, m.r, 0, 6.28); c.fill();
+      }
+      c.restore();
+    }
+  }
+
   function render() {
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, canvas.width, canvas.height);
     const sx = shake ? (Math.random() - 0.5) * shake : 0, sy = shake ? (Math.random() - 0.5) * shake : 0;
-    c.setTransform(k, 0, 0, k, sx * k, sy * k);
+    c.setTransform(k * zm, 0, 0, k * zm, (sx + W / 2 - camCX * zm) * k, (sy + VH / 2 - camCY * zm) * k);
     c.drawImage(bg, 0, 0, W, H);
-    drawGrid(c);
+    if (LV.theme === 'neon') drawGrid(c);
     c.drawImage(fg, 0, 0, W, H);
 
     // procy błyskają przy kopnięciu
@@ -631,6 +520,8 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     if (saucerFlash > 0) { c.save(); c.globalAlpha = saucerFlash * 0.6; c.beginPath(); c.arc(SAUCER.x, SAUCER.y, 16 + (1 - saucerFlash) * 60, 0, Math.PI * 2); stroke(c, C.yellow, 3, 20, 0); c.restore(); }
 
     allLamps().forEach(l => { if (l.on) lamp(c, l, true); });
+
+    drawExtras(c);
 
     // cele
     drops.forEach(d => {
@@ -653,7 +544,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     });
     // bumpery
     bumpers.forEach((u, i) => {
-      const col = i === 2 ? C.cyan : C.pink;
+      const col = u.alt ? C.cyan : C.pink;
       c.save();
       c.beginPath(); c.arc(u.x, u.y + 3, u.r + 2, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,.5)'; c.fill();
       c.beginPath(); c.arc(u.x, u.y, u.r, 0, Math.PI * 2);
@@ -665,24 +556,25 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
       if (u.flash > 0) { c.globalAlpha = u.flash; c.beginPath(); c.arc(u.x, u.y, u.r + (1 - u.flash) * 22, 0, Math.PI * 2); c.lineWidth = 2; c.strokeStyle = col; c.stroke(); }
       c.restore();
     });
+    ups.forEach(u => drawFlipper(c, u.f));
     drawFlipper(c, fl); drawFlipper(c, fr);
     balls.forEach(b => drawBall(c, b));
 
     // fartuch na dole (kulka znika pod nim) i tłok
     c.save();
-    c.beginPath(); c.moveTo(10, 808); c.lineTo(160, 808); c.lineTo(176, 840); c.lineTo(252, 840); c.lineTo(268, 808); c.lineTo(LANE_X, 808); c.lineTo(LANE_X, 840); c.lineTo(10, 840); c.closePath();
-    const ag = c.createLinearGradient(0, 808, 0, 840); ag.addColorStop(0, '#2a0b3e'); ag.addColorStop(1, '#0c0216');
+    c.beginPath(); c.moveTo(10, H - 32); c.lineTo(160, H - 32); c.lineTo(176, H); c.lineTo(252, H); c.lineTo(268, H - 32); c.lineTo(LANE_X, H - 32); c.lineTo(LANE_X, H); c.lineTo(10, H); c.closePath();
+    const ag = c.createLinearGradient(0, H - 32, 0, H); ag.addColorStop(0, '#2a0b3e'); ag.addColorStop(1, '#0c0216');
     c.fillStyle = ag; c.fill();
-    line(c, [[10, 808], [160, 808]]); stroke(c, C.purple, 2, 8, 0); line(c, [[268, 808], [LANE_X, 808]]); stroke(c, C.purple, 2, 8, 0);
+    line(c, [[10, H - 32], [160, H - 32]]); stroke(c, C.purple, 2, 8, 0); line(c, [[268, H - 32], [LANE_X, H - 32]]); stroke(c, C.purple, 2, 8, 0);
     c.restore();
     const L = allLamps(); const save = L[L.length - 1]; lamp(c, save, save.on);
-    const py = 800 + charge * 28 - plungerKick * 60;
+    const py = H - 40 + charge * 28 - plungerKick * 60;
     c.save();
     c.fillStyle = '#c9c9e8'; c.fillRect(424, py, 20, 6);
     c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5; c.beginPath();
-    for (let y = py + 8; y < 838; y += (838 - py) / 8) { c.moveTo(424, y); c.lineTo(444, y + 3); }
+    for (let y = py + 8; y < H - 2; y += (H - 2 - py) / 8) { c.moveTo(424, y); c.lineTo(444, y + 3); }
     c.stroke();
-    if (charging) { c.fillStyle = C.yellow; c.shadowColor = C.yellow; c.shadowBlur = 12 * k; c.fillRect(422, 840 - charge * 120, 3, charge * 120); }
+    if (charging) { c.fillStyle = C.yellow; c.shadowColor = C.yellow; c.shadowBlur = 12 * k; c.fillRect(422, H - charge * 120, 3, charge * 120); }
     c.restore();
 
     // iskry i liczby
@@ -695,6 +587,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
     for (const p of pops) neonText(c, p.text, p.x, p.y, 16, p.color, Math.min(1, p.life * 2));
 
+    c.setTransform(k, 0, 0, k, sx * k, sy * k);   // napisy na ekranie: stały rozmiar mimo przybliżenia
     if (msg) {
       const m = msg, a = Math.min(1, m.t * 6, (m.dur - m.t) * 3);
       const z = 1 + Math.max(0, 0.25 - m.t) * 1.5;
@@ -713,11 +606,49 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   }
 
   // ---------- pętla ----------
-  let raf = 0, last = 0;
+  /** Efekty, które nie wpływają na wynik: iskry, liczby, napisy, drżenie i kamera (rdzeń liczy tylko stałymi krokami) */
+  function visuals(dt: number) {
+    shake = Math.max(0, shake - dt * 40);
+    for (const p of sparks) { p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy = p.vy * 0.96 + 300 * dt; }
+    for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life > sparks[i].max) sparks.splice(i, 1);
+    for (const p of pops) { p.life -= dt; p.y -= 40 * dt; }
+    for (let i = pops.length - 1; i >= 0; i--) if (pops[i].life <= 0) pops.splice(i, 1);
+    if (msg) { msg.t += dt; if (msg.t > msg.dur) msg = null; }
+
+    zm += (zmTo - zm) * Math.min(1, dt * 7);
+    const live = balls.filter(b => !b.gone && b.held <= 0);
+    let want = H - VH;
+    if (phase === 'play' && live.length) want = live.reduce((t, b) => t + b.y + b.vy * 0.22, 0) / live.length - VH * 0.58;
+    if (H > VH) { want = Math.max(0, Math.min(H - VH, want)); camY += (want - camY) * Math.min(1, dt * 5); } else camY = 0;
+    // środek widoku: bez przybliżenia stały, z przybliżeniem podąża za kulką; widok nie wychodzi poza stół
+    const hw = W / 2 / zm, hh = VH / 2 / zm;
+    let tx = W / 2, ty = camY + VH / 2;
+    if (zmTo > 1.001 || zm > 1.001) {
+      const mix = Math.max(0, Math.min(1, (zm - 1) / 0.25));
+      if (phase === 'play' && live.length) {
+        const fx0 = live.reduce((t, b) => t + b.x + b.vx * 0.12, 0) / live.length, fy0 = live.reduce((t, b) => t + b.y + b.vy * 0.18, 0) / live.length;
+        tx += (fx0 - tx) * mix; ty += (fy0 - ty) * mix;
+      } else ty += ((H - hh) - ty) * mix;
+    }
+    tx = Math.max(hw, Math.min(W - hw, tx)); ty = Math.max(hh, Math.min(H - hh, ty));
+    camCX += (tx - camCX) * Math.min(1, dt * 6); camCY += (ty - camCY) * Math.min(1, dt * 6);
+  }
+
+  let raf = 0, last = 0, acc = 0;
   function frame(now: number) {
-    const dt = Math.min(1 / 30, (now - (last || now)) / 1000);
+    const dt = Math.min(0.1, (now - (last || now)) / 1000);
     last = now;
-    update(dt);
+    time += dt;
+    // rdzeń idzie stałymi krokami TICK (ta sama liczba kroków, które odtworzy serwer)
+    if (sim.phase !== 'attract') {
+      acc += dt;
+      let n = 0;
+      while (acc >= TICK && n < 40) { sim.step(); acc -= TICK; n++; }
+      if (n >= 40) acc = 0;
+    } else acc = 0;
+    visuals(dt);
+    sync();
+    hud();
     render();
     raf = requestAnimationFrame(frame);
   }
@@ -727,44 +658,57 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     const cssW = canvas.clientWidth || rect.width || W;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     k = (cssW / W) * dpr;
-    canvas.width = Math.round(W * k); canvas.height = Math.round(H * k);
+    canvas.width = Math.round(W * k); canvas.height = Math.round(VH * k);
+    // tło i stół rysujemy w wyższej rozdzielczości, żeby po przybliżeniu nie były rozmyte (z limitem rozmiaru płótna)
+    const kv = k;
+    k = Math.max(kv, Math.min(kv * 1.6, 8000 / H));
     drawBg(); drawFg();
+    k = kv;
   }
 
   // ---------- sterowanie ----------
   const typing = (e: Event) => { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); };
   const LEFT = ['ArrowLeft', 'KeyZ', 'ShiftLeft', 'KeyA'], RIGHT = ['ArrowRight', 'Slash', 'ShiftRight', 'KeyL', 'KeyD'], PLUNGE = ['Space', 'ArrowDown', 'Enter', 'KeyS'];
+  function setFlip(side: 'l' | 'r', on: boolean) {
+    if (held[side] === on) return;
+    held[side] = on;
+    inp(`${side}${on ? '+' : '-'}` as Input);
+  }
+  function plunger(down: boolean) {
+    if (down) { if (sim.phase !== 'play') { void start(); return; } inp('p+'); } else inp('p-');
+  }
   function onKey(e: KeyboardEvent, down: boolean) {
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
     const code = e.code;
     if (LEFT.includes(code)) setFlip('l', down);
     else if (RIGHT.includes(code)) setFlip('r', down);
-    else if (PLUNGE.includes(code)) { if (down && !e.repeat) plungerDown(); else if (!down) plungerUp(); }
-    else if (code === 'KeyN' && down && !e.repeat) nudge();
+    else if (PLUNGE.includes(code)) { if (down && !e.repeat) plunger(true); else if (!down) plunger(false); }
+    else if (code === 'KeyN' && down && !e.repeat) inp('n');
     else return;
     e.preventDefault();
   }
   const kd = (e: KeyboardEvent) => onKey(e, true), ku = (e: KeyboardEvent) => onKey(e, false);
+  const pointers = new Map<number, 'l' | 'r' | 'p'>();
   function pdown(e: PointerEvent) {
     e.preventDefault();
     Sound.unlock();
-    if (phase !== 'play') { start(); return; }
+    if (sim.phase !== 'play') { void start(); return; }
     const r = canvas.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
     let side: 'l' | 'r' | 'p' = x < 0.5 ? 'l' : 'r';
-    if (x > 0.82 && y > 0.55 && balls.some(b => inLane(b) && !b.auto)) side = 'p';
+    if (x > 0.82 && y > 0.55 && sim.balls.some(b => sim.inLane(b) && !b.auto)) side = 'p';
     pointers.set(e.pointerId, side);
     try { canvas.setPointerCapture(e.pointerId); } catch { /* stary Safari */ }
-    if (side === 'p') charging = true; else setFlip(side, true);
+    if (side === 'p') inp('p+'); else setFlip(side, true);
   }
   function pup(e: PointerEvent) {
     const side = pointers.get(e.pointerId);
     if (!side) return;
     pointers.delete(e.pointerId);
-    if (side === 'p') plungerUp();
+    if (side === 'p') inp('p-');
     else if (![...pointers.values()].includes(side)) setFlip(side, false);
   }
-  const blur = () => { setFlip('l', false); setFlip('r', false); plungerUp(); };
+  const blur = () => { setFlip('l', false); setFlip('r', false); inp('p-'); };
 
   window.addEventListener('keydown', kd);
   window.addEventListener('keyup', ku);
@@ -779,10 +723,19 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   raf = requestAnimationFrame(frame);
 
   return {
-    start,
+    start: () => { void start(); },
     resize,
-    state: () => ({ balls: balls.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), vx: Math.round(b.vx), vy: Math.round(b.vy) })), score, phase, ball: ballNo }),
+    zoom(delta: number) {
+      const to = Math.max(1, Math.min(ZMAX, zmTo * (1 + delta)));
+      const moved = Math.abs(to - zmTo) > 1e-6;
+      zmTo = to;
+      return moved;
+    },
+    resetZoom() { zmTo = 1; },
+    getRun: () => run,
+    state: () => ({ balls: sim.balls.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), vx: Math.round(b.vx), vy: Math.round(b.vy) })), score: sim.score, phase: sim.phase, ball: sim.ballNo, tick: sim.tick }),
     destroy() {
+      destroyed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('keydown', kd);

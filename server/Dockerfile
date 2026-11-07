@@ -23,6 +23,8 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY static /src/static
 COPY custom_images /src/custom_images
 COPY catalog_export.json /src/
+# poziomy Pinballa: te same dane ma przeglądarka, a serwer odtwarza na nich gry (src/pinball_sim.rs: ../../web/src/features/pinball/levels.json)
+COPY web/src/features/pinball/levels.json /src/web/src/features/pinball/levels.json
 COPY --from=web /src/web/dist /src/web/dist
 COPY server/ .
 # zapytania sqlx::query! sprawdzane z .sqlx/ (cargo sqlx prepare) - bez bazy przy budowaniu

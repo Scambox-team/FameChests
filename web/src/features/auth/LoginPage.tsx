@@ -115,7 +115,7 @@ export function LoginPage() {
         )}
         {mode === 'forgot' && <p className="muted">Podaj email przypisany do konta. Wyślemy na niego link do ustawienia nowego hasła.</p>}
         {mode === 'reset' && <p className="muted">Ustaw nowe hasło do swojego konta.</p>}
-        {first && register && <p className={styles.first}><Crown size={16} aria-hidden="true" />To pierwsze konto w tej grze. Przejmie obecny zapis i dostanie uprawnienia admina.</p>}
+        {first && register && <p className={styles.first}><Crown size={16} aria-hidden="true" />To pierwsze konto w tej grze. Przejmie obecny zapis.</p>}
         <form className={styles.form} onSubmit={submit} autoComplete="on">
           {register && emailAuth && <label>Email<input name="email" type="email" required maxLength={254} autoComplete="email" autoFocus /></label>}
           {mode === 'forgot' && <label>Email<input name="email" type="email" required maxLength={254} autoComplete="email" autoFocus /></label>}

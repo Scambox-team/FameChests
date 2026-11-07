@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Play, Square } from 'lucide-react';
+import { Box, Minus, Play, Plus, RotateCcw, Square } from 'lucide-react';
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
@@ -7,23 +7,27 @@ import { syncInventory } from '../../game/session';
 import { S, touch } from '../../game/store';
 import { fmt as fmtGr, fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
+import { GameRanking } from '../chess/GameRanking';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import { createPinball, type PinballGame, type PinHud } from './engine';
+import { LEVELS } from './levels';
 import './pinball.css';
 
 // Zakładka Gry -> Pinball: płótno z silnikiem (engine.ts) w szafie automatu + wyświetlacz wyniku.
 const fmt = (n: number) => n.toLocaleString('pl-PL');
+const readLevel = () => { try { return Math.min(LEVELS.length, Math.max(1, +(localStorage.getItem('pinballLevel') ?? 1) || 1)); } catch { return 1; } };
+const bestOf = (n: number) => { try { return +(localStorage.getItem(n === 1 ? 'pinballBest' : `pinballBest${n}`) ?? 0) || 0; } catch { return 0; } };
 const read3d = () => { try { return localStorage.getItem('pinball3d') !== 'off'; } catch { return true; } };
 
 type Tier = { score: number; rarity: string; name: string };
-type Rewards = { pointsPerGr: number; maxPerRun: number; maxPerDay: number; left: number; cardTiers: Tier[]; cardsLeft: number };
+type Rewards = { pointsPerGr: number; cardTiers: Tier[]; cardsLeft: number };
 type Won = { id: number; person: string; variant: string; name: string; rarity: string };
-type Result = { reward: number; reason: string; card: Won | null };
+type Result = { reward: number; reason: string; card: Won | null; score?: number };
 const WHY: Record<string, string> = {
   too_short: 'Za krótka gra: nagroda od 30 sekund gry.',
   implausible: 'Wynik wygląda nierealnie, nagrody nie ma.',
-  daily_limit: 'Dzisiejszy limit nagród z Pinballa wyczerpany.',
+  invalid: 'Serwer nie zdołał odtworzyć zapisu gry, nagrody nie ma.',
   no_run: 'Nie udało się rozliczyć gry.',
 };
 
@@ -32,50 +36,78 @@ export function PinballPage() {
   const game = useRef<PinballGame | null>(null);
   const [hud, setHud] = useState<PinHud | null>(null);
   const [tilt3d, setTilt3d] = useState(read3d);
+  const [level, setLevel] = useState(readLevel);
   const [rewards, setRewards] = useState<Rewards | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const run = useRef<Promise<number | null> | null>(null);   // gra rozpoczęta na serwerze (czas liczy serwer)
+  const runId = useRef<number | null>(null);   // gra rozpoczęta na serwerze (czas i ziarno daje serwer)
+  const [checking, setChecking] = useState(false);
   const prev = useRef('attract');
 
   useEffect(() => { api<Rewards>('/api/pinball').then(setRewards).catch(() => {}); }, []);
 
-  // początek gry -> serwer zapisuje czas; koniec gry -> serwer wylicza nagrodę (limity: game.json `pinball`)
+  // koniec gry -> serwer odtwarza zapis wciśnięć i sam liczy wynik oraz nagrodę (limity: game.json `pinball`)
   useEffect(() => {
     const phase = hud?.phase;
     if (!phase) return;
-    if (phase === 'play' && prev.current !== 'play') {
-      setResult(null);
-      run.current = api<Rewards & { run: number }>('/api/pinball/start', {}).then(r => { setRewards(r); return r.run; }).catch(() => null);
-    }
+    if (phase === 'play' && prev.current !== 'play') setResult(null);
     if (phase === 'over' && prev.current === 'play') {
-      const score = hud.score, started = run.current;
-      run.current = null;
-      started?.then(async id => {
-        if (!id) return;
-        const r = await api<Rewards & Result & { balance: number }>('/api/pinball/finish', { run: id, score });
-        setRewards(r);
-        setResult(r);
-        S.state = { ...S.state, balance: r.balance };
-        touch();
-        if (r.reward > 0) toast(`Pinball: +${fmtGr(r.reward)}`);
-        if (r.card) { toast(`Pinball: karta ${r.card.name} w wariancie Synthwave`); syncInventory(null, true); }
-      }).catch(() => {});
+      const rec = game.current?.getRun(), id = runId.current;
+      runId.current = null;
+      if (rec?.verified && id) {
+        setChecking(true);
+        api<Rewards & Result & { balance: number; score: number }>('/api/pinball/finish', { run: id, level, ticks: rec.ticks, log: rec.log })
+          .then(r => {
+            setRewards(r);
+            setResult(r);
+            S.state = { ...S.state, balance: r.balance };
+            touch();
+            if (r.reward > 0) toast(`Pinball: +${fmtGr(r.reward)}`);
+            if (r.card) { toast(`Pinball: karta ${r.card.name} w wariancie Synthwave`); syncInventory(null, true); }
+          })
+          .catch(() => {})
+          .finally(() => setChecking(false));
+      }
     }
     prev.current = phase;
   }, [hud?.phase]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const g = createPinball(canvas.current!, setHud);
+    prev.current = 'attract'; runId.current = null;
+    setResult(null);
+    const g = createPinball(canvas.current!, setHud, level, {
+      // ziarno gry daje serwer; bez niego (błąd sieci) gra się normalnie, ale bez nagród
+      begin: async () => {
+        try {
+          const r = await api<Rewards & { run: number; seed: number }>('/api/pinball/start', { level });
+          runId.current = r.run; setRewards(r);
+          return r.seed;
+        } catch { runId.current = null; return null; }
+      },
+    });
     game.current = g;
     return () => { g.destroy(); game.current = null; };
-  }, []);
+  }, [level]);
   useEffect(() => { game.current?.resize(); }, [tilt3d]);
+  // przybliżenie jak w ruletce: kółko myszy (na granicy zoomu strona przewija się dalej), przyciski, dwuklik wraca
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const wheel = (e: WheelEvent) => { if (game.current?.zoom(-Math.sign(e.deltaY) * 0.18)) e.preventDefault(); };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, [level]);
 
   const toggle3d = () => {
     Sound.click();
     setTilt3d(v => { try { localStorage.setItem('pinball3d', v ? 'off' : 'on'); } catch { /* bez zapisu */ } return !v; });
   };
   const playing = hud?.phase === 'play';
+  const pick = (n: number) => {
+    if (playing || n === level) return;
+    Sound.click();
+    try { localStorage.setItem('pinballLevel', String(n)); } catch { /* bez zapisu */ }
+    setLevel(n);
+  };
 
   return (
     <div className="pb-page">
@@ -84,6 +116,11 @@ export function PinballPage() {
           <div className="pb-table">
             <canvas ref={canvas} className="pb-canvas" aria-label="Stół pinballa. Lewa łapa: Z albo strzałka w lewo, prawa łapa: strzałka w prawo, wyrzut: spacja." />
             <div className="pb-scan" aria-hidden="true" />
+            <div className="pb-cam" role="group" aria-label="Kamera">
+              <button type="button" aria-label="Przybliż" onClick={() => game.current?.zoom(0.3)}><Plus size={16} /></button>
+              <button type="button" aria-label="Oddal" onClick={() => game.current?.zoom(-0.3)}><Minus size={16} /></button>
+              <button type="button" aria-label="Wróć do widoku" onClick={() => game.current?.resetZoom()}><RotateCcw size={15} /></button>
+            </div>
           </div>
         </div>
       </div>
@@ -102,8 +139,7 @@ export function PinballPage() {
         {rewards && (
           <div className="pb-reward" role="status">
             <b>Nagroda w groszach</b>
-            <span>{`${fmtGr(1)} za każde ${rewards.pointsPerGr} pkt, do ${fmtGr(rewards.maxPerRun)} za grę.`}</span>
-            <span>{`Dziś jeszcze do zarobienia: ${fmtGr(rewards.left)} z ${fmtGr(rewards.maxPerDay)}.`}</span>
+            <span>{`${fmtGr(1)} za każde ${rewards.pointsPerGr} pkt, bez limitu.`}</span>
             {rewards.cardTiers.length > 0 && (
               <span>{`Karta Synthwave od ${fmtNum(rewards.cardTiers[0].score)} pkt (${rewards.cardTiers.map(t => `${fmtNum(t.score)}: ${t.name}`).join(', ')}). Dziś jeszcze kart: ${rewards.cardsLeft}.`}</span>
             )}
@@ -112,6 +148,10 @@ export function PinballPage() {
                 <Card person={result.card.person} variant={result.card.variant} tilt={false} />
               </span>
             )}
+            {checking && <span>Serwer sprawdza zapis gry…</span>}
+            {result?.score !== undefined && hud?.phase === 'over' && result.score !== hud.score && (
+              <span>{`Wynik sprawdzony przez serwer: ${fmtNum(result.score)}.`}</span>
+            )}
             {result && hud?.phase === 'over' && (
               <span className={result.reward > 0 ? 'pb-reward-got' : 'pb-reward-none'}>
                 {result.reward > 0 ? `Zarobiono: +${fmtGr(result.reward)}` : WHY[result.reason] ?? 'Bez nagrody.'}
@@ -119,6 +159,17 @@ export function PinballPage() {
             )}
           </div>
         )}
+        <div className="pb-levels" role="radiogroup" aria-label="Poziom">
+          {LEVELS.map(l => (
+            <button key={l.id} type="button" role="radio" aria-checked={l.id === level} disabled={playing && l.id !== level}
+              className={`pb-level${l.id === level ? ' is-on' : ''}`} onClick={() => pick(l.id)}>
+              <b>{l.id}</b>
+              <span>{l.name}<small>{l.blurb}</small></span>
+              <em>{bestOf(l.id) ? fmt(bestOf(l.id)) : '—'}</em>
+            </button>
+          ))}
+        </div>
+        <GameRanking game="pinball" level={level} title={`Ranking: ${LEVELS[level - 1].name}`} refresh={result?.score} />
         <div className="pb-best"><span>Twój rekord</span><b>{fmt(hud?.best ?? 0)}</b></div>
         <div className="pb-actions">
           <Button kind="hue" onClick={() => { Sound.unlock(); game.current?.start(); canvas.current?.focus(); }} disabled={playing}>

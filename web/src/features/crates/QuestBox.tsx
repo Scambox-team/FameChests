@@ -33,7 +33,7 @@ export function QuestBox() {
       <span className={styles.thumb}>{photo ? <img src={photo} alt="" /> : <Target size={20} aria-hidden="true" />}</span>
       <div className={styles.body}>
         <b>Quest</b>
-        <p>Zdobądź {target}{q.variant ? ` w wariancie ${variantName(q.variant)}` : ''}. Kto pierwszy, ten wygrywa.</p>
+        <p>Zdobądź {target}{q.variant ? ` w wariancie ${variantName(q.variant)}` : q.minMult ? ` w wariancie z mnożnikiem co najmniej ${q.minMult}x` : ''}. Kto pierwszy, ten wygrywa.</p>
         <small className="muted">Nagroda: ta karta w wariancie {variantName('wanted')}{reward ? ` + ${fmt(reward)}` : ' + jej wartość w groszach'}. Liczą się skrzynki, kuźnia, ulepszacz i kasyno.</small>
       </div>
       {q.done && (q.mine

@@ -1015,11 +1015,7 @@
  },
  "pinball": {
   "pointsPerGr": 100,
-  "maxPerRun": 1500,
-  "maxPerDay": 6000,
   "minSeconds": 30,
-  "maxPointsPerSecond": 5000,
-  "slackPoints": 20000,
   "cardVariant": "synthwave",
   "cardsPerDay": 3,
   "cardTiers": [

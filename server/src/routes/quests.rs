@@ -1,6 +1,7 @@
 //! Quest (domyślnie wyłączony, włącza admin w panelu): jeden wspólny cel dla wszystkich graczy - zdobyć konkretną kartę
-//! od Epickiej wzwyż: Epicką zawsze w rzadkim wariancie, wyższą zwykłą albo w wariancie (losowo). Kto pierwszy, dostaje
-//! tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
+//! od Epickiej wzwyż w wariancie o mnożniku wartości co najmniej `MIN_MULT[rzadkość]` (im rzadsza karta, tym mniejszy
+//! wymagany mnożnik; ULTRA LEGENDARNA od 2x). Pasuje każdy wariant z takim mnożnikiem, także połączony (`flag+gold`).
+//! Kto pierwszy, dostaje tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
 //!
 //! Quest trwa `DURATION` (24 h), potem losuje się nowy; wypełniony - nowy po `AFTER_WIN` (6 h) od wypełnienia.
 //! Losuje się przy pierwszym zapytaniu po tym czasie (`daily_quests`, klucz = kolejny numer `q<n>`). Liczą się tylko karty, które
@@ -11,7 +12,6 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use axum::extract::State;
 use rand::seq::SliceRandom;
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -29,13 +29,13 @@ pub const REWARD_VARIANT: &str = "wanted";
 const ENABLED_KEY: &str = "quests_enabled";
 /// karty, które wypełniają questa: nowe, nie z rynku, wymiany ani nagród
 const SOURCES: [&str; 4] = ["drop", "contract", "upgrade", "casino"];
-/// rzadkości kart do questa; Epicka tylko w wariancie
-const RARITIES: [&str; 4] = ["purple", "red", "gold", "ultra"];
-const EPIC: &str = "purple";
+/// rzadkości kart do questa i najmniejszy mnożnik wariantu (`mult`), w którym trzeba taką kartę zdobyć
+const MIN_MULT: [(&str, f64); 4] = [("purple", 4.0), ("red", 3.0), ("gold", 2.5), ("ultra", 2.0)];
+fn min_mult(rarity: &str) -> Option<f64> {
+    MIN_MULT.iter().find(|(r, _)| *r == rarity).map(|(_, m)| *m)
+}
 /// najmniejsza szansa na trafienie celu z jednej skrzynki - niżej quest byłby praktycznie niewykonalny
 const MIN_ODDS: f64 = 1e-5;
-/// „rzadki wariant”: szansa na wariant przy wypadnięciu karty
-const VARIANT_CHANCE: (f64, f64) = (0.002, 0.02);
 const HISTORY: i64 = 14;
 /// jak długo trwa quest i po jakim czasie od wypełnienia pojawia się nowy (sekundy)
 const DURATION: f64 = 24.0 * 3600.0;
@@ -46,6 +46,7 @@ struct QuestRow {
     day: String,
     person_id: Option<String>,
     variant: Option<String>,
+    min_mult: Option<f64>,
     winner_id: Option<i64>,
     won_at: Option<f64>,
     won_person: Option<String>,
@@ -64,7 +65,7 @@ impl QuestRow {
     }
 }
 
-const COLUMNS: &str = "day, person_id, variant, winner_id, won_at, won_person, money, starts_at, ends_at";
+const COLUMNS: &str = "day, person_id, variant, min_mult, winner_id, won_at, won_person, money, starts_at, ends_at";
 /// najnowszy quest (stare dzienne nie mają starts_at - idą na koniec)
 const LATEST: &str = "ORDER BY starts_at DESC NULLS LAST, day DESC";
 
@@ -82,58 +83,60 @@ fn card_odds(cat: &Catalog, cr: &Crate, p: &Person) -> f64 {
     if total > 0.0 && same > 0.0 { cr.weight(&p.rarity) / total / same } else { 0.0 }
 }
 
-/// Karty, o które może być quest, z wariantami, w których teraz naprawdę wypadają: skrzynka jest w sklepie, karta w niej jest,
-/// wariant włączony i przypięty do tej skrzynki, a szansa na trafienie nie jest niemal zerowa (MIN_ODDS).
-fn candidates(cat: &Catalog) -> Vec<(String, bool, Vec<String>)> {
+/// Warianty, które liczą się do questa z danym mnożnikiem i naprawdę wypadają z tej skrzynki dla tej karty
+fn qualifying(cat: &Catalog, cr: &Crate, p: &Person, min: f64) -> Vec<String> {
+    let gd = g();
+    cat.drop_variants(cr, Some(p))
+        .0
+        .into_iter()
+        .filter(|v| {
+            let x = gd.variant(v);
+            !x.combo && !x.special && !x.layer && !x.always && x.extra_source.as_deref() != Some("quest") && x.mult >= min
+        })
+        .collect()
+}
+
+/// Karty, o które może być quest (z mnożnikiem i wariantami, które się liczą): skrzynka jest w sklepie, karta w niej jest,
+/// a szansa na trafienie karty w pasującym wariancie nie jest niemal zerowa (MIN_ODDS) - niżej quest byłby niewykonalny.
+fn candidates(cat: &Catalog) -> Vec<(String, f64, Vec<String>)> {
     let gd = g();
     let shop: Vec<_> = cat.crates.values().filter(|c| c.shop && !c.restricted).collect();
-    let (lo, hi) = VARIANT_CHANCE;
     let mut out = vec![];
-    for p in cat.people.values().filter(|p| RARITIES.contains(&p.rarity.as_str())) {
+    for p in cat.people.values() {
+        let Some(min) = min_mult(&p.rarity) else { continue };
         let (mut best, mut variants) = (0.0_f64, vec![]);
         for cr in shop.iter().filter(|c| p.crates.contains(&c.id)) {
-            let odds = card_odds(cat, cr, p);
-            best = best.max(odds);
-            variants.extend(cat.drop_variants(cr, Some(p)).0.into_iter().filter(|v| {
-                let x = gd.variant(v);
-                !x.combo
-                    && !x.special
-                    && !x.layer
-                    && !x.always
-                    && x.extra_source.as_deref() != Some("quest")
-                    && (lo..=hi).contains(&x.chance)
-                    && odds * x.chance >= MIN_ODDS
-            }));
+            let vs = qualifying(cat, cr, p, min);
+            let chance: f64 = vs.iter().map(|v| gd.variant(v).chance).sum();
+            best = best.max(card_odds(cat, cr, p) * chance);
+            variants.extend(vs);
         }
         variants.sort();
         variants.dedup();
-        // epicka sama w sobie to za mało: bez wariantu quest byłby za łatwy
-        let plain = p.rarity != EPIC && best >= MIN_ODDS;
-        if plain || !variants.is_empty() {
-            out.push((p.id.clone(), plain, variants));
+        if best >= MIN_ODDS {
+            out.push((p.id.clone(), min, variants));
         }
     }
     out
 }
 
 /// Skrzynki z teraz otwartego sklepu (dla wszystkich graczy), z których ta karta w tym wariancie naprawdę może wypaść
-fn drop_crates<'a>(cat: &'a Catalog, pid: &str, variant: Option<&str>) -> Vec<&'a Crate> {
+fn drop_crates<'a>(cat: &'a Catalog, pid: &str, variant: Option<&str>, min: Option<f64>) -> Vec<&'a Crate> {
     let Some(p) = cat.person(pid) else { return vec![] };
     cat.crates
         .values()
         .filter(|c| c.shop && !c.restricted && p.crates.contains(&c.id))
         .filter(|c| card_odds(cat, c, p) >= MIN_ODDS)
         .filter(|c| variant.is_none_or(|v| cat.drop_variants(c, Some(p)).0.iter().any(|x| x == v)))
+        .filter(|c| min.is_none_or(|m| !qualifying(cat, c, p, m).is_empty()))
         .collect()
 }
 
-/// Cel questa: konkretna karta; epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (losowo)
-fn pick(cat: &Catalog) -> Option<(Option<String>, Option<String>)> {
+/// Cel questa: konkretna karta i najmniejszy mnożnik wariantu dla jej rzadkości
+fn pick(cat: &Catalog) -> Option<(String, f64)> {
     let list = candidates(cat);
-    let mut rng = rand::thread_rng();
-    let (pid, plain, variants) = list.choose(&mut rng)?;
-    let variant = if *plain && rng.gen_bool(0.5) { None } else { variants.choose(&mut rng).cloned() };
-    Some((Some(pid.clone()), variant))
+    let (pid, min, _) = list.choose(&mut rand::thread_rng())?;
+    Some((pid.clone(), *min))
 }
 
 async fn latest(c: &mut Conn) -> sqlx::Result<Option<QuestRow>> {
@@ -158,7 +161,7 @@ async fn current(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<QuestRow>> 
     if let Some(r) = prev.as_ref().filter(|r| now < r.next_at()) {
         // quest musi dać się wykonać w sklepie: gdy cel zniknął (rotacja skrzynek, zmiana liczby skrzynek, wyłączony
         // wariant), zamykamy go i losujemy nowy - dopóki ktoś go nie wykonał
-        let possible = r.person_id.as_deref().is_none_or(|p| !drop_crates(cat, p, r.variant.as_deref()).is_empty());
+        let possible = r.person_id.as_deref().is_none_or(|p| !drop_crates(cat, p, r.variant.as_deref(), r.min_mult).is_empty());
         if r.winner_id.is_some() || possible {
             return Ok(prev);
         }
@@ -168,13 +171,13 @@ async fn current(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<QuestRow>> 
             .execute(&mut *c)
             .await?;
     }
-    let Some((person, variant)) = pick(cat) else { return Ok(None) };
+    let Some((person, min)) = pick(cat) else { return Ok(None) };
     sqlx::query(
-        "INSERT INTO daily_quests (day, person_id, variant, starts_at, ends_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (day) DO NOTHING",
+        "INSERT INTO daily_quests (day, person_id, min_mult, starts_at, ends_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (day) DO NOTHING",
     )
     .bind(next_key(prev.as_ref()))
     .bind(person)
-    .bind(variant)
+    .bind(min)
     .bind(now)
     .bind(now + DURATION)
     .execute(&mut *c)
@@ -188,6 +191,8 @@ pub struct QuestView {
     day: String,
     person: Option<String>,
     variant: Option<String>,
+    /// najmniejszy mnożnik wartości wariantu, w którym trzeba zdobyć kartę (None = stary quest na konkretny wariant)
+    min_mult: Option<f64>,
     /// nagroda w groszach (karta w dowolnym wariancie: dopiero po zdobyciu wiadomo, która)
     reward: Option<i64>,
     done: bool,
@@ -218,13 +223,14 @@ async fn view(c: &mut Conn, cat: &Catalog, r: QuestRow, uid: i64) -> sqlx::Resul
         done: r.winner_id.is_some(),
         mine: r.winner_id == Some(uid),
         crates: match (&r.person_id, r.winner_id) {
-            (Some(p), None) => drop_crates(cat, p, r.variant.as_deref()).iter().map(|c| c.id.clone()).collect(),
+            (Some(p), None) => drop_crates(cat, p, r.variant.as_deref(), r.min_mult).iter().map(|c| c.id.clone()).collect(),
             _ => vec![],
         },
         next_at: r.next_at(),
         day: r.day,
         person: r.person_id,
         variant: r.variant,
+        min_mult: r.min_mult,
         winner,
         won_person: r.won_person,
         money: r.money,
@@ -248,15 +254,17 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
     if !SOURCES.contains(&source) || variant == REWARD_VARIANT {
         return Ok(());
     }
-    let open: Option<(String, Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT day, person_id, variant FROM daily_quests WHERE winner_id IS NULL AND ends_at > $1 ORDER BY starts_at DESC LIMIT 1",
+    type Open = (String, Option<String>, Option<String>, Option<f64>);
+    let open: Option<Open> = sqlx::query_as(
+        "SELECT day, person_id, variant, min_mult FROM daily_quests WHERE winner_id IS NULL AND ends_at > $1 ORDER BY starts_at DESC LIMIT 1",
     )
     .bind(now())
     .fetch_optional(&mut *c)
     .await?;
-    let Some((key, want_person, want_variant)) = open else { return Ok(()) };
-    let fits =
-        want_person.as_deref().is_none_or(|p| p == pid) && want_variant.as_deref().is_none_or(|v| parts(variant).contains(&v));
+    let Some((key, want_person, want_variant, want_mult)) = open else { return Ok(()) };
+    let fits = want_person.as_deref().is_none_or(|p| p == pid)
+        && want_variant.as_deref().is_none_or(|v| parts(variant).contains(&v))
+        && want_mult.is_none_or(|m| g().variant(variant).mult >= m);
     let Some(money) = reward_for(&cx.cat, pid).filter(|_| fits) else { return Ok(()) };
     let won = sqlx::query(
         "UPDATE daily_quests SET winner_id = $1, won_at = $2, won_person = $3, money = $4 WHERE day = $5 AND winner_id IS NULL",
@@ -300,7 +308,10 @@ pub async fn admin_quests(State(st): State<AppState>, Admin(me): Admin) -> Res {
     let list = history(&mut c, &cat, me.id).await?;
     let label = |q: &QuestView| match (&q.person, &q.variant) {
         (Some(p), Some(v)) => format!("{} w wariancie {}", names.get(p.as_str()).copied().unwrap_or(p), g().variant(v).name),
-        (Some(p), None) => names.get(p.as_str()).copied().unwrap_or(p).to_owned(),
+        (Some(p), None) => {
+            let name = names.get(p.as_str()).copied().unwrap_or(p);
+            q.min_mult.map_or_else(|| name.to_owned(), |m| format!("{name} z mnożnikiem co najmniej {m}x"))
+        }
         (_, Some(v)) => format!("dowolna karta w wariancie {}", g().variant(v).name),
         _ => String::new(),
     };
@@ -363,14 +374,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rarer_cards_need_a_lower_multiplier() {
+        let order = ["purple", "red", "gold", "ultra"];
+        let m: Vec<f64> = order.iter().map(|r| min_mult(r).unwrap()).collect();
+        assert!(m.windows(2).all(|w| w[0] > w[1]), "{m:?}");
+        assert_eq!(min_mult("ultra"), Some(2.0));
+        assert_eq!(min_mult("green"), None);
+        // każdy cel z listy ma wymagany mnożnik swojej rzadkości i co najmniej jeden pasujący wariant
+        let cat = crate::catalog::build(&[], &[]);
+        let list = candidates(&cat);
+        assert!(!list.is_empty(), "brak celów questa przy domyślnym katalogu");
+        for (pid, min, variants) in list {
+            assert_eq!(Some(min), min_mult(&cat.person(&pid).unwrap().rarity));
+            assert!(variants.iter().all(|v| g().variant(v).mult >= min));
+        }
+    }
+
+    #[test]
     fn quest_target_must_drop_from_the_shop() {
         let cat = crate::catalog::build(&[], &[]);
         // karta ze stałej Skrzynki Polskiej (zawsze w sklepie) wypada z niej
-        let from = drop_crates(&cat, "pl_lewandowski", None);
+        let from = drop_crates(&cat, "pl_lewandowski", None, None);
         assert!(from.iter().all(|c| c.shop && !c.restricted) && from.iter().any(|c| c.id == "pl"));
         // nieznanej karty nie da się zdobyć; karty z ukrytej skrzynki kart specjalnych też nie
-        assert!(drop_crates(&cat, "nie_ma_takiej", None).is_empty());
+        assert!(drop_crates(&cat, "nie_ma_takiej", None, None).is_empty());
         // wariant, którego skrzynka nie wylosuje, nie jest możliwy
-        assert!(drop_crates(&cat, "pl_lewandowski", Some("wariant_ktorego_nie_ma")).is_empty());
+        assert!(drop_crates(&cat, "pl_lewandowski", Some("wariant_ktorego_nie_ma"), None).is_empty());
     }
 }
