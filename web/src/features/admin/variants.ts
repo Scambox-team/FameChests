@@ -173,7 +173,7 @@ function vrFormHTML(v) {
   if (V.special) return `<h3 class="stk-h">${esc(V.name)}</h3><p class="muted">${esc(V.desc || "")}</p>
     <p class="muted small">Wariant kart specjalnych, nie wypada ze skrzynek. Wariant i wygląd karty specjalnej ustawiasz przy samej
       karcie w panelu admina. <a href="/mockups">Makiety kart specjalnych</a></p>`;
-  const changed = ["enabled", "chance", "weight", "desc", "mult"].some(k => saved[k] !== null && saved[k] !== undefined) || saved.noHouse;
+  const changed = ["enabled", "chance", "weight", "desc", "mult"].some(k => saved[k] !== null && saved[k] !== undefined) || saved.noHouse || Object.keys(saved.texts || {}).length;
   return `<form class="vr-form" id="vrForm" autocomplete="off">
     <h3 class="stk-h vr-title"><span class="vdot ${vtClass(v)}"></span>${esc(V.name)}</h3>
     <label class="vr-switch"><input type="checkbox" name="enabled"${cfg.enabled ? " checked" : ""}>
@@ -194,12 +194,23 @@ function vrFormHTML(v) {
       ${V.layer ? `<span>Warstwa, łączy się z innymi wariantami${V.extraChance ? ` (${Math.round(V.extraChance * 100)}% kart)` : ""}</span>` : ""}
     </div>
     <label>Opis<textarea name="desc" rows="3" maxlength="300" placeholder="${esc(def.desc || "")}">${esc(saved.desc ?? "")}</textarea></label>
+    ${vrTextsHTML(V, saved)}
     <div class="vr-actions">
       <button class="btn primary" type="submit">Zapisz</button>
       ${changed ? `<button class="btn" type="button" data-vr="defaults" title="Szansa, mnożnik, opis i włączenie jak w kodzie (game.json)">Domyślne</button>` : ""}
     </div>
     <p class="muted small">Puste pole = wartość z kodu. Gracze zobaczą zmiany po odświeżeniu gry; losowanie zmienia się od razu.</p>
   </form>`;
+}
+
+// napisy wariantu (pole "texts" w game.json, np. dane na Wizytówce): domyślne dla wszystkich kart; karta może mieć własne
+// (edycja karty w panelu admina). Puste pole = wartość z kodu.
+function vrTextsHTML(V, saved) {
+  const fields = Object.entries(V.texts || {});
+  if (!fields.length) return "";
+  return `<fieldset class="vr-texts"><legend>Napisy na karcie <small class="muted">(domyślne dla wszystkich kart; własne dla karty w edycji karty)</small></legend>
+    ${fields.map(([k, f]) => `<label>${esc(f.label)}<input type="text" name="text_${k}" maxlength="${f.max || 60}" value="${esc(saved.texts?.[k] ?? "")}" placeholder="${esc(f.default || "")}"></label>`).join("")}
+  </fieldset>`;
 }
 
 // wariant ekskluzywny dla karty: wybrane karty dostają go ze wszystkich swoich skrzynek, kuźni i kasyna,
@@ -345,6 +356,7 @@ async function vrSave(form) {
     body.crateOnly = form.cardLock.checked && !!form.crateOnly?.checked;
     if (form.cardLock.checked && !VR.cards.length) return toast("Wybierz co najmniej jedną kartę", true);
   }
+  if (V.texts) body.texts = Object.fromEntries(Object.keys(V.texts).map(k => [k, String(f.get(`text_${k}`) || "").trim()]).filter(([, t]) => t));
   if (V.always) body.weight = num("weight");
   else body.chance = num("chance") === null ? null : num("chance") / 100;
   try {
@@ -439,7 +451,7 @@ function vrBind() {
     if (other) { Sound.click(); VR.pid = other.dataset.pid; return renderVariants(); }
     if (t.closest('[data-vr="defaults"]')) {
       if (!confirm(`Przywrócić ustawienia z kodu dla „${vrV(VR.variant).name}”? (wydarzenia zostają)`)) return;
-      try { vrApply(await api(`/api/admin/variants/${VR.variant}`, { enabled: null, chance: null, weight: null, desc: null, mult: null, noHouse: false, cards: [], crateOnly: false })); toast("Przywrócono"); }
+      try { vrApply(await api(`/api/admin/variants/${VR.variant}`, { enabled: null, chance: null, weight: null, desc: null, mult: null, noHouse: false, cards: [], crateOnly: false, texts: {} })); toast("Przywrócono"); }
       catch (err) { toast(err.message, true); }
       return;
     }

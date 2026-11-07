@@ -314,7 +314,9 @@ export function startPanel() {
           </div>
         </fieldset>`).join("")}
 
+        <input type="hidden" name="vx_json">
         ${tabloidEditorHTML(c)}
+        ${variantTextsHTML(c)}
 
         <fieldset class="a-preview">
           <legend>Podgląd we wszystkich wariantach</legend>
@@ -335,7 +337,20 @@ export function startPanel() {
       </div>`;
     $("#cardModal").hidden = false;
     arenaRefresh();
+    A.tb = null; A.tbTouched = false;
     tabloidBind(c);
+  }
+
+  // napisy wariantów z polem "texts" (np. dane na Wizytówce) tylko dla tej karty - pole karty vx.<wariant>; puste = domyślne z /variants
+  const textVariants = () => Object.entries(A.cat.variants).filter(([, x]) => x.texts && Object.keys(x.texts).length && !x.combo);
+  function variantTextsHTML(c) {
+    const list = textVariants();
+    if (!list.length || c.rarity === "special") return "";
+    return list.map(([v, x]) => `<fieldset class="a-vtexts">
+      <legend>Napisy wariantu ${esc(x.name)} <small class="muted">(tylko ta karta; puste pole = domyślne, ustawiasz je na <a href="/variants" target="_blank">/variants</a>)</small></legend>
+      <div class="a-grid">${Object.entries(x.texts).map(([k, f]) => `<label>${esc(f.label)}<input type="text" data-vxt="${v}.${k}" maxlength="${f.max || 60}"
+        value="${esc(c.vx?.[v]?.[k] || "")}" placeholder="${esc(f.default || "")}"></label>`).join("")}</div>
+    </fieldset>`).join("");
   }
 
   // ---------------------------------------------------------------- Tabloid: kółko, strzałka i napis na zdjęciu tej karty
@@ -346,7 +361,6 @@ export function startPanel() {
     if (!A.cat.variants.tabloid || c.rarity === "special") return "";
     return `<fieldset class="a-tabloid">
       <legend>Wariant Tabloid <small class="muted">(żółte kółko, strzałka i napis na zdjęciu tej karty; przeciągnij element myszą)</small></legend>
-      <input type="hidden" name="vx_json">
       <div class="a-tb-row">
         <div class="a-tb-photo"><img alt="" id="tbPhoto"><div class="a-tb-marks"></div></div>
         <div class="a-tb-ctl">
@@ -407,10 +421,16 @@ export function startPanel() {
     });
   }
   // wartość pola vx_json przy zapisie: inne warianty zostają, Tabloid tylko gdy admin coś zmienił (albo już było zapisane)
-  function tabloidCollect() {
+  // + napisy wariantów (Wizytówka...) z pól data-vxt; bez edytora Tabloidu (karta specjalna) zostaje zapisany
+  function vxCollect() {
     const id = $("#cardForm [name=id]").value, c = A.cat.cards.find(x => x.id === id) || {};
     const vx = { ...(c.vx || {}) };
-    if (A.tbTouched) vx.tabloid = A.tb; else delete vx.tabloid;
+    if ($("#cardForm .a-tabloid")) { if (A.tbTouched) vx.tabloid = A.tb; else delete vx.tabloid; }
+    for (const [v, x] of textVariants()) {
+      if (!$(`#cardForm [data-vxt^="${v}."]`)) continue;
+      const texts = Object.fromEntries(Object.keys(x.texts).map(k => [k, ($(`#cardForm [data-vxt="${v}.${k}"]`)?.value || "").trim()]).filter(([, t]) => t));
+      if (Object.keys(texts).length) vx[v] = texts; else delete vx[v];
+    }
     return JSON.stringify(vx);
   }
   
@@ -1114,7 +1134,7 @@ export function startPanel() {
       if (fdata.get("rarity") !== "special" && !fdata.getAll("crates").length) return toast("Zaznacz co najmniej jedną skrzynkę", true);
       const btn = $("button[type=submit]", e.target);
       $("#cardForm [name=arena_json]").value = JSON.stringify(arenaCollect());
-      if ($("#cardForm [name=vx_json]")) $("#cardForm [name=vx_json]").value = tabloidCollect();
+      if ($("#cardForm [name=vx_json]")) $("#cardForm [name=vx_json]").value = vxCollect();
       btn.disabled = true; btn.textContent = "Zapisuję…";
       try {
         const res = await api("/api/admin/cards", { method: "POST", form: new FormData(e.target) });

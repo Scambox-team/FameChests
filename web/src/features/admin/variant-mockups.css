@@ -21,6 +21,22 @@
   --x-ink: #dfe6ff; --x-font: 400 .9em/1 "Share Tech Mono", monospace; --x-name: #fff; --x-sub-font: 400 .62em "Share Tech Mono", monospace;
   --x-ph-f: grayscale(1) contrast(1.35) brightness(.9); --x-ph-line: .4cqw solid #dfe6ff; --x-ph-rad: 0;
 }
+/* wszystko pod zdjęciem jak dalsza część komunikatu: monospace wersalikami, białe paski jak nagłówek, tabela w przerywanej ramce,
+   stopka jak pasek techniczny nadawania; niższe zdjęcie - pasek nad nazwą nie wypycha stopki poza kartę */
+.card.vm-analog .card-photo { aspect-ratio: 1 / 1.03; }
+.card.vm-analog.two-atk .card-photo { aspect-ratio: 1 / .86; }
+.card.vm-analog :is(.card-name, .card-hp, .card-sub, .card-attack, .card-stats, .card-foot) { font-family: "Share Tech Mono", monospace; text-transform: uppercase; }
+.card.vm-analog .card-sub { margin: 1.4% 0 0; padding: .25em .5em; background: #c0141c; color: #fff; border: none; letter-spacing: .08em; animation: ahSub 2s steps(1) infinite; }
+@keyframes ahSub { 50% { background: #e8eaf6; color: #c0141c; } }
+.card.vm-analog .card-attack { margin-top: 1.4%; padding: .1em .45em; background: #e8eaf6; border: none; }
+.card.vm-analog .card-attack :is(.atk-name, .atk-dmg) { color: #0a1550; font-weight: 400; }
+.card.vm-analog .card-attack .atk-name::before { content: "▶ "; }
+.card.vm-analog .card-stats { margin-top: 1.4%; background: #050b30; border: .25cqw dashed #8fa6ff88; }
+.card.vm-analog .card-stats > span { font-size: .9em; letter-spacing: .06em; }
+.card.vm-analog .card-foot { margin-top: 1.4%; padding: .1em .45em; background: #000; border: none; border-top: .25cqw solid #e8eaf6; color: #dfe6ff; letter-spacing: .05em; }
+.card.vm-analog .card-foot .card-value { color: #dfe6ff; }
+.card.vm-analog .card-foot .card-rarity .gem { filter: grayscale(1) brightness(1.6); }
+.card.vm-analog .card-foot > span:nth-child(2)::before { content: "KOD "; opacity: .7; }
 .ah-noise {
   inset: -20%; position: absolute;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");

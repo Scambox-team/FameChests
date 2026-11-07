@@ -408,6 +408,13 @@ pub fn clean_vx(raw: &Value) -> Map<String, Value> {
         }
         out.insert("tabloid".into(), Value::Object(m));
     }
+    // napisy wariantów z polem "texts" (np. Wizytówka): {wariant: {klucz: tekst}}
+    for v in g().variants.iter().filter(|(_, x)| !x.texts.is_empty()).map(|(v, _)| v) {
+        let texts = crate::variants::clean_variant_texts(v, raw.get(v));
+        if !texts.is_empty() {
+            out.insert(v.clone(), json!(texts));
+        }
+    }
     out
 }
 
@@ -1070,11 +1077,15 @@ impl Catalog {
         }
         let mut out = json!({"enabled": self.vs.enabled(v), "released": self.variant_released(v), "events": events,
                              "noHouse": !self.variant_house_ok(v)});
+        // domyślne napisy wariantu z panelu (np. dane na Wizytówce) - karta może mieć własne w vx
+        if let Some(t) = self.vs.cfg.get(v).map(|s| &s.texts).filter(|t| !t.is_empty()) {
+            out["texts"] = json!(t);
+        }
         if admin {
             let g = g();
             let saved = match self.vs.cfg.get(v) {
                 Some(s) => json!({"enabled": s.enabled, "chance": s.chance, "weight": s.weight, "desc": s.desc,
-                                  "mult": s.mult, "noHouse": s.no_house, "cards": s.cards, "crateOnly": s.crate_only}),
+                                  "mult": s.mult, "noHouse": s.no_house, "cards": s.cards, "crateOnly": s.crate_only, "texts": s.texts}),
                 None => json!({"enabled": null, "chance": null, "weight": null, "desc": null, "mult": null, "noHouse": null,
                                "cards": [], "crateOnly": false}),
             };
@@ -1200,6 +1211,10 @@ mod tests {
         assert_eq!(t["circle"]["s"], 4.0);
         assert_eq!(t["arrow"]["r"], -35.0);   // zła wartość = domyślna
         assert_eq!(t["text"]["x"], 20.0);
+        // napisy wariantu (Wizytówka): tylko znane klucze, puste pomijamy
+        let w = clean_vx(&json!({"wizytowka": {"title": "  Prezes  ", "bogus": "x", "phone": ""}, "rgb": {"title": "nie"}}));
+        assert_eq!(w["wizytowka"], json!({"title": "Prezes"}));
+        assert!(!w.contains_key("rgb"));
     }
 
     #[test]

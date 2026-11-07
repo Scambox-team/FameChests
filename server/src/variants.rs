@@ -121,6 +121,20 @@ pub struct VariantSettings {
     pub cards: Vec<String>,
     /// ...chyba że jest też ekskluzywny dla skrzynki: wtedy tylko te karty i tylko ze skrzynek, do których jest przypięty
     pub crate_only: bool,
+    /// domyślne napisy wariantu (VariantDef::texts) - puste = wartość z kodu
+    pub texts: IndexMap<String, String>,
+}
+
+/// Napisy wariantu z panelu ({klucz: tekst}) - tylko klucze z "texts" w game.json, przycięte do `max`; puste pomijamy
+pub fn clean_variant_texts(v: &str, raw: Option<&Value>) -> IndexMap<String, String> {
+    let g = g();
+    let fields = &g.variant(v).texts;
+    let Some(raw) = raw.and_then(Value::as_object) else { return IndexMap::new() };
+    fields
+        .iter()
+        .filter_map(|(k, f)| raw.get(k).and_then(Value::as_str).map(|s| (k.clone(), clean(s, f.max()))))
+        .filter(|(_, s)| !s.is_empty())
+        .collect()
 }
 
 /// Wydarzenia wariantu: [{"id", "start", "end" (sekundy unix), "crates": [] = wszystkie, "boost", "note"}]
@@ -174,6 +188,7 @@ pub fn clean_variant_settings(v: &str, raw: &Value) -> VariantSettings {
         no_house: raw.get("noHouse").is_some_and(truthy) && !x.special,
         desc: raw.get("desc").and_then(Value::as_str).map(|d| clean(d, 300)),
         events: if x.special { vec![] } else { clean_variant_events(raw.get("events")) },
+        texts: clean_variant_texts(v, raw.get("texts")),
         ..Default::default()
     };
     if !x.special && !x.layer && !x.always {
