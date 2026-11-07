@@ -41,6 +41,11 @@ services:
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "ScamBox: potwierdź adres email"
       GOTRUE_MAILER_SUBJECTS_RECOVERY: "ScamBox: ustaw nowe hasło"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "ScamBox: potwierdź nowy adres email"
+      # wygląd maili: gra podaje gotowy HTML (server/email/), GoTrue pobiera go przez sieć Dockera
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://game:8000/email/confirmation.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://game:8000/email/recovery.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://game:8000/email/email_change.html
 
   # --- Gra ---
 

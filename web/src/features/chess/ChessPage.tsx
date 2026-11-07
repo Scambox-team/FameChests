@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Figures } from './Figures';
 import { Tabs } from '../../ui/Field';
@@ -22,6 +22,8 @@ const plainName = (s: string) => s.replace(/\p{Extended_Pictographic}️?\s*/gu,
 const CASTLE: Record<string, [string, string]> = { e1g1: ['h1', 'f1'], e1c1: ['a1', 'd1'], e8g8: ['h8', 'f8'], e8c8: ['a8', 'd8'] };
 const pieceAt = (fen: string, sq: string) => squares(fen)[(8 - +sq[1]) * 8 + FILES.indexOf(sq[0])];
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
+
+const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
 const rewarded = new Set<number>();   // nagrodę ogłaszamy raz
@@ -327,13 +329,13 @@ export function ChessPage() {
   const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  if (id) return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
-  const figures = tab === 'figures';
+  const view = tab === 'figures' || tab === 'pinball' ? tab : 'games';
+  if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
   return (
     <div id="view-games">
-      <Tabs label="Szachy" value={figures ? 'figures' : 'games'} onChange={v => { Sound.click(); navigate(v === 'figures' ? '/games/figures' : '/games'); }}
-        items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />
-      {figures ? <Figures /> : <Lobby onOpen={open} />}
+      <Tabs label="Gry" value={view} onChange={v => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); }}
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'figures', label: 'Figury' }, { id: 'pinball', label: 'Pinball' }]} />
+      {view === 'figures' ? <Figures /> : view === 'pinball' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><PinballPage /></Suspense> : <Lobby onOpen={open} />}
     </div>
   );
 }

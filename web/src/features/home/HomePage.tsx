@@ -27,7 +27,7 @@ export function HomePage() {
           <div className={s.board} aria-hidden="true"><ChessKnight className={s.knight} strokeWidth={1.3} /></div>
           <div className={s.copy}>
             <h2 className={s.name}>Gry</h2>
-            <p className={s.lead}>Szachy z innymi graczami. Za każdą wygraną skrzynka w kolorze twoich figur.</p>
+            <p className={s.lead}>Szachy z innymi graczami i neonowy pinball. Za każdą wygraną w szachy skrzynka w kolorze twoich figur.</p>
           </div>
           <ArrowRight className={s.go} size={20} aria-hidden="true" />
         </Link>

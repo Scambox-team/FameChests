@@ -508,3 +508,33 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
 .card.vm .card-inner > .v-stickers.under { position: absolute; z-index: 0; }
 
 
+
+/* ---------- działy panelu (sections.ts) ---------- */
+.a-secnav { display: flex; gap: 6px; flex-wrap: wrap; max-width: 1400px; margin: 0 auto; padding: 14px 20px 0; }
+.a-secnav button {
+  padding: 8px 16px; border-radius: 999px; border: 1px solid var(--rule); background: var(--raised); color: var(--muted);
+  font-weight: 700; font-size: 14px; cursor: pointer;
+}
+.a-secnav button:hover { color: var(--text); }
+.a-secnav button[aria-pressed="true"] { background: var(--hue); border-color: var(--hue); color: var(--on-hue, #fff); }
+.a-sec-off { display: none !important; }
+.admin.a-single { grid-template-columns: minmax(0, 1fr); }
+body.a-chess .a-secnav { display: none; }
+
+/* ---------- wyszukiwarka kart i import ---------- */
+.a-gc-filters { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(120px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.a-gc-filters input, .a-gc-filters select { width: 100%; min-width: 0; }
+.a-gc-more { display: flex; justify-content: center; margin-top: 12px; }
+.a-gc-export { align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.a-gc-sep { margin-left: 14px; }
+.a-imp-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.a-imp-row select { min-width: 200px; }
+#impText { width: 100%; font-family: ui-monospace, Consolas, monospace; font-size: 12px; resize: vertical; }
+.a-imp-opts { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 13px; }
+#impReport { margin-top: 14px; font-size: 14px; }
+.a-imp-warn { color: var(--warn); font-size: 13px; margin: 6px 0; padding-left: 18px; }
+.a-imp-rows { display: flex; flex-direction: column; gap: 3px; max-height: 360px; overflow-y: auto; }
+.a-imp-row-r { display: grid; grid-template-columns: 40px minmax(120px, 1.2fr) 90px minmax(0, 2fr); gap: 8px; align-items: center; padding: 5px 8px; border-radius: 8px; background: var(--raised); font-size: 13px; }
+.a-imp-row-r.error { background: #3a1520; }
+.a-imp-row-r small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 900px) { .a-gc-filters { grid-template-columns: 1fr 1fr; } .a-gc-filters input { grid-column: 1 / -1; } }

@@ -92,6 +92,12 @@ zweryfikowany) i opcjonalnie `SMTP_SENDER_NAME`. Potem `docker compose up -d`.
 Przy `.env` z wcześniejszej instalacji dopisz te zmienne ręcznie (wzór: `.env.example`); bez `GAME_PUBLIC_URL`
 `docker compose` zatrzyma się z komunikatem.
 
+Wygląd maili (potwierdzenie konta, nowe hasło, zmiana emaila) to gotowy HTML w `server/email/`, w kolorach gry. Gra
+sama go podaje pod `/email/<nazwa>.html`, a `auth` pobiera przez sieć Dockera (`GOTRUE_MAILER_TEMPLATES_*` w
+`docker-compose.override.yml`) - po zmianie pliku wystarczy zbudować nowy obraz gry; gdy `game` nie odpowiada,
+GoTrue wysyła swój zwykły, brzydszy mail. Na Supabase w chmurze wklej te pliki w Authentication -> Email Templates
+(pola `{{ .ConfirmationURL }}` zostają). Lokalnie przed wysyłką można je otworzyć w przeglądarce: `http://127.0.0.1:5000/email/recovery.html`.
+
 Sprawdzenie: załóż konto na stronie gry, mail z linkiem powinien przyjść w minutę (sprawdź też spam). Nie przychodzi?
 `docker compose logs auth` pokaże błąd SMTP (zły login/hasło, port, niezweryfikowany nadawca).
 Na czas testów bez poczty ustaw `ENABLE_EMAIL_AUTOCONFIRM=true` - konto jest wtedy od razu potwierdzone (odzyskiwanie

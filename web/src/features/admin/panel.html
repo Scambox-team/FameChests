@@ -1,6 +1,6 @@
 <label class="chk a-secrets" title="Tajne karty są domyślnie ukryte, żeby nie zepsuć niespodzianki"><input type="checkbox" id="showSecrets"> Pokaż tajne karty</label>
 <main class="admin">
-    <aside class="panel a-side">
+    <aside class="panel a-side" data-sec="crates">
       <h3>Skrzynki</h3>
       <form id="shopSizeForm" class="a-shopsize a-both" autocomplete="off">
         <label>Skrzynek w sklepie <input type="number" name="size" min="1" max="50" required></label>
@@ -12,9 +12,9 @@
     </aside>
 
     <section class="a-main">
-      <form class="panel a-crate-form a-both" id="crateForm" autocomplete="off"></form>
+      <form class="panel a-crate-form a-both" id="crateForm" data-sec="crates" autocomplete="off"></form>
 
-      <div class="panel a-both">
+      <div class="panel a-both" data-sec="crates">
         <div class="a-cards-head">
           <button class="a-collapse" type="button" id="cardsToggle" aria-expanded="true" title="Zwiń / rozwiń listę kart">▾</button>
           <h3 id="cardsTitle">Karty</h3>
@@ -25,26 +25,60 @@
         <div id="cardList" class="a-card-grid"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="gcPanel" data-sec="cards">
         <div class="a-cards-head">
-          <h3>Warianty</h3>
-          <a class="btn primary" href="/variants">Otwórz zakładkę wariantów</a>
+          <h3>Wyszukiwarka kart <small class="muted" id="gcCount"></small></h3>
+          <button class="btn primary" id="gcNew" type="button">+ Nowa karta</button>
         </div>
-        <p class="muted small">Podgląd każdego wariantu na karcie, włączanie i wyłączanie, szanse oraz wydarzenia — wariant na określony
-          czas we wszystkich albo w wybranych skrzynkach. Tam też propozycje nowych wariantów do wyboru.</p>
+        <div class="a-gc-filters">
+          <input type="search" id="gcSearch" placeholder="Szukaj: nazwa, id, podtytuł, atak, zdolność, skrzynka…" autocomplete="off">
+          <select id="gcRarity" aria-label="Rzadkość"></select>
+          <select id="gcCrate" aria-label="Skrzynka"></select>
+          <select id="gcType" aria-label="Typ"></select>
+          <select id="gcFlag" aria-label="Filtr"></select>
+          <select id="gcSort" aria-label="Sortowanie"></select>
+        </div>
+        <div id="gcList" class="a-card-grid"></div>
+        <div class="a-gc-more"><button class="btn" id="gcMore" type="button" hidden>Pokaż więcej</button></div>
+        <div class="a-actions a-gc-export" id="gcExport">
+          <span class="muted small">Eksport wyników wyszukiwania:</span>
+          <button class="btn" type="button" data-exp="json">JSON</button>
+          <button class="btn" type="button" data-exp="csv">CSV</button>
+          <span class="muted small a-gc-sep">Wszystkie karty z gry:</span>
+          <button class="btn" type="button" data-exp="json" data-scope="all">JSON</button>
+          <button class="btn" type="button" data-exp="csv" data-scope="all">CSV</button>
+        </div>
       </div>
 
-      <div class="panel">
-        <div class="a-cards-head">
-          <h3>Naklejki wariantów</h3>
-          <a class="btn primary" href="/stickers" target="_blank">Otwórz edytor naklejek</a>
+      <div class="panel" id="impPanel" data-sec="cards">
+        <h3>Import kart z pliku</h3>
+        <p class="muted small">Dodawanie i zmiana wielu kart naraz. <b>JSON</b> przenosi całe karty (też Arena, napisy na karcie i karty specjalne) —
+          to najlepszy format do przenoszenia kart między grami; plik z eksportu wraca bez zmian. <b>CSV</b> (separator , albo ;) to płaska tabela do
+          arkusza: kolumny <code>name</code>, <code>rarity</code>, <code>type</code>, <code>crates</code> (kilka po średniku), <code>hp</code>,
+          <code>attack</code>, <code>dmg</code>, <code>wikiTitle</code>, <code>ability1name</code>… Rzadkość, typ i skrzynkę wolno podać nazwą (np.
+          „Epicka”). Karta z <code>id</code> istniejącej karty jest aktualizowana, bez id powstaje nowa. Najpierw „Sprawdź”, dopiero potem „Importuj”.</p>
+        <div class="a-imp-row">
+          <input type="file" id="impFile" accept=".json,.csv,.txt,text/csv,application/json">
+          <select id="impFormat" aria-label="Format"><option value="auto">Format: wykryj</option><option value="json">JSON</option><option value="csv">CSV</option></select>
+          <select id="impCrate" aria-label="Domyślna skrzynka"></select>
         </div>
-        <p class="muted small">Na wariant MLG możesz nakleić wbudowane grafiki (okulary, hitmarker, Illuminati…) albo własne pliki PNG
-          i ustawić je, gdzie chcesz — każda karta w tym wariancie będzie je miała. Wariant MLG nie jest włączony w żadnej skrzynce:
-          włączysz go w ustawieniach skrzynki (warianty wyjątkowe).</p>
+        <textarea id="impText" rows="7" spellcheck="false" placeholder="…albo wklej tu zawartość pliku JSON / CSV"></textarea>
+        <div class="a-imp-opts">
+          <label class="chk"><input type="checkbox" id="impUpdate" checked> Aktualizuj istniejące karty (o tym samym id)</label>
+          <label class="chk"><input type="checkbox" id="impSkip" checked> Pomijaj nowe karty, które już są w skrzynce (ta sama nazwa)</label>
+          <label class="chk"><input type="checkbox" id="impImages" checked> Pobieraj zdjęcia z Wikipedii (kolumna wikiTitle)</label>
+          <label class="chk"><input type="checkbox" id="impPartial"> Zapisz poprawne wiersze, nawet gdy inne mają błędy</label>
+        </div>
+        <div class="a-actions" id="impTemplate">
+          <button class="btn" type="button" id="impCheck">Sprawdź (bez zapisu)</button>
+          <button class="btn primary" type="button" id="impRun" disabled>Importuj</button>
+          <button class="btn" type="button" data-tpl="json">Pobierz wzór JSON</button>
+          <button class="btn" type="button" data-tpl="csv">Pobierz wzór CSV</button>
+        </div>
+        <div id="impReport"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="content">
         <div class="a-cards-head">
           <h3>Linki do kart specjalnych</h3>
           <a class="btn" href="/mockups" target="_blank" title="Wszystkie karty specjalne z gry i wszystkie wyglądy - podgląd jak w skrzynce">Podgląd kart specjalnych</a>
@@ -56,7 +90,7 @@
         <div id="linkList" class="a-links"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="content">
         <h3>Easter egg w skrzynkach</h3>
         <p class="muted small">Przy otwieraniu skrzynki jest bardzo mała szansa (<b id="eggChance"></b> na skrzynkę), że jeden z obrazków
           przelatujących w bębnie będzie tym obrazkiem. Widać go tylko w trakcie losowania — po zatrzymaniu bębna jest zawsze poza ekranem.</p>
@@ -68,7 +102,7 @@
         </form>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="content">
         <h3>Wiadomości do graczy</h3>
         <p class="muted small">Jak lista zmian po aktualizacji: każdy gracz, który wejdzie do gry w wybranym czasie, zobaczy wiadomość
           raz — przy pierwszym wejściu w tym czasie (także, gdy już jest w grze, gdy ten czas się zacznie). Godziny według Twojego zegara.</p>
@@ -82,7 +116,7 @@
         <div id="msgList" class="a-links"></div>
       </div>
 
-      <div class="panel" id="achPanel">
+      <div class="panel" id="achPanel" data-sec="content">
         <div class="a-cards-head">
           <h3>Osiągnięcia</h3>
           <button class="btn primary" type="button" id="achNew">+ Nowe osiągnięcie</button>
@@ -95,7 +129,7 @@
         <form id="achForm" class="ach-form" autocomplete="off" hidden></form>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="content">
         <h3>Questy</h3>
         <p class="muted small">Wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Quest trwa 24 h, potem losuje się nowy; gdy ktoś go wypełni, nowy pojawia się 6 h później. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).
           Kto pierwszy, dostaje tę kartę w wariancie Wanted i jej wartość w groszach. Liczą się karty ze skrzynek, kuźni, ulepszacza i kasyna, nie z rynku ani wymian.</p>
@@ -105,7 +139,7 @@
         <p class="muted small">Nagrodą jest wariant Wanted: wypada stąd, nawet gdy jest wyłączony na <a href="/variants">/variants</a> (dzięki temu nie wypada ze skrzynek ani gier).</p>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="games">
         <h3>Wyścigi konne</h3>
         <p class="muted small">Nazwy koni i mnożniki wygranej (wygrana = stawka × mnożnik). Puste pole albo wartość domyślna przywraca ustawienie z kodu.
           Zakład, który już postawiono, zachowuje mnożnik z chwili zakładu. Domyślne mnożniki dają graczom ok. 91% zwrotu
@@ -116,7 +150,7 @@
         </form>
       </div>
 
-      <div class="panel a-chess-only">
+      <div class="panel a-chess-only" data-sec="games">
         <h3>Skiny figur</h3>
         <p class="muted small">Wszystkie skiny do szachów. Wyłączony skin nie wypada ze skrzynek, nie da się go założyć, a założony znika z planszy (zostaje zwykła figura).
           Gracze go nie tracą: widzą go w ekwipunku i mogą sprzedać, a po włączeniu wraca na figurę. Zmiana rzadkości zmienia też cenę sprzedaży.
@@ -127,12 +161,12 @@
         </form>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="players">
         <h3>Gracze</h3>
         <div id="userList" class="a-users"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-sec="players">
         <div class="a-cards-head">
           <h3>Dziennik adminów</h3>
           <select id="logFilter"></select>

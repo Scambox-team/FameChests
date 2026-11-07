@@ -244,6 +244,19 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Maile w wyglądzie ScamBox (te same pliki podaje gra na /email/<nazwa>.html w self-hostingu)
+[auth.email.template.confirmation]
+subject = "ScamBox: potwierdź adres email"
+content_path = "./server/email/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "ScamBox: ustaw nowe hasło"
+content_path = "./server/email/recovery.html"
+
+[auth.email.template.email_change]
+subject = "ScamBox: potwierdź nowy adres email"
+content_path = "./server/email/email_change.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

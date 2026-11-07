@@ -45,7 +45,7 @@ fn guard_owner(st: &AppState, me: &User, target: i64) -> Res<()> {
 }
 
 /// Identyfikator z nazwy: "Skrzynia Królów" -> "skrzynia_krolow"
-fn slug(text: &str) -> String {
+pub(super) fn slug(text: &str) -> String {
     static NON_ALNUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-zA-Z0-9]+").unwrap());
     let ascii: String = text.replace('ł', "l").replace('Ł', "L").nfkd().filter(char::is_ascii).collect();
     let t = NON_ALNUM.replace_all(&ascii, "_").trim_matches('_').to_lowercase();
@@ -57,7 +57,7 @@ fn slug(text: &str) -> String {
 }
 
 /// `base`, a gdy zajęte - `base_2`, `base_3`...
-fn unique_id<'a>(base: &str, taken: impl IntoIterator<Item = &'a String>) -> String {
+pub(super) fn unique_id<'a>(base: &str, taken: impl IntoIterator<Item = &'a String>) -> String {
     let taken: HashSet<&String> = taken.into_iter().collect();
     std::iter::once(base.to_owned()).chain((2..).map(|i| format!("{base}_{i}"))).find(|k| !taken.contains(k)).expect("wolny id")
 }

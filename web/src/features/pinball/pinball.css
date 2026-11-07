@@ -1,0 +1,94 @@
+/* PINBALL (zakładka Gry): szafa automatu w neonach synthwave, stół na płótnie, wyświetlacz punktów jak matryca z lat 80.
+   Widok 3D = przechylenie szafy w CSS (perspektywa), fizyka i rysowanie są te same. */
+.pb-page {
+  --pb-pink: #ff3cac; --pb-cyan: #2de2e6; --pb-purple: #9d4edd; --pb-dmd: #ff9d2b;
+  --pb-h: min(calc(100dvh - 150px), 1000px);
+  display: grid; grid-template-columns: minmax(0, auto) 300px; gap: 24px; justify-content: center; align-items: start;
+}
+.pb-stage { display: flex; justify-content: center; }
+.pb-stage.is-3d { perspective: 1500px; perspective-origin: 50% 20%; }
+.pb-cabinet {
+  position: relative; padding: 12px; border-radius: 22px;
+  width: min(100%, calc(var(--pb-h) * 460 / 840 + 24px));
+  background:
+    linear-gradient(#14031f, #14031f) padding-box,
+    linear-gradient(160deg, var(--pb-pink), var(--pb-purple) 45%, var(--pb-cyan)) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 28px rgba(255, 60, 172, .45), 0 0 80px rgba(45, 226, 230, .18), inset 0 0 30px rgba(157, 78, 221, .35);
+  transition: transform .5s cubic-bezier(.2, .8, .2, 1), box-shadow .5s;
+}
+.is-3d .pb-cabinet {
+  transform: rotateX(24deg); transform-origin: 50% 100%;
+  box-shadow: 0 0 28px rgba(255, 60, 172, .5), 0 40px 60px -20px rgba(247, 6, 207, .45), inset 0 0 30px rgba(157, 78, 221, .35);
+}
+/* chromowane listwy po bokach szafy */
+.pb-cabinet::before, .pb-cabinet::after {
+  content: ""; position: absolute; top: 18px; bottom: 18px; width: 5px; border-radius: 3px;
+  background: linear-gradient(#f0f0ff, #7d7aa8 30%, #fff 50%, #4c3f72 75%, #d9d6ff);
+  opacity: .8;
+}
+.pb-cabinet::before { left: -9px; }
+.pb-cabinet::after { right: -9px; }
+.pb-table { position: relative; border-radius: 12px; overflow: hidden; background: #05010c; }
+.pb-canvas { display: block; width: 100%; aspect-ratio: 460 / 840; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; }
+.pb-scan {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .16) 2px 3px),
+    radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, .55));
+  mix-blend-mode: multiply;
+}
+
+.pb-side { display: flex; flex-direction: column; gap: 14px; }
+.pb-dmd {
+  padding: 14px 16px; border-radius: 12px; border: 2px solid #3a1d05;
+  background:
+    radial-gradient(circle, rgba(255, 157, 43, .1) 1px, transparent 1.5px) 0 0 / 4px 4px,
+    #120700;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, .9), 0 0 18px rgba(255, 144, 31, .15);
+  color: var(--pb-dmd); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  text-shadow: 0 0 6px rgba(255, 157, 43, .8), 0 0 16px rgba(255, 100, 0, .5);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.pb-dmd-label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; opacity: .85; }
+.pb-dmd-score { font-size: clamp(28px, 3.2vw, 40px); font-weight: 700; letter-spacing: .06em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pb-dmd-row { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+.pb-flash { animation: pbBlink .5s steps(2) infinite; }
+@keyframes pbBlink { 50% { opacity: .2; } }
+.pb-best {
+  display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; border-radius: var(--radius-s);
+  border: 1px solid rgba(45, 226, 230, .35); background: rgba(45, 226, 230, .06);
+}
+.pb-best span { color: var(--muted); font-size: 13px; }
+.pb-best b { color: var(--pb-cyan); font-size: 20px; font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgba(45, 226, 230, .6); }
+.pb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pb-actions > button { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.pb-help { padding: 14px 16px; border-radius: var(--radius-m); background: var(--surface); border: 1px solid var(--rule); font-size: 14px; }
+.pb-help h3 { margin: 0 0 8px; font-size: 15px; }
+.pb-help h3:not(:first-child) { margin-top: 14px; }
+.pb-help dl { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.pb-help dl > div { display: flex; justify-content: space-between; gap: 10px; }
+.pb-help dt { color: var(--muted); }
+.pb-help dd { margin: 0; text-align: right; }
+.pb-help kbd {
+  display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--control); border-bottom-width: 2px;
+  background: var(--raised); font: 600 12px var(--body); text-align: center;
+}
+.pb-help ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.pb-help b { color: var(--pb-pink); }
+.pb-help p { margin: 10px 0 0; }
+
+@media (max-width: 900px) {
+  .pb-page { grid-template-columns: minmax(0, 1fr); --pb-h: max(420px, min(calc(100dvh - 300px), 900px)); }   /* cały stół pod wynikiem i przyciskami */
+  .pb-page { gap: 12px; }
+  .pb-side { display: contents; }   /* wynik i przyciski nad stołem, opis pod nim */
+  .pb-dmd { order: -3; }
+  .pb-best { order: -2; }
+  .pb-actions { order: -1; }
+  .pb-help { order: 5; }
+  .is-3d .pb-cabinet { transform: rotateX(16deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-cabinet { transition: none; }
+  .pb-flash { animation: none; }
+}

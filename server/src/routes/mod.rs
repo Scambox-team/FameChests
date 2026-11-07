@@ -5,6 +5,7 @@ pub mod account;
 pub mod admin;
 pub mod arena;
 pub mod backups;
+pub mod cards_io;
 pub mod casino;
 pub mod chess;
 pub mod drawings;
@@ -58,6 +59,7 @@ pub fn router(st: AppState) -> Router {
     use account::*;
     use admin::*;
     use arena::*;
+    use cards_io::*;
     use casino::*;
     use market::*;
     use pages::*;
@@ -72,6 +74,7 @@ pub fn router(st: AppState) -> Router {
         .route("/inventory/figures", get(index))
         .route("/binder/hall-of-fame", get(index))
         .route("/games/figures", get(index))
+        .route("/games/pinball", get(index))
         .route("/player/{name}", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))
@@ -103,6 +106,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/resend", post(account::resend))
         .route("/api/email", get(account::email_info).post(account::add_email))
         .route("/auth/v1/verify", get(account::auth_verify))
+        .route("/email/{name}", get(account::email_template))
         // regulamin i zgłoszenia problemów z kartami
         .route("/api/legal", get(reports::legal))
         .route("/api/terms/accept", post(reports::accept_terms))
@@ -218,6 +222,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/crates/{cid}/restore", post(admin_restore_crate))
         .route("/api/admin/crates/{cid}/clear", post(admin_clear_crate))
         .route("/api/admin/cards", post(admin_save_card))
+        .route("/api/admin/cards/export", post(admin_export_cards))
+        .route("/api/admin/cards/template", get(admin_cards_template))
+        .route("/api/admin/cards/import", post(admin_import_cards))
         .route("/api/admin/cards/{pid}", delete(admin_delete_card))
         .route("/api/admin/cards/{pid}/restore", post(admin_restore_card))
         .route("/api/admin/cards/{pid}/refetch", post(admin_refetch))

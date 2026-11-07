@@ -587,6 +587,30 @@ export const Sound = (() => {
       const c = ac(), t = c.currentTime;
       warble(t, 0.5, 2600, 2900, { rate: 28, depth: 120, vol: 0.09, type: "sine" });
     },
+    // pinball (features/pinball): same syntezatory, krótkie, bo lecą co chwilę; p = wysokość / siła
+    pin(kind, p = 1) {
+      if (!enabled) return;
+      const t = ac().currentTime;
+      switch (kind) {
+        case "flip": noise(t, 0.06, { vol: 0.22, freq: 900, q: 0.8, type: "lowpass" }); tone(110, t, 0.07, { type: "square", vol: 0.05 }); break;
+        case "bumper": tone(520 * p, t, 0.12, { type: "square", vol: 0.07, slideTo: 260 * p }); noise(t, 0.05, { vol: 0.12, freq: 3000, q: 2 }); break;
+        case "sling": tone(300, t, 0.08, { type: "sawtooth", vol: 0.06, slideTo: 140 }); noise(t, 0.04, { vol: 0.14, freq: 1800, q: 1 }); break;
+        case "wall": noise(t, 0.04, { vol: Math.min(0.16, 0.05 * p), freq: 600, q: 1, type: "lowpass" }); break;
+        case "lane": tone(N.E6 * p, t, 0.18, { type: "triangle", vol: 0.08 }); tone(N.E6 * p * 1.5, t + 0.06, 0.2, { type: "triangle", vol: 0.06 }); break;
+        case "drop": tone(180, t, 0.12, { type: "square", vol: 0.07, slideTo: 70 }); noise(t, 0.08, { vol: 0.2, freq: 500, q: 1, type: "lowpass" }); break;
+        case "target": tone(880 * p, t, 0.1, { type: "square", vol: 0.06 }); break;
+        case "saucer": tone(200, t, 0.5, { type: "sawtooth", vol: 0.07, slideTo: 900 }); tone(300, t, 0.5, { type: "sine", vol: 0.06, slideTo: 1350 }); break;
+        case "launch": noise(t, 0.35 * p + 0.1, { vol: 0.25, freq: 300, q: 1, type: "bandpass", slideTo: 2500 }); break;
+        case "charge": tone(80 + 400 * p, t, 0.05, { type: "sine", vol: 0.03 }); break;
+        case "drain": tone(440, t, 0.9, { type: "sawtooth", vol: 0.08, slideTo: 55 }); tone(330, t + 0.1, 0.9, { type: "square", vol: 0.04, slideTo: 41 }); break;
+        case "save": [N.C5, N.G5, N.C6].forEach((f, i) => tone(f, t + i * 0.07, 0.15, { type: "square", vol: 0.06 })); break;
+        case "bank": [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => tone(f, t + i * 0.055, 0.18, { type: "square", vol: 0.06 })); break;
+        case "jackpot": [N.C5, N.E5, N.G5, N.C6, N.G5, N.C6, N.E6, N.G6].forEach((f, i) => { tone(f, t + i * 0.08, 0.22, { type: "sawtooth", vol: 0.05 }); tone(f / 2, t + i * 0.08, 0.22, { type: "square", vol: 0.04 }); }); break;
+        case "start": [N.A4, N.C5, N.E5, N.A5].forEach((f, i) => tone(f, t + i * 0.12, 0.3, { type: "sawtooth", vol: 0.06 })); break;
+        case "over": [N.A4, N.F4, N.D4, N.A4 / 2].forEach((f, i) => tone(f, t + i * 0.22, 0.4, { type: "sawtooth", vol: 0.07 })); break;
+        case "tilt": tone(90, t, 0.8, { type: "square", vol: 0.1 }); break;
+      }
+    },
   };
   return api;
 })();

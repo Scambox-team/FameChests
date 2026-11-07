@@ -3,6 +3,8 @@
 import { crateIconPath } from '../../icons/crateIcons';
 import { toast } from '../../ui/Toaster';
 import { SK_PIECES, skPreview } from '../chess/skins';
+import { createCardsTool } from './cardsTool';
+import { initSections } from './sections';
 
 const crateIconSvg = emoji => emoji ? String(emoji).replace(/[<>&"]/g, "") : `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${crateIconPath(emoji)}"/></svg>`;
 
@@ -15,6 +17,8 @@ export function startPanel() {
   const fmt = n => Math.round(n).toLocaleString("pl-PL") + " gr";
   
   const A = { cat: null, crate: null, search: "", rarity: "all", showSecrets: false };
+  // wyszukiwarka wszystkich kart, import i eksport (cardsTool.ts) - uzupełnione niżej, gdy są potrzebne funkcje panelu
+  const tools = { render() {}, bind() {} };
   // zakładka Szachy (/admin/chess): ta sama strona, tylko skrzynki szachów i skiny; zwykła zakładka ich nie pokazuje
   const CHESS_TAB = location.pathname === "/admin/chess", CHESS_CRATES = ["szachy", "szachy_czarne"];
   const tabCrates = () => A.cat.crates.filter(c => CHESS_CRATES.includes(c.id) === CHESS_TAB);
@@ -98,6 +102,7 @@ export function startPanel() {
     renderCrates();
     renderCrateForm();
     renderCards();
+    tools.render();
   }
   
   function renderCrates() {
@@ -196,27 +201,32 @@ export function startPanel() {
       (!q || (!hiddenSecret(c) && c.name.toLowerCase().includes(q))))
       .sort((a, b) => a.hidden - b.hidden || order.indexOf(b.rarity) - order.indexOf(a.rarity) || a.name.localeCompare(b.name, "pl"));
     $("#cardsTitle").textContent = `Karty, ${crate.name} (${cards.filter(c => !c.hidden).length})`;
-    $("#cardList").innerHTML = cards.map(c => {
-      const R = A.cat.rarities[c.rarity];
-      const secret = hiddenSecret(c);
-      return `<button class="a-card${c.hidden ? " is-hidden" : ""}${c.rarity === "secret" ? " is-secret" : ""}" data-card="${c.id}" style="--rc:${R.color}">
-        <img src="${imgSrc(c)}" alt="" loading="lazy">
-        <span class="a-card-body">
-          <b>${secret ? "★ ??? (tajna)" : esc(c.name)}</b>
-          <small style="color:${R.color}">${R.name}</small>
-          <small>${A.cat.types[c.type]?.icon || ""} ${secret ? "???" : esc(c.attack) + " · " + c.dmg} </small>
-          <span class="a-badges">
-            ${c.builtin ? '<i>wbudowana</i>' : '<i class="own">własna</i>'}
-            ${c.modified ? '<i class="mod">zmieniona</i>' : ""}
-            ${c.hidden ? '<i class="hid">ukryta</i>' : ""}
-            ${(c.exclusive || []).includes(A.crate) ? '<i class="mod" title="Nie wypada z kasyna, ulepszacza, kuźni ani wyścigów">ekskluzywna</i>' : ""}
-            ${!c.hasImage ? '<i class="warn">brak zdjęcia</i>' : ""}
-            ${(c.crates || []).length > 1 ? `<i class="own">też w: ${(c.crates || []).filter(k => k !== A.crate).map(k => esc(A.cat.crates.find(x => x.id === k)?.short || k)).join(", ")}</i>` : ""}
-            ${c.owned ? `<i>gracze mają ×${c.owned}</i>` : ""}
-          </span>
+    $("#cardList").innerHTML = cards.map(c => cardTile(c, A.crate)).join("") || '<div class="empty">Brak kart. Dodaj pierwszą!</div>';
+  }
+
+  // kafelek karty na liście (skrzynka, wyszukiwarka); `crate` = skrzynka, której lista to jest (puste = wyszukiwarka wszystkich kart)
+  function cardTile(c, crate) {
+    const R = A.cat.rarities[c.rarity];
+    const secret = hiddenSecret(c);
+    const crateName = k => esc(A.cat.crates.find(x => x.id === k)?.short || k);
+    return `<button class="a-card${c.hidden ? " is-hidden" : ""}${c.rarity === "secret" ? " is-secret" : ""}" data-card="${c.id}" style="--rc:${R.color}">
+      <img src="${imgSrc(c)}" alt="" loading="lazy">
+      <span class="a-card-body">
+        <b>${secret ? "★ ??? (tajna)" : esc(c.name)}</b>
+        <small style="color:${R.color}">${R.name}</small>
+        <small>${A.cat.types[c.type]?.icon || ""} ${secret ? "???" : esc(c.attack) + " · " + c.dmg} </small>
+        <span class="a-badges">
+          ${crate ? "" : (c.crates || [c.crate]).map(k => `<i class="own">${crateName(k)}</i>`).join("")}
+          ${c.builtin ? '<i>wbudowana</i>' : '<i class="own">własna</i>'}
+          ${c.modified ? '<i class="mod">zmieniona</i>' : ""}
+          ${c.hidden ? '<i class="hid">ukryta</i>' : ""}
+          ${crate && (c.exclusive || []).includes(crate) ? '<i class="mod" title="Nie wypada z kasyna, ulepszacza, kuźni ani wyścigów">ekskluzywna</i>' : ""}
+          ${!c.hasImage ? '<i class="warn">brak zdjęcia</i>' : ""}
+          ${crate && (c.crates || []).length > 1 ? `<i class="own">też w: ${(c.crates || []).filter(k => k !== crate).map(crateName).join(", ")}</i>` : ""}
+          ${c.owned ? `<i>gracze mają ×${c.owned}</i>` : ""}
         </span>
-      </button>`;
-    }).join("") || '<div class="empty">Brak kart. Dodaj pierwszą!</div>';
+      </span>
+    </button>`;
   }
   
   // ================================================================ FORMULARZ KARTY
@@ -226,10 +236,11 @@ export function startPanel() {
     return crateIds.some(id => (A.cat.crates.find(x => x.id === id)?.variants || []).includes("flag"));
   }
   
-  function openCardForm(id) {
-    const inSpecial = A.crate === A.cat.specialCrate;
+  function openCardForm(id, presetCrate) {
+    const base = presetCrate || A.crate;   // skrzynka zaznaczona na starcie w nowej karcie
+    const inSpecial = base === A.cat.specialCrate;
     const c = id ? A.cat.cards.find(x => x.id === id)
-      : { id: "", name: "", crate: A.crate, crates: [A.crate], rarity: inSpecial ? "special" : "green", type: "polityka", hp: 60, attack: "",
+      : { id: "", name: "", crate: base, crates: [base], rarity: inSpecial ? "special" : "green", type: "polityka", hp: 60, attack: "",
           dmg: 40, wiki: null, builtin: false, source: "casino", fixedVariant: "joker", style: 1 };
     if (id && hiddenSecret(c) && !confirm("To tajna karta. Pokazać, kto to jest?")) return;
     const isNew = !id;
@@ -1093,6 +1104,9 @@ export function startPanel() {
   }
   
   bind();
+  Object.assign(tools, createCardsTool({ A, $, $$, esc, api, toast, cardTile, openCardForm, load, hiddenSecret }));
+  tools.bind();
+  initSections();
   load();
   
   // Panel admina: osiągnięcia (lista + edytor w panelu "Osiągnięcia" w admin.html). Zapis: /api/admin/achievements.

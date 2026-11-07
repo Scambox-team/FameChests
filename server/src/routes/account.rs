@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use axum::extract::{ConnectInfo, RawQuery, State};
+use axum::extract::{ConnectInfo, Path, RawQuery, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -436,6 +436,18 @@ pub async fn reset_password(State(st): State<AppState>, JsonBody(body): JsonBody
     }
 }
 
+/// Szablony maili Supabase Auth (HTML w `server/email/`, w wyglądzie gry). GoTrue pobiera je z tego adresu
+/// (`GOTRUE_MAILER_TEMPLATES_*` w `deploy/selfhost/docker-compose.override.yml`); są publiczne i bez danych - to sam układ z polami `{{ .ConfirmationURL }}`.
+pub async fn email_template(Path(name): Path<String>) -> Response {
+    let html = match name.as_str() {
+        "confirmation.html" => include_str!("../../email/confirmation.html"),
+        "recovery.html" => include_str!("../../email/recovery.html"),
+        "email_change.html" => include_str!("../../email/email_change.html"),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    ([(header::CONTENT_TYPE, "text/html; charset=utf-8"), (header::CACHE_CONTROL, "public, max-age=300")], html).into_response()
+}
+
 /// Email konta (zamaskowany) - ustawienia gracza
 pub async fn email_info(State(st): State<AppState>, Me(me): Me) -> Res {
     let mut c = st.db.acquire().await?;
@@ -496,5 +508,21 @@ pub async fn auth_verify(State(st): State<AppState>, RawQuery(query): RawQuery) 
             None => (StatusCode::BAD_REQUEST, "Nieprawidłowy link").into_response(),
         },
         Err(_) => StatusCode::SERVICE_UNAVAILABLE.into_response(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn email_templates_keep_the_gotrue_placeholders() {
+        for html in [
+            include_str!("../../email/confirmation.html"),
+            include_str!("../../email/recovery.html"),
+            include_str!("../../email/email_change.html"),
+        ] {
+            assert!(html.contains("{{ .ConfirmationURL }}") && html.contains("{{ .Email }}"));
+            assert!(!html.contains("{{{") && !html.contains("}}}"), "niedomknięte pole szablonu");
+        }
+        assert!(include_str!("../../email/email_change.html").contains("{{ .NewEmail }}"));
     }
 }
