@@ -7,7 +7,7 @@ import { PageHero } from '../../ui/PageHero';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { dupesOf, ownedMap, sellIds, setFavorite } from '../../game/actions';
-import { cardMatches, filterVariants, isSpecial, isSpecialCard, person, plural, rarityIdx, seenCrateList, sortCards, varRank } from '../../game/rules';
+import { cardMatches, filterVariants, isSpecial, person, plural, rarityIdx, seenCrateList, sellableCard, sortCards, varRank } from '../../game/rules';
 import { S, touch, useGame } from '../../game/store';
 import type { Item } from '../../game/types';
 import { fmt } from '../../lib/format';
@@ -84,7 +84,7 @@ function RarityCounts({ value, onChange }: { value: string; onChange: (r: string
 
 function SellBar({ selected, shown, clear, all }: { selected: Set<number>; shown: Item[]; clear: () => void; all: () => void }) {
   const { items } = useGame();
-  const sel = items.filter(i => selected.has(i.id) && !i.fav && !isSpecialCard(i.person));
+  const sel = items.filter(i => selected.has(i.id) && !i.fav && sellableCard(i.person));
   const value = sel.reduce((a, i) => a + i.value, 0);
   const sellSelected = async () => {
     const rare = sel.filter(i => rarityIdx(person(i.person).rarity) >= rarityIdx('gold'));

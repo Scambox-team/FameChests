@@ -611,6 +611,18 @@ export const Sound = (() => {
         case "tilt": tone(90, t, 0.8, { type: "square", vol: 0.1 }); break;
       }
     },
+    // snake (features/snake): p = długość węża (jabłko brzmi wyżej, im dłuższy)
+    snake(kind, p = 0) {
+      if (!enabled) return;
+      const t = ac().currentTime;
+      switch (kind) {
+        case "eat": { const f = N.C5 * Math.pow(2, Math.min(p, 24) / 24); tone(f, t, 0.08, { type: "square", vol: 0.07 }); tone(f * 1.5, t + 0.06, 0.1, { type: "square", vol: 0.06 }); break; }
+        case "turn": tone(220, t, 0.025, { type: "triangle", vol: 0.03 }); break;
+        case "start": [N.C5, N.E5, N.G5].forEach((f, i) => tone(f, t + i * 0.09, 0.14, { type: "square", vol: 0.06 })); break;
+        case "over": tone(300, t, 0.6, { type: "sawtooth", vol: 0.08, slideTo: 60 }); noise(t, 0.25, { vol: 0.2, freq: 500, q: 1, type: "lowpass" }); break;
+        case "best": [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => tone(f, t + 0.5 + i * 0.07, 0.16, { type: "square", vol: 0.06 })); break;
+      }
+    },
   };
   return api;
 })();

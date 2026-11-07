@@ -429,7 +429,7 @@ pub async fn sell(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBod
     if req.ids.is_empty() {
         return bad("Nic nie wybrano");
     }
-    // ulubionych kart nie sprzedajemy, karty specjalne nie znikają z gry
+    // ulubionych kart nie sprzedajemy, karty specjalne nie znikają z gry (poza Jokerowymi: `sellable`)
     let rows = sqlx::query_as!(
         ItemRow,
         "SELECT id, person_id, variant, favorite, created_at FROM items WHERE user_id = $1 AND favorite = 0 AND id = ANY($2)",
@@ -438,7 +438,7 @@ pub async fn sell(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBod
     )
     .fetch_all(&mut *tx)
     .await?;
-    let rows: Vec<ItemRow> = rows.into_iter().filter(|r| !cat.person(&r.person_id).is_some_and(|p| p.is_special())).collect();
+    let rows: Vec<ItemRow> = rows.into_iter().filter(|r| cat.person(&r.person_id).is_none_or(|p| p.sellable())).collect();
     let total: i64 = rows.iter().map(|r| row_value(&cat, r)).sum();
     let sold: Vec<i64> = rows.iter().map(|r| r.id).collect();
     delete_items(&mut tx, me.id, &sold).await?;

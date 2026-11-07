@@ -24,6 +24,7 @@ const pieceAt = (fen: string, sq: string) => squares(fen)[(8 - +sq[1]) * 8 + FIL
 const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
 const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
+const SnakePage = lazy(() => import('../snake/SnakePage').then(m => ({ default: m.SnakePage })));
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
 const rewarded = new Set<number>();   // nagrodę ogłaszamy raz
@@ -329,13 +330,23 @@ export function ChessPage() {
   const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  const view = tab === 'figures' || tab === 'pinball' ? tab : 'games';
+  // gry: Szachy (podzakładki Partie / Figury), Pinball, Snake; adresy /games, /games/figures, /games/pinball, /games/snake
+  const view = tab === 'figures' || tab === 'pinball' || tab === 'snake' ? tab : 'games';
+  const game = view === 'figures' ? 'games' : view;
+  const go = (v: string) => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); };
   if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
   return (
     <div id="view-games">
-      <Tabs label="Gry" value={view} onChange={v => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); }}
-        items={[{ id: 'games', label: 'Szachy' }, { id: 'figures', label: 'Figury' }, { id: 'pinball', label: 'Pinball' }]} />
-      {view === 'figures' ? <Figures /> : view === 'pinball' ? <Suspense fallback={<p className="muted">Wczytuję</p>}><PinballPage /></Suspense> : <Lobby onOpen={open} />}
+      <Tabs label="Gry" value={game} onChange={go}
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, { id: 'snake', label: 'Snake' }]} />
+      {game === 'games' && (
+        <div className="ch-subtabs">
+          <Tabs label="Szachy" value={view} onChange={go} items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />
+        </div>
+      )}
+      {view === 'figures' ? <Figures /> : view === 'pinball' || view === 'snake'
+        ? <Suspense fallback={<p className="muted">Wczytuję</p>}>{view === 'pinball' ? <PinballPage /> : <SnakePage />}</Suspense>
+        : <Lobby onOpen={open} />}
     </div>
   );
 }

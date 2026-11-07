@@ -198,6 +198,10 @@ pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usiz
     }
     // easter egg w bębnie skrzynki (panel admina, sekcja 🥚)
     files.extend(images.find(crate::variants::EGG_ID, &Kind::Main));
+    // obrazki gry Snake (panel admina, zakładka Gry)
+    for (slot, _) in crate::routes::snake::SLOTS {
+        files.extend(images.find(&crate::routes::snake::file_id(slot), &Kind::Main));
+    }
     for path in &files {
         std::fs::copy(path, dir.join(path.file_name().unwrap_or_default()))?;
     }

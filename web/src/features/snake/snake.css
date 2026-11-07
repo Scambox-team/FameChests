@@ -1,0 +1,31 @@
+/* SNAKE (zakładka Gry): kwadratowa plansza na płótnie + panel z wynikiem jak przy pinballu. Kolor węża (--sn-color) z panelu admina. */
+.sn-page { --sn-color: #4ade80; display: grid; grid-template-columns: minmax(0, auto) 300px; gap: 24px; justify-content: center; align-items: start; }
+.sn-board {
+  position: relative; width: min(100%, calc(100dvh - 170px), 640px); aspect-ratio: 1; border-radius: var(--radius-m); overflow: hidden;
+  box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px color-mix(in srgb, var(--sn-color) 18%, transparent);
+}
+.sn-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.sn-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--sn-color); }
+.sn-over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #0007; text-align: center; }
+.sn-over b { font: 700 clamp(28px, 6vw, 44px) / 1 var(--display); color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--sn-color) 60%, transparent); }
+.sn-over span { color: var(--muted); }
+.sn-side { display: flex; flex-direction: column; gap: 14px; }
+.sn-score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sn-score div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; }
+.sn-score span { color: var(--muted); font-size: 12px; }
+.sn-score b { font: 700 26px / 1 var(--display); font-variant-numeric: tabular-nums; color: #fff; }
+.sn-score div:first-child b { color: var(--sn-color); }
+.sn-pad { display: none; grid-template-areas: ". u ." "l . r" ". d ."; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; justify-content: center; }
+.sn-pad button { display: grid; place-items: center; border: 0; border-radius: var(--radius-s); background: var(--raised); color: #fff; box-shadow: inset 0 0 0 1px #ffffff14; cursor: pointer; touch-action: manipulation; }
+.sn-pad button:active { background: color-mix(in srgb, var(--sn-color) 35%, var(--raised)); }
+.sn-pad .u { grid-area: u; } .sn-pad .l { grid-area: l; } .sn-pad .r { grid-area: r; } .sn-pad .d { grid-area: d; }
+.sn-help h3 { margin: 6px 0; font-size: 15px; }
+.sn-help p, .sn-help ul { margin: 0 0 8px; }
+.sn-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
+.sn-help kbd { padding: 1px 6px; border-radius: 4px; background: #ffffff12; font: 600 12px var(--body); }
+@media (max-width: 900px) {
+  .sn-page { grid-template-columns: 1fr; justify-items: center; }
+  .sn-board { width: min(100%, 560px); }
+  .sn-side { width: min(100%, 560px); }
+}
+@media (pointer: coarse), (max-width: 900px) { .sn-pad { display: grid; } }

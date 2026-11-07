@@ -31,6 +31,8 @@ use crate::variants::{VariantEvent, VariantRow, VariantState};
 
 pub const SUBTITLE_MAX: usize = 40; // podtytuł (krótki tekst na karcie)
 pub const DESC_MAX: usize = 1000; // opis (obok karty w podglądzie)
+/// Warianty kart specjalnych, które da się sprzedać grze jak zwykłe karty (w JS `sellableCard`)
+pub const SELLABLE_SPECIAL: &[&str] = &["joker"];
 static COUNTRY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[a-z]{2}(-[a-z0-9]{1,3})?$").unwrap());
 
 // ---------------------------------------------------------------- karta i skrzynka po sprawdzeniu
@@ -112,6 +114,11 @@ impl Person {
     /// Karta specjalna (rzadkość Specjalna): tylko z kasyna albo z linku, zawsze w jednym wariancie, nie znika z gry
     pub fn is_special(&self) -> bool {
         self.rarity == "special"
+    }
+
+    /// Kartę można sprzedać grze: zwykłe karty i spośród specjalnych tylko Jokerowe (`SELLABLE_SPECIAL`)
+    pub fn sellable(&self) -> bool {
+        !self.is_special() || SELLABLE_SPECIAL.contains(&self.fixed())
     }
 
     pub fn is_secret(&self) -> bool {

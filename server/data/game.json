@@ -3791,6 +3791,16 @@
  },
  "patchNotes": [
   {
+   "v": 25,
+   "date": "2026-11-07",
+   "title": "Snake i sprzedaż Jokerów",
+   "items": [
+    "🐍 Nowa gra w zakładce <b>Gry</b>: <b>Snake</b>. Zjadaj jabłka, nie wjeżdżaj w ścianę ani we własny ogon. Na telefonie przesuwaj palcem albo użyj strzałek pod planszą.",
+    "🃏 Karty <b>Jokerowe</b> możesz teraz sprzedać grze jak zwykłe karty. Inne karty specjalne nadal zostają w grze.",
+    "♟️ <b>Figury</b> są teraz w zakładce <b>Szachy</b>, obok listy partii."
+   ]
+  },
+  {
    "v": 24,
    "date": "2026-11-05",
    "title": "Regulamin i zgłaszanie problemów z kartami",
