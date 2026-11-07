@@ -97,6 +97,9 @@ pub struct Person {
     /// własne napisy na karcie (CARD_TEXT_SLOTS) - niezależne od statystyk
     #[serde(skip_serializing_if = "IndexMap::is_empty")]
     pub texts: IndexMap<String, String>,
+    /// ustawienia wariantów tylko dla tej karty (`clean_vx`), np. Tabloid: położenie kółka, strzałki i napisu
+    #[serde(skip_serializing_if = "Map::is_empty")]
+    pub vx: Map<String, Value>,
     /// easter egg: wypadnięcie tej karty pokazuje obrazek (nagłówek X-Bibi)
     #[serde(skip)]
     pub bibi: bool,
@@ -290,6 +293,8 @@ pub struct RawCard {
     #[serde_as(as = "DefaultOnError")]
     pub texts: Value,
     #[serde_as(as = "DefaultOnError")]
+    pub vx: Value,
+    #[serde_as(as = "DefaultOnError")]
     pub bibi: Value,
     pub builtin: bool,
     pub modified: bool,
@@ -376,6 +381,34 @@ pub fn clean_texts(raw: &Value) -> IndexMap<String, String> {
             (!text.is_empty()).then(|| (k.clone(), text))
         })
         .collect()
+}
+
+/// Ustawienia wariantów dla jednej karty (pole `vx`, panel admina - edycja karty). Tabloid: `label` (napis, pusty = „TO ON!”)
+/// i elementy na zdjęciu `circle` / `arrow` / `text`: środek `x`, `y` w % zdjęcia, skala `s`, obrót `r` w stopniach.
+/// Brak wariantu w zapisie = wygląd domyślny (gra ma własne położenia).
+pub fn clean_vx(raw: &Value) -> Map<String, Value> {
+    let mut out = Map::new();
+    let num = |o: Option<&Value>, k: &str, lo: f64, hi: f64, d: f64| {
+        let v = o.and_then(|o| o.get(k)).and_then(Value::as_f64).filter(|v| v.is_finite()).unwrap_or(d).clamp(lo, hi);
+        (v * 10.0).round() / 10.0
+    };
+    if let Some(t) = raw.get("tabloid").filter(|t| t.is_object()) {
+        let mut m = Map::new();
+        for (key, dx, dy, dr) in [("circle", 62.0, 34.0, 0.0), ("arrow", 30.0, 58.0, -35.0), ("text", 20.0, 86.0, -4.0)] {
+            let o = t.get(key);
+            m.insert(
+                key.into(),
+                json!({"x": num(o, "x", -10.0, 110.0, dx), "y": num(o, "y", -10.0, 110.0, dy),
+                       "s": num(o, "s", 0.2, 4.0, 1.0), "r": num(o, "r", -180.0, 180.0, dr)}),
+            );
+        }
+        let label = clean(t.get("label").and_then(Value::as_str).unwrap_or(""), 30);
+        if !label.is_empty() {
+            m.insert("label".into(), json!(label));
+        }
+        out.insert("tabloid".into(), Value::Object(m));
+    }
+    out
 }
 
 /// Kod kraju karty (do wariantu flagowego): "PL" -> "pl"; nieprawidłowy -> ""
@@ -716,6 +749,7 @@ fn check_card(id: String, p: RawCard, crates: &IndexMap<String, RawCrate>) -> Pe
         subtitle: clean(p.subtitle.as_deref().unwrap_or_default(), SUBTITLE_MAX),
         desc: clean(p.desc.as_deref().unwrap_or_default(), DESC_MAX),
         texts: clean_texts(&p.texts),
+        vx: clean_vx(&p.vx),
         bibi: crate::variants::truthy(&p.bibi),
         builtin: p.builtin,
         modified: p.modified,
@@ -1152,6 +1186,20 @@ mod tests {
         assert_eq!((p.arena[0].visual.as_str(), p.arena[0].cost, p.arena[0].effects[0].turns), ("fire", None, 9));
         assert_eq!(p.arena[1].visual, "hit");
         assert!(!cat.has("pl_zenek") && cat.hidden_cards.contains_key("pl_zenek"));
+    }
+
+    #[test]
+    fn card_vx() {
+        assert!(clean_vx(&json!({})).is_empty());
+        assert!(clean_vx(&json!({"tabloid": 5})).is_empty());
+        let v = clean_vx(&json!({"tabloid": {"label": "  TO ONA!  ", "circle": {"x": 500, "y": 12.345, "s": 9}, "arrow": {"r": "zle"}}}));
+        let t = &v["tabloid"];
+        assert_eq!(t["label"], "TO ONA!");
+        assert_eq!(t["circle"]["x"], 110.0);
+        assert_eq!(t["circle"]["y"], 12.3);
+        assert_eq!(t["circle"]["s"], 4.0);
+        assert_eq!(t["arrow"]["r"], -35.0);   // zła wartość = domyślna
+        assert_eq!(t["text"]["x"], 20.0);
     }
 
     #[test]

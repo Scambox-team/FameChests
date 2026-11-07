@@ -584,6 +584,23 @@
    "photoAll": true,
    "desc": "Kadr z bijatyki shōnen: linie szybkości, odgłosy z mangi i ręcznie rysowane zdjęcie karty (panel admina), naklejki nad i pod zdjęciem."
   },
+  "rgb": {
+   "name": "Gamingowa RGB",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "desc": "Jak sprzęt gamingowy: ramka mieni się wszystkimi kolorami tęczy, czarne włókno węglowe, neonowa poświata nazwy, paneli i zdjęcia płynnie zmienia odcień."
+  },
+  "tabloid": {
+   "name": "Tabloid",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "exclusive": true,
+   "photo": true,
+   "photoAll": true,
+   "desc": "Pierwsza strona brukowca: winieta SZOK DNIA, papier gazetowy, żółte kółko, strzałka i napis na zdjęciu (położenie i napis dla każdej karty w panelu admina), własne zdjęcie karty."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,
