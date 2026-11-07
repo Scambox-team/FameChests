@@ -110,6 +110,35 @@ pub struct ChessCfg {
     pub crate_black: String,
 }
 
+/// Nagrody za Pinball (grosze za punkty). Gra liczy się w przeglądarce, więc serwer ogranicza wypłatę limitami.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PinballCfg {
+    /// ile punktów = 1 gr
+    pub points_per_gr: i64,
+    /// najwięcej groszy za jedną grę
+    pub max_per_run: i64,
+    /// najwięcej groszy z Pinballa na gracza na 24 h
+    pub max_per_day: i64,
+    /// gra krótsza niż tyle sekund (od startu do końca, liczone przez serwer) nie daje nagrody
+    pub min_seconds: f64,
+    /// wiarygodny wynik: najwyżej tyle punktów na sekundę gry (plus `slack_points` zapasu na jackpot)
+    pub max_points_per_second: f64,
+    pub slack_points: i64,
+    /// wariant karty za wyjątkowy wynik (Synthwave)
+    pub card_variant: String,
+    /// najwięcej kart z Pinballa na gracza na 24 h
+    pub cards_per_day: i64,
+    /// od jakiego wyniku jaka rzadkość karty (rosnąco)
+    pub card_tiers: Vec<PinballTier>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PinballTier {
+    pub score: i64,
+    pub rarity: String,
+}
+
 /// Skin do figur szachowych: działa jak karta (rzadkość), ale leży w osobnej tabeli - nie ma rynku, wymian ani kasyna
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 pub struct ChessSkin {
@@ -307,6 +336,7 @@ pub struct GameData {
     pub max_ability_effects: usize,
     pub market: MarketCfg,
     pub chess: ChessCfg,
+    pub pinball: PinballCfg,
     pub chess_skins: Vec<ChessSkin>,
     pub market_json: Value,
     pub roulette: RouletteCfg,
@@ -480,6 +510,7 @@ impl GameData {
             max_ability_effects: get(&raw, "maxAbilityEffects")?,
             market: get(&raw, "market")?,
             chess: get(&raw, "chess")?,
+            pinball: get(&raw, "pinball")?,
             chess_skins: get(&raw, "chessSkins")?,
             market_json: v("market"),
             roulette: get(&raw, "roulette")?,

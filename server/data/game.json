@@ -450,6 +450,7 @@
    "chance": 0.005,
    "mult": 11.5,
    "off": true,
+   "extraSource": "pinball",
    "desc": "Obraz z kasety VHS: PLAY i licznik, pasy zakłóceń, rozjechane kolory zdjęcia, a na dole zachodzi słońce w paski."
   },
   "motor": {
@@ -1011,6 +1012,23 @@
   "minPlies": 10,
   "crateWhite": "szachy",
   "crateBlack": "szachy_czarne"
+ },
+ "pinball": {
+  "pointsPerGr": 100,
+  "maxPerRun": 1500,
+  "maxPerDay": 6000,
+  "minSeconds": 30,
+  "maxPointsPerSecond": 5000,
+  "slackPoints": 20000,
+  "cardVariant": "synthwave",
+  "cardsPerDay": 3,
+  "cardTiers": [
+   {"score": 100000, "rarity": "blue"},
+   {"score": 200000, "rarity": "purple"},
+   {"score": 350000, "rarity": "red"},
+   {"score": 600000, "rarity": "gold"},
+   {"score": 1000000, "rarity": "ultra"}
+  ]
  },
  "chessSkins": [
   {

@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Play, Square } from 'lucide-react';
+import { api } from '../../api/client';
+import { Card } from '../../cards/Card';
+import { openViewer } from '../../fx/effects';
+import { syncInventory } from '../../game/session';
+import { S, touch } from '../../game/store';
+import { fmt as fmtGr, fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
+import { toast } from '../../ui/Toaster';
 import { createPinball, type PinballGame, type PinHud } from './engine';
 import './pinball.css';
 
@@ -9,11 +16,53 @@ import './pinball.css';
 const fmt = (n: number) => n.toLocaleString('pl-PL');
 const read3d = () => { try { return localStorage.getItem('pinball3d') !== 'off'; } catch { return true; } };
 
+type Tier = { score: number; rarity: string; name: string };
+type Rewards = { pointsPerGr: number; maxPerRun: number; maxPerDay: number; left: number; cardTiers: Tier[]; cardsLeft: number };
+type Won = { id: number; person: string; variant: string; name: string; rarity: string };
+type Result = { reward: number; reason: string; card: Won | null };
+const WHY: Record<string, string> = {
+  too_short: 'Za krótka gra: nagroda od 30 sekund gry.',
+  implausible: 'Wynik wygląda nierealnie, nagrody nie ma.',
+  daily_limit: 'Dzisiejszy limit nagród z Pinballa wyczerpany.',
+  no_run: 'Nie udało się rozliczyć gry.',
+};
+
 export function PinballPage() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<PinballGame | null>(null);
   const [hud, setHud] = useState<PinHud | null>(null);
   const [tilt3d, setTilt3d] = useState(read3d);
+  const [rewards, setRewards] = useState<Rewards | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const run = useRef<Promise<number | null> | null>(null);   // gra rozpoczęta na serwerze (czas liczy serwer)
+  const prev = useRef('attract');
+
+  useEffect(() => { api<Rewards>('/api/pinball').then(setRewards).catch(() => {}); }, []);
+
+  // początek gry -> serwer zapisuje czas; koniec gry -> serwer wylicza nagrodę (limity: game.json `pinball`)
+  useEffect(() => {
+    const phase = hud?.phase;
+    if (!phase) return;
+    if (phase === 'play' && prev.current !== 'play') {
+      setResult(null);
+      run.current = api<Rewards & { run: number }>('/api/pinball/start', {}).then(r => { setRewards(r); return r.run; }).catch(() => null);
+    }
+    if (phase === 'over' && prev.current === 'play') {
+      const score = hud.score, started = run.current;
+      run.current = null;
+      started?.then(async id => {
+        if (!id) return;
+        const r = await api<Rewards & Result & { balance: number }>('/api/pinball/finish', { run: id, score });
+        setRewards(r);
+        setResult(r);
+        S.state = { ...S.state, balance: r.balance };
+        touch();
+        if (r.reward > 0) toast(`Pinball: +${fmtGr(r.reward)}`);
+        if (r.card) { toast(`Pinball: karta ${r.card.name} w wariancie Synthwave`); syncInventory(null, true); }
+      }).catch(() => {});
+    }
+    prev.current = phase;
+  }, [hud?.phase]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const g = createPinball(canvas.current!, setHud);
@@ -50,6 +99,26 @@ export function PinballPage() {
             {hud?.tilt && <span className="pb-flash">Tilt</span>}
           </div>
         </div>
+        {rewards && (
+          <div className="pb-reward" role="status">
+            <b>Nagroda w groszach</b>
+            <span>{`${fmtGr(1)} za każde ${rewards.pointsPerGr} pkt, do ${fmtGr(rewards.maxPerRun)} za grę.`}</span>
+            <span>{`Dziś jeszcze do zarobienia: ${fmtGr(rewards.left)} z ${fmtGr(rewards.maxPerDay)}.`}</span>
+            {rewards.cardTiers.length > 0 && (
+              <span>{`Karta Synthwave od ${fmtNum(rewards.cardTiers[0].score)} pkt (${rewards.cardTiers.map(t => `${fmtNum(t.score)}: ${t.name}`).join(', ')}). Dziś jeszcze kart: ${rewards.cardsLeft}.`}</span>
+            )}
+            {result?.card && hud?.phase === 'over' && (
+              <span className="pb-reward-card" onClick={() => openViewer(result.card!.person, result.card!.variant, result.card!.id)}>
+                <Card person={result.card.person} variant={result.card.variant} tilt={false} />
+              </span>
+            )}
+            {result && hud?.phase === 'over' && (
+              <span className={result.reward > 0 ? 'pb-reward-got' : 'pb-reward-none'}>
+                {result.reward > 0 ? `Zarobiono: +${fmtGr(result.reward)}` : WHY[result.reason] ?? 'Bez nagrody.'}
+              </span>
+            )}
+          </div>
+        )}
         <div className="pb-best"><span>Twój rekord</span><b>{fmt(hud?.best ?? 0)}</b></div>
         <div className="pb-actions">
           <Button kind="hue" onClick={() => { Sound.unlock(); game.current?.start(); canvas.current?.focus(); }} disabled={playing}>
@@ -73,7 +142,7 @@ export function PinballPage() {
             <li>W multiballu każde trafienie w słońce to <b>jackpot</b>, za każdym razem większy.</li>
             <li>Przez pierwsze sekundy po wyrzucie kulka jest chroniona. Za mocne szturchanie to TILT.</li>
           </ul>
-          <p className="muted small">Gra dla zabawy: bez nagród, rekord zapisuje się tylko w tej przeglądarce.</p>
+          <p className="muted small">Rekord zapisuje się tylko w tej przeglądarce. Nagrodę liczy serwer: gra musi trwać co najmniej 30 sekund i skończyć się wszystkimi kulkami.</p>
         </div>
       </aside>
     </div>

@@ -2,14 +2,14 @@
    Widok 3D = przechylenie szafy w CSS (perspektywa), fizyka i rysowanie są te same. */
 .pb-page {
   --pb-pink: #ff3cac; --pb-cyan: #2de2e6; --pb-purple: #9d4edd; --pb-dmd: #ff9d2b;
-  --pb-h: min(calc(100dvh - 150px), 1000px);
-  display: grid; grid-template-columns: minmax(0, auto) 300px; gap: 24px; justify-content: center; align-items: start;
+  --pb-h: min(calc(100dvh - 180px), 1200px);   /* cały stół mieści się w oknie pod nagłówkiem strony */
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; justify-content: center; align-items: start;
 }
 .pb-stage { display: flex; justify-content: center; }
 .pb-stage.is-3d { perspective: 1500px; perspective-origin: 50% 20%; }
 .pb-cabinet {
   position: relative; padding: 12px; border-radius: 22px;
-  width: min(100%, calc(var(--pb-h) * 460 / 840 + 24px));
+  width: min(100%, calc(var(--pb-h) * 460 / 840 + 24px)); margin: 0 auto;
   background:
     linear-gradient(#14031f, #14031f) padding-box,
     linear-gradient(160deg, var(--pb-pink), var(--pb-purple) 45%, var(--pb-cyan)) border-box;
@@ -55,6 +55,14 @@
 .pb-dmd-row { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
 .pb-flash { animation: pbBlink .5s steps(2) infinite; }
 @keyframes pbBlink { 50% { opacity: .2; } }
+.pb-reward {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-radius: var(--radius-s); font-size: 13px; color: var(--muted);
+  border: 1px solid rgba(255, 60, 172, .35); background: rgba(255, 60, 172, .06);
+}
+.pb-reward b { color: var(--text); }
+.pb-reward-got { color: var(--good); font-weight: 700; font-size: 15px; }
+.pb-reward-card { display: block; width: 150px; margin: 8px auto 2px; cursor: pointer; }
+.pb-reward-none { color: var(--warn); }
 .pb-best {
   display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; border-radius: var(--radius-s);
   border: 1px solid rgba(45, 226, 230, .35); background: rgba(45, 226, 230, .06);

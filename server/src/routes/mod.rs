@@ -12,6 +12,7 @@ pub mod drawings;
 pub mod scratch;
 pub mod horses;
 pub mod market;
+pub mod pinball;
 pub mod pages;
 pub mod quests;
 pub mod reports;
@@ -188,6 +189,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/horses", get(horses::admin_horses).post(horses::admin_horses_save))
         .route("/api/admin/chess-skins", get(chess::admin_skins).post(chess::admin_skins_save))
         .route("/api/admin/quests", get(quests::admin_quests).post(quests::admin_quests_save))
+        .route("/api/pinball", get(pinball::pinball_status))
+        .route("/api/pinball/start", post(pinball::pinball_start))
+        .route("/api/pinball/finish", post(pinball::pinball_finish))
         .route("/api/games/chess", get(chess::chess_lobby))
         .route("/api/games/chess/create", post(chess::chess_create))
         .route("/api/games/chess/test", post(chess::chess_test))

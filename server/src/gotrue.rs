@@ -146,6 +146,14 @@ impl GoTrue {
         Ok(())
     }
 
+    /// Konto z emailem założone przez admina (gracz sprzed emaili, który zgubił hasło): email od razu potwierdzony,
+    /// hasło losowe i nieznane nikomu - gracz ustawia własne z linku "nowe hasło". Zwraca id konta w GoTrue.
+    pub async fn admin_create(&self, email: &str, password: &str, username: &str) -> Result<String, Failure> {
+        let body = json!({"email": email, "password": password, "email_confirm": true, "user_metadata": {"username": username}});
+        let v = send(self.admin(Method::POST, "/admin/users").json(&body)).await?;
+        user_id(&v).ok_or(Failure::Unavailable)
+    }
+
     /// Usunięcie konta (usunięty gracz, nieudana rejestracja) - email znów jest wolny
     pub async fn admin_delete(&self, id: &str) -> Result<(), Failure> {
         send(self.admin(Method::DELETE, &format!("/admin/users/{id}"))).await?;
