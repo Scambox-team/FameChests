@@ -579,18 +579,86 @@
    "chance": 0.005,
    "mult": 11.0,
    "off": true,
-   "exclusive": true,
    "stickers": "both",
    "photo": true,
    "photoAll": true,
    "desc": "Kadr z bijatyki shōnen: linie szybkości, odgłosy z mangi i ręcznie rysowane zdjęcie karty (panel admina), naklejki nad i pod zdjęciem."
+  },
+  "rgb": {
+   "name": "Gamingowa RGB",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "desc": "Jak sprzęt gamingowy: ramka mieni się wszystkimi kolorami tęczy, czarne włókno węglowe, neonowa poświata nazwy, paneli i zdjęcia płynnie zmienia odcień."
+  },
+  "tabloid": {
+   "name": "Tabloid",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "photo": true,
+   "photoAll": true,
+   "desc": "Pierwsza strona brukowca: winieta SZOK DNIA, papier gazetowy, żółte kółko, strzałka i napis na zdjęciu (położenie i napis dla każdej karty w panelu admina), własne zdjęcie karty."
+  },
+  "barbie": {
+   "name": "Barbie",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "photo": true,
+   "photoAll": true,
+   "desc": "Przesadnie różowa: ramka z migoczącego brokatu, po której wędruje błysk, iskierki dookoła karty, brokatowe serce nad nazwą, różowa satyna. Własne zdjęcie karty (panel admina)."
+  },
+  "hawaii": {
+   "name": "Hawajska",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "stickers": true,
+   "desc": "Słoneczna laguna pod palmami: kołyszące się liście, plamki słońca, hibiskusy i plumerie. Naklejki od admina, także wbudowane hawajskie (lei, hibiskus, ananas, ukulele...)."
+  },
+  "polaroid": {
+   "name": "Polaroid",
+   "chance": 0.005,
+   "mult": 9.0,
+   "off": true,
+   "desc": "Zdjęcie natychmiastowe: kremowobiała ramka, zdjęcie z filtrem odbitki (wyblakłe czernie, ciepłe światła, winieta), które wywołuje się na oczach gracza, podpis flamastrem."
+  },
+  "wizytowka": {
+   "name": "Wizytówka",
+   "chance": 0.005,
+   "mult": 9.0,
+   "off": true,
+   "texts": {
+    "title": {"label": "Stanowisko", "default": "Senior Manager ds. Skrzynek", "max": 40},
+    "phone": {"label": "Telefon", "default": "+48 213 742 069", "max": 30},
+    "email": {"label": "E-mail", "default": "kontakt@scambox.pl", "max": 40},
+    "address": {"label": "Adres", "default": "ul. Losowa 7, Warszawa", "max": 40},
+    "company": {"label": "Firma (pasek u góry)", "default": "SCAMBOX", "max": 20}
+   },
+   "desc": "Korporacyjna wizytówka: granatowy pasek z logo, kod QR, stanowisko i dane kontaktowe - domyślne dla wszystkich kart na /variants, własne dla karty w edycji karty."
+  },
+  "analog": {
+   "name": "Analog horror",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "photo": true,
+   "photoAll": true,
+   "texts": {
+    "warn": {"label": "Napis na zdjęciu", "default": "NIE PATRZ W NIEBO", "max": 30},
+    "sub": {"label": "Podpis pod zdjęciem", "default": "TO NIE JEST ĆWICZENIE", "max": 40},
+    "bar": {"label": "Pasek nad nazwą", "default": "⚠ KOMUNIKAT ALARMOWY", "max": 30},
+    "wait": {"label": "Plansza z godłem", "default": "PROSIMY CZEKAĆ", "max": 30},
+    "shelter": {"label": "Plansza schronu", "default": "UDAJ SIĘ DO NAJBLIŻSZEGO SCHRONU", "max": 50}
+   },
+   "desc": "Horror analogowy: komunikat alarmowy na granatowej planszy - w miejscu zdjęcia pętla godło urzędu ScamBox, zdjęcie, komunikat o schronie, wszystko z zakłóceniami sygnału; godło obraca się w tle. Napisy z panelu, własne zdjęcie karty."
   },
   "covid": {
    "name": "COVID",
    "chance": 0.005,
    "mult": 10.0,
    "off": true,
-   "exclusive": true,
    "stickers": true,
    "desc": "Alarm pod mikroskopem: koguty, migająca ramka, cząsteczki wirusa, czerwone zdjęcie z podziałką 100 nm i komunikat na telefon. Naklejki prosto na zdjęciu."
   },
@@ -3805,6 +3873,17 @@
  },
  "patchNotes": [
   {
+   "v": 25,
+   "date": "2026-11-07",
+   "title": "Snake i sprzedaż Jokerów",
+   "items": [
+    "🐍 Nowa gra w zakładce <b>Gry</b>: <b>Snake</b>. Zjadaj jabłka, nie wjeżdżaj w ścianę ani we własny ogon. Na telefonie przesuwaj palcem albo użyj strzałek pod planszą.",
+    "🪙 Za dobry wynik w Snake'u dostajesz trochę <b>groszy</b> po skończonej grze (z dziennym limitem).",
+    "🃏 Karty <b>Jokerowe</b> możesz teraz sprzedać grze jak zwykłe karty. Inne karty specjalne nadal zostają w grze.",
+    "♟️ <b>Figury</b> są teraz w zakładce <b>Szachy</b>, obok listy partii."
+   ]
+  },
+  {
    "v": 24,
    "date": "2026-11-05",
    "title": "Regulamin i zgłaszanie problemów z kartami",
@@ -4074,7 +4153,14 @@
   "soda": "Zielona puszka",
   "airhorn": "Trąbka",
   "wow": "Napis WOW",
-  "noscope": "360 NO SCOPE"
+  "noscope": "360 NO SCOPE",
+  "lei": "Naszyjnik lei",
+  "hibiscus": "Hibiskus",
+  "plumeria": "Plumeria",
+  "pineapple": "Ananas",
+  "ukulele": "Ukulele",
+  "surfboard": "Deska surfingowa",
+  "coconut": "Kokos z parasolką"
  },
  "stickerAnims": {
   "none": "Bez ruchu",

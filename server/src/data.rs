@@ -31,6 +31,21 @@ pub fn set_game(gd: GameData) {
     CURRENT.store(Arc::new(gd));
 }
 
+/// Napis wariantu wpisywany w panelu admina (VariantDef::texts)
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct TextField {
+    pub label: String,
+    pub default: String,
+    pub max: Option<usize>,
+}
+
+impl TextField {
+    pub fn max(&self) -> usize {
+        self.max.unwrap_or(60).clamp(1, 200)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct VariantDef {
@@ -50,6 +65,9 @@ pub struct VariantDef {
     pub photo: bool,
     /// z "photo": każda karta może mieć własne zdjęcie w tym wariancie, bez względu na skrzynki (np. Anime)
     pub photo_all: bool,
+    /// napisy wariantu wpisywane w panelu (np. dane na Wizytówce): {klucz: {label, default, max}}; domyślne dla wszystkich kart
+    /// na /variants (ustawienia `texts`), dla jednej karty w edycji karty (pole karty `vx.<wariant>`)
+    pub texts: IndexMap<String, TextField>,
     pub photo_fallback: Option<String>,
     pub no_combo: bool,
     pub cards: Vec<String>,

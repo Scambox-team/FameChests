@@ -1,6 +1,7 @@
 // @ts-nocheck -- formularze panelu na gotowym HTML, przeniesione ze starego admin.js i achievements-admin.js
 // Panel admina: skrzynki, karty, linki, wiadomości, osiągnięcia, questy, wyścigi, skiny, gracze i dziennik.
 import { crateIconPath } from '../../icons/crateIcons';
+import { TABLOID_DEF, TABLOID_LABEL, tabloidMarks } from '../../cards/cardHtml';
 import { toast } from '../../ui/Toaster';
 import { SK_PIECES, skPreview } from '../chess/skins';
 import { createCardsTool } from './cardsTool';
@@ -312,7 +313,11 @@ export function startPanel() {
             </div>
           </div>
         </fieldset>`).join("")}
-  
+
+        <input type="hidden" name="vx_json">
+        ${tabloidEditorHTML(c)}
+        ${variantTextsHTML(c)}
+
         <fieldset class="a-preview">
           <legend>Podgląd we wszystkich wariantach</legend>
           ${isNew ? '<p class="muted small">Podgląd będzie dostępny po dodaniu karty.</p>'
@@ -332,6 +337,101 @@ export function startPanel() {
       </div>`;
     $("#cardModal").hidden = false;
     arenaRefresh();
+    A.tb = null; A.tbTouched = false;
+    tabloidBind(c);
+  }
+
+  // napisy wariantów z polem "texts" (np. dane na Wizytówce) tylko dla tej karty - pole karty vx.<wariant>; puste = domyślne z /variants
+  const textVariants = () => Object.entries(A.cat.variants).filter(([, x]) => x.texts && Object.keys(x.texts).length && !x.combo);
+  function variantTextsHTML(c) {
+    const list = textVariants();
+    if (!list.length || c.rarity === "special") return "";
+    return list.map(([v, x]) => `<fieldset class="a-vtexts">
+      <legend>Napisy wariantu ${esc(x.name)} <small class="muted">(tylko ta karta; puste pole = domyślne, ustawiasz je na <a href="/variants" target="_blank">/variants</a>)</small></legend>
+      <div class="a-grid">${Object.entries(x.texts).map(([k, f]) => `<label>${esc(f.label)}<input type="text" data-vxt="${v}.${k}" maxlength="${f.max || 60}"
+        value="${esc(c.vx?.[v]?.[k] || "")}" placeholder="${esc(f.default || "")}"></label>`).join("")}</div>
+    </fieldset>`).join("");
+  }
+
+  // ---------------------------------------------------------------- Tabloid: kółko, strzałka i napis na zdjęciu tej karty
+  // Pole karty vx.tabloid (catalog::clean_vx): środek x, y w % zdjęcia, skala s, obrót r, napis label. Elementy przeciąga się
+  // myszą na podglądzie, suwaki zmieniają skalę i obrót. Ten sam rysunek co w grze (tabloidMarks w cardHtml.ts).
+  const TB_PARTS = [["circle", "Kółko"], ["arrow", "Strzałka"], ["text", "Napis"]];
+  function tabloidEditorHTML(c) {
+    if (!A.cat.variants.tabloid || c.rarity === "special") return "";
+    return `<fieldset class="a-tabloid">
+      <legend>Wariant Tabloid <small class="muted">(żółte kółko, strzałka i napis na zdjęciu tej karty; przeciągnij element myszą)</small></legend>
+      <div class="a-tb-row">
+        <div class="a-tb-photo"><img alt="" id="tbPhoto"><div class="a-tb-marks"></div></div>
+        <div class="a-tb-ctl">
+          <label class="wide">Napis <small class="muted">(pusty: „${esc(TABLOID_LABEL)}”)</small><input type="text" data-tb="label" maxlength="30" placeholder="${esc(TABLOID_LABEL)}"></label>
+          ${TB_PARTS.map(([k, name]) => `<div class="a-tb-part"><b>${name}</b>
+            <label>Skala <input type="range" min="0.2" max="4" step="0.05" data-tb="${k}.s"><output data-tbo="${k}.s"></output></label>
+            <label>Obrót <input type="range" min="-180" max="180" step="1" data-tb="${k}.r"><output data-tbo="${k}.r"></output></label></div>`).join("")}
+          <button class="btn tiny" type="button" data-act="tb-reset">Przywróć domyślne położenie</button>
+          <p class="muted small">Bez zmian karta używa położenia domyślnego. Zdjęcie: własne zdjęcie wariantu Tabloid (wyżej), a gdy go nie ma - zwykłe.</p>
+        </div>
+      </div>
+    </fieldset>`;
+  }
+  function tabloidBind(c) {
+    const box = $("#cardForm .a-tabloid");
+    if (!box) return;
+    const fresh = () => JSON.parse(JSON.stringify(TABLOID_DEF));
+    const saved = c.vx?.tabloid;
+    A.tb = { ...fresh(), ...(saved || {}), label: saved?.label || "" };
+    A.tbTouched = !!saved;
+    const photo = $("#tbPhoto", box);
+    photo.src = c.id ? ((c.variantPhotos || {}).tabloid != null ? `/img/${encodeURIComponent(c.id)}/tabloid?admin=1&v=${c.variantPhotos.tabloid}` : imgSrc(c, false, true)) : "";
+    const marks = $(".a-tb-marks", box);
+    // podgląd i podpisy suwaków; inputs = także wartości pól (na starcie i po przywróceniu domyślnych)
+    const draw = (inputs = false) => {
+      marks.innerHTML = tabloidMarks(A.tb);
+      if (inputs) $("[data-tb=label]", box).value = A.tb.label || "";
+      for (const [k] of TB_PARTS) for (const f of ["s", "r"]) {
+        if (inputs) $(`[data-tb="${k}.${f}"]`, box).value = A.tb[k][f];
+        $(`[data-tbo="${k}.${f}"]`, box).textContent = f === "s" ? `×${(+A.tb[k][f]).toFixed(2)}` : `${A.tb[k][f]}°`;
+      }
+    };
+    draw(true);
+    box.addEventListener("input", e => {
+      const key = e.target.dataset.tb; if (!key) return;
+      A.tbTouched = true;
+      if (key === "label") A.tb.label = e.target.value;
+      else { const [k, f] = key.split("."); A.tb[k][f] = +e.target.value; }
+      draw();
+    });
+    box.addEventListener("click", e => {
+      if (e.target.closest("[data-act=tb-reset]")) { A.tb = { ...fresh(), label: A.tb.label }; A.tbTouched = true; draw(true); }
+    });
+    // przeciąganie: środek elementu idzie za kursorem (w % zdjęcia)
+    marks.addEventListener("pointerdown", e => {
+      const el = e.target.closest("[data-k]"); if (!el) return;
+      e.preventDefault();
+      const k = el.dataset.k, r = marks.getBoundingClientRect();
+      const o = A.tb[k], startX = e.clientX, startY = e.clientY, x0 = o.x, y0 = o.y;
+      const move = ev => {
+        o.x = Math.round(Math.max(-10, Math.min(110, x0 + (ev.clientX - startX) / r.width * 100)) * 10) / 10;
+        o.y = Math.round(Math.max(-10, Math.min(110, y0 + (ev.clientY - startY) / r.height * 100)) * 10) / 10;
+        el.style.left = `${o.x}%`; el.style.top = `${o.y}%`;
+        A.tbTouched = true;
+      };
+      const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+      addEventListener("pointermove", move); addEventListener("pointerup", up);
+    });
+  }
+  // wartość pola vx_json przy zapisie: inne warianty zostają, Tabloid tylko gdy admin coś zmienił (albo już było zapisane)
+  // + napisy wariantów (Wizytówka...) z pól data-vxt; bez edytora Tabloidu (karta specjalna) zostaje zapisany
+  function vxCollect() {
+    const id = $("#cardForm [name=id]").value, c = A.cat.cards.find(x => x.id === id) || {};
+    const vx = { ...(c.vx || {}) };
+    if ($("#cardForm .a-tabloid")) { if (A.tbTouched) vx.tabloid = A.tb; else delete vx.tabloid; }
+    for (const [v, x] of textVariants()) {
+      if (!$(`#cardForm [data-vxt^="${v}."]`)) continue;
+      const texts = Object.fromEntries(Object.keys(x.texts).map(k => [k, ($(`#cardForm [data-vxt="${v}.${k}"]`)?.value || "").trim()]).filter(([, t]) => t));
+      if (Object.keys(texts).length) vx[v] = texts; else delete vx[v];
+    }
+    return JSON.stringify(vx);
   }
   
   // karta specjalna (rzadkość Specjalna): skąd ją zdobyć, jej jedyny wariant i wygląd (makiety: /mockups)
@@ -1036,6 +1136,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       if (fdata.get("rarity") !== "special" && !fdata.getAll("crates").length) return toast("Zaznacz co najmniej jedną skrzynkę", true);
       const btn = $("button[type=submit]", e.target);
       $("#cardForm [name=arena_json]").value = JSON.stringify(arenaCollect());
+      if ($("#cardForm [name=vx_json]")) $("#cardForm [name=vx_json]").value = vxCollect();
       btn.disabled = true; btn.textContent = "Zapisuję…";
       try {
         const res = await api("/api/admin/cards", { method: "POST", form: new FormData(e.target) });

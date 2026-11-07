@@ -156,6 +156,9 @@ export function person(id) { return S.cfg.people[id]; }
 // karta specjalna (rzadkość Specjalna): tylko z kasyna albo z linku, jeden wariant; nie da się jej sprzedać grze,
 // postawić ani zużyć w kuźni (można ją wymienić albo sprzedać na rynku). p - karta albo jej id.
 export function isSpecialCard(p) { p = typeof p === "string" ? person(p) : p; return p?.rarity === "special"; }
+/** Kartę da się sprzedać grze: zwykłe i spośród specjalnych tylko Jokerowe (`SELLABLE_SPECIAL` w catalog.rs) */
+export const SELLABLE_SPECIAL = ["joker"];
+export function sellableCard(p) { p = typeof p === "string" ? person(p) : p; return !isSpecialCard(p) || SELLABLE_SPECIAL.includes(p.fixedVariant); }
 export function crateOf(id) { return S.cfg.crates[id] ?? testCrates()[id]; }
 
 // Skrzynki testowe adminów: każda daje tylko karty jednej rzadkości, żeby obejrzeć animację odsłonięcia.

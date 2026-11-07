@@ -21,7 +21,21 @@
      "galaxy",
      "negative"
     ],
-    "variantsAll": true
+    "variantsAll": true,
+    "name": "Skrzynia Halloween",
+    "short": "Halloween",
+    "code": "HW",
+    "emoji": "🎃",
+    "color1": "#ff7a00",
+    "color2": "#2b0a3d",
+    "price": 300,
+    "desc": "każda karta w wersji halloweenowej",
+    "shop": true,
+    "mode": "seasonal",
+    "seasonFrom": "2026-11-01",
+    "seasonTo": "2026-11-10",
+    "restricted": false,
+    "weights": {}
    },
    "deleted": false
   },
@@ -149,9 +163,13 @@
      "royal",
      "diamond",
      "galaxy",
-     "negative"
+     "negative",
+     "tabloid"
     ],
-    "variantsAll": true
+    "variantsAll": true,
+    "mode": "rotation",
+    "seasonFrom": "",
+    "seasonTo": ""
    },
    "deleted": false
   },
@@ -2392,7 +2410,79 @@
     "wiki": [
      "pl",
      "Przemysł II"
-    ]
+    ],
+    "exclusive": [],
+    "kind1": "off",
+    "kind2": "off",
+    "abilities": [],
+    "country": "",
+    "subtitle": "",
+    "desc": "",
+    "bibi": false,
+    "texts": {},
+    "source": "casino",
+    "fixedVariant": "joker",
+    "style": "1",
+    "crates_seen": [
+     "halloween",
+     "pl",
+     "prl",
+     "skrzynia_historyczna",
+     "skrzynia_krolow",
+     "specjalne",
+     "szachy",
+     "szachy_czarne",
+     "world"
+    ],
+    "arena": [
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     }
+    ],
+    "vx": {
+     "tabloid": {
+      "circle": {
+       "x": 48.2,
+       "y": 19.2,
+       "s": 1.2,
+       "r": 0.0
+      },
+      "arrow": {
+       "x": 20.2,
+       "y": 51.4,
+       "s": 1.1,
+       "r": -35.0
+      },
+      "text": {
+       "x": 21.6,
+       "y": 68.7,
+       "s": 1.0,
+       "r": -4.0
+      },
+      "label": "DEBIL"
+     }
+    }
    },
    "deleted": false
   }
@@ -2423,6 +2513,43 @@
      ],
      "cards": [],
      "crateOnly": false
+    }
+   },
+   "deleted": false
+  },
+  {
+   "id": "tabloid",
+   "data": {
+    "settings": {
+     "enabled": true,
+     "released": true,
+     "chance": null,
+     "weight": null,
+     "mult": null,
+     "noHouse": false,
+     "desc": null,
+     "events": [],
+     "cards": [],
+     "crateOnly": false
+    }
+   },
+   "deleted": false
+  },
+  {
+   "id": "wizytowka",
+   "data": {
+    "settings": {
+     "enabled": false,
+     "released": false,
+     "chance": null,
+     "weight": null,
+     "mult": null,
+     "noHouse": false,
+     "desc": null,
+     "events": [],
+     "cards": [],
+     "crateOnly": false,
+     "texts": {}
     }
    },
    "deleted": false

@@ -1,0 +1,16 @@
+/* PROPOZYCJE NOWYCH WARIANTÓW (makiety na /variants, variant-mockups.ts). Jeszcze nie w grze - wybrany wygląd przechodzi
+   do cards2.css jako prawdziwy wariant, a jego makiety stąd znikają (poprzednie są w historii git). Klasy z prefiksem grupy.
+   Karty z klasą vmx biorą wygląd paneli ze zmiennych --x-*. */
+
+/* ------------------------------------------------------------ wspólne: panele ze zmiennych */
+.card.vmx { --frame: var(--x-frame, linear-gradient(#333, #111)); }
+.card.vmx .card-inner { background: var(--x-in, #111); }
+.card.vmx :is(.card-sub, .card-attack, .card-stats, .card-foot) {
+  background: var(--x-panel, #0008); border: var(--x-line, 0); border-radius: var(--x-rad, .4em); box-shadow: var(--x-panel-sh, none);
+}
+.card.vmx :is(.card-sub, .card-stats, .card-foot, .atk-name, .atk-dmg, .card-hp, .card-stats b) { color: var(--x-ink, #fff); text-shadow: var(--x-ink-sh, none); }
+.card.vmx .card-sub { font: var(--x-sub-font, inherit); letter-spacing: var(--x-sub-ls, normal); }
+.card.vmx .card-name { font: var(--x-font, inherit); color: var(--x-name, #fff); text-shadow: var(--x-name-sh, none); letter-spacing: var(--x-name-ls, normal); }
+.card.vmx .card-photo { border: var(--x-ph-line, 0); border-radius: var(--x-ph-rad, .35em); box-shadow: var(--x-ph-sh, none); overflow: hidden; position: relative; }
+.card.vmx .card-photo > img { filter: var(--x-ph-f, none); }
+.vm-photo, .card.vmx .card-photo > span, .card.vmx .card-photo > i { position: absolute; pointer-events: none; font-style: normal; }

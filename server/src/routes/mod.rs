@@ -19,6 +19,7 @@ pub mod game_rankings;
 pub mod quests;
 pub mod reports;
 pub mod shop;
+pub mod snake;
 pub mod social;
 pub mod variants;
 
@@ -78,6 +79,9 @@ pub fn router(st: AppState) -> Router {
         .route("/binder/hall-of-fame", get(index))
         .route("/games/figures", get(index))
         .route("/games/pinball", get(index))
+        .route("/games/snake", get(index))
+        .route("/snake/{slot}", get(snake::snake_image))
+        .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))
@@ -92,6 +96,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/chess", get(admin_page))
         .route("/admin/reports", get(admin_page))
         .route("/admin/backups", get(admin_page))
+        .route("/admin/games", get(admin_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -194,6 +199,10 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/ranking", get(game_rankings::game_ranking))
         .route("/api/aim/start", post(aim::aim_start))
         .route("/api/aim/finish", post(aim::aim_finish))
+        .route("/api/games/snake", get(snake::snake_config))
+        .route("/api/games/snake/start", post(snake::snake_start))
+        .route("/api/games/snake/finish", post(snake::snake_finish))
+        .route("/api/admin/snake", post(snake::admin_snake_save))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
         .route("/api/pinball/finish", post(pinball::pinball_finish))

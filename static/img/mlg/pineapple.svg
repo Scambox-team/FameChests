@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 48">
+  <!-- ananas -->
+  <g fill="#2fa84f"><path d="M15 18 Q11.64 8 8.29 5.40 Q13.32 12 15 18Z"/><path d="M15 18 Q13.35 8 11.69 3.60 Q14.17 12 15 18Z"/><path d="M15 18 Q15.00 8 15.00 2.00 Q15.00 12 15 18Z"/><path d="M15 18 Q16.65 8 18.31 3.60 Q15.83 12 15 18Z"/><path d="M15 18 Q18.36 8 21.71 5.40 Q16.68 12 15 18Z"/></g>
+  <ellipse cx="15" cy="32" rx="11" ry="14" fill="#f5b52e" stroke="#b8761a" stroke-width="1"/>
+  <g stroke="#b8761a" stroke-width=".8" fill="none"><path d="M5 26 L22 44 M5 34 L16 46 M7 20 L25 38 M12 18 L26 31 M25 26 L8 44 M25 34 L14 46 M23 20 L5 38 M18 18 L4 31"/></g>
+</svg>

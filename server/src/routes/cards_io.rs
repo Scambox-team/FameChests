@@ -401,6 +401,9 @@ fn prepare(v: &Value, cat: &Catalog, opts: &Opts, batch: &mut Batch) -> Result<O
     if let Some(t) = field(v, &["texts"]) {
         f.insert("texts".into(), json!(catalog::clean_texts(t)));
     }
+    if let Some(t) = field(v, &["vx"]) {
+        f.insert("vx".into(), Value::Object(catalog::clean_vx(t)));
+    }
     if let Some(s) = text(v, &["source"]) {
         f.insert("source".into(), if s.is_empty() { Value::Null } else { json!(s) });
     }
@@ -576,6 +579,9 @@ fn card_value(p: &Person, full: bool) -> Value {
     if full {
         o.insert("arena".into(), json!(p.arena));
         o.insert("texts".into(), json!(p.texts));
+        if !p.vx.is_empty() {
+            o.insert("vx".into(), json!(p.vx));
+        }
         o.insert("source".into(), json!(p.source));
         o.insert("fixedVariant".into(), json!(p.fixed_variant));
         o.insert("style".into(), json!(p.style));

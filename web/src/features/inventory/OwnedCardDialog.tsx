@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react';
 import { Card } from '../../cards/Card';
 import { dupesOf, ownedMap, sellIds } from '../../game/actions';
-import { cardValue, crateOf, isSpecialCard, person, variantName, vtClass } from '../../game/rules';
+import { cardValue, crateOf, isSpecialCard, person, sellableCard, variantName, vtClass } from '../../game/rules';
 import { S, useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
@@ -15,7 +15,7 @@ export function OwnedCardDialog({ pid, onClose }: { pid: string; onClose: () => 
   useGame();
   const o = ownedMap()[pid];
   if (!o) return null;
-  const p = person(pid), R = S.cfg.rarities[p.rarity], special = isSpecialCard(p);
+  const p = person(pid), R = S.cfg.rarities[p.rarity], special = !sellableCard(p), joker = isSpecialCard(p) && !special;
   const favs = new Set(S.items.filter(i => i.fav).map(i => i.id));
   const dupes = dupesOf(o), dupesVar = dupesOf(o, true);
   const sell = async (ids: number[]) => {
@@ -29,6 +29,7 @@ export function OwnedCardDialog({ pid, onClose }: { pid: string; onClose: () => 
           <p className="muted">{S.cfg.types[p.type].name} · {crateOf(p.crate).name} · <b style={{ color: R.color }}>{R.name}</b></p>
           <p>Posiadasz: <b>{o.ids.length}</b></p>
           {special && <p className="muted">Karty specjalnej nie da się sprzedać grze, postawić w kasynie ani zużyć w kuźni. Możesz ją wymienić albo wystawić na rynku.</p>}
+          {joker && <p className="muted">Kartę Jokerową możesz sprzedać grze jak zwykłą kartę. Nie da się jej postawić w kasynie ani zużyć w kuźni.</p>}
           {[...S.cfg.variantOrder].reverse().filter(v => o.byVar[v]).map(v => {
             const all = o.byVar[v], list = special ? [] : all.filter(id => !favs.has(id)), val = cardValue(pid, v), nFav = all.length - list.length;
             return (

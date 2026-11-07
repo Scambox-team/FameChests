@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import { Sound } from '../sound/sound';
 import { toast } from '../ui/Toaster';
 import { fmt } from '../lib/format';
-import { dupKey, isSpecial, isSpecialCard, person, plural, varRank, variantName } from './rules';
+import { dupKey, isSpecial, person, plural, sellableCard, varRank, variantName } from './rules';
 import { applyState } from './session';
 import { S, touch } from './store';
 
@@ -24,8 +24,8 @@ export async function setFavorite(ids: number[], fav: boolean) {
 
 export async function sellIds(ids: number[]) {
   if (!ids.length) return 0;
-  // ulubionych i kart specjalnych nie sprzedajemy (serwer też je pomija)
-  const keep = new Set(S.items.filter(i => i.fav || isSpecialCard(i.person)).map(i => i.id));
+  // ulubionych i kart specjalnych (poza Jokerowymi) nie sprzedajemy (serwer też je pomija)
+  const keep = new Set(S.items.filter(i => i.fav || !sellableCard(i.person)).map(i => i.id));
   const sell = ids.filter(id => !keep.has(id));
   if (!sell.length) { toast('Ulubionych i specjalnych kart nie da się sprzedać'); return 0; }
   const res = await api('/api/sell', { ids: sell });
@@ -53,7 +53,7 @@ export function ownedMap() {
 // Zostaje jedna karta w najlepszym wariancie albo (perVariant) po jednej w każdym wariancie, także zwykłym.
 // Ulubione i specjalne zostają zawsze; czystych kartek z rysunkiem nie sprzedajemy nigdy.
 export function dupesOf(o: Owned, perVariant = false) {
-  if (isSpecialCard(S.items.find(i => i.id === o.ids[0])?.person)) return [];
+  if (!sellableCard(S.items.find(i => i.id === o.ids[0])?.person)) return [];
   const favs = new Set(S.items.filter(i => i.fav).map(i => i.id));
   const keepOne = (ids: number[]) => ids.find(id => favs.has(id)) ?? ids[0];
   const drawn = o.ids.filter(id => S.drawn.has(id));

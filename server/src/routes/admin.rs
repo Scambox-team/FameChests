@@ -732,6 +732,12 @@ pub async fn admin_save_card(State(st): State<AppState>, Admin(me): Admin, mp: M
     fields.insert("arena".into(), json!(arena));
     let given = form.get("id").filter(|p| !p.is_empty()).map(str::to_owned);
     let old: Option<Arc<Person>> = given.as_deref().and_then(|p| cat.person(p).cloned());
+    // ustawienia wariantów dla tej karty (Tabloid: kółko, strzałka, napis); bez pola w formularzu zostają stare
+    let vx = match form.get("vx_json") {
+        Some(s) => catalog::clean_vx(&serde_json::from_str(s).unwrap_or_default()),
+        None => old.as_ref().map(|p| p.vx.clone()).unwrap_or_default(),
+    };
+    fields.insert("vx".into(), Value::Object(vx));
     let pid = given.unwrap_or_else(|| {
         let prefix = if main_crate == "world" { "w" } else { main_crate.as_str() };
         unique_id(&format!("{prefix}_{}", slug(&name)), cat.people.keys().chain(cat.hidden_cards.keys()))

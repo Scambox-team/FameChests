@@ -3,7 +3,7 @@
 // Rysują bezpośrednio na body i na canvasach (#fxCanvas, #confetti), bo muszą działać nad każdym ekranem.
 import { S } from '../game/store';
 import { joinVariant, splitVariant } from '../game/rules';
-import { abilitiesOf, baseVariant, beerSub, cardValue, crateOf, crateVariants, isBlank, isCombo, isSpecial, isSpecialCard, person, plural, possibleVariants, rand, rarityIdx, rarityShare, variantChance, variantName, variantParts, vClass, vtClass, imgUrl } from '../game/rules';
+import { abilitiesOf, baseVariant, beerSub, cardValue, crateOf, crateVariants, isBlank, isCombo, isSpecial, isSpecialCard, sellableCard, person, plural, possibleVariants, rand, rarityIdx, rarityShare, variantChance, variantName, variantParts, vClass, vtClass, imgUrl } from '../game/rules';
 import { cardHTML, scratchable } from '../cards/cardHtml';
 import { esc, fmt, sleep } from '../lib/format';
 import { Sound } from '../sound/sound';
@@ -366,7 +366,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
           <tr><td>Słabość / odporność</td><td>${typeIcon(type.weak)} ×2 · ${typeIcon(type.resist)} −20</td></tr>
           <tr><td>Wartość</td><td><b>${fmt(cardValue(pid, variant))}</b> <span class="muted">(×${String(S.cfg.variants[variant].mult).replace(".", ",")})</span></td></tr>
           ${beerRow(variant, uid)}
-          ${isSpecialCard(p) ? `<tr><td>Karta specjalna</td><td>tylko w wariancie ${esc(variantName(p.fixedVariant))} · nie da się jej sprzedać grze, postawić ani zużyć</td></tr>`
+          ${isSpecialCard(p) ? `<tr><td>Karta specjalna</td><td>tylko w wariancie ${esc(variantName(p.fixedVariant))} · ${sellableCard(p) ? "można ją sprzedać grze, nie da się jej postawić ani zużyć" : "nie da się jej sprzedać grze, postawić ani zużyć"}</td></tr>`
             : `<tr><td>Szansa z 1 skrzynki</td><td>${chance ? "1 na " + Math.round(1 / chance).toLocaleString("pl-PL") : "—"}</td></tr>`}
           ${cratesRow}
           <tr><td>Posiadasz</td><td>${owned || '<span class="muted">brak</span>'}</td></tr>

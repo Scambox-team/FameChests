@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- hibiskus z liśćmi -->
+  <path d="M20 24 Q30 34 38 36 Q28 30 24 20Z" fill="#26a352"/><path d="M18 22 Q6 32 2 38 Q10 30 16 18Z" fill="#2fbf61"/>
+  <g transform="translate(20.00 18.00) rotate(10)"><ellipse cx="0" cy="-8.80" rx="7.04" ry="9.92" fill="#ff3d7f" stroke="#0002" stroke-width="0.64" transform="rotate(0)"/><ellipse cx="0" cy="-8.80" rx="7.04" ry="9.92" fill="#ff3d7f" stroke="#0002" stroke-width="0.64" transform="rotate(72)"/><ellipse cx="0" cy="-8.80" rx="7.04" ry="9.92" fill="#ff3d7f" stroke="#0002" stroke-width="0.64" transform="rotate(144)"/><ellipse cx="0" cy="-8.80" rx="7.04" ry="9.92" fill="#ff3d7f" stroke="#0002" stroke-width="0.64" transform="rotate(216)"/><ellipse cx="0" cy="-8.80" rx="7.04" ry="9.92" fill="#ff3d7f" stroke="#0002" stroke-width="0.64" transform="rotate(288)"/><circle r="3.52" fill="#ffe14d"/><path d="M0 0 L2.56 -12.00" stroke="#ffe14d" stroke-width="1.44" stroke-linecap="round"/><circle cx="2.56" cy="-12.48" r="1.12" fill="#ff8a1a"/></g>
+</svg>

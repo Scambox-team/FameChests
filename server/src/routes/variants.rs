@@ -137,13 +137,13 @@ pub async fn egg_image(
 }
 
 /// Pola i pliki formularza (multipart)
-struct Form {
-    fields: HashMap<String, String>,
+pub(super) struct Form {
+    pub fields: HashMap<String, String>,
     files: HashMap<String, (String, Vec<u8>)>,
 }
 
 impl Form {
-    async fn read(mut mp: Multipart) -> Res<Form> {
+    pub async fn read(mut mp: Multipart) -> Res<Form> {
         let invalid = |e: axum::extract::multipart::MultipartError| AppError::bad(format!("Nieprawidłowy formularz: {e}"));
         let (mut fields, mut files) = (HashMap::new(), HashMap::new());
         while let Some(field) = mp.next_field().await.map_err(invalid)? {
@@ -160,7 +160,7 @@ impl Form {
         Ok(Form { fields, files })
     }
 
-    fn upload(&self, key: &str) -> Option<&[u8]> {
+    pub fn upload(&self, key: &str) -> Option<&[u8]> {
         self.files.get(key).filter(|(name, _)| !name.is_empty()).map(|(_, b)| b.as_slice())
     }
 }
@@ -303,7 +303,7 @@ pub async fn admin_variant_save(
     }
     let mut tx = st.db.begin().await?;
     let mut settings = settings_row(&mut tx, &variant).await?;
-    for k in ["enabled", "chance", "weight", "desc", "mult", "noHouse", "cards", "crateOnly"] {
+    for k in ["enabled", "chance", "weight", "desc", "mult", "noHouse", "cards", "crateOnly", "texts"] {
         if let Some(v) = body.get(k) {
             settings.insert(k.into(), v.clone());
         }

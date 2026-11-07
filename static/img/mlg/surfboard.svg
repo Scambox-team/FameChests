@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 60">
+  <!-- deska surfingowa z kwiatem -->
+  <path d="M11 1 C20 14 20 46 11 59 C2 46 2 14 11 1Z" fill="#fff8e6" stroke="#1576c9" stroke-width="1.2"/>
+  <path d="M11 4 C17 16 17 44 11 56 C5 44 5 16 11 4Z" fill="none" stroke="#ff6b3d" stroke-width="2.4"/><path d="M11 3 V57" stroke="#1576c9" stroke-width=".8"/>
+  <g transform="translate(11.00 30.00) rotate(20)"><ellipse cx="0" cy="-2.20" rx="1.76" ry="2.48" fill="#ff3d7f" stroke="#0002" stroke-width="0.16" transform="rotate(0)"/><ellipse cx="0" cy="-2.20" rx="1.76" ry="2.48" fill="#ff3d7f" stroke="#0002" stroke-width="0.16" transform="rotate(72)"/><ellipse cx="0" cy="-2.20" rx="1.76" ry="2.48" fill="#ff3d7f" stroke="#0002" stroke-width="0.16" transform="rotate(144)"/><ellipse cx="0" cy="-2.20" rx="1.76" ry="2.48" fill="#ff3d7f" stroke="#0002" stroke-width="0.16" transform="rotate(216)"/><ellipse cx="0" cy="-2.20" rx="1.76" ry="2.48" fill="#ff3d7f" stroke="#0002" stroke-width="0.16" transform="rotate(288)"/><circle r="0.88" fill="#ffe14d"/><path d="M0 0 L0.64 -3.00" stroke="#ffe14d" stroke-width="0.36" stroke-linecap="round"/><circle cx="0.64" cy="-3.12" r="0.28" fill="#ff8a1a"/></g>
+</svg>
