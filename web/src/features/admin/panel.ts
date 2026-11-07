@@ -791,7 +791,9 @@ export function startPanel() {
         toast(`Zmieniono saldo gracza ${name}`);
       }
       if (act === "resetLink") {
-        const v = prompt(`Wysłać ${name} link do resetu hasła?\nAdres e-mail (puste = e-mail z konta gracza):`, "");
+        const v = prompt(`Wysłać ${name} link do resetu hasła?\nAdres e-mail (puste = e-mail z konta gracza).
+
+Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz adres - zostanie przypisany do jego konta i dostanie link do ustawienia nowego hasła.`, "");
         if (v === null) return;
         const email = v.trim();
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);

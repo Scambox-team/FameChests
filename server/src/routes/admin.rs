@@ -1297,7 +1297,9 @@ pub struct ResetLink {
 }
 
 /// Link do resetu hasła mailem - ten sam co „zapomniałem hasła”. Admin nie ustawia hasła sam, więc nie może się
-/// zalogować na cudze konto. Odpowiedź jest zawsze taka sama: nie zdradza, czy podany adres ma konto.
+/// zalogować na cudze konto. Gracz bez emaila (zgubił hasło przed dodaniem emaila) nie ma konta w Supabase Auth, a mail
+/// idzie tylko do takich kont - dlatego wpisany adres jest mu wtedy przypisywany (`admin_attach_email`).
+/// Odpowiedź jest zawsze taka sama: nie zdradza, czy adres wysyłki ma konto.
 pub async fn admin_reset_link(
     State(st): State<AppState>,
     Admin(me): Admin,
@@ -1306,20 +1308,27 @@ pub async fn admin_reset_link(
 ) -> Res {
     guard_owner(&st, &me, uid)?;
     let mut tx = st.db.begin().await?;
-    if user_by_id(&mut tx, uid).await?.is_none() {
-        return Err(AppError::not_found());
-    }
+    let Some(target) = user_by_id(&mut tx, uid).await? else { return Err(AppError::not_found()) };
     let typed = req.email.trim();
-    let email = if typed.is_empty() {
-        match super::account::auth_link(&mut tx, uid).await? {
-            Some(link) => link.email,
-            None => return bad("Ten gracz nie ma emaila w koncie - wpisz adres"),
+    let link = super::account::auth_link(&mut tx, uid).await?;
+    let mut created: Option<String> = None;   // konto w Supabase Auth założone w tym zapytaniu
+    let (email, how) = match (typed.is_empty(), link) {
+        (true, Some(link)) => (link.email, "email z konta"),
+        (true, None) => return bad("Ten gracz nie ma emaila w koncie - wpisz adres, na który ma dostać link"),
+        (false, None) => {
+            created = Some(super::account::admin_attach_email(&st, &mut tx, &target, typed).await?);
+            (typed.to_owned(), "email przypisany do konta")
         }
-    } else {
-        typed.to_owned()
+        (false, Some(_)) => (typed.to_owned(), "wpisany adres"),
     };
-    super::account::send_recovery(&st, &email).await?;
-    let details = if typed.is_empty() { "email z konta".to_owned() } else { mask_email(&email.to_lowercase()) };
+    if let Err(e) = super::account::send_recovery(&st, &email).await {
+        // mail nie wyszedł: transakcja się cofa, więc konta w Supabase Auth też nie zostawiamy (adres musi zostać wolny)
+        if let (Some(id), Some(gt)) = (&created, &st.cfg.gotrue) {
+            let _ = gt.admin_delete(id).await;
+        }
+        return Err(e);
+    }
+    let details = format!("{how}: {}", mask_email(&email.to_lowercase()));
     log_admin(&mut tx, &me, "password_link", Some(uid), &details).await?;
     tx.commit().await?;
     ok(json!({"ok": true}))
@@ -1337,6 +1346,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     super::casino::blackjack_forget_user(&mut tx, uid).await?; // rozdanie w trakcie i postawione w nim karty
     super::horses::horse_forget_user(&mut tx, uid).await?; // zakłady na wyścigi konne i postawione w nich karty
     sqlx::query("DELETE FROM user_counters WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM pinball_runs WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM user_achievements WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query!("DELETE FROM items WHERE user_id = $1", uid).execute(&mut *tx).await?;
     sqlx::query!("DELETE FROM user_state WHERE user_id = $1", uid).execute(&mut *tx).await?;

@@ -243,6 +243,7 @@ const VR_SOURCES = {
   quest: { chip: "quest", title: "Nagroda za codzienny quest" },
   market: { chip: "rynek", title: "Premia kupującego na rynku" },
   marketSeller: { chip: "rynek", title: "Premia sprzedającego na rynku" },
+  pinball: { chip: "pinball", title: "Nagroda za wynik w Pinballu" },
 };
 function vrExtraHTML(v) {
   const V = vrV(v), src = VR_SOURCES[V.extraSource];
@@ -252,6 +253,8 @@ function vrExtraHTML(v) {
   const off = vrCfg(v).enabled ? "" : " Ten wariant jest wyłączony, ale stąd i tak wypada.";
   const text = V.extraSource === "quest"
     ? `Questy są teraz <b>${VR.questOn == null ? "…" : VR.questOn ? "włączone " : "wyłączone "}</b> (panel admina → Questy). Pierwszy gracz, który wypełni questa, dostaje kartę w tym wariancie.`
+    : V.extraSource === "pinball"
+    ? `Za bardzo wysoki wynik w Pinballu gracz dostaje kartę w tym wariancie, losową ze skrzynek w rotacji: im lepszy wynik, tym wyższa rzadkość.`
     : V.extraSource === "market"
     ? `Gdy ktoś kupi albo wylicytuje kartę na rynku, z szansą ${pct(m.bonusChance || 0)} dostaje też tę kartę w tym wariancie.`
     : `Gdy zakup na rynku da premię (${pct(m.bonusChance || 0)}), sprzedający dostaje jeden z metali; ten wariant to ${pct(sum ? V.chance / sum : 0)} tych premii.`;

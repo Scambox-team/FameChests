@@ -11,7 +11,7 @@ import { SearchField, Select } from '../../ui/Field';
 import { timeAgo } from '../../lib/time';
 import styles from './InventoryPage.module.css';
 
-const SOURCES: Record<string, string> = { crate: 'Skrzynka', contract: 'Kontrakt', upgrade: 'Ulepszacz', casino: 'Kasyno', market: 'Rynek', trade: 'Wymiana', reward: 'Nagroda', link: 'Link' };
+const SOURCES: Record<string, string> = { crate: 'Skrzynka', contract: 'Kontrakt', upgrade: 'Ulepszacz', casino: 'Kasyno', market: 'Rynek', trade: 'Wymiana', reward: 'Nagroda', link: 'Link', pinball: 'Pinball' };
 
 function Thumb({ pid }: { pid: string }) {
   const p = person(pid);

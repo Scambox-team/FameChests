@@ -9,6 +9,7 @@ use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use axum_extra::extract::cookie::SignedCookieJar;
+use rand::Rng;
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::json;
@@ -446,6 +447,36 @@ pub async fn email_template(Path(name): Path<String>) -> Response {
         _ => return StatusCode::NOT_FOUND.into_response(),
     };
     ([(header::CONTENT_TYPE, "text/html; charset=utf-8"), (header::CACHE_CONTROL, "public, max-age=300")], html).into_response()
+}
+
+/// Admin dopisuje email graczowi, który go nie ma (zgubił hasło przed dodaniem emaila): zakłada konto w Supabase Auth
+/// z losowym hasłem i zapisuje powiązanie (`user_auth`). Potem leci zwykły mail z linkiem do nowego hasła. Stare hasło
+/// z gry przestaje działać dopiero, gdy gracz ustawi nowe (`reset_password` kasuje hash).
+pub async fn admin_attach_email(st: &AppState, c: &mut Conn, user: &User, email: &str) -> Res<String> {
+    let Some(gt) = &st.cfg.gotrue else { return bad("Email nie jest tu włączony") };
+    let email = email.trim().to_lowercase();
+    if !valid_email(&email) {
+        return bad("Podaj poprawny adres email");
+    }
+    if user_by_email(c, &email).await?.is_some() {
+        return bad("Ten adres jest już przypisany do innego konta");
+    }
+    let password: String = rand::thread_rng().sample_iter(rand::distributions::Alphanumeric).take(40).map(char::from).collect();
+    let id = gt.admin_create(&email, &password, &user.username).await.map_err(|f| match f {
+        Failure::Unavailable => unavailable(),
+        Failure::Rejected { .. } => AppError::bad("Nie udało się przypisać tego adresu (może być już zajęty)"),
+    })?;
+    let saved = sqlx::query("INSERT INTO user_auth (user_id, auth_id, email) VALUES ($1, $2, $3)")
+        .bind(user.id)
+        .bind(&id)
+        .bind(&email)
+        .execute(&mut *c)
+        .await;
+    if let Err(e) = saved {
+        let _ = gt.admin_delete(&id).await;
+        return Err(e.into());
+    }
+    Ok(id)
 }
 
 /// Email konta (zamaskowany) - ustawienia gracza
