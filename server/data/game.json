@@ -637,6 +637,22 @@
    },
    "desc": "Korporacyjna wizytówka: granatowy pasek z logo, kod QR, stanowisko i dane kontaktowe - domyślne dla wszystkich kart na /variants, własne dla karty w edycji karty."
   },
+  "analog": {
+   "name": "Analog horror",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "photo": true,
+   "photoAll": true,
+   "texts": {
+    "warn": {"label": "Napis na zdjęciu", "default": "NIE PATRZ W NIEBO", "max": 30},
+    "sub": {"label": "Podpis pod zdjęciem", "default": "TO NIE JEST ĆWICZENIE", "max": 40},
+    "bar": {"label": "Pasek nad nazwą", "default": "⚠ KOMUNIKAT ALARMOWY", "max": 30},
+    "wait": {"label": "Plansza z godłem", "default": "PROSIMY CZEKAĆ", "max": 30},
+    "shelter": {"label": "Plansza schronu", "default": "UDAJ SIĘ DO NAJBLIŻSZEGO SCHRONU", "max": 50}
+   },
+   "desc": "Horror analogowy: komunikat alarmowy na granatowej planszy - w miejscu zdjęcia pętla godło urzędu ScamBox, zdjęcie, komunikat o schronie, wszystko z zakłóceniami sygnału; godło obraca się w tle. Napisy z panelu, własne zdjęcie karty."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,

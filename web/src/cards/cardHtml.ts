@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -153,6 +153,7 @@ export function variantPhoto(variant, p, uid = null) {
   if (parts.includes("marble")) html += '<i class="vx-photo mr-statue"></i>';
   if (parts.includes("toxic")) html += '<i class="vx-photo tx-photo"></i>';
   if (parts.includes("tabloid")) html += tabloidMarks(p?.vx?.tabloid);
+  if (parts.includes("analog") && p) html += analogPhoto(p, variant);
   for (const x of parts) if (VX_PHOTO[x]) html += typeof VX_PHOTO[x] === "function" ? VX_PHOTO[x](uid) : VX_PHOTO[x];
   for (const x of parts) {   // wariant z kreatora: zabarwienie zdjęcia
     const Ph = cvOf(x)?.photo;
@@ -778,6 +779,32 @@ function wzSub(p) {
   const t = k => esc(variantText(p, "wizytowka", k));
   return `<span class="wz-title">${t("title")}</span><span class="wz-contact"><b>☎ ${t("phone")}</b><b>✉ ${t("email")}</b><b>⌂ ${t("address")}</b></span>`;
 }
+// Analog horror (makieta „Sekwencja nadawania”): granatowa plansza systemu ostrzegania. W miejscu zdjęcia pętla 12 s - godło
+// „URZĄD OBRONY CYWILNEJ · SCAMBOX”, zdjęcie z migającym napisem, niebiesko-biały komunikat o schronie; na każdej planszy te same
+// zakłócenia (rwące się paski = kopie planszy przycięte do pasków, rozjechane kolory, toczący się pas, linie obrazu, ziarno, błyski
+// szumu). W tle obraca się godło. Napisy z panelu (variantText: warn, sub, bar, wait, shelter), własne zdjęcie wariantu.
+const ahNoise = (op = .35) => `<i class="ah-noise" style="opacity:${op}"></i>`;
+let ahSealCache = null;
+const ahSeal = (cls = "ah-seal") => (ahSealCache ||= `<defs><path id="ahRing" d="M50 50 m-37 0 a37 37 0 1 1 74 0 a37 37 0 1 1 -74 0"/></defs>
+  <circle cx="50" cy="50" r="47" fill="#0a1550" stroke="#dfe6ff" stroke-width="2.4"/><circle cx="50" cy="50" r="30" fill="none" stroke="#dfe6ff" stroke-width="1.2"/>
+  <text font-size="8.2" font-family="Share Tech Mono, monospace" fill="#dfe6ff" letter-spacing="1.2"><textPath href="#ahRing">URZĄD OBRONY CYWILNEJ ✦ SCAMBOX ✦ </textPath></text>
+  <path d="M33 44 L50 35 L67 44 L67 64 L50 72 L33 64Z M33 44 L50 53 L67 44 M50 53 V72" fill="none" stroke="#dfe6ff" stroke-width="2.2" stroke-linejoin="round"/>
+  <rect x="45" y="49" width="10" height="7" rx="1.5" fill="#dfe6ff"/>`).replace(/^/, `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">`) + "</svg>";
+const AH_SIGN = `<svg class="ah-sign" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#dfe6ff"/>${[0, 120, 240].map(a =>
+  `<path d="M20 20 L13 7.5 A14.5 14.5 0 0 1 27 7.5Z" fill="#0a1550" transform="rotate(${a} 20 20)"/>`).join("")}<circle cx="20" cy="20" r="4.2" fill="#dfe6ff"/><circle cx="20" cy="20" r="19" fill="none" stroke="#0a1550" stroke-width="1.2"/></svg>`;
+const ahTears = (html, n) => Array.from({ length: n }, () =>
+  `<i class="ah-tear" style="--y:${vxN(6, 82)}%;--h:${vxN(3, 9)}%;animation-delay:-${vxN(0, 4, 1)}s;animation-duration:${vxN(2.2, 4.2, 1)}s">${html}</i>`).join("");
+function analogPhoto(p, variant) {
+  const t = k => esc(variantText(p, "analog", k));
+  const img = `<img src="${imgUrl(p.id, variant)}" alt="" loading="lazy" draggable="false">`;
+  const logo = `<i class="ah-face">${ahSeal()}<b>${t("wait")}</b></i>`;
+  const shelter = `<i class="ah-face shelter">${AH_SIGN}<b>${t("shelter")}</b><small>ZACHOWAJ SPOKÓJ · ZABIERZ DOKUMENTY</small></i>`;
+  return `<i class="vx-photo ah-chroma r">${img}</i><i class="vx-photo ah-chroma c">${img}</i>
+    <i class="vx-photo ah-phase ah-ph-photo">${ahTears(img, 2)}<span class="ah-warn">${t("warn")}</span></i>
+    <i class="vx-photo ah-phase ah-ph-logo">${logo}${ahTears(logo, 2)}</i>
+    <i class="vx-photo ah-phase ah-ph-shelter">${shelter}${ahTears(shelter, 2)}</i>
+    <i class="vx-photo ah-scan top"></i><i class="vx-photo ah-roll"></i><i class="vx-photo ah-grain">${ahNoise(.16)}</i><i class="vx-photo ah-burst">${ahNoise(1)}</i>`;
+}
 // Tabloid: żółte kółko, strzałka i napis na zdjęciu. Położenie (środek x, y w % zdjęcia), skala s i obrót r każdego
 // elementu oraz napis ustawia admin w edycji karty (pole karty vx.tabloid, catalog::clean_vx) - tu wartości domyślne.
 export const TABLOID_DEF = { circle: { x: 62, y: 34, s: 1, r: 0 }, arrow: { x: 30, y: 58, s: 1, r: -35 }, text: { x: 20, y: 86, s: 1, r: -4 } };
@@ -812,6 +839,7 @@ const hiDeco = () => hiDecoCache ||= hiFrond("f1", -40) + hiFrond("f2", 130) + h
 export const VX_BG = {
   anime: anSpeed,
   hawaii: () => '<i class="hi-dapple"></i>',
+  analog: () => `${ahSeal("ah-seal ah-spin")}<i class="ah-scan"></i>${ahNoise(.08)}`,
   chesswhite: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   chessblack: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   covid: () => `<i class="cvd-beam"></i>${cvdFloats(11)}`,
@@ -1039,6 +1067,7 @@ export function variantTop(variant, p) {
   if (parts.includes("chesswhite") || parts.includes("chessblack")) return '<div class="cs-mark"><i></i>♚\uFE0E<i></i></div>';
   if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
   if (parts.includes("barbie")) return '<div class="bbg-heart"></div>';
+  if (parts.includes("analog")) return `<div class="ah-bar"><b>${esc(variantText(p, "analog", "bar"))}</b><span>NADAWANY O 03:00</span></div>`;
   if (parts.includes("wizytowka")) return `<div class="wz-corp"><i class="wz-logo"></i><b>${esc(variantText(p, "wizytowka", "company"))}</b></div>`;
   if (parts.includes("tabloid")) return '<div class="tb-mast"><b>SZOK</b><span>DNIA</span><small>NR 666 · CENA 2,50 ZŁ</small></div>';
   if (parts.includes("claude")) return '<div class="cl-app"><i class="cl-logo"></i><b>Claude</b><span><u></u>online</span></div>';
@@ -1081,6 +1110,7 @@ export function variantSub(variant, pid) {
   if (parts.includes("rgb")) return "RGB SYNC · TRYB: SPEKTRUM";
   if (parts.includes("barbie")) return "♡ GLITTER QUEEN ♡";
   if (parts.includes("polaroid")) return '<span class="pd-hand">potrząśnij mną!</span>';
+  if (parts.includes("analog")) return esc(variantText(person(pid), "analog", "sub"));
   if (parts.includes("wizytowka")) return wzSub(person(pid));
   if (parts.includes("hawaii")) return "CIEŃ PALMY · MAI TAI";
   if (parts.includes("tabloid")) return "TAJEMNICA WYSZŁA NA JAW!";
