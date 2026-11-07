@@ -202,6 +202,14 @@ pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usiz
     for (slot, _) in crate::routes::snake::SLOTS {
         files.extend(images.find(&crate::routes::snake::file_id(slot), &Kind::Main));
     }
+    // dźwięki zjedzenia jabłka (__snake_snd_<id>.<mp3|ogg|wav>)
+    if let Ok(dir) = std::fs::read_dir(&images.cache_dir) {
+        files.extend(
+            dir.flatten()
+                .map(|e| e.path())
+                .filter(|p| p.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with(crate::routes::snake::SOUND_PREFIX))),
+        );
+    }
     for path in &files {
         std::fs::copy(path, dir.join(path.file_name().unwrap_or_default()))?;
     }

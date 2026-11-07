@@ -9,9 +9,13 @@ const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: {
 const OPP: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 const ANGLE: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
 
-export interface SnakeLook { color: string; background: string; images: Partial<Record<'head' | 'body' | 'apple' | 'bg', string | null>> }
+export interface SnakeReward { perApple: number; minScore: number; perGame: number; daily: number; today: number }
+export interface SnakeLook {
+  color: string; background: string; images: Partial<Record<'head' | 'body' | 'apple' | 'bg', string | null>>;
+  sounds?: { id: string; url: string }[]; maxSounds?: number; reward?: SnakeReward;
+}
 export interface SnakeHud { phase: 'idle' | 'play' | 'pause' | 'over'; score: number; length: number; best: number; record: boolean }
-export interface SnakeEvents { eat?: (len: number) => void; over?: (record: boolean) => void; turn?: () => void }
+export interface SnakeEvents { eat?: (len: number) => void; over?: (record: boolean, score: number) => void; turn?: () => void }
 
 const BEST_KEY = 'snakeBest';
 const readBest = () => { try { return +(localStorage.getItem(BEST_KEY) || 0) || 0; } catch { return 0; } };
@@ -65,7 +69,7 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   function gameOver() {
     phase = 'over';
     hud();
-    ev.over?.(record);
+    ev.over?.(record, score);
   }
 
   // ------------------------------------------------------------------ rysowanie

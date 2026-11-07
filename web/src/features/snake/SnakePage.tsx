@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Coins, Pause, Play } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { applyState } from '../../game/session';
+import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
+import { toast } from '../../ui/Toaster';
 import { createSnake, type Dir, type SnakeGame, type SnakeHud, type SnakeLook } from './engine';
 import './snake.css';
 
@@ -17,14 +20,37 @@ export function SnakePage() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<SnakeGame | null>(null);
   const [hud, setHud] = useState<SnakeHud | null>(null);
-  const { data: look } = useQuery({ queryKey: ['snake-look'], queryFn: () => api<SnakeLook>('/api/games/snake'), staleTime: 60_000 });
+  const { data: look, refetch } = useQuery({ queryKey: ['snake-look'], queryFn: () => api<SnakeLook>('/api/games/snake'), staleTime: 60_000 });
+  const [won, setWon] = useState<{ reward: number; capped: boolean } | null>(null);   // nagroda za ostatnią grę
+  const sounds = useRef<HTMLAudioElement[]>([]);   // dźwięki jabłka od admina (gra losuje jeden)
+  const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
 
   useEffect(() => {
-    const g = createSnake(canvas.current!, setHud, {
-      eat: n => Sound.snake('eat', n),
-      over: rec => { Sound.snake('over'); if (rec) Sound.snake('best'); },
-      turn: () => Sound.snake('turn'),
-    });
+    sounds.current = (look?.sounds ?? []).map(s => { const a = new Audio(s.url); a.preload = 'auto'; return a; });
+  }, [look?.sounds]);
+
+  useEffect(() => {
+    const eat = (n: number) => {
+      const list = sounds.current;
+      if (!list.length || !Sound.enabled) return Sound.snake('eat', n);
+      const a = list[Math.floor(Math.random() * list.length)].cloneNode(true) as HTMLAudioElement;   // kopia: dźwięki mogą na siebie nachodzić
+      a.volume = Math.max(0, Math.min(1, Sound.volume));
+      a.play().catch(() => Sound.snake('eat', n));
+    };
+    const over = async (rec: boolean, score: number) => {
+      Sound.snake('over');
+      if (rec) Sound.snake('best');
+      if (!ticket.current) return;
+      ticket.current = false;
+      try {
+        const r = await api<{ reward: number; capped: boolean; state: any }>('/api/games/snake/finish', { score });
+        applyState(r.state);
+        setWon({ reward: r.reward, capped: r.capped });
+        if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
+        refetch();
+      } catch (e: any) { toast(e.message, true); }
+    };
+    const g = createSnake(canvas.current!, setHud, { eat, over, turn: () => Sound.snake('turn') });
     game.current = g;
     const modal = () => document.querySelector('[aria-modal="true"]');
     const key = (e: KeyboardEvent) => {
@@ -70,7 +96,14 @@ export function SnakePage() {
   }, []);
   useEffect(() => { if (look) game.current?.setLook(look); }, [look]);
 
-  const start = () => { Sound.unlock(); Sound.snake('start'); game.current?.start(); canvas.current?.focus(); };
+  const start = () => {
+    Sound.unlock(); Sound.snake('start');
+    setWon(null);
+    ticket.current = false;
+    api('/api/games/snake/start', {}).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
+    game.current?.start(); canvas.current?.focus();
+  };
+  const rw = look?.reward;
   const phase = hud?.phase ?? 'idle';
   const turn = (d: Dir) => game.current?.turn(d);
 
@@ -80,7 +113,9 @@ export function SnakePage() {
         <canvas ref={canvas} className="sn-canvas" tabIndex={0} aria-label="Plansza gry Snake. Sterowanie strzałkami albo WASD, pauza: spacja." />
         {phase !== 'play' && (
           <div className="sn-over">
-            {phase === 'over' && <><b>Koniec gry</b><span>Jabłka: {hud!.score}{hud!.record ? ' · nowy rekord!' : ''}</span></>}
+            {phase === 'over' && <><b>Koniec gry</b><span>Jabłka: {hud!.score}{hud!.record ? ' · nowy rekord!' : ''}</span>
+              {won && won.reward > 0 && <span className="sn-won">+{fmt(won.reward)}</span>}
+              {won?.capped && <span>Osiągnięto dzienny limit nagród</span>}</>}
             {phase === 'pause' && <b>Pauza</b>}
             {phase === 'idle' && <b>Snake</b>}
             <Button kind="hue" onClick={phase === 'pause' ? () => game.current?.pause() : start}>
@@ -99,6 +134,13 @@ export function SnakePage() {
         {(phase === 'play' || phase === 'pause') && (
           <Button onClick={() => game.current?.pause()}>{phase === 'pause' ? <><Play size={16} aria-hidden="true" /> Wznów</> : <><Pause size={16} aria-hidden="true" /> Pauza</>}</Button>
         )}
+        {rw && rw.perApple > 0 && rw.daily > 0 && (
+          <div className="sn-reward">
+            <Coins size={16} aria-hidden="true" />
+            <span>Nagroda: <b>{fmt(rw.perApple)}</b> {`za jabłko od ${rw.minScore} jabłek, najwyżej ${fmt(rw.perGame)} za grę`}<br />
+              <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+          </div>
+        )}
         <div className="sn-pad" aria-label="Kierunek">
           <button type="button" className="u" aria-label="W górę" onClick={() => turn('up')}><ArrowUp size={20} /></button>
           <button type="button" className="l" aria-label="W lewo" onClick={() => turn('left')}><ArrowLeft size={20} /></button>
@@ -114,7 +156,7 @@ export function SnakePage() {
             <li>Zjadaj jabłka: każde wydłuża węża i daje punkty, a gra z czasem przyspiesza.</li>
             <li>Uderzenie w ścianę albo we własny ogon kończy grę.</li>
           </ul>
-          <p className="muted small">Gra dla zabawy: bez nagród, rekord zapisuje się tylko w tej przeglądarce.</p>
+          <p className="muted small">Rekord zapisuje się tylko w tej przeglądarce.</p>
         </div>
       </aside>
     </div>

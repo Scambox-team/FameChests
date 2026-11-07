@@ -12,5 +12,13 @@
 .slot p { margin: 4px 0 8px; }
 .img { flex: none; display: grid; place-items: center; width: 96px; height: 96px; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 1px #ffffff14; }
 .img img { width: 100%; height: 100%; object-fit: contain; }
+.sounds { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; padding: 0; list-style: none; }
+.sounds li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.sounds b { min-width: 80px; }
+.sounds audio { height: 34px; }
+.reward { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0; }
+.reward label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.reward input { width: 110px; height: 36px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; }
+.file[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 .file { position: relative; cursor: pointer; }
 .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
