@@ -1,7 +1,8 @@
 /* SNAKE (zakładka Gry): kwadratowa plansza na płótnie + panel z wynikiem jak przy pinballu. Kolor węża (--sn-color) z panelu admina. */
-.sn-page { --sn-color: #4ade80; display: grid; grid-template-columns: minmax(0, auto) 300px; gap: 24px; justify-content: center; align-items: start; }
+/* kolumna planszy ma jawny rozmiar (przy `auto` płótno ściskało ją do 300 px): tyle, ile pozwala wysokość okna */
+.sn-page { --sn-color: #4ade80; --sn-size: min(calc(100dvh - 180px), 920px); display: grid; grid-template-columns: minmax(0, var(--sn-size)) 300px; gap: 24px; justify-content: center; align-items: start; }
 .sn-board {
-  position: relative; width: min(100%, calc(100dvh - 170px), 640px); aspect-ratio: 1; border-radius: var(--radius-m); overflow: hidden;
+  position: relative; width: 100%; aspect-ratio: 1; border-radius: var(--radius-m); overflow: hidden;
   box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px color-mix(in srgb, var(--sn-color) 18%, transparent);
 }
 .sn-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
@@ -25,7 +26,7 @@
 .sn-help kbd { padding: 1px 6px; border-radius: 4px; background: #ffffff12; font: 600 12px var(--body); }
 @media (max-width: 900px) {
   .sn-page { grid-template-columns: 1fr; justify-items: center; }
-  .sn-board { width: min(100%, 560px); }
+  .sn-board { width: min(100%, calc(100dvh - 330px), 640px); min-width: min(100%, 300px); }
   .sn-side { width: min(100%, 560px); }
 }
 @media (pointer: coarse), (max-width: 900px) { .sn-pad { display: grid; } }
