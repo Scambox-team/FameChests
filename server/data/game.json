@@ -578,7 +578,6 @@
    "chance": 0.005,
    "mult": 11.0,
    "off": true,
-   "exclusive": true,
    "stickers": "both",
    "photo": true,
    "photoAll": true,
@@ -596,17 +595,32 @@
    "chance": 0.005,
    "mult": 10.0,
    "off": true,
-   "exclusive": true,
    "photo": true,
    "photoAll": true,
    "desc": "Pierwsza strona brukowca: winieta SZOK DNIA, papier gazetowy, żółte kółko, strzałka i napis na zdjęciu (położenie i napis dla każdej karty w panelu admina), własne zdjęcie karty."
+  },
+  "barbie": {
+   "name": "Barbie",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "photo": true,
+   "photoAll": true,
+   "desc": "Przesadnie różowa: ramka z migoczącego brokatu, po której wędruje błysk, iskierki dookoła karty, brokatowe serce nad nazwą, różowa satyna. Własne zdjęcie karty (panel admina)."
+  },
+  "hawaii": {
+   "name": "Hawajska",
+   "chance": 0.005,
+   "mult": 10.0,
+   "off": true,
+   "stickers": true,
+   "desc": "Słoneczna laguna pod palmami: kołyszące się liście, plamki słońca, hibiskusy i plumerie. Naklejki od admina, także wbudowane hawajskie (lei, hibiskus, ananas, ukulele...)."
   },
   "covid": {
    "name": "COVID",
    "chance": 0.005,
    "mult": 10.0,
    "off": true,
-   "exclusive": true,
    "stickers": true,
    "desc": "Alarm pod mikroskopem: koguty, migająca ramka, cząsteczki wirusa, czerwone zdjęcie z podziałką 100 nm i komunikat na telefon. Naklejki prosto na zdjęciu."
   },
@@ -4088,7 +4102,14 @@
   "soda": "Zielona puszka",
   "airhorn": "Trąbka",
   "wow": "Napis WOW",
-  "noscope": "360 NO SCOPE"
+  "noscope": "360 NO SCOPE",
+  "lei": "Naszyjnik lei",
+  "hibiscus": "Hibiskus",
+  "plumeria": "Plumeria",
+  "pineapple": "Ananas",
+  "ukulele": "Ukulele",
+  "surfboard": "Deska surfingowa",
+  "coconut": "Kokos z parasolką"
  },
  "stickerAnims": {
   "none": "Bez ruchu",

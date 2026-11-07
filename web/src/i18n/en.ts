@@ -174,6 +174,7 @@ export const EN: Record<string, string> = {
   "Czarno-biały plakat filmu „opartego na faktach”: przekrzywiona flaga USA powiewa w tle, szare pasy płyną przez zdjęcie, w rogu pole z gwiazdami, ramka w ukośne pasy.": "A black-and-white poster for a film “based on true events”: a tilted US flag waves in the background, grey stripes run across the photo, a field of stars in the corner, a frame with diagonal stripes.",
   "Czarny diament": "Black diamond",
   "Gamingowa RGB": "Gaming RGB",
+  "Hawajska": "Hawaiian",
   "Czarnych": "Black",
   "Czas": "Time",
   "Czas licytacji": "Auction time",

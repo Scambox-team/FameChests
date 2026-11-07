@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 56">
+  <!-- ukulele -->
+  <rect x="10" y="2" width="4" height="26" rx="1" fill="#6b3f1d"/><rect x="8.5" y="0" width="7" height="6" rx="1.5" fill="#4a2a12"/>
+  <path d="M12 26 C3 26 2 34 5 37 C1 40 2 54 12 54 C22 54 23 40 19 37 C22 34 21 26 12 26Z" fill="#d98a3a" stroke="#8a5220" stroke-width="1"/>
+  <circle cx="12" cy="38" r="3.2" fill="#3a200c"/><rect x="8" y="46" width="8" height="2" rx="1" fill="#4a2a12"/>
+  <g stroke="#f5e6c8" stroke-width=".3"><path d="M10.8 4 V47 M11.6 4 V47 M12.4 4 V47 M13.2 4 V47"/></g>
+</svg>

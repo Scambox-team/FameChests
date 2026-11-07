@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -777,8 +777,30 @@ export function tabloidMarks(t = null) {
     `<i class="tb-mark tb-arrow" data-k="arrow" style="${at("arrow")}"><svg viewBox="0 0 40 14" aria-hidden="true"><path d="M1 7 H28 M26 1.5 L38 7 L26 12.5Z" stroke="#ffd400" stroke-width="3" stroke-linejoin="round" fill="#ffd400"/></svg></i>` +
     `<b class="tb-mark tb-him" data-k="text" style="${at("text")}">${esc(t?.label || TABLOID_LABEL)}</b>`;
 }
+// Barbie (makieta Barbie 2 „Brokatowa ramka”): ramka z migoczącego brokatu (CSS), po niej wędruje błysk (bbg-shine), iskierki
+// rozłożone po obwodzie karty (bbgGlints), brokatowe serce nad nazwą (variantTop), różowa satyna w środku.
+const bbgGlints = n => Array.from({ length: n }, (_, k) => {
+  let d = k / n * 302, x, y;
+  if (d < 63) { x = d; y = 0; } else if ((d -= 63) < 88) { x = 63; y = d; } else if ((d -= 88) < 63) { x = 63 - d; y = 88; } else { x = 0; y = 88 - (d - 63); }
+  return `<i class="bbg-glint" style="left:${(x / .63).toFixed(1)}%;top:${(y / .88).toFixed(1)}%;--s:${vxN(.5, 1.2, 2)};animation-delay:-${vxN(0, 3, 1)}s;animation-duration:${vxN(1.4, 2.8, 1)}s"></i>`;
+}).join("");
+// Hawajska (makieta Hawajska 2 „Pod palmami”): liście palm wchodzą na kartę z trzech rogów i się kołyszą, hibiskusy i plumerie
+// przy krawędziach, plamki słońca przesuwają się po lagunie. Naklejki od admina (wbudowane: lei, hibiskus, ananas, ukulele...).
+const hiFlower = (x, y, r, c, rot = 0) => `<g transform="translate(${x} ${y}) rotate(${rot})">${Array.from({ length: 5 }, (_, k) =>
+  `<ellipse cx="0" cy="${(-r * .55).toFixed(2)}" rx="${(r * .42).toFixed(2)}" ry="${(r * .6).toFixed(2)}" fill="${c}" transform="rotate(${k * 72})"/>`).join("")}
+  <circle r="${(r * .2).toFixed(2)}" fill="#ffe14d"/><path d="M0 0 L${(r * .15).toFixed(2)} ${(-r * .7).toFixed(2)}" stroke="#ffe14d" stroke-width="${(r * .08).toFixed(2)}"/></g>`;
+const hiPlumeria = (x, y, r, rot = 0) => `<g transform="translate(${x} ${y}) rotate(${rot})">${Array.from({ length: 5 }, (_, k) =>
+  `<ellipse cx="${(r * .18).toFixed(2)}" cy="${(-r * .5).toFixed(2)}" rx="${(r * .32).toFixed(2)}" ry="${(r * .58).toFixed(2)}" fill="#fffaf0" stroke="#f5d9a8" stroke-width=".15" transform="rotate(${k * 72})"/>`).join("")}
+  <circle r="${(r * .28).toFixed(2)}" fill="#ffd23d"/></g>`;
+const hiFrond = (cls, rot) => `<svg class="hi-frond ${cls}" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${rot} 50 50)"><path d="M50 98 Q52 60 50 4" stroke="#1d7a3a" stroke-width="2" fill="none"/>
+  ${Array.from({ length: 13 }, (_, k) => { const y = 10 + k * 6.5, l = (14 + Math.sin(k / 12 * Math.PI) * 20).toFixed(1);
+    return `<path d="M50.5 ${y} q${(l * .55).toFixed(1)} -2 ${l} 8 q-${(l * .5).toFixed(1)} -1 -${l} -6Z" fill="#26a352"/><path d="M49.5 ${y} q-${(l * .55).toFixed(1)} -2 -${l} 8 q${(l * .5).toFixed(1)} -1 ${l} -6Z" fill="#2fbf61"/>`; }).join("")}</g></svg>`;
+let hiDecoCache = null;   // ten sam rysunek na każdej karcie
+const hiDeco = () => hiDecoCache ||= hiFrond("f1", -40) + hiFrond("f2", 130) + hiFrond("f3", 40) +
+  vxSvg(hiFlower(2, 86, 5, "#ff3d7f", 20) + hiFlower(62, 46, 4.6, "#ffcf3d", 60) + hiPlumeria(7, 88, 3.2, 10), "0 0 63 88", "hi-flowers");
 export const VX_BG = {
   anime: anSpeed,
+  hawaii: () => '<i class="hi-dapple"></i>',
   chesswhite: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   chessblack: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   covid: () => `<i class="cvd-beam"></i>${cvdFloats(11)}`,
@@ -827,6 +849,8 @@ export const VX_PHOTO = {
   chesswhite: `<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn">${CS_CORNERS("cs-v")}<i class="cs-crest"></i></i>`,
   chessblack: '<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn"><i class="cs-beads"></i></i>',
   covid: '<i class="vx-photo cvd-tint"></i><b class="cvd-scale"><u></u>100 nm</b>',
+  barbie: '<i class="vx-photo bbg-rim"></i>',
+  hawaii: '<i class="vx-photo hi-warm"></i><i class="vx-photo hi-shade"></i>',
   receipt: '<i class="vx-photo rc-dots"></i>',
   muertos: '<i class="vx-photo dm-f1"></i>',
   komuna: '<i class="vx-photo kv-ink"></i><i class="vx-photo kv-offset"></i>',
@@ -859,6 +883,8 @@ export const VX_DECO = {
   chessblack: () => '<div class="vx-deco"><i class="cs-beads card"></i><u class="cs-pearl a"></u><u class="cs-pearl b"></u><u class="cs-pearl c"></u><u class="cs-pearl d"></u></div>',
   covid: () => '<div class="vx-deco"><i class="cvd-sms"><b>⚠ KOMUNIKAT · TERAZ</b>Zostań w domu. Wychodź tylko, gdy to konieczne.</i></div>',
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
+  barbie: () => `<div class="vx-deco bbg-shine"></div><div class="vx-deco">${bbgGlints(22)}</div>`,
+  hawaii: () => `<div class="vx-deco vx-clip">${hiDeco()}</div>`,
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
   scratch: () => `<div class="vx-deco">${zdBurst("DO<br>100 000<br>ZŁ", 16, 30, -12, 31, "#ffd21a", "#c81e1e")}${zdBurst("x20!", 86, 52, 10, 22, "#ff2f92", "#fff")}</div>`,
   muertos: () => `<div class="vx-deco vx-clip">${dmPetals(6)}${dmConfetti(8)}${dmButterfly(3, 30, 1, 0)}${dmButterfly(84, 46, .85, 3)}</div>
@@ -998,6 +1024,7 @@ export function variantTop(variant, p) {
   const parts = variantParts(variant);
   if (parts.includes("chesswhite") || parts.includes("chessblack")) return '<div class="cs-mark"><i></i>♚\uFE0E<i></i></div>';
   if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
+  if (parts.includes("barbie")) return '<div class="bbg-heart"></div>';
   if (parts.includes("tabloid")) return '<div class="tb-mast"><b>SZOK</b><span>DNIA</span><small>NR 666 · CENA 2,50 ZŁ</small></div>';
   if (parts.includes("claude")) return '<div class="cl-app"><i class="cl-logo"></i><b>Claude</b><span><u></u>online</span></div>';
   if (parts.includes("scratch")) return '<div class="zd-title">ZDRAP I WYGRAJ!</div>';
@@ -1037,6 +1064,8 @@ export function variantSub(variant, pid) {
   if (parts.includes("chessblack")) return "CZARNE";
   if (parts.includes("covid")) return "SARS-CoV-2 · SYTUACJA NADZWYCZAJNA";
   if (parts.includes("rgb")) return "RGB SYNC · TRYB: SPEKTRUM";
+  if (parts.includes("barbie")) return "♡ GLITTER QUEEN ♡";
+  if (parts.includes("hawaii")) return "CIEŃ PALMY · MAI TAI";
   if (parts.includes("tabloid")) return "TAJEMNICA WYSZŁA NA JAW!";
   if (parts.includes("claude")) return "Claude pisze…";
   if (parts.includes("scratch")) return "GŁÓWNA WYGRANA 100 000 ZŁ";
