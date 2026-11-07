@@ -21,6 +21,7 @@ mod domain;
 mod error;
 mod export;
 mod game;
+mod gotrue;
 mod ids;
 mod images;
 mod lenient;

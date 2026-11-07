@@ -29,6 +29,19 @@ services:
       - "127.0.0.1:${POSTGRES_PORT}:5432"
       - "127.0.0.1:${POOLER_PROXY_PORT_TRANSACTION}:6543"
 
+  # --- Supabase Auth (GoTrue): email + hasło graczy, mail z potwierdzeniem i z linkiem do nowego hasła ---
+  # Gra sama pośredniczy w rejestracji i logowaniu (z gracza nikt nie rozmawia z GoTrue), więc tu ustawiamy tylko,
+  # dokąd prowadzą linki z maili: na adres gry (obsługuje je /auth/v1/verify w serwerze gry), a nie na Kong.
+
+  auth:
+    environment:
+      API_EXTERNAL_URL: ${GAME_PUBLIC_URL:?ustaw GAME_PUBLIC_URL w .env (adres gry, np. https://scambox.pl)}
+      GOTRUE_SITE_URL: ${GAME_PUBLIC_URL}
+      GOTRUE_URI_ALLOW_LIST: ${GAME_PUBLIC_URL}/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "ScamBox: potwierdź adres email"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "ScamBox: ustaw nowe hasło"
+
   # --- Gra ---
 
   game:
@@ -42,6 +55,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      auth:
+        condition: service_started
     # gra działa = strona logowania odpowiada 200 (update.sh czeka na to i w razie czego wraca do poprzedniej wersji)
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /login HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
@@ -59,6 +74,11 @@ services:
       OPERATOR_NAME: ${GAME_OPERATOR_NAME:-}
       CONTACT_EMAIL: ${GAME_CONTACT_EMAIL:-}
       COOKIE_SECURE: ${GAME_COOKIE_SECURE:-1}
+      # konta z emailem (Supabase Auth): adres w sieci Dockera, klucz service_role (tajny, jak hasło do bazy) i adres gry,
+      # na który wracają linki z maili
+      GOTRUE_URL: http://auth:9999
+      GOTRUE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      PUBLIC_URL: ${GAME_PUBLIC_URL}
       TRUST_PROXY: "1"
       METRICS_ADDR: ""
       RUST_LOG: ${GAME_RUST_LOG:-scambox=info}

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { SortSelect, UNIQUE_SORTS } from '../../cards/cardSorts';
 import { cardMatches, imgUrl, isSpecial, person, sortCards, variantName, vClass, vtClass } from '../../game/rules';
@@ -76,6 +76,39 @@ export function PasswordDialog({ onClose }: { onClose: () => void }) {
         <label>Powtórz nowe hasło<input type="password" name="new2" required minLength={8} autoComplete="new-password" /></label>
         <div className={s.btns}><Button kind="hue" type="submit">Zapisz</Button><Button type="button" onClick={onClose}>Anuluj</Button></div>
       </form>
+    </Modal>
+  );
+}
+
+/** Email konta: do odzyskania hasła. Gracze sprzed emaili dopisują go tutaj (potwierdzają linkiem z maila). */
+export function EmailDialog({ onClose }: { onClose: () => void }) {
+  const [info, setInfo] = useState<{ enabled: boolean; email: string | null } | null>(null);
+  const [sent, setSent] = useState(false);
+  useEffect(() => { api('/api/email').then(setInfo).catch((e: any) => toast(e.message, true)); }, []);
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+    try {
+      const res = await api('/api/email', { email: f.email, password: f.password });
+      if (res.confirm) setSent(true);
+      else { toast('Email dodany'); onClose(); }
+    } catch (err: any) { toast(err.message, true); }
+  };
+  return (
+    <Modal title="Email konta" onClose={onClose}>
+      {!info && <p className="muted">Wczytuję…</p>}
+      {info && !info.enabled && <p className="muted">Na tym serwerze konta nie mają emaili.</p>}
+      {info?.enabled && info.email && <p>Twoje konto ma email <b>{info.email}</b>. Użyjesz go, żeby odzyskać hasło („Nie pamiętasz hasła?” na stronie logowania).</p>}
+      {info?.enabled && !info.email && sent && <p>Wysłaliśmy link potwierdzający na podany adres. Kliknij w niego, żeby dokończyć. Sprawdź też folder ze spamem.</p>}
+      {info?.enabled && !info.email && !sent && (
+        <form className={s.form} onSubmit={submit}>
+          <p className="muted small">Bez emaila nie odzyskasz hasła, jeśli je zapomnisz. Po dodaniu możesz logować się też samym emailem.</p>
+          <label>Email<input type="email" name="email" required maxLength={254} autoComplete="email" /></label>
+          <label>Obecne hasło<input type="password" name="password" required autoComplete="current-password" /></label>
+          <div className={s.btns}><Button kind="hue" type="submit">Dodaj email</Button><Button type="button" onClick={onClose}>Anuluj</Button></div>
+        </form>
+      )}
+      {info?.enabled && (info.email || sent) && <div className={s.btns}><Button type="button" onClick={onClose}>Zamknij</Button></div>}
     </Modal>
   );
 }

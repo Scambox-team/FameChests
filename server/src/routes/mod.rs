@@ -97,6 +97,12 @@ pub fn router(st: AppState) -> Router {
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         .route("/api/password", post(change_password))
+        // email, odzyskiwanie hasła (Supabase Auth); /auth/v1/verify to adres linków z maili
+        .route("/api/forgot", post(account::forgot))
+        .route("/api/reset", post(account::reset_password))
+        .route("/api/resend", post(account::resend))
+        .route("/api/email", get(account::email_info).post(account::add_email))
+        .route("/auth/v1/verify", get(account::auth_verify))
         // regulamin i zgłoszenia problemów z kartami
         .route("/api/legal", get(reports::legal))
         .route("/api/terms/accept", post(reports::accept_terms))

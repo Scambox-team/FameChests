@@ -72,6 +72,38 @@ sed -i 's|^GAME_IMAGE=.*|GAME_IMAGE=ghcr.io/scambox-team/famechests:latest|' .en
 docker compose pull game
 ```
 
+## Email i odzyskiwanie hasła
+
+Konto w grze to **email + nazwa gracza + hasło**. Email i hasło trzyma Supabase Auth (kontener `auth`), a nazwa i
+cała gra zostają w tabelach gry (powiązanie: tabela `user_auth`). Gracz zapomniał hasła: na stronie logowania
+„Nie pamiętasz hasła?” -> mail z linkiem -> nowe hasło. Rejestracja wymaga kliknięcia w link potwierdzający z maila.
+
+Potrzebny jest **prawdziwy serwer SMTP** (sam Docker maili nie wyśle, a własny serwer pocztowy prawie zawsze ląduje w
+spamie). Najprościej:
+
+| Dostawca | `SMTP_HOST` | `SMTP_PORT` | `SMTP_USER` / `SMTP_PASS` |
+|---|---|---|---|
+| Gmail | `smtp.gmail.com` | `587` | adres gmail / [hasło aplikacji](https://myaccount.google.com/apppasswords) (nie zwykłe hasło) |
+| Brevo, Resend, Mailgun... | z panelu dostawcy | `587` lub `465` | z panelu dostawcy |
+
+W `.env` ustaw: `GAME_PUBLIC_URL` (adres gry z `https://`, np. `https://scambox.pl` - tu wracają linki z maili),
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_ADMIN_EMAIL` (adres nadawcy; u większości dostawców
+zweryfikowany) i opcjonalnie `SMTP_SENDER_NAME`. Potem `docker compose up -d`.
+Przy `.env` z wcześniejszej instalacji dopisz te zmienne ręcznie (wzór: `.env.example`); bez `GAME_PUBLIC_URL`
+`docker compose` zatrzyma się z komunikatem.
+
+Sprawdzenie: załóż konto na stronie gry, mail z linkiem powinien przyjść w minutę (sprawdź też spam). Nie przychodzi?
+`docker compose logs auth` pokaże błąd SMTP (zły login/hasło, port, niezweryfikowany nadawca).
+Na czas testów bez poczty ustaw `ENABLE_EMAIL_AUTOCONFIRM=true` - konto jest wtedy od razu potwierdzone (odzyskiwanie
+hasła nadal potrzebuje SMTP).
+
+**Starzy gracze** (konta sprzed emaili) logują się jak dotąd nazwą i hasłem, a email dopisują sami: profil ->
+**Email** (wpisują adres i obecne hasło, potwierdzają linkiem z maila). Bez emaila nie odzyskają hasła; mogą też
+poprosić admina o zmianę hasła w panelu. Zalogowanie się nowym sposobem kasuje stary hash hasła z bazy gry.
+
+Admin zmieniający hasło albo usuwający gracza w panelu zmienia/usuwa też jego konto w Supabase Auth. Ręczne
+usunięcie użytkownika w Supabase Studio nie usuwa gracza z gry - kasuj zawsze z panelu admina.
+
 ## Przeniesienie danych z Azure / Supabase w chmurze
 
 Robi to ktoś z zespołu, kto ma dostęp do Azure (adres bazy i klucze są tam).

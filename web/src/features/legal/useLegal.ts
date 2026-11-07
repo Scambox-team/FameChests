@@ -5,6 +5,8 @@ export interface LegalInfo {
   minAge: number;
   operator: string | null;
   contactEmail: string | null;
+  /** konta z emailem i odzyskiwaniem hasła (Supabase Auth) */
+  emailAuth: boolean;
 }
 
 let cached: LegalInfo | null = null;

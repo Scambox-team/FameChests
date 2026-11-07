@@ -14,7 +14,7 @@ use serde_with::serde_as;
 use unicode_normalization::UnicodeNormalization;
 
 use super::{ok, JsonBody};
-use crate::auth::{hash_password_async, password_error, Admin, User, UserView, MIN_PASSWORD};
+use crate::auth::{password_error, user_by_id, Admin, User, UserView, MIN_PASSWORD};
 use crate::catalog::{self, Catalog, Person, RawAbility, RawArenaCfg, RawCard, Table};
 use crate::data::g;
 use crate::db::{now, Conn};
@@ -1298,9 +1298,10 @@ pub async fn admin_password(
     if req.password.chars().count() < MIN_PASSWORD {
         return bad(password_error());
     }
-    let hash = hash_password_async(req.password).await;
     let mut tx = st.db.begin().await?;
-    sqlx::query!("UPDATE users SET password_hash = $1 WHERE id = $2", hash, uid).execute(&mut *tx).await?;
+    let Some(target) = user_by_id(&mut tx, uid).await? else { return Err(crate::error::AppError::not_found()) };
+    let link = super::account::auth_link(&mut tx, uid).await?;
+    super::account::set_password(&st, &mut tx, &target, link.as_ref(), &req.password).await?;
     log_admin(&mut tx, &me, "password", Some(uid), "").await?;
     tx.commit().await?;
     ok(json!({"ok": true}))
@@ -1312,6 +1313,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     }
     guard_owner(&st, &me, uid)?;
     let mut tx = st.db.begin().await?;
+    let auth_id = super::account::auth_link(&mut tx, uid).await?.map(|l| l.auth_id);
     log_admin(&mut tx, &me, "user_delete", Some(uid), "").await?; // przed usunięciem - żeby zapisać nazwę gracza
     super::market::market_forget_user(&mut tx, uid).await?; // jego oferty na rynku i lobby jackpota
     super::casino::blackjack_forget_user(&mut tx, uid).await?; // rozdanie w trakcie i postawione w nim karty
@@ -1337,6 +1339,12 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     sqlx::query!("DELETE FROM friendships WHERE requester_id = $1 OR addressee_id = $1", uid).execute(&mut *tx).await?;
     sqlx::query!("DELETE FROM users WHERE id = $1", uid).execute(&mut *tx).await?;
     tx.commit().await?;
+    // konto w Supabase Auth też znika - inaczej email zostałby zajęty
+    if let (Some(gt), Some(id)) = (&st.cfg.gotrue, auth_id) {
+        if gt.admin_delete(&id).await.is_err() {
+            tracing::warn!("nie udało się usunąć konta {id} w Supabase Auth (gracz {uid} usunięty z gry)");
+        }
+    }
     ok(json!({"ok": true}))
 }
 

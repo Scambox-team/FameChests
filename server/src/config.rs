@@ -72,6 +72,8 @@ pub struct Config {
     pub operator_name: Option<String>,
     pub contact_email: Option<String>,
     pub owner_ids: Vec<i64>,
+    /// Supabase Auth (GOTRUE_URL): konta z emailem i odzyskiwaniem hasła; None = same nazwy i hasła
+    pub gotrue: Option<crate::gotrue::GoTrue>,
     pub backup_dir: PathBuf,
     pub backup_every_hours: f64,
     pub backup_keep: usize,
@@ -180,6 +182,14 @@ impl Config {
             Err(_) => Some(([127, 0, 0, 1], 9100).into()),
         };
         let backup_dir = env("BACKUP_DIR").map(PathBuf::from).unwrap_or_else(|| data_dir.join("backups"));
+        let gotrue = match env("GOTRUE_URL") {
+            Some(url) => {
+                let key = env("GOTRUE_SERVICE_KEY").ok_or_else(|| anyhow::anyhow!("GOTRUE_URL wymaga GOTRUE_SERVICE_KEY (SERVICE_ROLE_KEY z Supabase)"))?;
+                let public = env("PUBLIC_URL").ok_or_else(|| anyhow::anyhow!("GOTRUE_URL wymaga PUBLIC_URL (adres gry, np. https://scambox.pl) - tam wracają linki z maili"))?;
+                Some(crate::gotrue::GoTrue::new(&url, &key, &public))
+            }
+            None => None,
+        };
         Ok(Config {
             database_url,
             db_schema,
@@ -194,6 +204,7 @@ impl Config {
             operator_name: env("OPERATOR_NAME"),
             contact_email: env("CONTACT_EMAIL"),
             owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
+            gotrue,
             backup_dir,
             backup_every_hours: env("BACKUP_EVERY_HOURS").map(|h| h.parse()).transpose()?.unwrap_or(24.0),
             backup_keep: env("BACKUP_KEEP").map(|k| k.parse()).transpose()?.unwrap_or(14).max(1),

@@ -232,6 +232,15 @@ CREATE TABLE IF NOT EXISTS catalog_crates (id TEXT PRIMARY KEY, data TEXT NOT NU
 CREATE TABLE IF NOT EXISTS catalog_cards  (id TEXT PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', deleted INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS catalog_variants (id TEXT PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', deleted INTEGER NOT NULL DEFAULT 0);
 
+-- email i konto w Supabase Auth (GoTrue); osobna tabela: `users` czyta się przez SELECT *.
+-- Gracz bez wiersza tutaj loguje się jak dawniej (hasło w users.password_hash); z wierszem - hasłem z GoTrue
+CREATE TABLE IF NOT EXISTS user_auth (
+    user_id BIGINT PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    auth_id TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS user_auth_email ON user_auth (LOWER(email));
+
 -- zgody na regulamin i politykę prywatności (osobna tabela: `users` czyta się przez SELECT *)
 CREATE TABLE IF NOT EXISTS terms_accepted (
     user_id BIGINT NOT NULL, version TEXT NOT NULL, accepted_at DOUBLE PRECISION NOT NULL,

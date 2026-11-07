@@ -74,6 +74,7 @@ pub async fn legal(State(st): State<AppState>) -> Res {
         "minAge": MIN_AGE,
         "operator": st.cfg.operator_name,
         "contactEmail": st.cfg.contact_email,
+        "emailAuth": st.cfg.gotrue.is_some(),
     }))
 }
 

@@ -18,7 +18,7 @@ import { Avatar } from '../../ui/UserLink';
 import { arChallenge } from '../arena/arena';
 import { Binder, collectedOwned, type BinderOwned } from '../binder/BinderPage';
 import { PatchNotes } from '../notices/Notices';
-import { AvatarPicker, PasswordDialog } from './Account';
+import { AvatarPicker, EmailDialog, PasswordDialog } from './Account';
 import { TradeBuilder } from './TradeBuilder';
 import s from './social.module.css';
 
@@ -60,7 +60,7 @@ export function ProfilePage() {
   const game = useGame();
   const { name } = useParams();
   const username = name || game.me!.username;
-  const [dialog, setDialog] = useState<null | 'avatar' | 'password' | 'trade' | { notes: any[] }>(null);
+  const [dialog, setDialog] = useState<null | 'avatar' | 'password' | 'email' | 'trade' | { notes: any[] }>(null);
   const [crate, setCrate] = useState<string>(() => seenCrateList()[0]?.id);
   const { data: d, error, refetch } = useQuery({ queryKey: ['user', username], queryFn: () => api(`/api/users/${encodeURIComponent(username)}`) });
 
@@ -110,6 +110,7 @@ export function ProfilePage() {
             <Button onClick={news}>Co nowego</Button>
             <Button onClick={() => setDialog('avatar')}>Zmień ikonę</Button>
             <Button onClick={() => setDialog('password')}>Zmień hasło</Button>
+            <Button onClick={() => setDialog('email')}>Email</Button>
             <Button onClick={logout}>Wyloguj</Button>
           </>}
           {d.relation === 'none' && <Button kind="hue" onClick={() => act(() => api('/api/friends/request', { username: u.username }), 'Wysłano zaproszenie')}>Zaproś do znajomych</Button>}
@@ -147,6 +148,7 @@ export function ProfilePage() {
 
       {dialog === 'avatar' && <AvatarPicker onClose={() => setDialog(null)} onChanged={refetch} />}
       {dialog === 'password' && <PasswordDialog onClose={() => setDialog(null)} />}
+      {dialog === 'email' && <EmailDialog onClose={() => setDialog(null)} />}
       {dialog === 'trade' && <TradeBuilder username={u.username} onClose={() => setDialog(null)} onSent={() => {}} />}
       {dialog && typeof dialog === 'object' && <PatchNotes notes={dialog.notes} onClose={() => setDialog(null)} />}
     </div>
