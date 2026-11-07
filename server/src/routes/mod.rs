@@ -233,7 +233,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/users/{user_id}/chests", post(admin_give_chests))
         .route("/api/admin/users/{user_id}/money", post(admin_money))
         .route("/api/admin/users/{user_id}/admin", post(admin_toggle))
-        .route("/api/admin/users/{user_id}/password", post(admin_password))
+        .route("/api/admin/users/{user_id}/reset-link", post(admin_reset_link))
         // osiągnięcia
         .route("/api/users/{name}/achievements", get(crate::achievements::user_achievements))
         .route("/api/achievements/pop", post(crate::achievements::achievements_pop))

@@ -1,4 +1,4 @@
-//! Panel admina: katalog (skrzynki, karty, zdjęcia), gracze (blokady, pieniądze, skrzynki, dostęp, hasła), wiadomości
+//! Panel admina: katalog (skrzynki, karty, zdjęcia), gracze (blokady, pieniądze, skrzynki, dostęp, linki do resetu hasła), wiadomości
 //! do graczy, linki do kart specjalnych, dziennik działań adminów.
 
 use std::collections::{HashMap, HashSet};
@@ -14,13 +14,14 @@ use serde_with::serde_as;
 use unicode_normalization::UnicodeNormalization;
 
 use super::{ok, JsonBody};
-use crate::auth::{password_error, user_by_id, Admin, User, UserView, MIN_PASSWORD};
+use crate::auth::{user_by_id, Admin, User, UserView};
 use crate::catalog::{self, Catalog, Person, RawAbility, RawArenaCfg, RawCard, Table};
 use crate::data::g;
 use crate::db::{now, Conn};
 use crate::error::{bad, fail, AppError, Res};
 use crate::game::views::{img_version, variant_photos, CrateJson};
 use crate::game::*;
+use crate::gotrue::mask_email;
 use crate::images::Kind;
 use crate::lenient::{Num, NumOrText};
 use crate::state::AppState;
@@ -1284,25 +1285,36 @@ pub async fn admin_toggle(State(st): State<AppState>, Admin(me): Admin, Path(uid
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
-pub struct NewPassword {
-    password: String,
+pub struct ResetLink {
+    /// adres, na który wysłać link; pusty = email z konta gracza
+    email: String,
 }
 
-pub async fn admin_password(
+/// Link do resetu hasła mailem - ten sam co „zapomniałem hasła”. Admin nie ustawia hasła sam, więc nie może się
+/// zalogować na cudze konto. Odpowiedź jest zawsze taka sama: nie zdradza, czy podany adres ma konto.
+pub async fn admin_reset_link(
     State(st): State<AppState>,
     Admin(me): Admin,
     Path(uid): Path<i64>,
-    JsonBody(req): JsonBody<NewPassword>,
+    JsonBody(req): JsonBody<ResetLink>,
 ) -> Res {
     guard_owner(&st, &me, uid)?;
-    if req.password.chars().count() < MIN_PASSWORD {
-        return bad(password_error());
-    }
     let mut tx = st.db.begin().await?;
-    let Some(target) = user_by_id(&mut tx, uid).await? else { return Err(crate::error::AppError::not_found()) };
-    let link = super::account::auth_link(&mut tx, uid).await?;
-    super::account::set_password(&st, &mut tx, &target, link.as_ref(), &req.password).await?;
-    log_admin(&mut tx, &me, "password", Some(uid), "").await?;
+    if user_by_id(&mut tx, uid).await?.is_none() {
+        return Err(AppError::not_found());
+    }
+    let typed = req.email.trim();
+    let email = if typed.is_empty() {
+        match super::account::auth_link(&mut tx, uid).await? {
+            Some(link) => link.email,
+            None => return bad("Ten gracz nie ma emaila w koncie - wpisz adres"),
+        }
+    } else {
+        typed.to_owned()
+    };
+    super::account::send_recovery(&st, &email).await?;
+    let details = if typed.is_empty() { "email z konta".to_owned() } else { mask_email(&email.to_lowercase()) };
+    log_admin(&mut tx, &me, "password_link", Some(uid), &details).await?;
     tx.commit().await?;
     ok(json!({"ok": true}))
 }

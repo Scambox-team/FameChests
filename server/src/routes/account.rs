@@ -373,20 +373,26 @@ pub struct ResetBody {
     password: String,
 }
 
-/// "Zapomniałem hasła": mail z linkiem. Odpowiedź jest zawsze taka sama - nie zdradza, czy email ma konto.
-pub async fn forgot(State(st): State<AppState>, JsonBody(body): JsonBody<EmailBody>) -> Res {
+/// Mail z linkiem do resetu hasła (Supabase Auth). Wynik nie zdradza, czy email ma konto: inna odmowa niż limit
+/// wysyłek i awaria liczy się jak wysłany mail. Używa go „zapomniałem hasła” i akcja admina.
+pub async fn send_recovery(st: &AppState, email: &str) -> Res<()> {
     let Some(gt) = &st.cfg.gotrue else { return bad("Odzyskiwanie hasła nie jest tu włączone") };
-    let email = body.email.trim().to_lowercase();
+    let email = email.trim().to_lowercase();
     if !valid_email(&email) {
         return bad("Podaj poprawny adres email");
     }
     match gt.recover(&email).await {
         Err(Failure::Rejected { code }) if code.starts_with("over_") => {
-            return fail(StatusCode::TOO_MANY_REQUESTS, "Mail już wysłaliśmy, odczekaj chwilę przed kolejnym.");
+            fail(StatusCode::TOO_MANY_REQUESTS, "Mail już wysłaliśmy, odczekaj chwilę przed kolejnym.")
         }
-        Err(Failure::Unavailable) => return Err(unavailable()),
-        _ => {}
+        Err(Failure::Unavailable) => Err(unavailable()),
+        _ => Ok(()),
     }
+}
+
+/// "Zapomniałem hasła": mail z linkiem. Odpowiedź jest zawsze taka sama - nie zdradza, czy email ma konto.
+pub async fn forgot(State(st): State<AppState>, JsonBody(body): JsonBody<EmailBody>) -> Res {
+    send_recovery(&st, &body.email).await?;
     ok(json!({"ok": true}))
 }
 

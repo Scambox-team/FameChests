@@ -466,7 +466,7 @@ export function startPanel() {
           <button class="btn tiny" data-uact="chests">Skrzynki</button>
           <button class="btn tiny" data-uact="access">Dostęp</button>
           <button class="btn tiny" data-uact="money">Pieniądze</button>
-          <button class="btn tiny" data-uact="password">Hasło</button>
+          <button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
           <button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>
           ${u.id !== me ? `<button class="btn tiny" data-uact="admin">${u.isAdmin ? "Odbierz admina" : "Daj admina"}</button>
           <button class="btn tiny ${u.banned ? "" : "danger"}" data-uact="ban">${u.banned ? "Odblokuj" : "Zablokuj"}</button>
@@ -621,7 +621,7 @@ export function startPanel() {
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
     ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina",
-    password: "Zmiana hasła", user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
+    password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",
     link_create: "Nowy link do karty", link_on: "Włączył link", link_off: "Wyłączył link",
@@ -679,11 +679,13 @@ export function startPanel() {
         await api(`/api/admin/users/${id}/money`, { method: "POST", json: { amount: parseInt(v, 10) } });
         toast(`Zmieniono saldo gracza ${name}`);
       }
-      if (act === "password") {
-        const v = prompt(`Nowe hasło dla ${name} (min. 8 znaków):`);
-        if (!v) return;
-        await api(`/api/admin/users/${id}/password`, { method: "POST", json: { password: v } });
-        toast(`Zmieniono hasło gracza ${name}`);
+      if (act === "resetLink") {
+        const v = prompt(`Wysłać ${name} link do resetu hasła?\nAdres e-mail (puste = e-mail z konta gracza):`, "");
+        if (v === null) return;
+        const email = v.trim();
+        if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);
+        await api(`/api/admin/users/${id}/reset-link`, { method: "POST", json: { email } });
+        toast(email ? `Jeśli ${email} ma konto, dostanie link do resetu hasła` : `Wysłano link do resetu hasła na e-mail gracza ${name}`);
       }
       if (act === "ranking") {
         const u = A.users.find(x => String(x.id) === String(id));
