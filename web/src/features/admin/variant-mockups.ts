@@ -98,8 +98,19 @@ const seeded = seed => { let s = seed % 2147483647 || 7; return () => (s = s * 1
 const m3d = (kind, look, layer = "") => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"${layer ? ` data-layer="${layer}"` : ""}></canvas></div>`;
 
 VARIANT_PROPOSALS.push({
+  key: "hologram2", icon: "📡", name: "Hologramowy (poprzednie propozycje)", tag: "📡 HOLO",
+  about: "poprzednie cztery propozycje z tabliczką w zwykłej, prostokątnej ramce (lekkie zakłócenia, małe urządzenie, duża postać) - w powiększeniu można je obracać przeciągając myszą",
+  looks: [
+    { name: "Tabliczka przed postacią", desc: "Panel ze statystykami w prostokątnej ramce zachodzi na prawy brzeg postaci i wisi trochę przed nią, lekko odwrócony do środka.", cls: "hg", deco: m3d("holo2", 1) },
+    { name: "Tabliczka i znaczek", desc: "Jak 1, a do tego mały znaczek z wartością za postacią po lewej - widać go przy obracaniu.", cls: "hg", deco: m3d("holo2", 2) },
+    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca.", cls: "hg", deco: m3d("holo2", 3) },
+    { name: "Ekran na promieniu", desc: "Prostokątna tabliczka przed postacią po prawej, połączona z urządzeniem cienkim promieniem światła; lekko unosi się i opada.", cls: "hg", deco: m3d("holo2", 4) },
+  ],
+});
+
+VARIANT_PROPOSALS.push({
   key: "hologram", icon: "📡", name: "Hologramowy", tag: "📡 HOLO",
-  about: "lekkie zakłócenia, małe urządzenie, duża postać; skoro hologram da się obracać o 360° (przeciąganie w powiększeniu, w grze w podglądzie karty), sześć sposobów pokazania statystyk - wersja 1 to wygięty ekran z poprzednich makiet",
+  about: "(propozycje z ostatniej rundy) lekkie zakłócenia, małe urządzenie, duża postać; skoro hologram da się obracać o 360° (przeciąganie w powiększeniu, w grze w podglądzie karty), sześć sposobów pokazania statystyk - wersja 1 to wygięty ekran z poprzednich makiet",
   looks: [
     { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca (wersja 3 z poprzednich makiet).", cls: "hg", deco: m3d("holo3", 1) },
     { name: "Znaczki na orbicie", desc: "Cztery znaczki - HP, atak, wartość i rzadkość - krążą wokół głowy postaci, zawsze zwrócone przodem do widza; przy obracaniu mijają się z postacią.", cls: "hg", deco: m3d("holo3", 2) },
@@ -116,11 +127,8 @@ const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa gl
 
 VARIANT_PROPOSALS.push({
   key: "aero3d", icon: "🫧", name: "Frutiger Aero (3D)", tag: "🫧 AERO",
-  about: "wybrana makieta 1: planeta z wieżowcami jest teraz w tle - za zdjęciem i statystykami (widać ją przy krawędziach i w przerwach między panelami), rybki i szklane kule zostają nad kartą; kule w nowych miejscach",
+  about: "wybrana wersja 3 (planeta jak horyzont) z mniejszą planetą; planeta w tle za zdjęciem i szklanymi panelami, rybki i szklane kule nad kartą",
   looks: [
-    faLook("Planeta za zdjęciem, lewy dół", "Planeta w tle wychodzi zza zdjęcia i paneli w lewym dolnym rogu, kule w prawym górnym rogu i przy prawej krawędzi, rybki dookoła.", 1, "sky"),
-    faLook("Planeta za zdjęciem, prawa góra", "Planeta w tle za prawym górnym rogiem zdjęcia (wieżowce wystają nad nazwą), kule po lewej i na dole.", 2, "sky"),
-    faLook("Wielka planeta jak horyzont", "Bardzo duża planeta w tle za dolną połową karty - jej trawiasty brzeg i wieżowce wychodzą po bokach jak horyzont, kule u góry.", 3, "sky"),
-    faLook("Planeta za zdjęciem, lewa góra", "Planeta w tle w lewym górnym rogu za zdjęciem, poranne niebo z flarą obiektywu, kule przy prawej krawędzi i w dole.", 4, "orbs", '<i class="fa-flare"></i>'),
+    faLook("Mniejsza planeta jak horyzont", "Wersja 3 z mniejszą planetą: trawiasta planeta z wieżowcami w tle za dolną połową karty (prześwituje przez szklane panele), wyraźnie mniejsza niż poprzednio, kule u góry, rybki dookoła.", 5, "sky"),
   ],
 });

@@ -494,6 +494,7 @@ const AERO3 = {
   1: { planet: [-.7, -1.05, 1.2], orbs: [[.3, 0x2fd0ff, 1.05, 1.55], [.2, 0x7cff6a, 1.1, .6], [.16, 0xffffff, 1.0, -.35], [.24, 0x2fd0ff, -1.05, 1.6]] },
   2: { planet: [.75, 1.45, 1.1], orbs: [[.3, 0x2fd0ff, -1.05, -1.5], [.2, 0x7cff6a, -1.1, -.5], [.18, 0xffffff, -1.0, .5], [.22, 0x2fd0ff, 1.0, -1.6]] },
   3: { planet: [0, -2.15, 1.85], up: true, orbs: [[.3, 0x2fd0ff, -1.0, 1.55], [.22, 0x7cff6a, 1.05, 1.4], [.16, 0xffffff, 0, 1.75]] },
+  5: { planet: [0, -1.95, 1.35], up: true, orbs: [[.3, 0x2fd0ff, -1.0, 1.55], [.22, 0x7cff6a, 1.05, 1.4], [.16, 0xffffff, 0, 1.75]] },
   4: { planet: [-.75, 1.45, 1.1], orbs: [[.28, 0x2fd0ff, 1.05, .9], [.2, 0x7cff6a, 1.0, -.6], [.24, 0x2fd0ff, -1.0, -1.55], [.16, 0xffffff, .9, -1.7]] },
 };
 function buildAero3(T, scene, camera, look, pid, layer) {
