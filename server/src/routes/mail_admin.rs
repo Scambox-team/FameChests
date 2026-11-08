@@ -20,7 +20,7 @@ pub async fn admin_email_templates(State(st): State<AppState>, Admin(_): Admin) 
     let mut list = Vec::new();
     for d in tpl::DEFS {
         if let Some((subject, html, is_default)) = tpl::load(&mut c, d.name).await? {
-            list.push(tpl::view(d, &subject, &html, is_default));
+            list.push(tpl::view(d, &subject, &html, is_default, &site(&st)));
         }
     }
     ok(json!({"templates": list, "smtp": st.cfg.mailer.configured()}))
@@ -56,7 +56,7 @@ pub async fn admin_email_template_reset(State(st): State<AppState>, Admin(me): A
     tpl::reset(&mut tx, d.name).await?;
     log_admin(&mut tx, &me, "email_template_reset", None, d.name).await?;
     tx.commit().await?;
-    ok(tpl::view(d, d.subject, d.html, true))
+    ok(tpl::view(d, d.subject, d.html, true, &site(&st)))
 }
 
 /// Próbny mail z przykładowymi wartościami na email admina. Treść można podać z formularza (jeszcze niezapisaną).
@@ -80,11 +80,17 @@ pub async fn admin_email_template_test(
         }
         (body.subject.clone(), body.html.clone())
     };
-    let vars = tpl::samples(d);
+    let samples = tpl::samples(d, &site(&st));
+    let vars = tpl::sample_refs(&samples);
     let subject = format!("[test] {}", tpl::render(&subject, &vars));
     st.cfg.mailer.send(&link.email, &subject, &tpl::render(&html, &vars)).await.map_err(|e| {
         tracing::warn!("mail próbny nie wyszedł: {e}");
         super::account::unavailable()
     })?;
     ok(json!({"ok": true, "smtp": st.cfg.mailer.configured()}))
+}
+
+/// Adres gry w przykładowych linkach podglądu i maila próbnego (PUBLIC_URL, bez niego localhost)
+fn site(st: &AppState) -> String {
+    st.cfg.public_url.clone().unwrap_or_else(|| "http://localhost:8000".into())
 }

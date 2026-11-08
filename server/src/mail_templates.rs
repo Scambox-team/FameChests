@@ -33,9 +33,9 @@ const fn ph(name: &'static str, desc: &'static str, sample: &'static str) -> Pla
     Placeholder { name, desc, sample }
 }
 
-const URL: Placeholder = ph("ConfirmationURL", "adres linku z maila", "https://scambox.example/auth/v1/verify?token=PRZYKLAD");
-const LINK: Placeholder = ph("Link", "adres linku z maila (ważny godzinę)", "https://scambox.example/login?t=sb1_PRZYKLAD");
-const LINK_DAY: Placeholder = ph("Link", "adres linku z maila (ważny 24 godziny)", "https://scambox.example/konto/potwierdz?t=sb1_PRZYKLAD");
+const URL: Placeholder = ph("ConfirmationURL", "adres linku z maila", "{SITE}/auth/v1/verify?token=PRZYKLAD");
+const LINK: Placeholder = ph("Link", "adres linku z maila (ważny godzinę)", "{SITE}/login?t=sb1_PRZYKLAD");
+const LINK_DAY: Placeholder = ph("Link", "adres linku z maila (ważny 24 godziny)", "{SITE}/konto/potwierdz?t=sb1_PRZYKLAD");
 const MINUTES_DAY: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "1440");
 const USERNAME: Placeholder = ph("Username", "nazwa gracza", "Gracz123");
 const MINUTES: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "60");
@@ -129,9 +129,14 @@ pub fn render(tpl: &str, vars: &[(&str, &str)]) -> String {
         .into_owned()
 }
 
-/// Przykładowe wartości pól szablonu (podgląd, mail próbny)
-pub fn samples(d: &Def) -> Vec<(&'static str, &'static str)> {
-    d.placeholders.iter().map(|p| (p.name, p.sample)).collect()
+/// Przykładowe wartości pól szablonu (podgląd, mail próbny); `{SITE}` w przykładowych linkach = adres gry (PUBLIC_URL)
+pub fn samples(d: &Def, site: &str) -> Vec<(&'static str, String)> {
+    d.placeholders.iter().map(|p| (p.name, p.sample.replace("{SITE}", site.trim_end_matches('/')))).collect()
+}
+
+/// `samples` w postaci, którą przyjmuje `render`
+pub fn sample_refs<'a>(v: &'a [(&'static str, String)]) -> Vec<(&'static str, &'a str)> {
+    v.iter().map(|(k, s)| (*k, s.as_str())).collect()
 }
 
 /// Treść zapisywana z panelu: wymagane pola muszą być, żadnych nieznanych pól, rozsądny rozmiar
@@ -193,7 +198,8 @@ pub async fn reset(c: &mut Conn, name: &str) -> sqlx::Result<()> {
 }
 
 /// Opis szablonu dla panelu admina
-pub fn view(d: &Def, subject: &str, html: &str, is_default: bool) -> Value {
+pub fn view(d: &Def, subject: &str, html: &str, is_default: bool, site: &str) -> Value {
+    let site = site.trim_end_matches('/');
     json!({
         "name": d.name,
         "desc": d.desc,
@@ -202,7 +208,7 @@ pub fn view(d: &Def, subject: &str, html: &str, is_default: bool) -> Value {
         "isDefault": is_default,
         "subjectUsed": d.subject_used,
         "required": d.required,
-        "placeholders": d.placeholders.iter().map(|p| json!({"name": p.name, "desc": p.desc, "sample": p.sample})).collect::<Vec<_>>(),
+        "placeholders": d.placeholders.iter().map(|p| json!({"name": p.name, "desc": p.desc, "sample": p.sample.replace("{SITE}", site)})).collect::<Vec<_>>(),
     })
 }
 
@@ -224,7 +230,7 @@ mod tests {
                 assert!(d.html.contains(&format!("{{{{ .{need} }}}}")), "{}: brak {need}", d.name);
             }
             assert!(!d.html.contains("{{{") && !d.html.contains("}}}"), "{}: niedomknięte pole", d.name);
-            let out = render(d.html, &samples(d));
+            let out = render(d.html, &sample_refs(&samples(d, "https://scambox.pl")));
             assert!(!out.contains("{{"), "{}: nie podstawiono pól", d.name);
         }
     }
