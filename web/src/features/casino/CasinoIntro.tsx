@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sound } from '../../sound/sound';
 import './casino-intro.css';
 
 // Intro przed ekranem kasyna: GIF na cały ekran, potem znika i widać kasyno (pod spodem już się wczytuje).
@@ -33,7 +32,6 @@ export function CasinoIntro({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (!url) return;
-    Sound.dice();
     const a = setTimeout(() => setOut(true), PLAY_MS);
     const b = setTimeout(onDone, PLAY_MS + FADE_MS);
     return () => { clearTimeout(a); clearTimeout(b); };
