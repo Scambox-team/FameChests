@@ -22,7 +22,7 @@ use crate::error::{bad, fail, AppError, Res};
 use crate::game::views::{img_version, variant_photos, CrateJson};
 use crate::game::*;
 use crate::gotrue::mask_email;
-use crate::images::Kind;
+use crate::images::{Crop, Kind};
 use crate::lenient::{Num, NumOrText};
 use crate::state::AppState;
 use crate::text::{clean, fmt_money_signed, Truncate};
@@ -621,14 +621,19 @@ impl CardForm {
     }
 }
 
-/// Zdjęcie z formularza: plik > adres URL > usunięcie. None = bez zmian.
+/// Zdjęcie z formularza: plik > adres URL > usunięcie. None = bez zmian. Pole `crop<suffix>` (JSON {x,y,w,h} jako ułamki
+/// oryginału) wycina kadr z pliku albo z pobranego zdjęcia.
 async fn update_photo(st: &AppState, form: &CardForm, pid: &str, kind: &Kind, suffix: &str) -> Option<Result<(), String>> {
+    let crop = match Crop::parse(form.text(&format!("crop{suffix}"))) {
+        Ok(c) => c,
+        Err(e) => return Some(Err(e)),
+    };
     if let Some(blob) = form.upload(&format!("image{suffix}")) {
-        return Some(st.images.save(pid, blob, kind));
+        return Some(st.images.save_cropped(pid, blob, kind, crop));
     }
     let url = form.text(&format!("image_url{suffix}")).trim();
     if !url.is_empty() {
-        return Some(st.images.save_url(pid, url, kind).await);
+        return Some(st.images.save_url_cropped(pid, url, kind, crop).await);
     }
     if form.get(&format!("remove{suffix}")) == Some("1") {
         st.images.delete(pid, kind);
