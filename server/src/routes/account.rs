@@ -101,13 +101,18 @@ pub fn mail_on(st: &AppState) -> bool {
 /// Email gracza został potwierdzony (link z maila gry, pierwsze logowanie przez Supabase Auth albo udany reset hasła
 /// linkiem). Woła się to w JEDNYM miejscu po każdym potwierdzeniu; tu podpinać skutki (np. nagrody za polecenia).
 /// Zwraca true tylko za pierwszym razem (kolejne potwierdzenia nic nie robią).
-pub async fn on_email_verified(_st: &AppState, c: &mut Conn, uid: i64) -> sqlx::Result<bool> {
+pub async fn on_email_verified(st: &AppState, c: &mut Conn, uid: i64) -> sqlx::Result<bool> {
     let done = sqlx::query("UPDATE user_auth SET verified_at = $1 WHERE user_id = $2 AND verified_at IS NULL")
         .bind(now())
         .bind(uid)
-        .execute(c)
+        .execute(&mut *c)
         .await?;
-    Ok(done.rows_affected() > 0)
+    let first = done.rows_affected() > 0;
+    if first {
+        // polecenie tego gracza: od potwierdzenia emaila liczą się progi, przy zerowych nagroda przychodzi od razu
+        super::referral::settle_referred(c, &st.cat(), uid).await?;
+    }
+    Ok(first)
 }
 
 /// Konta bez Supabase Auth, ale z własnym SMTP: email potwierdza się linkiem z maila gry
