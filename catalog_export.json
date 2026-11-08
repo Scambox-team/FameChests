@@ -1249,7 +1249,57 @@
     "wiki": [
      "pl",
      "Jan Paweł II"
-    ]
+    ],
+    "exclusive": [],
+    "kind1": "off",
+    "kind2": "off",
+    "abilities": [],
+    "country": "",
+    "subtitle": "",
+    "desc": "",
+    "bibi": false,
+    "texts": {},
+    "source": "casino",
+    "fixedVariant": "joker",
+    "style": "1",
+    "crates_seen": [
+     "halloween",
+     "pl",
+     "prl",
+     "skrzynia_historyczna",
+     "skrzynia_krolow",
+     "specjalne",
+     "szachy",
+     "szachy_czarne",
+     "world"
+    ],
+    "arena": [
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     },
+     {
+      "visual": "hit",
+      "cost": null,
+      "target": null,
+      "effects": []
+     }
+    ],
+    "vx": {}
    },
    "deleted": false
   },
@@ -2488,6 +2538,25 @@
   }
  ],
  "variants": [
+  {
+   "id": "analog",
+   "data": {
+    "settings": {
+     "enabled": true,
+     "released": true,
+     "chance": null,
+     "weight": null,
+     "mult": null,
+     "noHouse": false,
+     "desc": null,
+     "events": [],
+     "cards": [],
+     "crateOnly": false,
+     "texts": {}
+    }
+   },
+   "deleted": false
+  },
   {
    "id": "scratch",
    "data": {
