@@ -186,8 +186,11 @@ impl Images {
 
     fn store(&self, pid: &str, blob: &[u8], kind: &Kind, crop: Option<Crop>) -> Result<(), String> {
         let ext = sniff(blob).ok_or("To nie jest obsługiwany obrazek (JPG, PNG, WEBP, GIF)")?;
-        let (ext, data) = if crop.is_none() && ext == "gif" && is_animated_gif(blob) {
+        let animated = ext == "gif" && is_animated_gif(blob);
+        let (ext, data) = if animated && crop.is_none() {
             ("gif", blob.to_vec())
+        } else if let (true, Some(c)) = (animated, crop) {
+            ("gif", crop_gif(blob, c)?) // kadrowany animowany GIF zostaje animowanym GIF-em
         } else {
             ("webp", process(blob, crop)?)
         };
@@ -684,6 +687,38 @@ fn is_animated_gif(blob: &[u8]) -> bool {
     image::codecs::gif::GifDecoder::new(std::io::Cursor::new(blob)).map(|d| d.into_frames().take(2).count() > 1).unwrap_or(false)
 }
 
+/// Najwięcej klatek kadrowanego GIF-a (dłuższe animacje są odrzucane - każda klatka jest w pamięci jako RGBA)
+const GIF_MAX_FRAMES: usize = 600;
+
+/// Animowany GIF -> ten sam kadr wycięty z każdej klatki -> animowany GIF (czasy klatek i zapętlenie zostają)
+fn crop_gif(blob: &[u8], crop: Crop) -> Result<Vec<u8>, String> {
+    use image::codecs::gif::{GifDecoder, GifEncoder, Repeat};
+    use image::{AnimationDecoder, Frame};
+    let bad = |_| "Nie udało się odczytać animowanego GIF-a".to_owned();
+    let mut decoder = GifDecoder::new(std::io::Cursor::new(blob)).map_err(bad)?;
+    decoder.set_limits(limits()).map_err(|_| "Obrazek jest za duży".to_owned())?;
+    let (width, height) = image::ImageDecoder::dimensions(&decoder);
+    let (x, y, w, h) = crop.pixels(width, height)?;
+    let mut out = Vec::new();
+    {
+        let mut encoder = GifEncoder::new_with_speed(&mut out, 10);
+        encoder.set_repeat(Repeat::Infinite).map_err(|e| e.to_string())?;
+        for (i, frame) in decoder.into_frames().enumerate() {
+            if i >= GIF_MAX_FRAMES {
+                return Err(format!("GIF ma za dużo klatek do kadrowania (max {GIF_MAX_FRAMES})"));
+            }
+            let frame = frame.map_err(bad)?;
+            let delay = frame.delay();
+            let cut = image::imageops::crop_imm(frame.buffer(), x, y, w, h).to_image();
+            encoder.encode_frame(Frame::from_parts(cut, 0, 0, delay)).map_err(|e| format!("Nie udało się zapisać GIF-a: {e}"))?;
+        }
+    }
+    if out.len() > MAX_UPLOAD {
+        return Err("Wykadrowany GIF jest za duży (max 8 MB) - wybierz mniejszy kadr".into());
+    }
+    Ok(out)
+}
+
 /// Kadr -> zmniejszenie do MAX_SIDE -> WebP
 fn process(blob: &[u8], crop: Option<Crop>) -> Result<Vec<u8>, String> {
     let mut im = decode(blob)?;
@@ -890,6 +925,26 @@ mod tests {
         };
         im.write_to(&mut out, image::ImageFormat::Png).unwrap();
         out.into_inner()
+    }
+
+    #[test]
+    fn cropped_animated_gif_stays_animated() {
+        use image::codecs::gif::{GifDecoder, GifEncoder};
+        use image::{AnimationDecoder, Delay, Frame, Rgba, RgbaImage};
+        let mut gif = Vec::new();
+        {
+            let mut enc = GifEncoder::new(&mut gif);
+            for color in [[255, 0, 0, 255], [0, 0, 255, 255], [0, 255, 0, 255]] {
+                let im = RgbaImage::from_pixel(200, 100, Rgba(color));
+                enc.encode_frame(Frame::from_parts(im, 0, 0, Delay::from_numer_denom_ms(100, 1))).unwrap();
+            }
+        }
+        assert!(super::is_animated_gif(&gif));
+        let out = super::crop_gif(&gif, super::Crop { x: 0.25, y: 0.0, w: 0.5, h: 1.0 }).unwrap();
+        let frames = GifDecoder::new(std::io::Cursor::new(&out)).unwrap().into_frames().collect_frames().unwrap();
+        assert_eq!(frames.len(), 3);
+        assert_eq!(frames[0].buffer().dimensions(), (100, 100));
+        assert_eq!(frames[1].buffer().get_pixel(50, 50).0[2], 255, "druga klatka niebieska");
     }
 
     #[test]
