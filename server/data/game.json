@@ -3924,6 +3924,19 @@
  },
  "patchNotes": [
   {
+   "v": 26,
+   "date": "2026-11-08",
+   "title": "Telefon, konto i maile",
+   "items": [
+    "📱 <b>Telefon</b> ma teraz tę samą nawigację co komputer: dolny pasek i przycisk <b>Więcej</b> (profil, ustawienia, panel admina dla adminów i reszta).",
+    "⚙️ W <b>Ustawieniach</b> jest wyłącznik <b>Grafika 3D</b> - po wyłączeniu gra jest lżejsza na słabszych telefonach i wszystko działa w 2D. Jest też sekcja <b>Eksperymentalne</b> z motywem <b>Y2K</b> (róż, ostre rogi, brokat).",
+    "🔑 <b>Hasło</b> zmienisz w ustawieniach konta (stare hasło i dwa razy nowe) albo linkiem z maila. Linki do resetu hasła są ważne 1 godzinę.",
+    "✉️ <b>Email</b> możesz <b>potwierdzić</b> i <b>zmienić</b> - link do zmiany wysyłamy na Twój obecny adres. Maile z gry mają teraz wygląd gry.",
+    "🤝 <b>Polecenia</b>: nagroda dla obu stron pojawia się dopiero, gdy nowe konto <b>potwierdzi email</b>; potem obowiązują dotychczasowe warunki. W zakładce poleceń widać, kto Cię polecił i kto założył konto z Twojego linku - razem z tym, czego jeszcze brakuje do nagrody.",
+    "🖼️ Zdjęcia kart są lżejsze (WebP), więc ładują się szybciej."
+   ]
+  },
+  {
    "v": 25,
    "date": "2026-11-07",
    "title": "Snake i sprzedaż Jokerów",
