@@ -91,33 +91,22 @@ VARIANT_PROPOSALS.push({
 });
 
 // ================================================================ wspólne (partia 2: Żelkowy, Kryształowy, Nocne niebo, Hologram, Frutiger Aero 3D)
-// ASCII Art, Drewniany, Dowód osobisty, Żelkowy, Kryształowy i Nocne niebo są już w grze - cards2.css / cardHtml.ts.
+// ASCII Art, Drewniany, Dowód osobisty, Żelkowy, Kryształowy, Nocne niebo i Frutiger Aero 3D są już w grze - cards2.css / cardHtml.ts, three/aeroScene.ts.
 const seeded = seed => { let s = seed % 2147483647 || 7; return () => (s = s * 16807 % 2147483647) / 2147483647; };
 
 // ================================================================ HOLOGRAMOWY (hg-) i FRUTIGER AERO 3D (fa-): sceny Three.js w variant-mockups-3d.ts
 const m3d = (kind, look, layer = "") => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"${layer ? ` data-layer="${layer}"` : ""}></canvas></div>`;
 
 VARIANT_PROPOSALS.push({
-  key: "hologram2", icon: "📡", name: "Hologramowy (poprzednie propozycje)", tag: "📡 HOLO",
-  about: "poprzednie cztery propozycje z tabliczką w zwykłej, prostokątnej ramce (lekkie zakłócenia, małe urządzenie, duża postać) - w powiększeniu można je obracać przeciągając myszą",
-  looks: [
-    { name: "Tabliczka przed postacią", desc: "Panel ze statystykami w prostokątnej ramce zachodzi na prawy brzeg postaci i wisi trochę przed nią, lekko odwrócony do środka.", cls: "hg", deco: m3d("holo2", 1) },
-    { name: "Tabliczka i znaczek", desc: "Jak 1, a do tego mały znaczek z wartością za postacią po lewej - widać go przy obracaniu.", cls: "hg", deco: m3d("holo2", 2) },
-    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca.", cls: "hg", deco: m3d("holo2", 3) },
-    { name: "Ekran na promieniu", desc: "Prostokątna tabliczka przed postacią po prawej, połączona z urządzeniem cienkim promieniem światła; lekko unosi się i opada.", cls: "hg", deco: m3d("holo2", 4) },
-  ],
-});
-
-VARIANT_PROPOSALS.push({
   key: "hologram", icon: "📡", name: "Hologramowy", tag: "📡 HOLO",
-  about: "(propozycje z ostatniej rundy) lekkie zakłócenia, małe urządzenie, duża postać; skoro hologram da się obracać o 360° (przeciąganie w powiększeniu, w grze w podglądzie karty), sześć sposobów pokazania statystyk - wersja 1 to wygięty ekran z poprzednich makiet",
+  about: "wybrana makieta 2 (prostokątna tabliczka przed postacią i znaczek z wartością z tyłu) i pięć nowych pomysłów na samą postać w hologramie; w powiększeniu każdy obracasz przeciągając myszą",
   looks: [
-    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca (wersja 3 z poprzednich makiet).", cls: "hg", deco: m3d("holo3", 1) },
-    { name: "Znaczki na orbicie", desc: "Cztery znaczki - HP, atak, wartość i rzadkość - krążą wokół głowy postaci, zawsze zwrócone przodem do widza; przy obracaniu mijają się z postacią.", cls: "hg", deco: m3d("holo3", 2) },
-    { name: "Statystyki z tyłu", desc: "Z przodu tylko postać i napis „↻ OBRÓĆ”; po obróceniu hologramu o 180° z tyłu widać całą tabliczkę ze statystykami.", cls: "hg", deco: m3d("holo3", 3) },
-    { name: "Tabliczki warstwami", desc: "Trzy małe tabliczki (nazwa z rzadkością, HP z atakiem, wartość) jedna przed drugą po prawej - przy obracaniu przesuwają się względem siebie.", cls: "hg", deco: m3d("holo3", 4) },
-    { name: "Pierścień na podłodze", desc: "Statystyki biegną tekstem po świecącym pierścieniu na podłodze wokół urządzenia (powoli się obraca), a nad głową postaci unosi się jej imię i nazwisko.", cls: "hg", deco: m3d("holo3", 5) },
-    { name: "Kolumna danych", desc: "Po lewej pionowa kolumna, po której bez końca przewijają się w górę wszystkie dane karty, po prawej mały znaczek z HP.", cls: "hg", deco: m3d("holo3", 6) },
+    { name: "Tabliczka i znaczek (wybrana)", desc: "Postać jako płaski hologram, prostokątna tabliczka ze statystykami po prawej przed postacią, za postacią po lewej mały znaczek z wartością.", cls: "hg", deco: m3d("holo2", 2) },
+    { name: "Chmura punktów", desc: "Postać złożona z tysięcy świecących punktów - jaśniejsze miejsca twarzy wysunięte do przodu, więc przy obracaniu widać ją w 3D; punkty delikatnie falują, zakłócenia przesuwają całe rzędy.", cls: "hg", deco: m3d("holo4", 1) },
+    { name: "Płaskorzeźba z siatką", desc: "Zdjęcie wypchnięte w trzeci wymiar jak płaskorzeźba (nos, czoło i jasne partie wystają), na wierzchu cienka siatka linii jak w modelu 3D.", cls: "hg", deco: m3d("holo4", 2) },
+    { name: "Holograficzna karta", desc: "Nad urządzeniem unosi się cała karta jako hologram (ramka, nazwa, zdjęcie, ataki, wartość) i powoli obraca się dookoła - z tyłu tabliczka ze statystykami.", cls: "hg", deco: m3d("holo4", 3) },
+    { name: "Warstwy głębi", desc: "Postać pocięta na sześć przezroczystych warstw według jasności, każda na innej głębokości - przy obracaniu rozchodzą się jak przekrój; przez postać przesuwa się linia skanera.", cls: "hg", deco: m3d("holo4", 4) },
+    { name: "Szklana kopuła", desc: "Nad projektorem wysoka szklana kopuła z tęczowym połyskiem, w środku hologram postaci, a po kopule krąży pierścień z nazwą i statystykami karty.", cls: "hg", deco: m3d("holo4", 5) },
   ],
 });
 
@@ -125,10 +114,3 @@ const faBg = (cls, look, extra = "") => p => `<div class="vm-bg aer-bg ${cls}"><
 const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa glassy ${cls}`, bg: faBg(cls, look, extra), photo: () => '<i class="vm-photo fa-glass"></i>',
   deco: p => m3d("aero3", look, "front")(p) + '<div class="vm-deco"><i class="fa-gloss"></i></div>' });
 
-VARIANT_PROPOSALS.push({
-  key: "aero3d", icon: "🫧", name: "Frutiger Aero (3D)", tag: "🫧 AERO",
-  about: "wybrana wersja 3 (planeta jak horyzont) z mniejszą planetą; planeta w tle za zdjęciem i szklanymi panelami, rybki i szklane kule nad kartą",
-  looks: [
-    faLook("Mniejsza planeta jak horyzont", "Wersja 3 z mniejszą planetą: trawiasta planeta z wieżowcami w tle za dolną połową karty (prześwituje przez szklane panele), wyraźnie mniejsza niż poprzednio, kule u góry, rybki dookoła.", 5, "sky"),
-  ],
-});

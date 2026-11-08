@@ -107,7 +107,7 @@ canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .ns-shoot.fast { height: .55cqw; box-shadow: 0 0 1cqw #fff; }
 
 /* Hologram v3: obracanie przeciąganiem tylko w powiększeniu (w siatce kliknięcie otwiera powiększenie) */
-.vr-zoom canvas.m3d:is([data-kind="holo2"], [data-kind="holo3"]) { pointer-events: auto; cursor: grab; touch-action: none; }
+.vr-zoom canvas.m3d:is([data-kind="holo2"], [data-kind="holo3"], [data-kind="holo4"]) { pointer-events: auto; cursor: grab; touch-action: none; }
 .vm-bg canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Aero v3: szklane, przejrzyste panele - planeta w tle prześwituje przez statystyki i widać ją nad nazwą */

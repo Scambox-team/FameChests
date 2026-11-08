@@ -571,6 +571,9 @@ function vxRainbow(cx, cy, r, w = 2.2, op = .75) {
 const vxFish = (c1, c2, stripes = false) => `<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M10 12 L1 3 L4 12 L1 21 Z" fill="${c2}"/><path d="M17 5 Q23 -2 30 5 Z" fill="${c2}"/>
   <ellipse cx="22" cy="12" rx="14" ry="8.5" fill="${c1}"/>${stripes ? `<ellipse cx="18" cy="12" rx="1.7" ry="8" fill="#fff"/><ellipse cx="27" cy="12" rx="1.5" ry="7.3" fill="#fff"/>` : ""}
   <ellipse cx="22" cy="8" rx="10" ry="3" fill="#fff" opacity=".35"/><circle cx="31" cy="10" r="1.8" fill="#fff"/><circle cx="31.5" cy="10" r=".9" fill="#111"/></svg>`;
+// Frutiger Aero: obrazki planety i rybek renderuje raz three/aeroScene.ts (zmienne CSS --aero-back / --aero-front)
+let aeroStillsAsked = false;
+const aeroStillsOnce = () => { if (aeroStillsAsked) return; aeroStillsAsked = true; import("../three/aeroScene").then(m => m.aeroStills()).catch(() => {}); };
 const AERO_FISH = [["#ff7a1f", "#ffb03f", true], ["#ffd23f", "#2fa8ff"], ["#3fe0c0", "#2f6bff"]];
 // błyszczące zielone wzgórze z trawą i stokrotkami (Frutiger Aero) - od wysokości y do dołu karty
 function aeMeadow(g, y = 62) {
@@ -998,7 +1001,8 @@ export const VX_BG = {
   electric: () => '<i class="el-clouds"></i><i class="el-rain"></i>',
   // Synthwave: na dole tła zachodzi słońce w paski (spod paneli z napisami)
   synthwave: () => '<i class="sw-sun"></i><i class="sw-glow"></i>',
-  aero: () => `${vxSvg(vxRainbow(10, 40, 26, 1.8, .45), "0 0 63 88", "ae-rainbow")}<i class="ae-cloud c1"></i><i class="ae-cloud c2"></i>${vxSvg(aeMeadow(vxId("aeHill")))}`,
+  // Frutiger Aero 3D: promienie, wzgórza i planeta z wieżowcami (obrazek z jednorazowego renderu Three.js, three/aeroScene.ts)
+  aero: () => { aeroStillsOnce(); return '<i class="ae3-rays"></i><i class="ae3-hills"></i><i class="ae3-planet"></i>'; },
   honey: () => '<i class="hn-shine"></i>',
   chinese: () => vxSvg(cnCloud(6, 40, 1) + cnCloud(42, 60, .9) + cnCloud(10, 78, .8)),
   racing: () => '<i class="rc-band"></i><i class="rc-grain"></i>',
@@ -1041,7 +1045,7 @@ export const VX_PHOTO = {
   // ...i kilka łańcuszków bąbelków na zdjęciu (krótsza droga do góry)
   beer: () => `<i class="vx-photo br-amber"></i><i class="vx-photo br-bubs">${brBubbles(3, 4, 4)}</i><i class="vx-photo br-glass"></i>`,
   electric: '<i class="vx-photo el-strike"></i>',
-  aero: '<i class="vx-photo ae-glass"></i>',
+  aero: '<i class="vx-photo ae3-glass"></i>',
   honey: '<i class="vx-photo hn-amber"></i>',
   slime: '<i class="vx-photo sl-tint"></i>',
   bismuth: '<i class="vx-photo bi-oxide"></i>',
@@ -1112,8 +1116,8 @@ export const VX_DECO = {
   noir: () => `<div class="vx-deco vx-clip nr-flick"><i class="nr-perf l"></i><i class="nr-perf r"></i>${nrScratches(3)}<i class="nr-dust"></i><i class="nr-vignette"></i><i class="nr-grain"></i></div>`,
   motor: () => `<div class="vx-deco"><i class="mt-gauge">${mtGauge()}</i><i class="mt-shift"></i></div>`,
   // Frutiger Aero: szklany połysk na górnej połowie karty, rybki pływające po niebie i bańki
-  aero: () => `<div class="vx-deco"><i class="ae-gloss"></i></div><div class="vx-deco vx-clip">${AERO_FISH.map(([a, b, s], k) =>
-    `<i class="ae-fish f${k + 1}" style="animation-delay:-${vxN(0, 12, 1)}s">${vxFish(a, b, s)}</i>`).join("")}${vxBubbles(6, "ae-bubble")}</div>`,
+  // Frutiger Aero 3D: rybki i szklane kule (obrazek z renderu; w podglądzie karty żywa scena - mountAeroLive) i połysk
+  aero: () => '<div class="vx-deco vx-clip"><i class="ae3-front"></i></div><div class="vx-deco"><i class="ae3-gloss"></i></div>',
   // Miodowa: miód kapiący z góry i przelatujące pszczoły
   honey: () => `<div class="vx-deco hn-drip">${vxSvg(vxDrips("#f2a20f", "#ffe08a", [8, 16]))}</div><div class="vx-deco vx-clip">${hnBees(2)}</div>`,
   // Chińska: czerwone lampiony ze złotymi frędzlami kołyszą się u góry karty

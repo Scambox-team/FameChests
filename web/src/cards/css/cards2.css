@@ -1504,34 +1504,26 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 .odd.odd-v.vt-honey { border-left-color: #f2a20f; } .odd.odd-v.vt-chinese { border-left-color: #d81e1e; }
 
 /* Frutiger Aero - niebo z tęczą i chmurami, błyszcząca zielona łąka, rybki pływające po niebie, bańki, szklany połysk */
-.card.v-aero { --frame: linear-gradient(180deg, #f2fdff 0%, #8fdcff 44%, #1e9be0 50%, #4cc2ff 78%, #d3f6ff 100%); --spin: initial; box-shadow: 0 6px 18px #0008, 0 0 22px #4cc2ff99; }
-.card.v-aero .card-inner { background: linear-gradient(180deg, #2a86e6, #6fbaff 55%, #a8dcff); color: #08325a; font-family: "Segoe UI", Rubik, sans-serif; }
-.card.v-aero .card-name { color: #06305c; text-shadow: 0 1px 0 #fff, 0 0 .4em #fff, 0 0 .8em #fff; }
-.card.v-aero :is(.card-sub, .card-attack, .card-stats) { background: linear-gradient(180deg, #ffffffd0, #ffffff80 50%, #ffffff55 51%, #ffffff80); border-radius: .5em;
-  box-shadow: inset 0 0 0 1px #ffffffcc, 0 .1em .3em #0003; border: none; color: #08325a; }
-.card.v-aero .card-attack { padding: .4em .5em; margin-top: 2%; }
-.card.v-aero .card-attack:first-of-type { margin-top: auto; }
-.card.v-aero .card-stats { padding: .3em 0; }
-.card.v-aero .card-sub { margin-inline: 0; }
-.card.v-aero .card-foot { color: #06305c; text-shadow: 0 0 .4em #fff; }
-.card.v-aero .card-photo { border: .22em solid #fff; border-image: none; border-radius: .8em; box-shadow: 0 .2em .6em #0005; margin: 4% 7% 0; }
-.card.v-aero .card-photo > img, .r-secret.v-aero .sc-art img { filter: saturate(1.15) brightness(1.05); }
-.ae-gloss { inset: 0; border-radius: 4.5%/3.2%; background: linear-gradient(180deg, #ffffff38, #ffffff0a 44%, transparent 45%); }
-.ae-glass { background: linear-gradient(180deg, #ffffff88, #ffffff1a 46%, transparent 48%), radial-gradient(120% 60% at 50% 110%, #8fe8ff55, transparent 60%); border-radius: .6em; }
-.ae-rainbow { filter: blur(.4px); }
-.ae-cloud { height: 10%; border-radius: 50%; background: radial-gradient(closest-side, #fff, #ffffff00); will-change: transform; animation: aeCloud 22s linear infinite; }
-.ae-cloud.c1 { width: 55%; top: 6%; left: -10%; }
-.ae-cloud.c2 { width: 70%; top: 34%; left: 40%; animation-duration: 30s; animation-delay: -12s; opacity: .85; }
-@keyframes aeCloud { from { transform: translateX(-40%); } to { transform: translateX(80%); } }
-.ae-fish { width: 15%; aspect-ratio: 40 / 24; left: 0; will-change: transform; animation: aeSwim 13s linear infinite; }
-.ae-fish svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 .4cqw .4cqw #0004); }
-.ae-fish.f1 { top: 20%; } .ae-fish.f2 { top: 30%; width: 11%; animation-duration: 10s; } .ae-fish.f3 { top: 58%; width: 12%; animation-duration: 15s; }
-@keyframes aeSwim { from { transform: translateX(-130%); } to { transform: translateX(110cqw); } }
-.ae-bubble { bottom: -12%; width: 9%; aspect-ratio: 1; border-radius: 50%; will-change: transform, opacity; animation: vxRise linear infinite;
-  background: radial-gradient(circle at 32% 28%, #ffffff 0 10%, #ffffff55 18%, transparent 45%), radial-gradient(circle at 50% 50%, transparent 58%, #b6f1ff88 68%, #ffd6f488 78%, #ffffffaa 90%, transparent 100%);
-  box-shadow: inset 0 0 .4em #ffffff66; }
-@keyframes vxRise { from { transform: translateY(0) scale(var(--s, 1)); opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } to { transform: translateY(-150cqw) scale(var(--s, 1)); opacity: 0; } }
-.r-secret.v-aero .sc-border { background: linear-gradient(180deg, #f2fdff, #8fdcff 44%, #1e9be0 50%, #4cc2ff 78%, #d3f6ff); animation: none; }
+/* Frutiger Aero (makieta Aero 3D „Mniejsza planeta jak horyzont”) - błękitne niebo, promienie, wzgórza, w tle trawiasta planeta ze szklanymi wieżowcami
+   (pod zdjęciem i szklanymi panelami), nad kartą rybki i szklane kule. Planeta i rybki to obrazki z jednorazowego renderu Three.js
+   (--aero-back / --aero-front, three/aeroScene.ts), w podglądzie karty żywa scena (mountAeroLive, płótna .ae3-live). Klasy ae3-. */
+.card.v-aero { --frame: linear-gradient(160deg, #ffffff, #9fe0ff 35%, #2fa8e8 60%, #bff0ff); --spin: initial; box-shadow: 0 6px 18px #0008, 0 0 2cqw #5fd0ff66; }
+.card.v-aero .card-inner { background: linear-gradient(180deg, #2a9be0, #7fd2ff 45%, #e8fbff 78%); color: #06345a; font-family: "Segoe UI", Frutiger, "Myriad Pro", Tahoma, sans-serif; }
+.vx-bg > .ae3-rays { inset: -30%; transform-origin: 30% 20%; opacity: .7; will-change: transform; background: repeating-conic-gradient(from 0deg at 30% 20%, #ffffff26 0 6deg, transparent 6deg 14deg); animation: ae3Spin 80s linear infinite; }
+@keyframes ae3Spin { to { transform: rotate(360deg); } }
+.vx-bg > .ae3-hills { left: -5%; right: -5%; bottom: 0; height: 24%; opacity: .55; background: radial-gradient(60% 100% at 25% 100%, #7fd23f 97%, transparent), radial-gradient(70% 90% at 80% 100%, #9ee35a 97%, transparent); }
+.vx-bg > .ae3-planet, .vx-deco > .ae3-front { inset: 0; background: var(--aero-back, none) center / 100% 100% no-repeat; }
+.vx-deco > .ae3-front { background-image: var(--aero-front, none); }
+canvas.ae3-live { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.card.v-aero :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: linear-gradient(#ffffff66, #ffffff30 50%, #ffffff18 51%, #ffffff40); border: .3cqw solid #ffffffb0; border-radius: 1.6cqw;
+  box-shadow: 0 .4cqw 1cqw #0a5a8a40, inset 0 .3cqw 0 #fff; }
+.card.v-aero :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg) { color: #03263f; text-shadow: 0 0 .5cqw #fff, 0 0 1cqw #fff; }
+.card.v-aero :is(.card-name, .card-hp) { color: #fff; font-weight: 700; text-shadow: 0 .2cqw .6cqw #0a5a8a, 0 0 1.6cqw #bff4ff; }
+.card.v-aero .card-photo { position: relative; overflow: hidden; border: .7cqw solid #ffffffe8; border-image: none; border-radius: 1.8cqw; box-shadow: 0 .6cqw 1.6cqw #0a5a8a50; }
+.card.v-aero .card-photo > img, .r-secret.v-aero .sc-art img { filter: saturate(1.12) brightness(1.04); }
+.vx-photo.ae3-glass { background: linear-gradient(170deg, #ffffff6a 0 28%, transparent 29%); }
+.vx-deco > .ae3-gloss { left: 0; right: 0; top: 0; height: 44%; border-radius: 4.5% 4.5% 50% 50% / 3.2% 3.2% 12% 12%; background: linear-gradient(#ffffff50, #ffffff00); }
+.r-secret.v-aero .sc-border { background: linear-gradient(160deg, #ffffff, #9fe0ff 35%, #2fa8e8 60%, #bff0ff); animation: none; }
 .pick.v-aero img { filter: saturate(1.2) brightness(1.08); }
 .pick.v-aero { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #4cc2ff, inset 0 -26px 26px -18px var(--rc); }
 

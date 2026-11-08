@@ -400,7 +400,7 @@ export const EN: Record<string, string> = {
   "Ja wychodzę!": "I'm out!",
   "Jak montaże „MLG” z 2014: tęczowa ramka, hitmarkery, napisy WOW i 360 NO SCOPE, oko Illuminati.": "Like the “MLG” montages from 2014: a rainbow frame, hitmarkers, WOW and 360 NO SCOPE captions, the Illuminati eye.",
   "Jak sitodruk Warhola: zdjęcie cztery razy w jaskrawych kolorach, żółte tło w czerwone kropki i komiksowe okienka.": "Like a Warhol screen print: the photo four times in bright colours, a yellow background with red dots and comic panels.",
-  "Jak tapety z 2008: rybki pływają po niebie między chmurami i bańkami, na dole błyszcząca zielona łąka ze stokrotkami.": "Like 2008 wallpapers: fish swim through the sky between clouds and bubbles, with a shiny green meadow of daisies at the bottom.",
+  "Jak tapety z 2008, w 3D: w tle trawiasta mała planeta ze szklanymi wieżowcami, nad kartą pływają rybki i unoszą się szklane kule, szklane panele i niebo z promieniami.": "Like 2008 wallpapers, in 3D: a small grassy planet with glass skyscrapers in the background, fish swimming and glass orbs floating over the card, glass panels and a sky full of light rays.",
   "Jan Paweł II": "John Paul II",
   "Jasne pełne": "Lager",
   "Jednoręki bandyta": "One-armed bandit",

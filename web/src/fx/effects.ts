@@ -393,6 +393,8 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
       </div>`;
   }
   document.body.appendChild(el);
+  // Frutiger Aero: w podglądzie żywa scena 3D zamiast obrazków
+  if (variantParts(variant).includes("aero")) import("../three/aeroScene").then(m => m.mountAeroLive(el.querySelector(".vf-front .card"))).catch(() => {});
   Sound.whoosh();
 
   el.addEventListener("click", e => {
