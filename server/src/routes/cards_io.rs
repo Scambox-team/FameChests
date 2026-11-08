@@ -31,10 +31,11 @@ const CSV_COLUMNS: &[&str] = &[
 
 // ---------------------------------------------------------------- CSV
 
-/// Tabela z tekstu CSV: separator `,` `;` albo tabulator (rozpoznany po nagłówku), cudzysłowy, BOM i znaki nowej linii w polach
+/// Tabela z tekstu CSV (linie zaczynające się od `#` to komentarze): separator `,` `;` albo tabulator (rozpoznany po nagłówku), cudzysłowy, BOM i znaki nowej linii w polach
 pub fn csv_parse(text: &str) -> Vec<Vec<String>> {
     let text = text.trim_start_matches('\u{feff}');
-    let head = text.lines().next().unwrap_or("");
+    // linie komentarza (`# ...`) i puste nie liczą się do nagłówka
+    let head = text.lines().find(|l| !l.trim().is_empty() && !l.trim_start().starts_with('#')).unwrap_or("");
     let count = |c: char| head.matches(c).count();
     let delim = if count('\t') > count(';') && count('\t') > count(',') {
         '\t'
@@ -48,6 +49,12 @@ pub fn csv_parse(text: &str) -> Vec<Vec<String>> {
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
         match c {
+            // komentarz: `#` na początku wiersza (poza cudzysłowem) - reszta linii jest pomijana
+            '#' if !quoted && !was_quoted && field.is_empty() && row.is_empty() => {
+                while chars.peek().is_some_and(|&n| n != '\n') {
+                    chars.next();
+                }
+            }
             '"' if quoted => {
                 if chars.peek() == Some(&'"') {
                     chars.next();
@@ -627,6 +634,10 @@ fn file_response(cards: Vec<Value>, format: &str, base: &str) -> Response {
         let doc = json!({"format": "scambox-cards", "version": 1, "cards": cards});
         (serde_json::to_string_pretty(&doc).unwrap_or_default(), "application/json; charset=utf-8", "json")
     };
+    download(body, mime, ext, base)
+}
+
+fn download(body: String, mime: &str, ext: &str, base: &str) -> Response {
     (
         StatusCode::OK,
         [
@@ -671,24 +682,222 @@ pub struct TemplateQuery {
     format: String,
 }
 
-/// Wzór pliku do wypełnienia: dwie przykładowe karty
-pub async fn admin_cards_template(Admin(_): Admin, Query(q): Query<TemplateQuery>) -> Res {
-    let format = if q.format == "csv" { "csv" } else { "json" };
-    let mut sample = json!({
-        "name": "Jan Kowalski", "rarity": "green", "type": "polityka", "crates": ["pl"], "hp": 60, "attack": "Przemówienie", "dmg": 40,
+// ---------------------------------------------------------------- wzór pliku z listami dozwolonych wartości
+
+/// Opis jednego pola karty we wzorze (dla człowieka i dla modelu AI)
+struct Spec {
+    key: &'static str,
+    desc: String,
+    required: bool,
+    kind: &'static str,
+    /// (wartość, nazwa) - tylko pola o zamkniętej liście
+    allowed: Vec<(String, String)>,
+    /// pole tylko w JSON (nie ma kolumny w CSV)
+    json_only: bool,
+}
+
+fn spec(key: &'static str, kind: &'static str, required: bool, desc: impl Into<String>) -> Spec {
+    Spec { key, desc: desc.into(), required, kind, allowed: vec![], json_only: false }
+}
+
+impl Spec {
+    fn allowed(mut self, a: Vec<(String, String)>) -> Self {
+        self.allowed = a;
+        self
+    }
+    fn json_only(mut self) -> Self {
+        self.json_only = true;
+        self
+    }
+}
+
+fn crate_choices(cat: &Catalog) -> Vec<(String, String)> {
+    cat.crates.values().filter(|c| !c.special).map(|c| (c.id.clone(), c.name.clone())).collect()
+}
+
+/// Opisy pól z AKTUALNEGO katalogu: rzadkości, typy, skrzynki (także dodane w panelu), rodzaje zdolności, warianty i źródła
+fn field_specs(cat: &Catalog) -> Vec<Spec> {
+    let g = g();
+    let crates = crate_choices(cat);
+    let rarities: Vec<(String, String)> = g.rarities.iter().map(|(k, d)| (k.clone(), d.name.clone())).collect();
+    let types: Vec<(String, String)> =
+        g.types.keys().map(|k| (k.clone(), g.types_json[k]["name"].as_str().unwrap_or(k).to_owned())).collect();
+    let kinds: Vec<(String, String)> = g
+        .ability_kinds
+        .as_object()
+        .into_iter()
+        .flatten()
+        .map(|(k, v)| {
+            let hint = match k.as_str() {
+                "heal" => "value = ile HP leczy",
+                "eco" => "value = ile monet daje w Arenie",
+                "off" => "value = siła ofensywna",
+                "def" => "value = siła obronna",
+                _ => "value = siła zdolności",
+            };
+            (k.clone(), format!("{} ({hint})", v["name"].as_str().unwrap_or(k)))
+        })
+        .collect();
+    let sources: Vec<(String, String)> = g.special_sources.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    let variants: Vec<(String, String)> =
+        g.special_variants.iter().map(|k| (k.clone(), g.variants.get(k).map_or_else(|| k.clone(), |v| v.name.clone()))).collect();
+    let slots: Vec<(String, String)> = g.card_text_slots.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    let yes_no = vec![("true".to_owned(), "tak".to_owned()), ("false".to_owned(), "nie".to_owned())];
+    let special = &g.special_crate;
+    let abil = format!(
+        "Zdolności dodatkowe, najwyżej {n}. Każda: name (tekst, do 40 znaków), kind (rodzaj z listy), value (liczba 0-9999). W CSV kolumny ability<n>name / ability<n>kind / ability<n>value, n = 1..{n}.",
+        n = g.max_extra_abilities
+    );
+    vec![
+        spec(
+            "id",
+            "tekst",
+            false,
+            "Identyfikator karty: małe litery bez polskich znaków, cyfry i _ (najwyżej 60 znaków). PUSTE lub BRAK = nowa karta, id nada serwer - nie wymyślaj go. \
+             Podanie id istniejącej karty zmienia tylko podane pola tej karty.",
+        ),
+        spec("name", "tekst", true, "Nazwa karty (najwyżej 60 znaków)."),
+        spec("rarity", "lista", true, "Rzadkość karty. Podaj klucz albo nazwę z listy. Karta „special” trafia tylko do skrzynki kart specjalnych.")
+            .allowed(rarities),
+        spec("type", "lista", true, "Typ (kategoria) karty. Podaj klucz albo nazwę z listy.").allowed(types),
+        spec(
+            "crates",
+            "lista (wiele)",
+            true,
+            format!(
+                "Skrzynki, w których jest karta; pierwsza jest główną. W JSON tablica, w CSV jedna komórka rozdzielona średnikiem (np. pl;world). \
+                 Podaj id albo nazwę. Gdy brak, użyta będzie skrzynka domyślna wybrana przy imporcie. Karta „special” zawsze trafia do skrzynki „{special}” (nie podawaj jej)."
+            ),
+        )
+        .allowed(crates.clone()),
+        spec("exclusive", "lista (wiele)", false, "Skrzynki (spośród crates), w których karta jest ekskluzywna. Zwykle puste.").allowed(crates),
+        spec("hp", "liczba całkowita", false, "Punkty życia, 0-9999 (domyślnie 50 dla nowej karty)."),
+        spec("attack", "tekst", false, "Nazwa ataku (najwyżej 40 znaków; domyślnie „Atak”)."),
+        spec("dmg", "liczba całkowita", false, "Obrażenia ataku, 0-9999 (domyślnie 30)."),
+        spec("attack2", "tekst", false, "Nazwa drugiego ataku (najwyżej 40 znaków); puste = karta nie ma drugiego ataku."),
+        spec("dmg2", "liczba całkowita", false, "Obrażenia drugiego ataku, 0-9999 (domyślnie 0)."),
+        spec("kind1", "lista", false, "Rodzaj pierwszej (głównej) zdolności w Arenie; domyślnie off.").allowed(kinds.clone()),
+        spec("kind2", "lista", false, "Rodzaj drugiej zdolności w Arenie; domyślnie off.").allowed(kinds.clone()),
+        spec("abilities", "lista obiektów {name, kind, value}", false, abil).allowed(kinds),
+        spec("wikiLang", "tekst", false, "Język Wikipedii, z której pobrać zdjęcie: kod 2-5 znaków, np. pl, en, de (domyślnie pl)."),
+        spec("wikiTitle", "tekst", false, "Dokładny tytuł artykułu w Wikipedii, z którego serwer pobierze zdjęcie. Puste = bez zdjęcia z Wikipedii."),
+        spec(
+            "country",
+            "tekst",
+            false,
+            "Kraj jako dwuliterowy kod ISO 3166-1 małymi literami, np. pl, de, us, gb (opcjonalnie z regionem, np. gb-eng). Nieprawidłowa wartość = brak kraju.",
+        ),
+        spec("subtitle", "tekst", false, format!("Podtytuł wyświetlany na karcie (najwyżej {} znaków).", catalog::SUBTITLE_MAX)),
+        spec("desc", "tekst", false, format!("Opis karty (najwyżej {} znaków).", catalog::DESC_MAX)),
+        spec("imageUrl", "tekst", false, "Adres (https://...) zdjęcia do pobrania; ma pierwszeństwo przed zdjęciem z Wikipedii."),
+        spec("source", "lista", false, "Tylko dla kart „special”: skąd karta pochodzi.").allowed(sources).json_only(),
+        spec("fixedVariant", "lista", false, "Tylko dla kart „special”: jedyny wariant wyglądu karty.").allowed(variants).json_only(),
+        spec("style", "liczba całkowita", false, "Tylko dla kart „special”: numer wyglądu w wariancie, od 1 (zbyt duży numer zostanie przycięty).").json_only(),
+        spec("bibi", "tak/nie", false, "Znacznik pomocniczy karty (true/false).").allowed(yes_no).json_only(),
+        spec("texts", "obiekt {miejsce: tekst}", false, "Własne napisy na karcie; klucze to miejsca z listy. Zwykle pomiń.").allowed(slots).json_only(),
+        spec("arena", "lista obiektów", false, "Zaawansowane: ustawienia zdolności w Arenie (jak w eksporcie JSON). Nowe karty: pomiń.").json_only(),
+        spec("vx", "obiekt", false, "Zaawansowane: ustawienia wariantów tylko dla tej karty. Nowe karty: pomiń.").json_only(),
+    ]
+}
+
+const TEMPLATE_INFO: &str = "WZÓR IMPORTU KART gry ScamBox. Wypełnij listę kart zgodnie z opisem pól w „_pola”. \
+Pola o zamkniętej liście (rarity, type, crates, kind1, kind2, kind w zdolnościach, source, fixedVariant) przyjmują albo KLUCZ (pole „wartosc”), albo NAZWĘ (pole „nazwa”) \
+z listy „dozwolone” - użyj dokładnie tych wartości, nie wymyślaj nowych. Brak „id” (puste) = nowa karta, id nada serwer; nie wymyślaj id. \
+Pola opcjonalne można pominąć (zostaną wartości domyślne). Klucze zaczynające się od „_” (także „_instrukcja” i „_pola”) są ignorowane przy imporcie. \
+Odpowiedz plikiem JSON w formie {\"format\": \"scambox-cards\", \"cards\": [ ... ]} albo samą listą kart. Najwięcej 500 kart w pliku.";
+
+fn pola_json(specs: &[Spec]) -> Value {
+    let mut o = Map::new();
+    for s in specs {
+        let mut f = Map::new();
+        f.insert("opis".into(), json!(s.desc));
+        f.insert("wymagane".into(), json!(s.required));
+        f.insert("typ".into(), json!(s.kind));
+        if !s.allowed.is_empty() {
+            f.insert("dozwolone".into(), json!(s.allowed.iter().map(|(k, n)| json!({"wartosc": k, "nazwa": n})).collect::<Vec<_>>()));
+        }
+        o.insert(s.key.into(), Value::Object(f));
+    }
+    Value::Object(o)
+}
+
+/// Dwie przykładowe karty z prawdziwymi wartościami z list (pierwsza zwykła rzadkość, pierwszy typ, pierwsza skrzynka...)
+fn sample_cards(cat: &Catalog) -> (Value, Value) {
+    let g = g();
+    let rarity = g.rarities.keys().find(|k| !matches!(k.as_str(), "special" | "secret")).or(g.rarities.keys().next()).cloned().unwrap_or_default();
+    let type_ = g.types.keys().next().cloned().unwrap_or_default();
+    let crate_ = crate_choices(cat).into_iter().next().map(|c| c.0).unwrap_or_default();
+    let kinds = g.ability_kinds.as_object();
+    let kind = match kinds {
+        Some(o) if o.contains_key("heal") => "heal".to_owned(),
+        Some(o) => o.keys().next().cloned().unwrap_or_else(|| "off".into()),
+        None => "off".into(),
+    };
+    let first = json!({
+        "name": "Jan Kowalski", "rarity": rarity, "type": type_, "crates": [crate_], "hp": 60, "attack": "Przemówienie", "dmg": 40,
         "wikiLang": "pl", "wikiTitle": "Jan Kowalski", "subtitle": "Przykładowa karta", "desc": "Dowolny opis karty.",
-        "abilities": [{"name": "Poparcie", "kind": "heal", "value": 20}], "kind1": "off", "kind2": "off",
+        "abilities": [{"name": "Poparcie", "kind": kind, "value": 20}], "kind1": "off", "kind2": "off",
     });
-    let mut second = sample.clone();
+    let mut second = first.clone();
     second["name"] = json!("Anna Nowak");
     second["attack"] = json!("Wywiad");
     second["wikiTitle"] = json!("");
     second["abilities"] = json!([]);
-    if format == "json" {
-        sample["id"] = json!("");
-        second["id"] = json!("");
+    (first, second)
+}
+
+fn template_json(cat: &Catalog) -> String {
+    let (a, b) = sample_cards(cat);
+    let with_id = |c: Value| {
+        let mut o = Map::new();
+        o.insert("id".into(), json!(""));
+        o.extend(c.as_object().cloned().unwrap_or_default());
+        Value::Object(o)
+    };
+    let doc = json!({
+        "_instrukcja": TEMPLATE_INFO,
+        "_pola": pola_json(&field_specs(cat)),
+        "format": "scambox-cards", "version": 1, "cards": [with_id(a), with_id(b)],
+    });
+    serde_json::to_string_pretty(&doc).unwrap_or_default()
+}
+
+/// Linie komentarza `#` na początku wzoru CSV: instrukcja i lista dozwolonych wartości każdej kolumny
+fn template_csv_comments(cat: &Catalog) -> String {
+    let mut out = vec![
+        "# WZÓR IMPORTU KART gry ScamBox (CSV). Linie zaczynające się od # i puste linie są pomijane przy imporcie.".to_owned(),
+        "# Pierwsza linia bez # to nagłówek kolumn - zostaw ją bez zmian. Każda następna to jedna karta.".to_owned(),
+        "# Separator: przecinek, średnik albo tabulator (jeden w całym pliku). Kodowanie UTF-8. Pole z separatorem lub nowym wierszem ujmij w cudzysłów.".to_owned(),
+        "# Pola z listy przyjmują KLUCZ albo NAZWĘ z listy poniżej - użyj dokładnie tych wartości. Wiele skrzynek w jednej komórce rozdziel średnikiem (np. pl;world).".to_owned(),
+        "# Puste id = nowa karta (id nada serwer, nie wymyślaj go). Kolumny opcjonalne można zostawić puste. Komórka w pierwszej kolumnie nie może zaczynać się od #.".to_owned(),
+    ];
+    for s in field_specs(cat).iter().filter(|s| !s.json_only) {
+        let label = if s.key == "abilities" { "ability<n>name / ability<n>kind / ability<n>value" } else { s.key };
+        out.push(format!("# {label}: {}{}. {}", s.kind, if s.required { ", wymagane" } else { "" }, s.desc));
+        if !s.allowed.is_empty() {
+            let key = if s.key == "abilities" { "kind" } else { s.key };
+            out.push(format!("# {key}: {}", s.allowed.iter().map(|(k, n)| format!("{k} ({n})")).collect::<Vec<_>>().join(" | ")));
+        }
     }
-    Ok(file_response(vec![sample, second], format, "scambox-karty-wzor"))
+    out.join("\r\n") + "\r\n"
+}
+
+fn template_csv(cat: &Catalog) -> String {
+    let (a, b) = sample_cards(cat);
+    let table = csv_write(&[csv_header(), csv_row(&a), csv_row(&b)]);
+    // BOM zostaje na początku pliku, komentarze idą zaraz za nim
+    format!("\u{feff}{}{}", template_csv_comments(cat), table.trim_start_matches('\u{feff}'))
+}
+
+/// Wzór pliku do wypełnienia: dwie przykładowe karty i listy dozwolonych wartości (z aktualnego katalogu)
+pub async fn admin_cards_template(State(st): State<AppState>, Admin(_): Admin, Query(q): Query<TemplateQuery>) -> Res {
+    let cat = st.cat();
+    let (body, mime, ext) = if q.format == "csv" {
+        (template_csv(&cat), "text/csv; charset=utf-8", "csv")
+    } else {
+        (template_json(&cat), "application/json; charset=utf-8", "json")
+    };
+    Ok(download(body, mime, ext, "scambox-karty-wzor"))
 }
 
 #[cfg(test)]
@@ -743,5 +952,46 @@ mod tests {
         let Ok(Outcome::Save(prep)) = prepare(&back[0], &cat, &opts, &mut Batch::default()) else { panic!("brak zapisu CSV") };
         assert_eq!(prep.pid, p.id);
         assert_eq!(prep.fields["rarity"], json!(p.rarity));
+    }
+
+    #[test]
+    fn json_template_lists_allowed_values_and_imports() {
+        let cat = catalog::build(&[], &[]);
+        let doc: Value = serde_json::from_str(&template_json(&cat)).unwrap();
+        assert!(doc["_instrukcja"].as_str().is_some_and(|t| t.contains("id")));
+        let rar = doc["_pola"]["rarity"]["dozwolone"].as_array().unwrap();
+        assert!(rar.iter().any(|r| r["wartosc"] == "green" && r["nazwa"] == "Zwykła"));
+        assert!(doc["_pola"]["name"]["dozwolone"].is_null() && doc["_pola"]["name"]["wymagane"] == json!(true));
+        assert!(!doc["_pola"]["crates"]["dozwolone"].as_array().unwrap().is_empty());
+        // plik ze wzoru (z kluczami `_`) przechodzi sprawdzanie wierszy
+        let rows = rows_from_text("json", &template_json(&cat)).unwrap();
+        assert_eq!(rows.len(), 2);
+        let opts = Opts { default_crate: None, update_existing: true, skip_existing: true };
+        let mut batch = Batch::default();
+        for r in &rows {
+            assert!(matches!(prepare(r, &cat, &opts, &mut batch), Ok(Outcome::Save(_))));
+        }
+        // klucz `_` w karcie jest ignorowany
+        let mut row = rows[0].clone();
+        row["_uwaga"] = json!("cokolwiek");
+        assert!(prepare(&row, &cat, &opts, &mut Batch::default()).is_ok());
+    }
+
+    #[test]
+    fn csv_template_with_comments_parses() {
+        let cat = catalog::build(&[], &[]);
+        let csv = template_csv(&cat);
+        assert!(csv.starts_with('\u{feff}'));
+        assert!(csv.contains("# rarity: green (Zwykła)"));
+        let rows = rows_from_text("csv", &csv).unwrap();
+        assert_eq!(rows.len(), 2);
+        let opts = Opts { default_crate: None, update_existing: true, skip_existing: true };
+        let mut batch = Batch::default();
+        for r in &rows {
+            assert!(matches!(prepare(r, &cat, &opts, &mut batch), Ok(Outcome::Save(_))));
+        }
+        // komentarze przed i po nagłówku oraz puste linie
+        let t = csv_parse("# a, b\n\n#c\nname;rarity\n# w środku\nJan;green\n");
+        assert_eq!(t, vec![vec!["name", "rarity"], vec!["Jan", "green"]]);
     }
 }
