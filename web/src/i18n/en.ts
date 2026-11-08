@@ -1992,6 +1992,8 @@ export const EN: Record<string, string> = {
   "Drewniany": "Wooden",
   "Żelkowy": "Gummy",
   "Nocne niebo": "Night Sky",
+  "Hologramowy": "Hologram",
+  "To już nie karta: małe futurystyczne urządzenie, z którego świeci niebieski hologram osoby i tabliczka ze statystykami. W podglądzie hologram można obracać o 360°.": "Not a card any more: a small futuristic device projecting a blue hologram of the person and a panel with the stats. In the card preview the hologram can be turned 360°.",
   "Karta jak nocne niebo: Droga Mleczna za zdjęciem, szybko mrugające gwiazdy i spadające gwiazdy, zdjęcie rozmyte w ciemności.": "A card like the night sky: the Milky Way behind the photo, fast-twinkling stars and shooting stars, with the photo fading into the dark.",
   "Kryształowy": "Crystal",
   "Półprzezroczysta arbuzowa żelka: zdjęcie zatopione w kolorowej galaretce, migoczące kryształki cukru, miękki połysk.": "A translucent watermelon gummy: the photo set in colourful jelly, twinkling sugar crystals and a soft gloss.",

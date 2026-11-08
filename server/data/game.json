@@ -747,6 +747,13 @@
    "off": true,
    "desc": "Karta jak nocne niebo: Droga Mleczna za zdjęciem, szybko mrugające gwiazdy i spadające gwiazdy, zdjęcie rozmyte w ciemności."
   },
+  "hologram": {
+   "name": "Hologramowy",
+   "chance": 0.004,
+   "mult": 12,
+   "off": true,
+   "desc": "To już nie karta: małe futurystyczne urządzenie, z którego świeci niebieski hologram osoby i tabliczka ze statystykami. W podglądzie hologram można obracać o 360°."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,

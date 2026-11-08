@@ -91,24 +91,12 @@ VARIANT_PROPOSALS.push({
 });
 
 // ================================================================ wspólne (partia 2: Żelkowy, Kryształowy, Nocne niebo, Hologram, Frutiger Aero 3D)
-// ASCII Art, Drewniany, Dowód osobisty, Żelkowy, Kryształowy, Nocne niebo i Frutiger Aero 3D są już w grze - cards2.css / cardHtml.ts, three/aeroScene.ts.
+// ASCII Art, Drewniany, Dowód osobisty, Żelkowy, Kryształowy, Nocne niebo, Frutiger Aero 3D i Hologramowy są już w grze - cards2.css / cardHtml.ts, three/aeroScene.ts, three/hologramScene.ts.
 const seeded = seed => { let s = seed % 2147483647 || 7; return () => (s = s * 16807 % 2147483647) / 2147483647; };
 
 // ================================================================ HOLOGRAMOWY (hg-) i FRUTIGER AERO 3D (fa-): sceny Three.js w variant-mockups-3d.ts
 const m3d = (kind, look, layer = "") => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"${layer ? ` data-layer="${layer}"` : ""}></canvas></div>`;
 
-VARIANT_PROPOSALS.push({
-  key: "hologram", icon: "📡", name: "Hologramowy", tag: "📡 HOLO",
-  about: "wybrana makieta 2 (prostokątna tabliczka przed postacią i znaczek z wartością z tyłu) i pięć nowych pomysłów na samą postać w hologramie; w powiększeniu każdy obracasz przeciągając myszą",
-  looks: [
-    { name: "Tabliczka i znaczek (wybrana)", desc: "Postać jako płaski hologram, prostokątna tabliczka ze statystykami po prawej przed postacią, za postacią po lewej mały znaczek z wartością.", cls: "hg", deco: m3d("holo2", 2) },
-    { name: "Chmura punktów", desc: "Postać złożona z tysięcy świecących punktów - jaśniejsze miejsca twarzy wysunięte do przodu, więc przy obracaniu widać ją w 3D; punkty delikatnie falują, zakłócenia przesuwają całe rzędy.", cls: "hg", deco: m3d("holo4", 1) },
-    { name: "Płaskorzeźba z siatką", desc: "Zdjęcie wypchnięte w trzeci wymiar jak płaskorzeźba (nos, czoło i jasne partie wystają), na wierzchu cienka siatka linii jak w modelu 3D.", cls: "hg", deco: m3d("holo4", 2) },
-    { name: "Holograficzna karta", desc: "Nad urządzeniem unosi się cała karta jako hologram (ramka, nazwa, zdjęcie, ataki, wartość) i powoli obraca się dookoła - z tyłu tabliczka ze statystykami.", cls: "hg", deco: m3d("holo4", 3) },
-    { name: "Warstwy głębi", desc: "Postać pocięta na sześć przezroczystych warstw według jasności, każda na innej głębokości - przy obracaniu rozchodzą się jak przekrój; przez postać przesuwa się linia skanera.", cls: "hg", deco: m3d("holo4", 4) },
-    { name: "Szklana kopuła", desc: "Nad projektorem wysoka szklana kopuła z tęczowym połyskiem, w środku hologram postaci, a po kopule krąży pierścień z nazwą i statystykami karty.", cls: "hg", deco: m3d("holo4", 5) },
-  ],
-});
 
 const faBg = (cls, look, extra = "") => p => `<div class="vm-bg aer-bg ${cls}"><i class="fa-rays"></i>${vmSvg('<path d="M-5 112 Q25 96 55 108 T110 104 V145 H-5Z" fill="url(#faG1)"/><path d="M-5 124 Q35 108 70 120 T110 116 V145 H-5Z" fill="url(#faG2)"/><defs><linearGradient id="faG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ee35a"/><stop offset="1" stop-color="#3f9a2a"/></linearGradient><linearGradient id="faG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd23f"/><stop offset="1" stop-color="#2c7a1e"/></linearGradient></defs>', "0 0 100 140", "fa-hills")}${extra}<canvas class="m3d" data-kind="aero3" data-look="${look}" data-pid="${p.id}" data-layer="back"></canvas></div>`;
 const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa glassy ${cls}`, bg: faBg(cls, look, extra), photo: () => '<i class="vm-photo fa-glass"></i>',

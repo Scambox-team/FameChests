@@ -394,6 +394,8 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
   }
   document.body.appendChild(el);
   // Frutiger Aero: w podglądzie żywa scena 3D zamiast obrazków
+  // Hologramowy: żywy hologram z obracaniem o 360° przeciąganiem
+  if (variantParts(variant).includes("hologram")) import("../three/hologramScene").then(m => m.mountHoloLive(el.querySelector(".vf-front .card"))).catch(() => {});
   if (variantParts(variant).includes("aero")) import("../three/aeroScene").then(m => m.mountAeroLive(el.querySelector(".vf-front .card"))).catch(() => {});
   Sound.whoosh();
 
