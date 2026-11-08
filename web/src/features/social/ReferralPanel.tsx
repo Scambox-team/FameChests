@@ -29,6 +29,48 @@ function statusText(x: any, r: any) {
   return 'Czeka na sprawdzenie';
 }
 
+/** Profil (tylko własny): pole „wpisz kod polecenia” przez 24 h od założenia konta albo informacja, kto poleca */
+export function ClaimReferral() {
+  const { data, refetch } = useQuery({ queryKey: ['referral-claim'], queryFn: () => api('/api/referral/claim') });
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  if (!data) return null;
+  const by = data.referredBy;
+  if (!by && !data.canClaim) return null;
+  const send = async () => {
+    setBusy(true); setErr('');
+    try { await api('/api/referral/claim', { code }); Sound.click(); setCode(''); await refetch(); toast('Kod polecenia zapisany'); }
+    catch (e: any) { Sound.error(); setErr(e.message); }
+    setBusy(false);
+  };
+  if (by) {
+    const r = by.reward, need = r.minOpened > 0 || r.minHours > 0;
+    return (
+      <section className={`${s.box} ${s.claim}`}>
+        <p className={s.by}><UserCheck size={16} aria-hidden="true" /> Polecił Cię: <UserLink user={by.user} /></p>
+        <p className="muted small">
+          {r.referred
+            ? (need ? `Dostaniesz ${r.referred} po potwierdzeniu emaila i spełnieniu warunków aktywacji.` : `Dostaniesz ${r.referred} po potwierdzeniu emaila.`)
+            : 'Ta osoba dostanie nagrodę po Twojej aktywacji.'}
+        </p>
+      </section>
+    );
+  }
+  const h = Math.max(1, Math.ceil(data.hoursLeft));
+  return (
+    <section className={`${s.box} ${s.claim}`}>
+      <h2><Gift size={20} aria-hidden="true" /> Masz kod od znajomego?</h2>
+      <p className="muted small">Wpisz kod polecenia albo wklej cały link (np. scambox.pl/r/KOD). Kod możesz wpisać jeszcze przez {h} godz. od założenia konta.</p>
+      <form className={s.link} onSubmit={e => { e.preventDefault(); if (code.trim() && !busy) send(); }}>
+        <input value={code} onChange={e => setCode(e.target.value)} placeholder="Kod albo link polecający" aria-label="Kod polecenia" maxLength={300} autoComplete="off" />
+        <Button kind="hue" type="submit" disabled={busy || !code.trim()}><Check size={16} /> Zapisz kod</Button>
+      </form>
+      {err && <p className="small" role="alert" style={{ color: 'var(--bad)' }}>{err}</p>}
+    </section>
+  );
+}
+
 export function ReferralPanel() {
   const { data, refetch } = useQuery({ queryKey: ['referral'], queryFn: () => api('/api/referral') });
   const [copied, setCopied] = useState(false);
@@ -60,8 +102,10 @@ export function ReferralPanel() {
           {data.referredBy.status === 'pending' && data.referredBy.missing !== 'ready' && (
             <span className="muted small"> ({statusText(data.referredBy, r)})</span>
           )}
+          {data.referredBy.reward?.referred && <span className="muted small"> · Twoja nagroda: {data.referredBy.reward.referred}</span>}
         </p>
       )}
+      {data.ownRewards && <p className="muted small">Te nagrody dotyczą poleceń z Twojego linku (własny zestaw admina).</p>}
       <div className={s.rewards}>
         {r.referrer && <div><span className="muted small">Ty</span><b>{r.referrer}</b></div>}
         {r.referred && <div><span className="muted small">Twój znajomy</span><b>{r.referred}</b></div>}

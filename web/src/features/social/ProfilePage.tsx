@@ -19,6 +19,7 @@ import { arChallenge } from '../arena/arena';
 import { Binder, collectedOwned, type BinderOwned } from '../binder/BinderPage';
 import { PatchNotes } from '../notices/Notices';
 import { AvatarPicker, EmailDialog, PasswordDialog } from './Account';
+import { ClaimReferral } from './ReferralPanel';
 import { TradeBuilder } from './TradeBuilder';
 import s from './social.module.css';
 
@@ -120,6 +121,8 @@ export function ProfilePage() {
           {!mine && S.cfg.arena && u.isAdmin && <Button title="Arena jest na razie tylko dla adminów" onClick={() => arChallenge(u.username)}>Wyzwij na pojedynek</Button>}
         </div>
       </section>
+
+      {mine && <ClaimReferral />}
 
       <section className={s.panel}>
         <h2>Gablota</h2>

@@ -325,3 +325,5 @@ CREATE INDEX IF NOT EXISTS referrals_referrer ON referrals (referrer_id);
 CREATE TABLE IF NOT EXISTS user_ips (user_id BIGINT NOT NULL, ip_hash TEXT NOT NULL, last_seen DOUBLE PRECISION NOT NULL,
                                      PRIMARY KEY (user_id, ip_hash));
 CREATE TABLE IF NOT EXISTS referral_config (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
+-- własny zestaw nagród admina za polecenia z jego linku (JSON jak część nagród referral_config), jeden na admina
+CREATE TABLE IF NOT EXISTS referral_admin_rewards (admin_id BIGINT PRIMARY KEY, data TEXT NOT NULL, updated_at DOUBLE PRECISION NOT NULL);
