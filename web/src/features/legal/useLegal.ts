@@ -7,6 +7,8 @@ export interface LegalInfo {
   contactEmail: string | null;
   /** konta z emailem i odzyskiwaniem hasła (Supabase Auth) */
   emailAuth: boolean;
+  /** własny SMTP gry: emaile kont (opcjonalne bez Supabase Auth), reset hasła i zmiana emaila linkami */
+  mail: boolean;
 }
 
 let cached: LegalInfo | null = null;

@@ -28,6 +28,8 @@ import { noteMarketBonus } from '../features/market/bonus';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
+import { EmailChangePage } from '../features/auth/EmailChangePage';
+import { VerifyEmailPage } from '../features/auth/VerifyEmailPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
 import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
@@ -118,7 +120,7 @@ export function App() {
   return (
     <>
       <div className="svg-defs" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svgDefs }} />
-      {pathname === '/login' ? <LoginPage /> : LEGAL_PATHS.includes(pathname.replace(/\/$/, '')) ? <LegalPage /> : <Game />}
+      {pathname === '/login' ? <LoginPage /> : pathname.replace(/\/$/, '') === '/konto/email' ? <EmailChangePage /> : pathname.replace(/\/$/, '') === '/konto/potwierdz' ? <VerifyEmailPage /> : LEGAL_PATHS.includes(pathname.replace(/\/$/, '')) ? <LegalPage /> : <Game />}
       <Toaster />
       <canvas id="confetti" />
       <canvas id="fxCanvas" />

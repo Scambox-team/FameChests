@@ -652,3 +652,13 @@ body.a-chess .a-secnav { display: none; }
   .a-user-actions { justify-content: flex-start; }
   .a-card-form, .a-card-fields { min-width: 0; max-width: 100%; }
 }
+/* panel "Maile" (mailTemplates.ts) */
+.a-mail-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.a-mail-tabs .btn[aria-pressed="true"] { background: var(--hue); border-color: var(--hue); color: var(--on-hue, #fff); }
+.a-mail-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+.a-mail-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.a-mail-field textarea { width: 100%; resize: vertical; font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre; overflow: auto; }
+.a-mail-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 12px; }
+.a-mail-preview { width: 100%; height: 560px; border: 1px solid var(--control); border-radius: var(--radius-s); background: #08080a; }
+.a-mail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+@media (max-width: 900px) { .a-mail-cols { grid-template-columns: 1fr; } }

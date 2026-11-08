@@ -26,12 +26,15 @@ mod gotrue;
 mod ids;
 mod images;
 mod lenient;
+mod mail_templates;
+mod mailer;
 mod aim_sim;
 mod pinball_sim;
 mod routes;
 mod startup;
 mod state;
 mod text;
+mod tokens;
 mod variants;
 mod web;
 

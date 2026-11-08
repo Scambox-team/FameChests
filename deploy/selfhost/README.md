@@ -98,6 +98,14 @@ sama go podaje pod `/email/<nazwa>.html`, a `auth` pobiera przez sieć Dockera (
 GoTrue wysyła swój zwykły, brzydszy mail. Na Supabase w chmurze wklej te pliki w Authentication -> Email Templates
 (pola `{{ .ConfirmationURL }}` zostają). Lokalnie przed wysyłką można je otworzyć w przeglądarce: `http://127.0.0.1:5000/email/recovery.html`.
 
+**Własna poczta gry** (opcjonalnie, `GAME_SMTP_URL` i `GAME_MAIL_FROM` w `.env`): gdy jest ustawiona, to gra sama wysyła
+reset hasła (admin, „Nie pamiętasz hasła?”, „Wyślij mi link” w profilu) i zmianę emaila linkiem z jednorazowym tokenem
+`sb1_...` (ważny godzinę, w bazie tylko jego sha256), a nie Supabase Auth. Treść tych maili (i maili Supabase Auth) edytuje
+się w panelu admina: Treści i wydarzenia -> Maile (podgląd na żywo, „Wyślij test do mnie”, „Przywróć domyślny”). Bez
+`GAME_SMTP_URL` zostaje stare zachowanie przez Supabase Auth. Bez Supabase Auth w ogóle (test lokalny, brak `GOTRUE_URL`)
+konta mogą mieć email zapisany tylko w grze (`user_auth.auth_id` = `local:<id>`), a maile bez SMTP trafiają do logu gry
+z gotowym linkiem.
+
 Sprawdzenie: załóż konto na stronie gry, mail z linkiem powinien przyjść w minutę (sprawdź też spam). Nie przychodzi?
 `docker compose logs auth` pokaże błąd SMTP (zły login/hasło, port, niezweryfikowany nadawca).
 Na czas testów bez poczty ustaw `ENABLE_EMAIL_AUTOCONFIRM=true` - konto jest wtedy od razu potwierdzone (odzyskiwanie
