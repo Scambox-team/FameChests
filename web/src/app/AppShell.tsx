@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Gift, MoreHorizontal, X } from 'lucide-react';
 
@@ -63,7 +63,11 @@ function useOwner(isAdmin: boolean) {
   return isAdmin && owner;
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/** wysokość pozycji paska bocznego i odstęp między nimi (px) - muszą się zgadzać z `.link` / `.nav` w AppShell.module.css */
+const SIDE_ROW = 38;
+const SIDE_GAP = 2;
+
+const FOCUSABLE ='a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Arkusz „Więcej” (dolny pasek na telefonie, pasek boczny na komputerze): wszystkie ekrany, konto, ustawienia i strony prawne */
 function MoreSheet({ items, account, onClose }: { items: NavItem[]; account: NavItem[]; onClose: () => void }) {
@@ -128,17 +132,38 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => { setSheet(false); }, [pathname]);
 
+  // Pasek boczny się nie przewija: pokazuje tyle pozycji, ile mieści się w wysokości okna, a resztę
+  // (od końca listy) zjada „Więcej” - arkusz ma zawsze pełną listę. Wysokość `.nav` nie zależy od liczby
+  // pozycji (flex: 1, min-height: 0), więc wystarczy ją podzielić przez wysokość jednej pozycji.
+  const sideItems = [...items, ...account.filter(i => i.href || i.id === 'settings')];
+  const navRef = useRef<HTMLElement>(null);
+  const [fit, setFit] = useState(sideItems.length);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const measure = () => {
+      if (!nav.clientHeight) return; // pasek ukryty (telefon)
+      const row = SIDE_ROW + SIDE_GAP;
+      setFit(Math.max(0, Math.floor((nav.clientHeight + SIDE_GAP) / row) - 1)); // -1: miejsce na „Więcej”
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, []);
+  const hiddenCount = sideItems.slice(fit).reduce((n, i) => n + (i.badge ? S.badges[i.badge] : 0), 0);
+
   return (
     <div className={styles.app}>
       <Ambient />
       <aside className={styles.side}>
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
-        <nav className={styles.nav} aria-label="Główna">
-          {items.map(i => <NavEntry key={i.id} item={i} />)}
-          {account.filter(i => i.href || i.id === 'settings').map(i => <NavEntry key={i.id} item={i} />)}
+        <nav className={styles.nav} aria-label="Główna" ref={navRef}>
+          {sideItems.slice(0, fit).map(i => <NavEntry key={i.id} item={i} />)}
           <button className={styles.link} type="button" aria-haspopup="dialog" aria-expanded={sheet} onClick={() => setSheet(true)}>
             <MoreHorizontal size={17} strokeWidth={1.6} aria-hidden="true" />
             <span>Więcej</span>
+            {hiddenCount > 0 && <span className={styles.badge} aria-label={`${hiddenCount} nowych`}>{hiddenCount}</span>}
           </button>
         </nav>
         <div className={styles.foot}>
