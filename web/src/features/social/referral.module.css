@@ -1,0 +1,33 @@
+/* Panel poleceń (ReferralPanel.tsx) */
+.box {
+  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: var(--radius); overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--hue) 26%, transparent), transparent 60%),
+    var(--surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 30%, transparent);
+}
+.head { display: flex; gap: 12px; align-items: flex-start; }
+.head svg { flex: none; color: var(--hue); margin-top: 2px; }
+.head h2 { margin: 0; font: 800 20px/26px var(--display); letter-spacing: -.02em; }
+.head p { margin: 2px 0 0; }
+.rewards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.rewards div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); }
+.rewards b { font-family: var(--display); }
+.link { display: flex; gap: 8px; }
+.link input {
+  flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: var(--radius-s); border: 1px solid var(--control);
+  background: var(--ground); color: var(--text); font: 600 14px var(--body);
+}
+.link button { display: inline-flex; align-items: center; gap: 6px; }
+.code { font-family: ui-monospace, monospace; letter-spacing: .12em; color: var(--text); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stats div { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: var(--radius-s); background: var(--raised); text-align: center; }
+.stats b { font: 800 20px var(--display); }
+.stats span { font-size: 11px; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+.list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.st { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--raised); color: var(--muted); white-space: nowrap; }
+.rewarded { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+.rejected { color: var(--faint); }
+.refresh { background: none; border: 0; padding: 0; color: var(--hue); font: inherit; cursor: pointer; text-decoration: underline; }
+@media (max-width: 480px) { .stats { grid-template-columns: repeat(2, 1fr); } }

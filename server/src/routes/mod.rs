@@ -14,10 +14,12 @@ pub mod gift;
 pub mod horses;
 pub mod market;
 pub mod pinball;
+pub mod poker;
 pub mod pages;
 pub mod aim;
 pub mod game_rankings;
 pub mod quests;
+pub mod referral;
 pub mod reports;
 pub mod shop;
 pub mod events;
@@ -100,6 +102,9 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/backups", get(admin_page))
         .route("/admin/games", get(admin_page))
         .route("/admin/events", get(admin_page))
+        .route("/admin/referrals", get(admin_page))
+        // polecenia: link /r/<kod> działa bez logowania
+        .route("/r/{code}", get(referral::ref_landing))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -108,6 +113,11 @@ pub fn router(st: AppState) -> Router {
         .route("/drawing/{id}/{layer}", get(drawings::drawing_image))
         // konta
         .route("/api/register", post(register))
+        .route("/api/referral", get(referral::my_referral))
+        .route("/api/referral/seen", post(referral::referral_seen))
+        .route("/api/referral/invite/{code}", get(referral::ref_invite))
+        .route("/api/admin/referrals", get(referral::admin_referrals).post(referral::admin_referral_config))
+        .route("/api/admin/referrals/{referred}", post(referral::admin_referral_decide))
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         .route("/api/password", post(change_password))
@@ -190,6 +200,12 @@ pub fn router(st: AppState) -> Router {
         .route("/api/casino/jackpot/{jid}/cards", post(casino_jackpot_cards))
         .route("/api/casino/jackpot/{jid}/ready", post(casino_jackpot_ready))
         .route("/api/casino/jackpot/{jid}/seen", post(casino_jackpot_seen))
+        .route("/api/casino/poker", get(poker::poker_lobby).post(poker::poker_create))
+        .route("/api/casino/poker/{tid}", get(poker::poker_table))
+        .route("/api/casino/poker/{tid}/join", post(poker::poker_join))
+        .route("/api/casino/poker/{tid}/rebuy", post(poker::poker_rebuy))
+        .route("/api/casino/poker/{tid}/act", post(poker::poker_act))
+        .route("/api/casino/poker/{tid}/leave", post(poker::poker_leave))
         .route("/api/casino/horses", get(horses::casino_horses))
         .route("/api/casino/horses/bet", post(horses::casino_horses_bet))
         .route("/api/casino/horses/bet/{bid}/cancel", post(horses::casino_horses_cancel))

@@ -15,10 +15,11 @@ const ReportsAdmin = lazy(() => import('./ReportsAdmin'));
 const BackupsAdmin = lazy(() => import('./BackupsAdmin'));
 const GamesAdmin = lazy(() => import('./GamesAdmin'));
 const EventsAdmin = lazy(() => import('./EventsAdmin'));
+const ReferralsAdmin = lazy(() => import('./ReferralsAdmin'));
 import './admin.css';
 import styles from './AdminApp.module.css';
 
-const TABS: [string, string][] = [['/admin', 'Skrzynki i karty'], ['/admin/chess', 'Szachy'], ['/admin/games', 'Gry'], ['/admin/events', 'Eventy'], ['/variants', 'Warianty'], ['/stickers', 'Naklejki'], ['/designer', 'Kreator wariantów'], ['/mockups', 'Karty specjalne'], ['/admin/reports', 'Zgłoszenia']];
+const TABS: [string, string][] = [['/admin', 'Skrzynki i karty'], ['/admin/chess', 'Szachy'], ['/admin/games', 'Gry'], ['/admin/events', 'Eventy'], ['/admin/referrals', 'Polecenia'], ['/variants', 'Warianty'], ['/stickers', 'Naklejki'], ['/designer', 'Kreator wariantów'], ['/mockups', 'Karty specjalne'], ['/admin/reports', 'Zgłoszenia']];
 // tylko dla właściciela (OWNER_IDS) - serwer i tak odrzuca innych adminów, zakładka tylko ich nie myli
 const OWNER_TABS: [string, string][] = [['/admin/backups', 'Kopie zapasowe']];
 
@@ -54,6 +55,7 @@ function page(path: string): [string, ReactNode] {
   if (path === '/admin/reports') return ['Zgłoszenia', <Suspense fallback={null}><ReportsAdmin /></Suspense>];
   if (path === '/admin/events') return ['Eventy', <Suspense fallback={null}><EventsAdmin /></Suspense>];
   if (path === '/admin/games') return ['Gry', <Suspense fallback={null}><GamesAdmin /></Suspense>];
+  if (path === '/admin/referrals') return ['Polecenia', <Suspense fallback={null}><ReferralsAdmin /></Suspense>];
   if (path === '/admin/backups') return ['Kopie zapasowe', <Suspense fallback={null}><BackupsAdmin /></Suspense>];
   return [path === '/admin/chess' ? 'Szachy' : 'Panel admina', <Panel />];
 }

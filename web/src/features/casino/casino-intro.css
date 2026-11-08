@@ -1,0 +1,16 @@
+/* Intro kasyna (CasinoIntro.tsx): GIF na całym ekranie, potem płynnie znika */
+.cs-intro {
+  position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; cursor: pointer;
+  background: radial-gradient(80% 80% at 50% 50%, #1a0b10, #050506 75%);
+  transition: opacity .45s ease, visibility .45s;
+}
+.cs-intro img {
+  width: min(92vw, calc(88vh * 498 / 279)); aspect-ratio: 498 / 279; object-fit: cover; border-radius: 22px;
+  box-shadow: 0 0 0 1px #ffffff14, 0 30px 90px -20px #000, 0 0 120px -30px var(--hue);
+  opacity: 0; transform: scale(.94);
+}
+.cs-intro.on img { animation: csIntroIn .35s cubic-bezier(.2, .9, .3, 1.2) forwards; }
+.cs-intro.out { opacity: 0; visibility: hidden; }
+.cs-intro.out img { transform: scale(1.06); transition: transform .45s ease; }
+@keyframes csIntroIn { to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cs-intro.on img { animation: none; opacity: 1; transform: none; } }

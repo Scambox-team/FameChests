@@ -10,10 +10,12 @@
 }
 
 /* ---------------------------------------------------------------- wybór gry */
-.cs-games { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+/* wszystkie gry w jednej linii: kafelki dzielą szerokość po równo, na wąskim ekranie pasek przewija się w bok */
+.cs-games { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
 .cs-game {
-  position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 14px; overflow: hidden;
-  border: 0; border-radius: var(--radius-m); background: var(--surface); color: var(--muted); text-align: left;
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px;
+  padding: 12px 8px; overflow: hidden; min-width: 0;
+  border: 0; border-radius: var(--radius-m); background: var(--surface); color: var(--muted); text-align: center;
   transition: color .2s, background .2s, transform .2s cubic-bezier(.2, .9, .3, 1.4);
 }
 .cs-game::before {
@@ -22,8 +24,14 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
 }
 .cs-game svg { flex: none; width: 26px; height: 26px; color: var(--faint); transition: color .2s, transform .3s; }
-.cs-game b { display: block; font: 700 15px/19px var(--display); letter-spacing: -.01em; color: var(--text); }
-.cs-game small { display: block; font-size: 12px; line-height: 16px; color: var(--faint); }
+.cs-game > span { min-width: 0; max-width: 100%; }
+.cs-game b { display: block; font: 700 14px/18px var(--display); letter-spacing: -.01em; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-game small { display: block; font-size: 11px; line-height: 14px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1250px) { .cs-game small { display: none; } .cs-game { min-height: 70px; } }
+@media (max-width: 900px) {
+  .cs-games { grid-auto-columns: minmax(92px, 1fr); overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; scrollbar-width: thin; }
+  .cs-game { scroll-snap-align: start; }
+}
 .cs-game:hover:not(:disabled) { background: var(--raised); transform: translateY(-2px); }
 .cs-game:hover:not(:disabled) svg { color: var(--text); transform: rotate(-8deg) scale(1.08); }
 .cs-game.on { background: color-mix(in srgb, var(--hue) 18%, var(--surface)); }
@@ -216,9 +224,8 @@
 .rl-picker .cs-pick { background: none; padding: 0; box-shadow: none; border: 0; }
 .rl-picker .cs-grid { max-height: calc(100vh - 330px); min-height: 260px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
 @media (max-width: 560px) {
-  .cs-games { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .cs-game { min-height: 54px; padding: 10px; gap: 8px; }
-  .cs-game small { display: none; }
+  .cs-game { min-height: 62px; padding: 8px 6px; gap: 4px; }
+  .cs-game b { font-size: 12px; }
   .cs-page .bj-felt { margin: 10px 6px; border-radius: 120px 120px 18px 18px / 70px 70px 18px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
