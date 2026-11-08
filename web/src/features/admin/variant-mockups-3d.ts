@@ -24,7 +24,17 @@ async function mount(canvas) {
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = T.SRGBColorSpace;
   const scene = new T.Scene(), camera = new T.PerspectiveCamera(35, 1, .1, 100);
-  const sc = (kind === 'holo' ? buildHolo : kind === 'aero2' ? buildAero2 : buildAero)(T, scene, camera, look, pid);
+  const builders = { holo: buildHolo, holo2: buildHolo2, aero: buildAero, aero2: buildAero2, aero3: buildAero3 };
+  const sc = (builders[kind] || buildAero)(T, scene, camera, look, pid, canvas.dataset.layer);
+  // obracanie przeciąganiem (hologram): pointer-events włącza CSS tylko w powiększeniu / podglądzie
+  if (sc.drag) {
+    let px = null;
+    canvas.addEventListener('pointerdown', e => { px = e.clientX; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; e.stopPropagation(); });
+    canvas.addEventListener('pointermove', e => { if (px == null) return; sc.drag(e.clientX - px); px = e.clientX; });
+    const up = () => { px = null; canvas.style.cursor = ''; };
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('click', e => e.stopPropagation());
+  }
   let visible = true, w = 0, h = 0;
   const io = new IntersectionObserver(e => { visible = e[0].isIntersecting; });
   io.observe(canvas);
@@ -403,6 +413,109 @@ function buildAero2(T, scene, camera, look) {
   });
   [['#ff7a1a', '#ffffff'], ['#2a7de1', '#ffd23d'], ['#18c7c1', '#ffffff']].forEach(([a, b], k) => {
     const f = fish(T, a, b); f.userData = { rx: 1.05, rz: 1.1, y: [-.9, .25, 1.15][k] * (py < 0 ? -1 : 1) * -1, sp: (.35 + k * .08) * (k % 2 ? -1 : 1), ph: k * 2.1 };
+    f.scale.setScalar(.5 + k * .06); scene.add(f); fishes.push(f);
+  });
+  return {
+    update(t) {
+      for (const m of mats) m.uniforms.time.value = t;
+      orbs.forEach(o => { o.position.y = o.userData.y0 + Math.sin(t * .7 + o.userData.ph) * .06; });
+      fishes.forEach(o => {
+        const u = o.userData, a = t * u.sp + u.ph, x = Math.cos(a) * u.rx * 1.2, z = Math.sin(a) * u.rz, y = u.y + Math.sin(t * .8 + u.ph) * .1;
+        const nx = Math.cos(a + .05 * Math.sign(u.sp)) * u.rx * 1.2, nz = Math.sin(a + .05 * Math.sign(u.sp)) * u.rz;
+        o.position.set(x, y, z); o.rotation.y = -Math.atan2(nz - z, nx - x); o.children[1].rotation.y = Math.sin(t * 9 + u.ph) * .5;
+      });
+    },
+  };
+}
+
+// ================================================================ HOLOGRAM, wersja 3 (makieta „Lekkie zakłócenia”): tabliczka lekko po prawej i przed postacią,
+// obracanie o 360° przeciąganiem (drag); bez dotyku hologram wraca do lekkiego kołysania
+function buildHolo2(T, scene, camera, look, pid) {
+  const M = HOLO_MODES[2], st = personStats(pid), color = 0x5fc8ff;
+  scene.add(new T.AmbientLight(0xffffff, .55));
+  const dl = new T.DirectionalLight(0xffffff, 1.1); dl.position.set(2, 4, 5); scene.add(dl);
+  const pl = new T.PointLight(color, 2.5, 5); pl.position.set(0, .4, .7); scene.add(pl);
+  const root = new T.Group(); scene.add(root);
+  const dev = projector(T, .55, .14); root.add(dev.group);
+  root.add(beam(T, .18, 1.15, 2.7, color, dev.top));
+  const mats = [];
+  let photo;
+  const tex = new T.TextureLoader().load(imgUrl(pid, 'normal'), t => { if (photo) photo.scale.x = photo.scale.y * t.image.width / t.image.height; });
+  tex.colorSpace = T.SRGBColorSpace;
+  const pm = holoMat(T, tex, { color, grain: M.grain, scan: M.scan }); mats.push(pm);
+  photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.85, 2.35, 1); photo.position.set(-.15, dev.top + 1.32, 0); root.add(photo);
+  const sm = holoMat(T, statsTexture(T, st), { color, text: true, grain: M.grain * .6, scan: M.scan * .6, opacity: .95 }); mats.push(sm);
+  let panel;
+  if (look === 3) {   // wygięty ekran: wycinek walca przed postacią od prawej
+    panel = new T.Mesh(new T.CylinderGeometry(1.2, 1.2, 1.5, 48, 1, true, .06 * Math.PI, .42 * Math.PI), sm);
+    panel.position.set(-.15, dev.top + 1.25, 0);
+  } else {
+    panel = new T.Mesh(new T.PlaneGeometry(1.2, 1.5), sm);
+    panel.position.set(.62, dev.top + 1.22, .55); panel.rotation.y = -.22;
+  }
+  root.add(panel);
+  if (look === 2) {   // znaczek z wartością za postacią po lewej
+    const cm = holoMat(T, statsTexture(T, ['WARTOŚĆ', `${st.val} GR`], 'chip'), { color, text: true, opacity: .9 }); mats.push(cm);
+    const chip = new T.Mesh(new T.PlaneGeometry(.7, .35), cm); chip.position.set(-1.0, dev.top + 1.9, -.45); chip.rotation.y = .4; root.add(chip);
+  }
+  let ray;
+  if (look === 4) {   // promień od urządzenia do tabliczki
+    const a = new T.Vector3(.35, dev.top, .2), b = new T.Vector3(.62, dev.top + .47, .55), len = a.distanceTo(b);
+    ray = new T.Mesh(new T.CylinderGeometry(.012, .012, len, 6, 1, true), new T.MeshBasicMaterial({ color, transparent: true, opacity: .7, blending: T.AdditiveBlending, depthWrite: false }));
+    ray.position.copy(a.clone().add(b).multiplyScalar(.5)); ray.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), b.clone().sub(a).normalize()); root.add(ray);
+  }
+  const dust = motes(T, 80, .9, 2.7, dev.top, color); root.add(dust);
+  root.position.x = -.2;
+  camera.position.set(0, 1.55, 6.7); camera.lookAt(.12, 1.45, 0);
+  let last = 0, rot = 0, vel = 0, lastDrag = -1e9;
+  return {
+    drag(dx) { vel = dx * .01; rot += vel; lastDrag = performance.now(); },
+    update(t) {
+      const dt = Math.min(.05, t - last); last = t;
+      const glitch = (Math.sin(t * 1.3) + Math.sin(t * 3.1 + 1.7)) > M.thr ? M.peak : M.base;
+      for (const m of mats) { m.uniforms.time.value = t; m.uniforms.glitch.value = glitch; }
+      scene.traverse(o => { if (o.material?.uniforms?.time && !mats.includes(o.material)) o.material.uniforms.time.value = t; });
+      photo.position.x = -.15 + (glitch > .9 ? (Math.random() - .5) * .06 : 0);
+      if (look === 4) { panel.position.y = dev.top + 1.22 + Math.sin(t * 1.1) * .05; }
+      // obracanie: bezwładność po puszczeniu, po 2,5 s bez dotyku powrót do kołysania (do najbliższego pełnego obrotu)
+      if (performance.now() - lastDrag < 2500) { rot += vel; vel *= .92; }
+      else { const target = Math.sin(t * .3) * .22, k = Math.round((rot - target) / (Math.PI * 2)); rot += (target + k * Math.PI * 2 - rot) * .03; }
+      root.rotation.y = rot;
+      dev.ring.material.color.setHSL(.55, 1, .65 + Math.sin(t * 3) * .12);
+      dev.leds.forEach((l, i) => l.visible = Math.sin(t * 4 + i) > -.3);
+      dust.userData.tick(dt);
+    },
+  };
+}
+
+// ================================================================ FRUTIGER AERO 3D, wersja 3: planeta w tle (osobne płótno pod zdjęciem i panelami, data-layer="back"),
+// rybki i szklane kule nad kartą (data-layer="front")
+const AERO3 = {
+  1: { planet: [-.85, -1.25, 1.0], orbs: [[.3, 0x2fd0ff, 1.05, 1.55], [.2, 0x7cff6a, 1.1, .6], [.16, 0xffffff, 1.0, -.35], [.24, 0x2fd0ff, -1.05, 1.6]] },
+  2: { planet: [.85, 1.3, 1.0], orbs: [[.3, 0x2fd0ff, -1.05, -1.5], [.2, 0x7cff6a, -1.1, -.5], [.18, 0xffffff, -1.0, .5], [.22, 0x2fd0ff, 1.0, -1.6]] },
+  3: { planet: [0, -2.35, 1.75], up: true, orbs: [[.3, 0x2fd0ff, -1.0, 1.55], [.22, 0x7cff6a, 1.05, 1.4], [.16, 0xffffff, 0, 1.75]] },
+  4: { planet: [-.85, 1.3, 1.0], orbs: [[.28, 0x2fd0ff, 1.05, .9], [.2, 0x7cff6a, 1.0, -.6], [.24, 0x2fd0ff, -1.0, -1.55], [.16, 0xffffff, .9, -1.7]] },
+};
+function buildAero3(T, scene, camera, look, pid, layer) {
+  const C = AERO3[look] || AERO3[1];
+  camera.position.set(0, 0, 6); camera.lookAt(0, 0, 0);
+  scene.add(new T.HemisphereLight(0xcff6ff, 0x6fbf4a, 1.3));
+  const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(-2, 4, 5); scene.add(dl);
+  const mats = [];
+  if (layer === 'back') {
+    const [px, py, pr] = C.planet;
+    const dir = C.up ? new T.Vector3(0, 1, .9).normalize() : new T.Vector3(-px, -py, 2.2).normalize();
+    const g = cityPlanet(T, pr, dir); g.position.set(px, py, -.5); scene.add(g);
+    g.traverse(o => o.material?.uniforms?.time && mats.push(o.material));
+    return { update(t) { for (const m of mats) m.uniforms.time.value = t; } };
+  }
+  const orbs = [], fishes = [];
+  C.orbs.forEach(([r, tint, x, y], k) => {
+    const m = bubbleMat(T, tint, .55); mats.push(m);
+    const b = new T.Mesh(new T.SphereGeometry(r, 36, 24), m); b.position.set(x, y, .4); b.userData = { y0: y, ph: k * 1.7 }; scene.add(b); orbs.push(b);
+  });
+  [['#ff7a1a', '#ffffff'], ['#2a7de1', '#ffd23d'], ['#18c7c1', '#ffffff']].forEach(([a, b], k) => {
+    const f = fish(T, a, b); f.userData = { rx: 1.05, rz: 1.1, y: [-1.2, .1, 1.1][k], sp: (.35 + k * .08) * (k % 2 ? -1 : 1), ph: k * 2.1 };
     f.scale.setScalar(.5 + k * .06); scene.add(f); fishes.push(f);
   });
   return {

@@ -726,6 +726,20 @@
    "off": true,
    "desc": "Karta wzorowana na polskim dowodzie: zdjęcie, rubryki ze statystykami karty, podpis i numer. W podglądzie pozioma."
   },
+  "jelly": {
+   "name": "Żelkowy",
+   "chance": 0.008,
+   "mult": 7,
+   "off": true,
+   "desc": "Półprzezroczysta arbuzowa żelka: zdjęcie zatopione w kolorowej galaretce, migoczące kryształki cukru, miękki połysk."
+  },
+  "crystal": {
+   "name": "Kryształowy",
+   "chance": 0.004,
+   "mult": 12,
+   "off": true,
+   "desc": "Karta z oszlifowanego diamentu: lodowe fasetki, mieniąca się ramka, zdjęcie jakby wyrzeźbione w krysztale, tęczowy połysk i iskry."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,

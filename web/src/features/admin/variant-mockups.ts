@@ -91,65 +91,13 @@ VARIANT_PROPOSALS.push({
 });
 
 // ================================================================ wspólne (partia 2: Żelkowy, Kryształowy, Nocne niebo, Hologram, Frutiger Aero 3D)
-// ASCII Art (makieta 1), Drewniany (Dąb) i Dowód osobisty (makieta 1) są już w grze - cards2.css / cardHtml.ts.
+// ASCII Art, Drewniany, Dowód osobisty, Żelkowy i Kryształowy są już w grze - cards2.css / cardHtml.ts.
 const seeded = seed => { let s = seed % 2147483647 || 7; return () => (s = s * 16807 % 2147483647) / 2147483647; };
 
-// ================================================================ ŻELKOWY (jl-): arbuzowa żelka, bardziej przezroczysta, cztery filtry zdjęcia dopasowujące je do żelki
+// ================================================================ NOCNE NIEBO (ns-): wersja 3 - zdjęcie wśród gwiazd, Droga Mleczna w całości za zdjęciem
 
-const jlSugar = n => vmScatter(n, "jl-sug", () => `--s:${vmN(.35, 1.2, 2)};animation-delay:-${vmN(0, 5, 1)}s;animation-duration:${vmN(2.4, 5, 1)}s`, [1, 99], [1, 99]);
-const jlLook = (name, desc, filter, photo) => ({
-  name, desc, cls: `jl watermelon glass ${filter}`,
-  bg: () => '<div class="vm-bg jl-bg"><i class="jl-glow a"></i><i class="jl-glow b"></i></div>',
-  photo: () => `${photo}<i class="vm-photo jl-shine"></i>`,
-  deco: () => `<div class="vm-deco jl-clip">${jlSugar(60)}</div><div class="vm-deco"><i class="jl-gloss"></i><i class="jl-rim"></i></div>`,
-});
-
-VARIANT_PROPOSALS.push({
-  key: "jelly", icon: "🍬", name: "Żelkowy", tag: "🍬 ŻELKA",
-  about: "wybrana arbuzowa żelka (makieta 1), bardziej przezroczysta - prześwituje przez nią tło; cztery sposoby, żeby zdjęcie zawsze pasowało kolorami do żelki (różowa czerwień u góry, zieleń u dołu), niezależnie od kolorów zdjęcia",
-  looks: [
-    jlLook("Zabarwione zdjęcie", "Na zdjęcie nałożone kolory żelki w trybie barwy: zdjęcie zachowuje jasność i szczegóły, ale przejmuje różowo-zielony gradient żelki; lekko podbite nasycenie.", "pf1", '<i class="vm-photo jl-color"></i>'),
-    jlLook("Żelkowy duotone", "Zdjęcie w dwóch kolorach żelki: cienie w głębokiej malinowej czerwieni i ciemnej zieleni, światła jasnoróżowe - zawsze idealnie w kolorach karty.", "pf2", '<i class="vm-photo jl-duo-dark"></i><i class="vm-photo jl-duo-light"></i>'),
-    jlLook("Zatopione w żelce", "Zdjęcie jakby wtopione w żelkę: jego jasność nałożona na kolorową galaretkę pod spodem, więc wszystkie kolory biorą się z żelki, a brzegi zdjęcia rozmywają się w niej.", "pf3", ""),
-    jlLook("Przesunięte barwy", "Barwy zdjęcia przesunięte w stronę żelki (odcień z gradientu, nasycenie i jasność ze zdjęcia), do tego miękki różowy blask - zdjęcie bardziej kolorowe niż w wersji 1.", "pf4", '<i class="vm-photo jl-hue"></i><i class="vm-photo jl-soft"></i>'),
-  ],
-});
-
-// ================================================================ KRYSZTAŁOWY (cr-): diament z mocniejszym filtrem zdjęcia (jedna makieta)
-
-const crMesh = (cols, rows, pal, seed, op = [.6, 1], stroke = "") => {
-  const r = seeded(seed), P = [];
-  for (let y = 0; y <= rows; y++) for (let x = 0; x <= cols; x++)
-    P.push([x * 100 / cols + (x && x < cols ? (r() - .5) * 70 / cols : 0), y * 140 / rows + (y && y < rows ? (r() - .5) * 98 / rows : 0)]);
-  const at = (x, y) => P[y * (cols + 1) + x], tri = (a, b, c) => `<path d="M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}L${c[0].toFixed(1)} ${c[1].toFixed(1)}Z" fill="${pal[Math.floor(r() * pal.length)]}" opacity="${(op[0] + r() * (op[1] - op[0])).toFixed(2)}"${stroke}/>`;
-  let s = "";
-  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-    const flip = r() < .5;
-    s += flip ? tri(at(x, y), at(x + 1, y), at(x, y + 1)) + tri(at(x + 1, y), at(x + 1, y + 1), at(x, y + 1))
-      : tri(at(x, y), at(x + 1, y), at(x + 1, y + 1)) + tri(at(x, y), at(x + 1, y + 1), at(x, y + 1));
-  }
-  return s;
-};
-const crSparks = n => vmScatter(n, "cr-spark", () => `--s:${vmN(.5, 1.4, 2)};animation-duration:${vmN(1.6, 3.4, 1)}s`);
-const CR_PAL = ["#ffffff", "#eef7ff", "#d6ecff", "#bcdcff", "#f3eeff", "#a9cfff"];
-
-VARIANT_PROPOSALS.push({
-  key: "crystal", icon: "💠", name: "Kryształowy", tag: "💠 KRYSZTAŁ",
-  about: "wybrany Diament (makieta 1) z dużo mocniejszym filtrem zdjęcia - osoba wygląda, jakby sama była z kryształu",
-  looks: [
-    { name: "Diament, mocny filtr", desc: "Zdjęcie odbarwione i rozjaśnione, zabarwione na lodowy błękit, pocięte na wyraźne fasetki z białymi krawędziami (jedne jaśniejsze, inne ciemniejsze jak szlif), przy krawędziach zdjęcia biała poświata, tęczowy połysk mocniejszy niż na karcie, więcej iskier.",
-      cls: "cr diamond strong",
-      bg: () => `<div class="vm-bg cr-bg">${vmSvg(crMesh(7, 10, CR_PAL, 11), "0 0 100 140", "cr-mesh")}<i class="cr-shim"></i></div>`,
-      photo: () => `<i class="vm-photo cr-ice"></i>${vmSvg(crMesh(7, 9, ["#ffffff", "#8fc4ff", "#cfe7ff", "#3a6ac0", "#eaf6ff"], 33, [.25, .7], ' stroke="#ffffff" stroke-opacity=".7" stroke-width=".45"'), "0 0 100 140", "vm-photo cr-facet")}<i class="vm-photo cr-glow"></i><i class="vm-photo cr-shim ph"></i>${crSparks(7)}`,
-      deco: () => `<div class="vm-deco">${crSparks(14)}</div>` },
-  ],
-});
-
-// ================================================================ NOCNE NIEBO (ns-): Droga Mleczna na serio (szum SVG = mgławica i ciemne pasy pyłu, gęste gwiazdy, jasne jądro)
-
-const nsStars = (n, cls = "ns-star", y = [1, 99]) => vmScatter(n, cls, () => `--s:${vmN(.3, 1.2, 2)};--o:${vmN(.35, 1, 2)};animation-duration:${vmN(2, 6, 1)}s`, y, [1, 99]);
-const nsBright = n => vmScatter(n, "ns-bright", () => `--s:${vmN(.6, 1.2, 2)};animation-duration:${vmN(3, 6, 1)}s`, [3, 70]);
-// Droga Mleczna: pas pod kątem `angle`, szerokość `w` (jednostki widoku 100 x 140), jądro w miejscu `core` (0-1 wzdłuż pasa)
+const nsStars = (n, cls = "ns-star", y = [1, 99], dur = [2, 6]) => vmScatter(n, cls, () => `--s:${vmN(.3, 1.2, 2)};--o:${vmN(.45, 1, 2)};animation-duration:${vmN(dur[0], dur[1], 1)}s`, y, [1, 99]);
+const nsBright = (n, dur = [3, 6]) => vmScatter(n, "ns-bright", () => `--s:${vmN(.6, 1.2, 2)};animation-duration:${vmN(dur[0], dur[1], 1)}s`, [3, 70]);
 const nsMilkyWay = (o, cls = "ns-mw") => {
   const id = vmId("mw"), r = seeded(o.seed), a = o.angle * Math.PI / 180, cx = o.cx ?? 50, cy = o.cy ?? 70, ca = Math.cos(a), sa = Math.sin(a);
   let dots = "";
@@ -169,57 +117,45 @@ const nsMilkyWay = (o, cls = "ns-mw") => {
     <ellipse cx="${corX.toFixed(1)}" cy="${corY.toFixed(1)}" rx="${(W * 1.3).toFixed(1)}" ry="${(W * .7).toFixed(1)}" transform="rotate(${o.angle} ${corX.toFixed(1)} ${corY.toFixed(1)})" fill="url(#${id}c)"/>
     <rect x="-60" y="-60" width="220" height="260" filter="url(#${id}d)"/>${dots}</g>`, "0 0 100 140", cls, "xMidYMid slice");
 };
-// linia drzew przy dolnej krawędzi (nieregularne korony z kół)
-const nsTreeline = (cls = "ns-treeline", y0 = 140) => { const r = seeded(23); let c = "";
-  for (let x = -4; x < 106; x += 2 + r() * 3) { const h = 4 + r() * 10; c += `<circle cx="${x.toFixed(1)}" cy="${(y0 - h).toFixed(1)}" r="${(2 + r() * 3.5).toFixed(1)}"/>`; if (r() < .25) c += `<path d="M${x.toFixed(1)} ${y0} L${(x + 2).toFixed(1)} ${(y0 - h - 9 - r() * 6).toFixed(1)} L${(x + 4).toFixed(1)} ${y0}Z"/>`; }
-  return vmSvg(`<g fill="#02040a">${c}<rect x="-5" y="${y0 - 5}" width="110" height="10"/></g>`, "0 0 100 140", cls); };
-const nsLook = (name, desc, cls, bg, photo, deco = () => "") => ({ name, desc, cls: `ns ${cls}`, bg, photo: p => `<i class="vm-photo ns-ph"></i>${photo(p)}`, deco });
-const nsShoots = n => Array.from({ length: n }, (_, k) => `<i class="ns-shoot" style="top:${6 + k * 11}%;left:${-30 + k * 9}%;animation-delay:-${(k * 1.6).toFixed(1)}s;animation-duration:${(5 + k).toFixed(1)}s"></i>`).join("");
+const nsShoot = (top, left, delay, dur) => `<i class="ns-shoot fast" style="top:${top}%;left:${left}%;animation-delay:-${delay}s;animation-duration:${dur}s"></i>`;
 
 VARIANT_PROPOSALS.push({
   key: "nightsky", icon: "🌌", name: "Nocne niebo", tag: "✦ NOCNE NIEBO",
-  about: "wybrana Droga Mleczna (makieta 2), teraz wyraźna jak na zdjęciach z długim naświetlaniem: mgławica z szumu, ciemne pasy pyłu, ciepłe jądro galaktyki i setki gwiazd w pasie; przechodzi też przez zdjęcie",
+  about: "wybrana wersja 3 (zdjęcie wśród gwiazd): Droga Mleczna w całości za zdjęciem, spadające gwiazdy, gwiazdy migoczą wyraźnie i szybko",
   looks: [
-    nsLook("Wyraźna Droga Mleczna", "Szeroki pas Drogi Mlecznej po skosie przez całą kartę i zdjęcie: fioletowo-błękitna mgławica, ciemne pasy pyłu w środku, złote jądro, gęsto od gwiazd; poza pasem zwykłe migoczące gwiazdy.", "mw1",
-      () => `<div class="vm-bg ns-bg">${nsMilkyWay({ angle: -58, seed: 3, w: 26, core: .62 })}${nsStars(50)}${nsBright(4)}</div>`,
-      () => `<i class="vm-photo ns-mw-ph">${nsMilkyWay({ angle: -58, seed: 3, w: 26, core: .62 }, "ns-mw")}</i>${nsStars(14, "ns-star ph")}`),
-    nsLook("Łuk nad horyzontem", "Droga Mleczna wznosi się prawie pionowo znad linii drzew, z jasnym jądrem tuż nad horyzontem i ciepłą łuną miasta; czarne korony drzew przy dole karty i u dołu zdjęcia.", "mw2",
-      () => `<div class="vm-bg ns-bg"><i class="ns-glow"></i>${nsMilkyWay({ angle: -78, seed: 8, w: 22, core: .78 })}${nsStars(50)}${nsTreeline()}</div>`,
-      () => `<i class="vm-photo ns-mw-ph">${nsMilkyWay({ angle: -78, seed: 8, w: 22, core: .78 }, "ns-mw")}</i>${nsTreeline("ns-treeline ph", 140)}`),
-    nsLook("Zdjęcie wśród gwiazd", "Zdjęcie bez ramki rozpływa się w nocnym niebie - brzegi znikają, a za osobą i przez nią przechodzi Droga Mleczna; nad zdjęciem pojedyncze jasne gwiazdy.", "mw3",
-      () => `<div class="vm-bg ns-bg">${nsMilkyWay({ angle: -40, seed: 14, w: 30, core: .45 })}${nsStars(60)}${nsBright(5)}</div>`,
-      () => `${nsStars(18, "ns-star ph")}${nsBright(3)}`),
-    nsLook("Obracające się niebo", "Całe niebo z Drogą Mleczną bardzo powoli obraca się wokół gwiazdy polarnej, a co chwilę przelatuje deszcz meteorów (kilka spadających gwiazd jedna po drugiej).", "mw4",
-      () => `<div class="vm-bg ns-bg"><i class="ns-rot">${nsMilkyWay({ angle: -50, seed: 21, w: 24, core: .55 })}${nsStars(70)}</i>${nsShoots(5)}</div>`,
-      () => `<i class="vm-photo ns-mw-ph">${nsMilkyWay({ angle: -50, seed: 21, w: 24, core: .55 }, "ns-mw")}</i>${nsStars(12, "ns-star ph")}`,
-      () => `<div class="vm-deco ns-clip">${nsShoots(3)}</div>`),
+    { name: "Zdjęcie wśród gwiazd 2", desc: "Zdjęcie bez ramki stoi przed niebem (brzegi lekko rozmyte w ciemności), Droga Mleczna z mgławicą i jasnym jądrem biegnie w całości za nim; gwiazdy w tle i przy krawędziach mrugają szybko i wyraźnie (gasną prawie do zera), co kilka sekund nad kartą przelatuje spadająca gwiazda.",
+      cls: "ns mw3 v2",
+      bg: () => `<div class="vm-bg ns-bg">${nsMilkyWay({ angle: -40, seed: 14, w: 30, core: .45 })}${nsStars(70, "ns-star fast", [1, 99], [.7, 1.8])}${nsBright(6, [1.2, 2.4])}${nsShoot(8, -30, 0, 6)}</div>`,
+      photo: () => "",
+      deco: () => `<div class="vm-deco ns-clip">${nsShoot(4, -35, 2.5, 7)}${nsShoot(22, -40, 5.5, 9)}${vmScatter(12, "ns-star fast edge", () => `--s:${vmN(.4, 1.1, 2)};--o:${vmN(.6, 1, 2)};animation-duration:${vmN(.7, 1.6, 1)}s`, [2, 98], [1, 99])}</div>` },
   ],
 });
 
 // ================================================================ HOLOGRAMOWY (hg-) i FRUTIGER AERO 3D (fa-): sceny Three.js w variant-mockups-3d.ts
-const m3d = (kind, look) => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"></canvas></div>`;
+const m3d = (kind, look, layer = "") => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"${layer ? ` data-layer="${layer}"` : ""}></canvas></div>`;
 
 VARIANT_PROPOSALS.push({
   key: "hologram", icon: "📡", name: "Hologramowy", tag: "📡 HOLO",
-  about: "wybrany projektor stołowy (makieta 1): urządzenie na dole dużo mniejsze, hologram osoby i panel statystyk dużo większe; makiety różnią się siłą zakłóceń",
+  about: "wybrane „lekkie zakłócenia” (makieta 2): tabliczka ze statystykami lekko po prawej i lekko przed postacią. W powiększeniu (a w grze w podglądzie karty) hologram można obracać o 360° przeciągając myszą lub palcem; puszczony wraca do lekkiego kołysania",
   looks: [
-    { name: "Czysty sygnał", desc: "Prawie bez zakłóceń: delikatne linie skanowania i lekkie migotanie, rzadkie, małe przesunięcia obrazu - najczytelniejsza wersja.", cls: "hg", deco: m3d("holo", 1) },
-    { name: "Lekkie zakłócenia", desc: "Co kilka sekund pasy obrazu przeskakują w bok, hologram drga, widoczne ziarno - jak w makiecie 1, tylko w nowych proporcjach.", cls: "hg", deco: m3d("holo", 2) },
-    { name: "Mocne zakłócenia", desc: "Zakłócenia cały czas: częste przeskoki pasów, mocne ziarno, a przy większych zakłóceniach obraz rozjeżdża się na czerwoną i turkusową kopię.", cls: "hg", deco: m3d("holo", 3) },
-    { name: "Słaby sygnał", desc: "Hologram co kilka sekund buduje się od dołu do góry (świecąca linia), przygasa i rozjaśnia się, a czasem na moment całkiem znika.", cls: "hg", deco: m3d("holo", 4) },
+    { name: "Tabliczka przed postacią", desc: "Panel ze statystykami zachodzi na prawy brzeg postaci i wisi trochę przed nią, lekko odwrócony do środka.", cls: "hg", deco: m3d("holo2", 1) },
+    { name: "Tabliczka i znaczek", desc: "Jak 1, a do tego mały znaczek z rzadkością i wartością za postacią po lewej - widać go dopiero przy obracaniu.", cls: "hg", deco: m3d("holo2", 2) },
+    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca.", cls: "hg", deco: m3d("holo2", 3) },
+    { name: "Ekran na promieniu", desc: "Tabliczka przed postacią po prawej, połączona z urządzeniem cienkim promieniem światła; lekko unosi się i opada.", cls: "hg", deco: m3d("holo2", 4) },
   ],
 });
 
-const faBg = (cls, extra = "") => `<div class="vm-bg fa-bg ${cls}"><i class="fa-rays"></i>${vmSvg('<path d="M-5 112 Q25 96 55 108 T110 104 V145 H-5Z" fill="url(#faG1)"/><path d="M-5 124 Q35 108 70 120 T110 116 V145 H-5Z" fill="url(#faG2)"/><defs><linearGradient id="faG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ee35a"/><stop offset="1" stop-color="#3f9a2a"/></linearGradient><linearGradient id="faG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd23f"/><stop offset="1" stop-color="#2c7a1e"/></linearGradient></defs>', "0 0 100 140", "fa-hills")}${extra}</div>`;
-const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa ${cls}`, bg: () => faBg(cls, extra), photo: () => '<i class="vm-photo fa-glass"></i>', deco: p => m3d("aero2", look)(p) + '<div class="vm-deco"><i class="fa-gloss"></i></div>' });
+const faBg = (cls, look, extra = "") => p => `<div class="vm-bg fa-bg ${cls}"><i class="fa-rays"></i>${vmSvg('<path d="M-5 112 Q25 96 55 108 T110 104 V145 H-5Z" fill="url(#faG1)"/><path d="M-5 124 Q35 108 70 120 T110 116 V145 H-5Z" fill="url(#faG2)"/><defs><linearGradient id="faG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ee35a"/><stop offset="1" stop-color="#3f9a2a"/></linearGradient><linearGradient id="faG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd23f"/><stop offset="1" stop-color="#2c7a1e"/></linearGradient></defs>', "0 0 100 140", "fa-hills")}${extra}<canvas class="m3d" data-kind="aero3" data-look="${look}" data-pid="${p.id}" data-layer="back"></canvas></div>`;
+const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa ${cls}`, bg: faBg(cls, look, extra), photo: () => '<i class="vm-photo fa-glass"></i>',
+  deco: p => m3d("aero3", look, "front")(p) + '<div class="vm-deco"><i class="fa-gloss"></i></div>' });
 
 VARIANT_PROPOSALS.push({
   key: "aero3d", icon: "🫧", name: "Frutiger Aero (3D)", tag: "🫧 AERO",
-  about: "połączenie wybranych elementów: trzy rybki z akwarium, jedna duża, nieruchoma mała planeta w rogu - z wieżowcami ze szkła i zapalonymi oknami zamiast domku - i szklane kule; makiety różnią się rogiem planety i tłem",
+  about: "wybrana makieta 1: planeta z wieżowcami jest teraz w tle - za zdjęciem i statystykami (widać ją przy krawędziach i w przerwach między panelami), rybki i szklane kule zostają nad kartą; kule w nowych miejscach",
   looks: [
-    faLook("Planeta w lewym dolnym rogu", "Duża trawiasta planeta wystaje z lewego dolnego rogu, z niej rosną szklane wieżowce w stronę środka karty; rybki pływają dookoła zdjęcia, szklane kule w górnej części, błękitne niebo z promieniami.", 1, "sky"),
-    faLook("Planeta w prawym górnym rogu", "Planeta z wieżowcami zwisa z prawego górnego rogu, kule i rybki w dolnej części karty, niebo z zielonymi wzgórzami.", 2, "sky"),
-    faLook("Podwodne miasto", "Planeta w prawym dolnym rogu pod wodą: turkusowa woda z refleksami światła, rybki, szklane kule jak bańki powietrza.", 3, "water", '<i class="fa-caustic"></i>'),
-    faLook("Szklany poranek", "Planeta w lewym górnym rogu na tle jasnego, porannego nieba z flarą obiektywu, zielone kule jak krople, rybki pod spodem.", 4, "orbs", '<i class="fa-flare"></i>'),
+    faLook("Planeta za zdjęciem, lewy dół", "Planeta w tle wychodzi zza zdjęcia i paneli w lewym dolnym rogu, kule w prawym górnym rogu i przy prawej krawędzi, rybki dookoła.", 1, "sky"),
+    faLook("Planeta za zdjęciem, prawa góra", "Planeta w tle za prawym górnym rogiem zdjęcia (wieżowce wystają nad nazwą), kule po lewej i na dole.", 2, "sky"),
+    faLook("Wielka planeta jak horyzont", "Bardzo duża planeta w tle za dolną połową karty - jej trawiasty brzeg i wieżowce wychodzą po bokach jak horyzont, kule u góry.", 3, "sky"),
+    faLook("Planeta za zdjęciem, lewa góra", "Planeta w tle w lewym górnym rogu za zdjęciem, poranne niebo z flarą obiektywu, kule przy prawej krawędzi i w dole.", 4, "orbs", '<i class="fa-flare"></i>'),
   ],
 });

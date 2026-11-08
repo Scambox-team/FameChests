@@ -19,75 +19,6 @@
 .card:is(.jl, .asc, .wd, .cr, .ns, .fa) .card-photo { position: relative; overflow: hidden; }
 .vm :is(.jl-clip, .ns-clip) { overflow: hidden; border-radius: 4.5%/3.2%; }
 
-/* ================================================================ ŻELKOWY (jl-) */
-.card.jl { --j1: #ff7a8e; --j2: #ff3d6e; --j3: #4fd05a; --jglow: #ffc0cc;
-  --frame: linear-gradient(172deg, color-mix(in srgb, var(--j1) 80%, #fff), var(--j2) 50%, var(--j3)); border-radius: 7%/5%;
-  box-shadow: 0 6px 18px #0008, 0 0 3cqw color-mix(in srgb, var(--j2) 50%, transparent); animation: jlWobble 3.2s ease-in-out infinite; }
-.card.jl::before { opacity: .9; border-radius: inherit; }
-.card.jl .card-inner { border-radius: 6%/4.4%; color: #fff;
-  background: linear-gradient(176deg, color-mix(in srgb, var(--j1) 78%, transparent), color-mix(in srgb, var(--j2) 70%, transparent) 50%, color-mix(in srgb, var(--j3) 80%, transparent));
-  box-shadow: inset 0 0 3cqw #ffffff55, inset 0 -2cqw 4cqw #0003; }
-.jl-bg { border-radius: inherit; }
-.vm-bg > .jl-glow { width: 75%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--jglow) 75%, transparent), transparent 70%); filter: blur(2cqw); }
-.vm-bg > .jl-glow.a { left: -18%; top: 6%; } .vm-bg > .jl-glow.b { right: -22%; bottom: 8%; }
-.card.jl :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffff36; border: .3cqw solid #ffffff6e; border-radius: 2.4cqw; box-shadow: inset 0 .5cqw .6cqw #ffffff55, inset 0 -.5cqw .8cqw #0002; }
-.card.jl :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #fff; text-shadow: 0 .2cqw .5cqw #0006; }
-.card.jl .card-name { color: #fff; text-shadow: 0 .3cqw 0 color-mix(in srgb, var(--j2) 55%, #000), 0 0 .8cqw color-mix(in srgb, var(--j2) 60%, #000), 0 0 1.5cqw #0005; }
-.card.jl .card-photo { border: .8cqw solid #ffffff6e; border-radius: 3cqw; box-shadow: inset 0 0 2cqw #fff6, 0 0 2cqw #0003; }
-.card.jl .card-photo > img { filter: saturate(1.15) brightness(1.04); }
-.vm-photo.jl-tint { background: linear-gradient(176deg, var(--j1), var(--j2) 50%, var(--j3)); mix-blend-mode: soft-light; opacity: .8; }
-.vm-photo.jl-shine { background: radial-gradient(120% 60% at 30% 0, #ffffff70, transparent 50%); }
-.jl-sug { position: absolute; display: block; width: 1.1cqw; height: 1.1cqw; border-radius: .2cqw; background: #fff; box-shadow: 0 0 .7cqw #fff; opacity: .9;
-  transform: scale(var(--s)) rotate(45deg); animation: jlTw 3s ease-in-out infinite; }
-@keyframes jlTw { 50% { opacity: .2; } }
-.vm-deco > .jl-gloss { left: 5%; top: 2%; width: 55%; height: 22%; border-radius: 50%; background: radial-gradient(ellipse at 40% 30%, #ffffffb8, transparent 65%); filter: blur(.6cqw); }
-.vm-deco > .jl-rim { inset: 0; border-radius: 7%/5%; box-shadow: inset 0 0 0 .5cqw #ffffff42, inset 0 1.4cqw 2cqw #ffffff42, inset 0 -1.6cqw 2cqw #0002; }
-@keyframes jlWobble { 0%, 100% { transform: scale(1, 1); } 30% { transform: scale(1.012, .99); } 60% { transform: scale(.992, 1.01); } }
-.card.jl.rainbow { --j1: #ff5a5a; --j2: #ffd84d; --j3: #4fa8ff; --jglow: #fff3b0;
-  --frame: linear-gradient(180deg, #ff4d4d, #ff9a3d 24%, #ffe14d 48%, #6fdc4f 72%, #4fa8ff); }
-.card.jl.rainbow .card-inner { background: linear-gradient(180deg, #ff4d4dc8, #ff9a3dc8 24%, #ffe14dc8 48%, #6fdc4fc8 72%, #4fa8ffc8); }
-.card.jl.rainbow .jl-sug { width: 1.5cqw; height: 1.5cqw; }
-.card.jl.blue { --j1: #7fdcff; --j2: #3a7dff; --j3: #8a4cff; --jglow: #c8f0ff; }
-.card.jl.blue .card-inner { background: linear-gradient(176deg, #7fdcffa0, #3a7dff90 50%, #8a4cffa8); }
-.card.jl.lemon { --j1: #fff36a; --j2: #ffc93d; --j3: #ff8a2a; --jglow: #fff6c0; }
-.card.jl.lemon :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #7a3a00; text-shadow: 0 .15cqw 0 #fff8; }
-.jl-bub { position: absolute; display: block; z-index: 2; width: 3cqw; aspect-ratio: 1; border-radius: 50%; transform: scale(var(--s));
-  background: radial-gradient(circle at 35% 30%, #fffd 0 14%, #ffffff38 38%, #ffffff12 70%); box-shadow: inset 0 0 .4cqw #fff9; }
-
-/* ================================================================ KRYSZTAŁOWY (cr-) */
-.card.cr { --c-glow: #9fd8ff; --frame: linear-gradient(135deg, #ffffff, #cfe9ff 25%, #ffffff 45%, #b9dcff 65%, #ffffff 85%, #d8ecff);
-  box-shadow: 0 6px 18px #0008, 0 0 3cqw var(--c-glow); }
-.card.cr::before { background-size: 220% 220% !important; animation: crFrame 4s linear infinite; }
-@keyframes crFrame { 50% { background-position: 100% 100%; } }
-.card.cr .card-inner { background: #dbeeff; color: #0d2550; }
-.cr-bg { overflow: hidden; }
-.vm-bg > .cr-shim, .vm-photo.cr-shim { inset: -10% auto -10% -100%; width: 300%;
-  background: linear-gradient(115deg, transparent 32%, #ff9ad870 40%, #ffe98a70 45%, #8affc470 50%, #8ad0ff70 55%, #c88aff70 60%, transparent 68%);
-  mix-blend-mode: color-dodge; will-change: transform; animation: crShim 5s ease-in-out infinite; }
-.vm-photo.cr-shim.ph { z-index: 2; opacity: .55; }
-@keyframes crShim { from { transform: translateX(-20%); } to { transform: translateX(45%); } }
-.vm svg.vm-photo.cr-facet { z-index: 1; mix-blend-mode: overlay; opacity: .9; }
-.card.cr :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffffa8; border: .3cqw solid #fff; border-radius: .5cqw; box-shadow: inset 0 0 1cqw var(--c-glow); }
-.card.cr :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #0d2550; text-shadow: none; }
-.card.cr .card-name { color: #0d2550; text-shadow: 0 0 .6cqw #fff, 0 0 1.4cqw #fff; }
-.card.cr .card-photo { border: .7cqw solid #ffffffd8; border-image: none; border-radius: .5cqw; box-shadow: 0 0 2cqw var(--c-glow); }
-.card.cr .card-photo > img { filter: brightness(1.05) saturate(.9) contrast(1.06); }
-.cr-spark { position: absolute; display: block; z-index: 3; width: 4cqw; aspect-ratio: 1; margin: -2cqw 0 0 -2cqw; background: #fff; filter: drop-shadow(0 0 .7cqw var(--c-glow));
-  clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); transform: scale(0); animation: crTw ease-in-out infinite; }
-@keyframes crTw { 0%, 100% { transform: scale(0) rotate(0); } 50% { transform: scale(var(--s)) rotate(45deg); } }
-.card.cr.amethyst { --c-glow: #c99aff; --frame: linear-gradient(135deg, #f6eaff, #c9a5ff 25%, #ffffff 45%, #a77bff 65%, #f1e2ff); }
-.card.cr.amethyst .card-inner { background: #e9d8ff; }
-.card.cr.amethyst :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp, .card-name) { color: #3a1470; }
-.card.cr.prism { --c-glow: #ffffff; --frame: linear-gradient(135deg, #ff9ad8, #ffe98a, #8affc4, #8ad0ff, #c88aff, #ff9ad8); }
-.card.cr.prism .card-inner { background: #f6f8ff; }
-.card.cr.prism .cr-shim { opacity: 1; mix-blend-mode: hard-light; }
-.card.cr.dark { --c-glow: #6fc8ff; --frame: linear-gradient(135deg, #3a56b8, #0f1838 30%, #9fd8ff 50%, #0f1838 70%, #3a56b8); }
-.card.cr.dark .card-inner { background: #101a40; }
-.card.cr.dark :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #0c1a40cc; border-color: #9fd8ff66; }
-.card.cr.dark :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #dff1ff; }
-.card.cr.dark .card-name { color: #dff1ff; text-shadow: 0 0 1.4cqw #6fc8ff; }
-.card.cr.dark .cr-shim { opacity: .45; }
-
 /* ================================================================ NOCNE NIEBO (ns-) */
 .card.ns { --frame: linear-gradient(160deg, #1d2848, #05070f 50%, #1d2848); box-shadow: 0 6px 18px #000c, 0 0 2cqw #3a5aa044; }
 .card.ns .card-inner { background: radial-gradient(120% 80% at 50% 0, #0d1a3a, #050811 70%); color: #e8eeff; }
@@ -149,37 +80,6 @@ canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 @keyframes faFlare { from { translate: -10% -6cqw; opacity: .5; } to { translate: 10% 6cqw; opacity: 1; } }
 
 /* ================================================================ partia 2: Żelkowy (bardziej przezroczysty + filtry zdjęcia), Kryształowy (mocny filtr), Nocne niebo (Droga Mleczna) */
-/* żelka bardziej przezroczysta: wnętrze i ramka mocniej prześwitują */
-.card.jl.glass::before { opacity: .62; }
-.card.jl.glass .card-inner { background: linear-gradient(176deg, color-mix(in srgb, var(--j1) 52%, transparent), color-mix(in srgb, var(--j2) 44%, transparent) 50%, color-mix(in srgb, var(--j3) 54%, transparent));
-  box-shadow: inset 0 0 3cqw #ffffff66, inset 0 -2cqw 4cqw #0002; }
-.card.jl.glass :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #ffffff26; }
-.card.jl.glass .card-photo { border-color: #ffffff55; }
-/* 1: barwa żelki na zdjęciu */
-.card.jl.pf1 .card-photo > img { filter: saturate(1.25) contrast(1.05) brightness(1.04); }
-.vm-photo.jl-color { background: linear-gradient(176deg, var(--j1), var(--j2) 50%, var(--j3)); mix-blend-mode: color; opacity: .55; }
-/* 2: duotone */
-.card.jl.pf2 .card-photo { isolation: isolate; }
-.card.jl.pf2 .card-photo > img { filter: grayscale(1) contrast(1.15) brightness(1.08); }
-.vm-photo.jl-duo-dark { background: linear-gradient(176deg, #b3123c, #c8164a 50%, #1f7a2e); mix-blend-mode: multiply; }
-.vm-photo.jl-duo-light { background: linear-gradient(176deg, #ffd0dc, #ffc2d0 50%, #d8ffc8); mix-blend-mode: screen; opacity: .55; }
-/* 3: jasność zdjęcia na kolorowej galaretce, brzegi rozmyte */
-.card.jl.pf3 .card-photo { isolation: isolate; background: linear-gradient(176deg, var(--j1), var(--j2) 50%, var(--j3)); }
-.card.jl.pf3 .card-photo > img { mix-blend-mode: luminosity; opacity: .9; filter: contrast(1.1);
-  -webkit-mask: radial-gradient(ellipse 75% 80% at 50% 45%, #000 60%, transparent 100%); mask: radial-gradient(ellipse 75% 80% at 50% 45%, #000 60%, transparent 100%); }
-/* 4: odcień z gradientu */
-.card.jl.pf4 .card-photo > img { filter: saturate(1.3) contrast(1.05); }
-.vm-photo.jl-hue { background: linear-gradient(176deg, var(--j1), var(--j2) 50%, var(--j3)); mix-blend-mode: hue; opacity: .6; }
-.vm-photo.jl-soft { background: radial-gradient(circle at 50% 30%, #ff9ab0, transparent 70%); mix-blend-mode: soft-light; opacity: .7; }
-
-/* Kryształowy: mocny filtr */
-.card.cr.strong .card-photo > img { filter: saturate(.55) brightness(1.14) contrast(1.18); }
-.card.cr.strong .card-photo { isolation: isolate; }
-.vm-photo.cr-ice { z-index: 1; background: linear-gradient(160deg, #cfeaff, #8fc8ff 60%, #e8f6ff); mix-blend-mode: color; opacity: .6; }
-.card.cr.strong svg.vm-photo.cr-facet { mix-blend-mode: hard-light; opacity: .75; }
-.vm-photo.cr-glow { z-index: 2; box-shadow: inset 0 0 3.5cqw 1cqw #ffffffcc, inset 0 0 1cqw .3cqw #bfe4ff; }
-.card.cr.strong .cr-shim.ph { opacity: .85; }
-
 /* Nocne niebo: Droga Mleczna */
 .vm svg.ns-mw { opacity: .95; }
 .vm-photo.ns-mw-ph { z-index: 2; mix-blend-mode: screen; opacity: 1; overflow: hidden; }
@@ -196,3 +96,16 @@ canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .vm-bg > .ns-rot { inset: -35%; transform-origin: 70% 30%; animation: vmSpin 240s linear infinite; }
 .ns-rot > svg { position: absolute; inset: 20%; width: 60%; height: 60%; }
 .ns-rot > .ns-star { position: absolute; }
+
+/* Nocne niebo v2: gwiazdy migoczą szybko i wyraźnie (prawie gasną), spadające gwiazdy szybsze */
+.ns-star.fast { animation-name: nsFast; animation-timing-function: ease-in-out; }
+@keyframes nsFast { 0%, 100% { opacity: var(--o); transform: scale(var(--s)); } 50% { opacity: .05; transform: scale(calc(var(--s) * .5)); } }
+.vm-deco > .ns-star.edge { box-shadow: 0 0 .9cqw #fff, 0 0 1.8cqw #bcd4ff; }
+.card.ns.v2 .card-photo { border: 0; box-shadow: none; background: transparent; }
+.card.ns.v2 .card-photo > img { -webkit-mask: radial-gradient(ellipse 72% 80% at 50% 42%, #000 62%, transparent 100%); mask: radial-gradient(ellipse 72% 80% at 50% 42%, #000 62%, transparent 100%);
+  filter: brightness(.92) saturate(.8) contrast(1.05); }
+.ns-shoot.fast { height: .55cqw; box-shadow: 0 0 1cqw #fff; }
+
+/* Hologram v3: obracanie przeciąganiem tylko w powiększeniu (w siatce kliknięcie otwiera powiększenie) */
+.vr-zoom canvas.m3d[data-kind="holo2"] { pointer-events: auto; cursor: grab; touch-action: none; }
+.vm-bg canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; }
