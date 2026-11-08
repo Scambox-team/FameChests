@@ -60,7 +60,7 @@ canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .card.fa { --frame: linear-gradient(160deg, #ffffff, #9fe0ff 35%, #2fa8e8 60%, #bff0ff); box-shadow: 0 6px 18px #0008, 0 0 2cqw #5fd0ff66; }
 .card.fa .card-inner { background: linear-gradient(180deg, #2a9be0, #7fd2ff 45%, #e8fbff 78%); color: #06345a; }
 .card.fa .card-inner * { font-family: "Segoe UI", Frutiger, "Myriad Pro", Tahoma, sans-serif; }
-.fa-bg { overflow: hidden; }
+.aer-bg { overflow: hidden; }
 .vm-bg > .fa-rays { inset: -30%; transform-origin: 30% 20%; opacity: .7; background: repeating-conic-gradient(from 0deg at 30% 20%, #ffffff26 0 6deg, transparent 6deg 14deg); animation: vmSpin 80s linear infinite; }
 .card.fa :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: linear-gradient(#ffffffe0, #ffffffa0 50%, #ffffff78 51%, #ffffffb0); border: .3cqw solid #ffffffe8; border-radius: 1.6cqw; box-shadow: 0 .4cqw 1cqw #0a5a8a40, inset 0 .3cqw 0 #fff; }
 .card.fa :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg) { color: #06345a; text-shadow: none; }
@@ -107,5 +107,10 @@ canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .ns-shoot.fast { height: .55cqw; box-shadow: 0 0 1cqw #fff; }
 
 /* Hologram v3: obracanie przeciąganiem tylko w powiększeniu (w siatce kliknięcie otwiera powiększenie) */
-.vr-zoom canvas.m3d[data-kind="holo2"] { pointer-events: auto; cursor: grab; touch-action: none; }
+.vr-zoom canvas.m3d:is([data-kind="holo2"], [data-kind="holo3"]) { pointer-events: auto; cursor: grab; touch-action: none; }
 .vm-bg canvas.m3d { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Aero v3: szklane, przejrzyste panele - planeta w tle prześwituje przez statystyki i widać ją nad nazwą */
+.card.fa.glassy :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: linear-gradient(#ffffff66, #ffffff30 50%, #ffffff18 51%, #ffffff40); border-color: #ffffffb0; }
+.card.fa.glassy :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg) { color: #03263f; text-shadow: 0 0 .5cqw #fff, 0 0 1cqw #fff; }
+.card.fa.glassy .fa-hills { opacity: .55; }

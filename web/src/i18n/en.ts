@@ -1991,6 +1991,8 @@ export const EN: Record<string, string> = {
   "Śnieżny": "Snowy",
   "Drewniany": "Wooden",
   "Żelkowy": "Gummy",
+  "Nocne niebo": "Night Sky",
+  "Karta jak nocne niebo: Droga Mleczna za zdjęciem, szybko mrugające gwiazdy i spadające gwiazdy, zdjęcie rozmyte w ciemności.": "A card like the night sky: the Milky Way behind the photo, fast-twinkling stars and shooting stars, with the photo fading into the dark.",
   "Kryształowy": "Crystal",
   "Półprzezroczysta arbuzowa żelka: zdjęcie zatopione w kolorowej galaretce, migoczące kryształki cukru, miękki połysk.": "A translucent watermelon gummy: the photo set in colourful jelly, twinkling sugar crystals and a soft gloss.",
   "Karta z oszlifowanego diamentu: lodowe fasetki, mieniąca się ramka, zdjęcie jakby wyrzeźbione w krysztale, tęczowy połysk i iskry.": "A card of cut diamond: icy facets, a shimmering frame, the photo as if carved in crystal, a rainbow sheen and sparkles.",

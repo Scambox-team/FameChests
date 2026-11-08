@@ -24,7 +24,7 @@ async function mount(canvas) {
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = T.SRGBColorSpace;
   const scene = new T.Scene(), camera = new T.PerspectiveCamera(35, 1, .1, 100);
-  const builders = { holo: buildHolo, holo2: buildHolo2, aero: buildAero, aero2: buildAero2, aero3: buildAero3 };
+  const builders = { holo: buildHolo, holo2: buildHolo2, holo3: buildHolo3, aero: buildAero, aero2: buildAero2, aero3: buildAero3 };
   const sc = (builders[kind] || buildAero)(T, scene, camera, look, pid, canvas.dataset.layer);
   // obracanie przeciąganiem (hologram): pointer-events włącza CSS tylko w powiększeniu / podglądzie
   if (sc.drag) {
@@ -491,10 +491,10 @@ function buildHolo2(T, scene, camera, look, pid) {
 // ================================================================ FRUTIGER AERO 3D, wersja 3: planeta w tle (osobne płótno pod zdjęciem i panelami, data-layer="back"),
 // rybki i szklane kule nad kartą (data-layer="front")
 const AERO3 = {
-  1: { planet: [-.85, -1.25, 1.0], orbs: [[.3, 0x2fd0ff, 1.05, 1.55], [.2, 0x7cff6a, 1.1, .6], [.16, 0xffffff, 1.0, -.35], [.24, 0x2fd0ff, -1.05, 1.6]] },
-  2: { planet: [.85, 1.3, 1.0], orbs: [[.3, 0x2fd0ff, -1.05, -1.5], [.2, 0x7cff6a, -1.1, -.5], [.18, 0xffffff, -1.0, .5], [.22, 0x2fd0ff, 1.0, -1.6]] },
-  3: { planet: [0, -2.35, 1.75], up: true, orbs: [[.3, 0x2fd0ff, -1.0, 1.55], [.22, 0x7cff6a, 1.05, 1.4], [.16, 0xffffff, 0, 1.75]] },
-  4: { planet: [-.85, 1.3, 1.0], orbs: [[.28, 0x2fd0ff, 1.05, .9], [.2, 0x7cff6a, 1.0, -.6], [.24, 0x2fd0ff, -1.0, -1.55], [.16, 0xffffff, .9, -1.7]] },
+  1: { planet: [-.7, -1.05, 1.2], orbs: [[.3, 0x2fd0ff, 1.05, 1.55], [.2, 0x7cff6a, 1.1, .6], [.16, 0xffffff, 1.0, -.35], [.24, 0x2fd0ff, -1.05, 1.6]] },
+  2: { planet: [.75, 1.45, 1.1], orbs: [[.3, 0x2fd0ff, -1.05, -1.5], [.2, 0x7cff6a, -1.1, -.5], [.18, 0xffffff, -1.0, .5], [.22, 0x2fd0ff, 1.0, -1.6]] },
+  3: { planet: [0, -2.15, 1.85], up: true, orbs: [[.3, 0x2fd0ff, -1.0, 1.55], [.22, 0x7cff6a, 1.05, 1.4], [.16, 0xffffff, 0, 1.75]] },
+  4: { planet: [-.75, 1.45, 1.1], orbs: [[.28, 0x2fd0ff, 1.05, .9], [.2, 0x7cff6a, 1.0, -.6], [.24, 0x2fd0ff, -1.0, -1.55], [.16, 0xffffff, .9, -1.7]] },
 };
 function buildAero3(T, scene, camera, look, pid, layer) {
   const C = AERO3[look] || AERO3[1];
@@ -505,7 +505,7 @@ function buildAero3(T, scene, camera, look, pid, layer) {
   if (layer === 'back') {
     const [px, py, pr] = C.planet;
     const dir = C.up ? new T.Vector3(0, 1, .9).normalize() : new T.Vector3(-px, -py, 2.2).normalize();
-    const g = cityPlanet(T, pr, dir); g.position.set(px, py, -.5); scene.add(g);
+    const g = cityPlanet(T, pr, dir); g.position.set(px, py, 0); scene.add(g);
     g.traverse(o => o.material?.uniforms?.time && mats.push(o.material));
     return { update(t) { for (const m of mats) m.uniforms.time.value = t; } };
   }
@@ -527,6 +527,116 @@ function buildAero3(T, scene, camera, look, pid, layer) {
         const nx = Math.cos(a + .05 * Math.sign(u.sp)) * u.rx * 1.2, nz = Math.sin(a + .05 * Math.sign(u.sp)) * u.rz;
         o.position.set(x, y, z); o.rotation.y = -Math.atan2(nz - z, nx - x); o.children[1].rotation.y = Math.sin(t * 9 + u.ph) * .5;
       });
+    },
+  };
+}
+
+// ================================================================ HOLOGRAM, wersja 4: sposoby pokazania statystyk przy obracaniu o 360° (looki 1-6, kind „holo3”)
+// tabliczka z linijkami tekstu (tytuł + pary etykieta / wartość)
+function linesTexture(T, title, rows, w = 512, h = 300) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.strokeStyle = '#fff'; g.fillStyle = '#fff'; g.lineWidth = 4;
+  g.strokeRect(6, 6, w - 12, h - 12); g.fillRect(6, 6, 90, 8); g.fillRect(w - 96, h - 14, 90, 8);
+  g.font = '800 42px Consolas, monospace'; g.fillText(String(title).slice(0, 20), 26, 62);
+  g.fillRect(26, 78, w - 52, 3);
+  let y = 124;
+  for (const [k, v] of rows) { g.font = '600 30px Consolas, monospace'; g.fillText(String(k).slice(0, 16), 26, y); g.font = '800 34px Consolas, monospace'; const s = String(v).slice(0, 14); g.fillText(s, w - 26 - g.measureText(s).width, y); y += 50; }
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
+}
+// płaski pierścień z UV biegunowym (u = kąt, v = promień) - tekst biegnie dookoła
+function polarRing(T, r0, r1, seg = 128) {
+  const geo = new T.RingGeometry(r0, r1, seg, 1), pos = geo.attributes.position, uv = geo.attributes.uv, v = new T.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    uv.setXY(i, (Math.atan2(v.y, v.x) / (Math.PI * 2) + 1) % 1, (v.length() - r0) / (r1 - r0));
+  }
+  return geo;
+}
+// pionowa kolumna danych (do przewijania)
+function columnTexture(T, st) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 1024;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.textAlign = 'center';
+  const items = [st.name, `HP ${st.hp}`, ...st.ab.map(a => `${a.name} ${a.value}`), `${st.val} GR`, st.rar];
+  let y = 40;
+  while (y < 1024) for (const it of items) { if (y > 1010) break; g.font = '700 22px Consolas, monospace'; for (const w of String(it).toUpperCase().split(' ').slice(0, 3)) { g.fillText(w.slice(0, 9), 64, y); y += 28; } g.fillRect(24, y - 12, 80, 2); y += 22; }
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.wrapT = T.RepeatWrapping; return t;
+}
+
+function buildHolo3(T, scene, camera, look, pid) {
+  const M = HOLO_MODES[2], st = personStats(pid), color = 0x5fc8ff;
+  scene.add(new T.AmbientLight(0xffffff, .55));
+  const dl = new T.DirectionalLight(0xffffff, 1.1); dl.position.set(2, 4, 5); scene.add(dl);
+  const pl = new T.PointLight(color, 2.5, 5); pl.position.set(0, .4, .7); scene.add(pl);
+  const root = new T.Group(); scene.add(root);
+  const dev = projector(T, .55, .14); root.add(dev.group);
+  root.add(beam(T, .18, 1.15, 2.7, color, dev.top));
+  const mats = [], txt = o => { const m = holoMat(T, o.map, { color, text: true, grain: M.grain * .6, scan: M.scan * .6, opacity: o.opacity ?? .95 }); if (o.front) m.side = T.FrontSide; mats.push(m); return m; };
+  let photo;
+  const tex = new T.TextureLoader().load(imgUrl(pid, 'normal'), t => { if (photo) photo.scale.x = photo.scale.y * t.image.width / t.image.height; });
+  tex.colorSpace = T.SRGBColorSpace;
+  const pm = holoMat(T, tex, { color, grain: M.grain, scan: M.scan }); mats.push(pm);
+  const py = dev.top + 1.32;
+  photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.85, 2.35, 1); photo.position.set(-.15, py, 0); root.add(photo);
+  const spin = [], bill = [];
+  let scroll = null;
+  if (look === 1) {   // wygięty ekran (wersja 3 z poprzednich makiet)
+    const panel = new T.Mesh(new T.CylinderGeometry(1.2, 1.2, 1.5, 48, 1, true, .06 * Math.PI, .42 * Math.PI), txt({ map: statsTexture(T, st) }));
+    panel.position.set(-.15, dev.top + 1.25, 0); root.add(panel);
+  } else if (look === 2) {   // cztery znaczki krążą wokół głowy
+    const items = [['HP', st.hp], ['ATAK', st.ab[0]?.value ?? '-'], ['WARTOŚĆ', `${st.val}`], ['RZADKOŚĆ', st.rar]];
+    items.forEach((it, k) => { const ch = new T.Mesh(new T.PlaneGeometry(.66, .33), txt({ map: statsTexture(T, it, 'chip') })); ch.userData.a = k / items.length * Math.PI * 2; root.add(ch); spin.push(ch); });
+  } else if (look === 3) {   // statystyki z tyłu hologramu: obróć, żeby je zobaczyć
+    pm.side = T.FrontSide;
+    const back = new T.Mesh(new T.PlaneGeometry(1.85, 2.35), txt({ map: statsTexture(T, st), front: true }));
+    back.position.set(-.15, py, -.02); back.rotation.y = Math.PI; root.add(back);
+    const hint = new T.Mesh(new T.PlaneGeometry(1.2, .22), txt({ map: linesTexture(T, '↻ OBRÓĆ', [], 512, 96), opacity: .7 }));
+    hint.position.set(-.15, dev.top + .2, .7); root.add(hint);
+  } else if (look === 4) {   // trzy tabliczki jedna przed drugą (paralaksa przy obracaniu)
+    const ab = st.ab[0];
+    [[st.name, [['RZADKOŚĆ', st.rar]]], ['STATYSTYKI', [['HP', st.hp], [ab?.name || 'ATAK', ab?.value ?? '-']]], ['WARTOŚĆ', [['GROSZE', st.val]]]].forEach(([title, rows], k) => {
+      const p = new T.Mesh(new T.PlaneGeometry(1.0, .58), txt({ map: linesTexture(T, title, rows) }));
+      p.position.set(.75 + k * .08, dev.top + 2.05 - k * .62, .3 + k * .32); p.rotation.y = -.25; root.add(p);
+    });
+  } else if (look === 5) {   // pierścień tekstu na podłodze wokół urządzenia + nazwa nad głową
+    const sTex = statsTexture(T, st, 'strip'); sTex.wrapS = T.RepeatWrapping;
+    const ring = new T.Mesh(polarRing(T, .75, 1.2), txt({ map: sTex, opacity: .9 }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = dev.top + .01; root.add(ring); spin.push(ring); ring.userData.floor = true;
+    const nm = new T.Mesh(new T.PlaneGeometry(2.0, .32), txt({ map: linesTexture(T, st.name, [], 768, 110) }));
+    nm.position.set(-.15, py + 1.38, 0); root.add(nm);
+  } else {   // przewijana kolumna danych z lewej + krótka tabliczka z prawej
+    const cTex = columnTexture(T, st); cTex.repeat.set(1, .45);
+    const col = new T.Mesh(new T.PlaneGeometry(.5, 2.4), txt({ map: cTex, opacity: .9 }));
+    col.position.set(-1.35, py, .25); col.rotation.y = .3; root.add(col); scroll = cTex;
+    const small = new T.Mesh(new T.PlaneGeometry(.8, .4), txt({ map: statsTexture(T, ['HP', st.hp], 'chip') }));
+    small.position.set(.75, py + .7, .5); small.rotation.y = -.25; root.add(small);
+  }
+  const dust = motes(T, 80, .9, 2.7, dev.top, color); root.add(dust);
+  root.position.x = -.12;
+  camera.position.set(0, 1.6, 6.9); camera.lookAt(.05, 1.45, 0);
+  let last = 0, rot = 0, vel = 0, lastDrag = -1e9;
+  return {
+    drag(dx) { vel = dx * .01; rot += vel; lastDrag = performance.now(); },
+    update(t) {
+      const dt = Math.min(.05, t - last); last = t;
+      const glitch = (Math.sin(t * 1.3) + Math.sin(t * 3.1 + 1.7)) > M.thr ? M.peak : M.base;
+      for (const m of mats) { m.uniforms.time.value = t; m.uniforms.glitch.value = glitch; }
+      scene.traverse(o => { if (o.material?.uniforms?.time && !mats.includes(o.material)) o.material.uniforms.time.value = t; });
+      photo.position.x = -.15 + (glitch > .9 ? (Math.random() - .5) * .06 : 0);
+      if (performance.now() - lastDrag < 2500) { rot += vel; vel *= .92; }
+      else { const target = Math.sin(t * .3) * .22, k = Math.round((rot - target) / (Math.PI * 2)); rot += (target + k * Math.PI * 2 - rot) * .03; }
+      root.rotation.y = rot;
+      spin.forEach(o => {
+        if (o.userData.floor) { o.rotation.z = t * .25; return; }
+        const a = o.userData.a + t * .45;
+        o.position.set(-.15 + Math.cos(a) * 1.25, py + .75 + Math.sin(t + o.userData.a) * .05, Math.sin(a) * 1.25);
+        o.quaternion.copy(camera.quaternion);   // zawsze przodem do widza
+        o.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), -rot));
+      });
+      if (scroll) scroll.offset.y = (scroll.offset.y + dt * .06) % 1;
+      dev.ring.material.color.setHSL(.55, 1, .65 + Math.sin(t * 3) * .12);
+      dev.leds.forEach((l, i) => l.visible = Math.sin(t * 4 + i) > -.3);
+      dust.userData.tick(dt);
     },
   };
 }

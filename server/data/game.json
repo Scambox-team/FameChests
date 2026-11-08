@@ -740,6 +740,13 @@
    "off": true,
    "desc": "Karta z oszlifowanego diamentu: lodowe fasetki, mieniąca się ramka, zdjęcie jakby wyrzeźbione w krysztale, tęczowy połysk i iskry."
   },
+  "nightsky": {
+   "name": "Nocne niebo",
+   "chance": 0.006,
+   "mult": 8,
+   "off": true,
+   "desc": "Karta jak nocne niebo: Droga Mleczna za zdjęciem, szybko mrugające gwiazdy i spadające gwiazdy, zdjęcie rozmyte w ciemności."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,

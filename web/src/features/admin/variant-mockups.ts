@@ -91,62 +91,27 @@ VARIANT_PROPOSALS.push({
 });
 
 // ================================================================ wspólne (partia 2: Żelkowy, Kryształowy, Nocne niebo, Hologram, Frutiger Aero 3D)
-// ASCII Art, Drewniany, Dowód osobisty, Żelkowy i Kryształowy są już w grze - cards2.css / cardHtml.ts.
+// ASCII Art, Drewniany, Dowód osobisty, Żelkowy, Kryształowy i Nocne niebo są już w grze - cards2.css / cardHtml.ts.
 const seeded = seed => { let s = seed % 2147483647 || 7; return () => (s = s * 16807 % 2147483647) / 2147483647; };
-
-// ================================================================ NOCNE NIEBO (ns-): wersja 3 - zdjęcie wśród gwiazd, Droga Mleczna w całości za zdjęciem
-
-const nsStars = (n, cls = "ns-star", y = [1, 99], dur = [2, 6]) => vmScatter(n, cls, () => `--s:${vmN(.3, 1.2, 2)};--o:${vmN(.45, 1, 2)};animation-duration:${vmN(dur[0], dur[1], 1)}s`, y, [1, 99]);
-const nsBright = (n, dur = [3, 6]) => vmScatter(n, "ns-bright", () => `--s:${vmN(.6, 1.2, 2)};animation-duration:${vmN(dur[0], dur[1], 1)}s`, [3, 70]);
-const nsMilkyWay = (o, cls = "ns-mw") => {
-  const id = vmId("mw"), r = seeded(o.seed), a = o.angle * Math.PI / 180, cx = o.cx ?? 50, cy = o.cy ?? 70, ca = Math.cos(a), sa = Math.sin(a);
-  let dots = "";
-  for (let i = 0; i < 520; i++) {
-    const t = (r() - .5) * 200, off = (r() + r() + r() - 1.5) * o.w * .8, big = r() > .93;
-    dots += `<circle cx="${(cx + ca * t - sa * off).toFixed(1)}" cy="${(cy + sa * t + ca * off).toFixed(1)}" r="${(big ? .45 + r() * .4 : .1 + r() * .22).toFixed(2)}" fill="${big && r() < .3 ? "#ffd9b0" : "#fff"}" opacity="${(.3 + r() * .7).toFixed(2)}"/>`;
-  }
-  const W = o.w, kx = (o.core ?? .5) - .5, corX = cx + ca * kx * 120, corY = cy + sa * kx * 120;
-  return vmSvg(`<defs>
-    <filter id="${id}n" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="5" seed="${o.seed}"/><feColorMatrix type="matrix" values="0 0 0 0 .86  0 0 0 0 .78  0 0 0 0 1  2.4 0 0 0 -.55"/></filter>
-    <filter id="${id}d" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".055 .025" numOctaves="4" seed="${o.seed + 5}"/><feColorMatrix type="matrix" values="0 0 0 0 .02  0 0 0 0 .02  0 0 0 0 .06  -2.6 0 0 0 1.3"/></filter>
-    <linearGradient id="${id}b" gradientUnits="userSpaceOnUse" x1="${(cx + sa * W).toFixed(1)}" y1="${(cy - ca * W).toFixed(1)}" x2="${(cx - sa * W).toFixed(1)}" y2="${(cy + ca * W).toFixed(1)}">
-      <stop offset="0" stop-color="#000"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
-    <radialGradient id="${id}c"><stop offset="0" stop-color="#ffe6c0" stop-opacity=".9"/><stop offset=".5" stop-color="#ffb47a" stop-opacity=".35"/><stop offset="1" stop-color="#ff9a6a" stop-opacity="0"/></radialGradient>
-    <mask id="${id}m"><rect x="-60" y="-60" width="220" height="260" fill="url(#${id}b)"/></mask></defs>
-    <g mask="url(#${id}m)"><rect x="-60" y="-60" width="220" height="260" filter="url(#${id}n)"/>
-    <ellipse cx="${corX.toFixed(1)}" cy="${corY.toFixed(1)}" rx="${(W * 1.3).toFixed(1)}" ry="${(W * .7).toFixed(1)}" transform="rotate(${o.angle} ${corX.toFixed(1)} ${corY.toFixed(1)})" fill="url(#${id}c)"/>
-    <rect x="-60" y="-60" width="220" height="260" filter="url(#${id}d)"/>${dots}</g>`, "0 0 100 140", cls, "xMidYMid slice");
-};
-const nsShoot = (top, left, delay, dur) => `<i class="ns-shoot fast" style="top:${top}%;left:${left}%;animation-delay:-${delay}s;animation-duration:${dur}s"></i>`;
-
-VARIANT_PROPOSALS.push({
-  key: "nightsky", icon: "🌌", name: "Nocne niebo", tag: "✦ NOCNE NIEBO",
-  about: "wybrana wersja 3 (zdjęcie wśród gwiazd): Droga Mleczna w całości za zdjęciem, spadające gwiazdy, gwiazdy migoczą wyraźnie i szybko",
-  looks: [
-    { name: "Zdjęcie wśród gwiazd 2", desc: "Zdjęcie bez ramki stoi przed niebem (brzegi lekko rozmyte w ciemności), Droga Mleczna z mgławicą i jasnym jądrem biegnie w całości za nim; gwiazdy w tle i przy krawędziach mrugają szybko i wyraźnie (gasną prawie do zera), co kilka sekund nad kartą przelatuje spadająca gwiazda.",
-      cls: "ns mw3 v2",
-      bg: () => `<div class="vm-bg ns-bg">${nsMilkyWay({ angle: -40, seed: 14, w: 30, core: .45 })}${nsStars(70, "ns-star fast", [1, 99], [.7, 1.8])}${nsBright(6, [1.2, 2.4])}${nsShoot(8, -30, 0, 6)}</div>`,
-      photo: () => "",
-      deco: () => `<div class="vm-deco ns-clip">${nsShoot(4, -35, 2.5, 7)}${nsShoot(22, -40, 5.5, 9)}${vmScatter(12, "ns-star fast edge", () => `--s:${vmN(.4, 1.1, 2)};--o:${vmN(.6, 1, 2)};animation-duration:${vmN(.7, 1.6, 1)}s`, [2, 98], [1, 99])}</div>` },
-  ],
-});
 
 // ================================================================ HOLOGRAMOWY (hg-) i FRUTIGER AERO 3D (fa-): sceny Three.js w variant-mockups-3d.ts
 const m3d = (kind, look, layer = "") => p => `<div class="vm-deco m3d-wrap"><canvas class="m3d" data-kind="${kind}" data-look="${look}" data-pid="${p.id}"${layer ? ` data-layer="${layer}"` : ""}></canvas></div>`;
 
 VARIANT_PROPOSALS.push({
   key: "hologram", icon: "📡", name: "Hologramowy", tag: "📡 HOLO",
-  about: "wybrane „lekkie zakłócenia” (makieta 2): tabliczka ze statystykami lekko po prawej i lekko przed postacią. W powiększeniu (a w grze w podglądzie karty) hologram można obracać o 360° przeciągając myszą lub palcem; puszczony wraca do lekkiego kołysania",
+  about: "lekkie zakłócenia, małe urządzenie, duża postać; skoro hologram da się obracać o 360° (przeciąganie w powiększeniu, w grze w podglądzie karty), sześć sposobów pokazania statystyk - wersja 1 to wygięty ekran z poprzednich makiet",
   looks: [
-    { name: "Tabliczka przed postacią", desc: "Panel ze statystykami zachodzi na prawy brzeg postaci i wisi trochę przed nią, lekko odwrócony do środka.", cls: "hg", deco: m3d("holo2", 1) },
-    { name: "Tabliczka i znaczek", desc: "Jak 1, a do tego mały znaczek z rzadkością i wartością za postacią po lewej - widać go dopiero przy obracaniu.", cls: "hg", deco: m3d("holo2", 2) },
-    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca.", cls: "hg", deco: m3d("holo2", 3) },
-    { name: "Ekran na promieniu", desc: "Tabliczka przed postacią po prawej, połączona z urządzeniem cienkim promieniem światła; lekko unosi się i opada.", cls: "hg", deco: m3d("holo2", 4) },
+    { name: "Wygięty ekran", desc: "Statystyki na wygiętym ekranie, który otacza postać od prawej strony z przodu jak fragment walca (wersja 3 z poprzednich makiet).", cls: "hg", deco: m3d("holo3", 1) },
+    { name: "Znaczki na orbicie", desc: "Cztery znaczki - HP, atak, wartość i rzadkość - krążą wokół głowy postaci, zawsze zwrócone przodem do widza; przy obracaniu mijają się z postacią.", cls: "hg", deco: m3d("holo3", 2) },
+    { name: "Statystyki z tyłu", desc: "Z przodu tylko postać i napis „↻ OBRÓĆ”; po obróceniu hologramu o 180° z tyłu widać całą tabliczkę ze statystykami.", cls: "hg", deco: m3d("holo3", 3) },
+    { name: "Tabliczki warstwami", desc: "Trzy małe tabliczki (nazwa z rzadkością, HP z atakiem, wartość) jedna przed drugą po prawej - przy obracaniu przesuwają się względem siebie.", cls: "hg", deco: m3d("holo3", 4) },
+    { name: "Pierścień na podłodze", desc: "Statystyki biegną tekstem po świecącym pierścieniu na podłodze wokół urządzenia (powoli się obraca), a nad głową postaci unosi się jej imię i nazwisko.", cls: "hg", deco: m3d("holo3", 5) },
+    { name: "Kolumna danych", desc: "Po lewej pionowa kolumna, po której bez końca przewijają się w górę wszystkie dane karty, po prawej mały znaczek z HP.", cls: "hg", deco: m3d("holo3", 6) },
   ],
 });
 
-const faBg = (cls, look, extra = "") => p => `<div class="vm-bg fa-bg ${cls}"><i class="fa-rays"></i>${vmSvg('<path d="M-5 112 Q25 96 55 108 T110 104 V145 H-5Z" fill="url(#faG1)"/><path d="M-5 124 Q35 108 70 120 T110 116 V145 H-5Z" fill="url(#faG2)"/><defs><linearGradient id="faG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ee35a"/><stop offset="1" stop-color="#3f9a2a"/></linearGradient><linearGradient id="faG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd23f"/><stop offset="1" stop-color="#2c7a1e"/></linearGradient></defs>', "0 0 100 140", "fa-hills")}${extra}<canvas class="m3d" data-kind="aero3" data-look="${look}" data-pid="${p.id}" data-layer="back"></canvas></div>`;
-const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa ${cls}`, bg: faBg(cls, look, extra), photo: () => '<i class="vm-photo fa-glass"></i>',
+const faBg = (cls, look, extra = "") => p => `<div class="vm-bg aer-bg ${cls}"><i class="fa-rays"></i>${vmSvg('<path d="M-5 112 Q25 96 55 108 T110 104 V145 H-5Z" fill="url(#faG1)"/><path d="M-5 124 Q35 108 70 120 T110 116 V145 H-5Z" fill="url(#faG2)"/><defs><linearGradient id="faG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ee35a"/><stop offset="1" stop-color="#3f9a2a"/></linearGradient><linearGradient id="faG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd23f"/><stop offset="1" stop-color="#2c7a1e"/></linearGradient></defs>', "0 0 100 140", "fa-hills")}${extra}<canvas class="m3d" data-kind="aero3" data-look="${look}" data-pid="${p.id}" data-layer="back"></canvas></div>`;
+const faLook = (name, desc, look, cls, extra = "") => ({ name, desc, cls: `fa glassy ${cls}`, bg: faBg(cls, look, extra), photo: () => '<i class="vm-photo fa-glass"></i>',
   deco: p => m3d("aero3", look, "front")(p) + '<div class="vm-deco"><i class="fa-gloss"></i></div>' });
 
 VARIANT_PROPOSALS.push({
