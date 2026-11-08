@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, Query, RawQuery, State};
 use axum::http::{header, HeaderMap, StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use serde_json::json;
@@ -36,8 +36,10 @@ const MYSTERY_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
   <text x="150" y="268" font-family="Arial" font-weight="bold" font-size="34" fill="#f3e3b0" text-anchor="middle" letter-spacing="6">???</text>
 </svg>"##;
 
-pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser) -> Res {
-    if u.is_some() {
+pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser, RawQuery(query): RawQuery) -> Res {
+    // link z maila z tokenem (?t=sb1_...) otwiera formularz nowego hasła także zalogowanemu
+    let mail_link = query.as_deref().is_some_and(|q| q.starts_with("t=sb1_") || q.contains("&t=sb1_"));
+    if u.is_some() && !mail_link {
         return Ok(Redirect::to("/").into_response());
     }
     let n = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM users"#).fetch_one(&st.db).await?;

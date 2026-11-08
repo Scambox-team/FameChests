@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, LazyLock};
 
 use axum::extract::{Multipart, Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use indexmap::{IndexMap, IndexSet};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -1303,6 +1303,7 @@ pub struct ResetLink {
 pub async fn admin_reset_link(
     State(st): State<AppState>,
     Admin(me): Admin,
+    headers: HeaderMap,
     Path(uid): Path<i64>,
     JsonBody(req): JsonBody<ResetLink>,
 ) -> Res {
@@ -1321,10 +1322,14 @@ pub async fn admin_reset_link(
         }
         (false, Some(_)) => (typed.to_owned(), "wpisany adres"),
     };
-    if let Err(e) = super::account::send_recovery(&st, &email).await {
+    // własny mail z tokenem (gdy jest SMTP) albo Supabase Auth `recover`; strict: admin widzi błędy wysyłki
+    let base = super::account_mail::base_url(&st, &headers);
+    if let Err(e) = super::account_mail::deliver_reset(&st, &mut tx, &base, &email, true).await {
         // mail nie wyszedł: transakcja się cofa, więc konta w Supabase Auth też nie zostawiamy (adres musi zostać wolny)
         if let (Some(id), Some(gt)) = (&created, &st.cfg.gotrue) {
-            let _ = gt.admin_delete(id).await;
+            if !id.starts_with(super::account::LOCAL_PREFIX) {
+                let _ = gt.admin_delete(id).await;
+            }
         }
         return Err(e);
     }
@@ -1334,13 +1339,51 @@ pub async fn admin_reset_link(
     ok(json!({"ok": true}))
 }
 
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct SetEmail {
+    email: String,
+}
+
+/// Admin zmienia email gracza ręcznie (np. gracz stracił dostęp do starej skrzynki). Gracz z emailem: `change_email`
+/// (Supabase Auth, jeśli konto tam jest) + powiadomienie na stary adres; bez emaila: dopisanie adresu (`admin_attach_email`).
+/// Tak jak reset hasła pozwala przejąć konto, więc zaczyna się od `guard_owner`.
+pub async fn admin_set_email(State(st): State<AppState>, Admin(me): Admin, Path(uid): Path<i64>, JsonBody(req): JsonBody<SetEmail>) -> Res {
+    guard_owner(&st, &me, uid)?;
+    let email = req.email.trim().to_lowercase();
+    let mut tx = st.db.begin().await?;
+    let Some(target) = user_by_id(&mut tx, uid).await? else { return Err(AppError::not_found()) };
+    let (old, created) = match super::account::auth_link(&mut tx, uid).await? {
+        Some(_) => (Some(super::account_mail::change_email(&st, &mut tx, &target, &email).await?), None),
+        None => (None, Some(super::account::admin_attach_email(&st, &mut tx, &target, &email).await?)),
+    };
+    let details = match &old {
+        Some(o) => format!("{} -> {}", mask_email(o), mask_email(&email)),
+        None => format!("dopisany: {}", mask_email(&email)),
+    };
+    log_admin(&mut tx, &me, "email_change", Some(uid), &details).await?;
+    if let Err(e) = tx.commit().await {
+        if let (Some(id), Some(gt)) = (&created, &st.cfg.gotrue) {
+            let _ = gt.admin_delete(id).await;
+        }
+        return Err(e.into());
+    }
+    if let Some(old) = old {
+        let mut c = st.db.acquire().await?;
+        super::account_mail::notify_email_changed(&st, &mut c, &target, &old, &email).await;
+    }
+    ok(json!({"ok": true}))
+}
+
 pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Path(uid): Path<i64>) -> Res {
     if uid == me.id {
         return bad("Nie możesz usunąć samego siebie");
     }
     guard_owner(&st, &me, uid)?;
     let mut tx = st.db.begin().await?;
-    let auth_id = super::account::auth_link(&mut tx, uid).await?.map(|l| l.auth_id);
+    // konta "local:" nie ma w Supabase Auth
+    let auth_id = super::account::auth_link(&mut tx, uid).await?.filter(|l| !l.is_local()).map(|l| l.auth_id);
+    sqlx::query("DELETE FROM account_tokens WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     log_admin(&mut tx, &me, "user_delete", Some(uid), "").await?; // przed usunięciem - żeby zapisać nazwę gracza
     super::market::market_forget_user(&mut tx, uid).await?; // jego oferty na rynku i lobby jackpota
     super::casino::blackjack_forget_user(&mut tx, uid).await?; // rozdanie w trakcie i postawione w nim karty

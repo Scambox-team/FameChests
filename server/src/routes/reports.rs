@@ -75,6 +75,8 @@ pub async fn legal(State(st): State<AppState>) -> Res {
         "operator": st.cfg.operator_name,
         "contactEmail": st.cfg.contact_email,
         "emailAuth": st.cfg.gotrue.is_some(),
+        // własny SMTP: emaile kont (opcjonalne bez Supabase Auth), reset hasła i zmiana emaila linkami
+        "mail": st.cfg.mailer.configured(),
     }))
 }
 

@@ -6,6 +6,7 @@ import { toast } from '../../ui/Toaster';
 import { SK_PIECES, skPreview } from '../chess/skins';
 import { createCardsTool } from './cardsTool';
 import { initSections } from './sections';
+import { initMailTemplates } from './mailTemplates';
 
 const crateIconSvg = emoji => emoji ? String(emoji).replace(/[<>&"]/g, "") : `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${crateIconPath(emoji)}"/></svg>`;
 
@@ -578,6 +579,7 @@ export function startPanel() {
           <button class="btn tiny" data-uact="access">Dostęp</button>
           <button class="btn tiny" data-uact="money">Pieniądze</button>
           <button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
+          <button class="btn tiny" data-uact="setEmail" title="Zmień adres email gracza (albo dopisz, gdy go nie ma)">Zmień email</button>
           <button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>
           ${u.id !== me ? `<button class="btn tiny" data-uact="admin">${u.isAdmin ? "Odbierz admina" : "Daj admina"}</button>
           <button class="btn tiny ${u.banned ? "" : "danger"}" data-uact="ban">${u.banned ? "Odblokuj" : "Zablokuj"}</button>
@@ -732,7 +734,7 @@ export function startPanel() {
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
     ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina",
-    password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
+    password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", email_change: "Zmiana emaila gracza", email_template_save: "Zapis szablonu maila", email_template_reset: "Przywrócenie szablonu maila",user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",
     link_create: "Nowy link do karty", link_on: "Włączył link", link_off: "Wyłączył link",
@@ -799,6 +801,14 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);
         await api(`/api/admin/users/${id}/reset-link`, { method: "POST", json: { email } });
         toast(email ? `Jeśli ${email} ma konto, dostanie link do resetu hasła` : `Wysłano link do resetu hasła na e-mail gracza ${name}`);
+      }
+      if (act === "setEmail") {
+        const v = prompt(`Nowy adres email gracza ${name}.\nGracz dostanie powiadomienie na stary adres (jeśli go miał). Dopisany adres nie jest potwierdzany linkiem.`, "");
+        if (v === null) return;
+        const email = v.trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);
+        await api(`/api/admin/users/${id}/email`, { method: "POST", json: { email } });
+        toast(`Zmieniono email gracza ${name}`);
       }
       if (act === "ranking") {
         const u = A.users.find(x => String(x.id) === String(id));
@@ -1210,6 +1220,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
   Object.assign(tools, createCardsTool({ A, $, $$, esc, api, toast, cardTile, openCardForm, load, hiddenSecret }));
   tools.bind();
   initSections();
+  initMailTemplates();
   load();
   
   // Panel admina: osiągnięcia (lista + edytor w panelu "Osiągnięcia" w admin.html). Zapis: /api/admin/achievements.

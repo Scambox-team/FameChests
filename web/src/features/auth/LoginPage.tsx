@@ -19,6 +19,9 @@ function nextPath() {
 
 /** Link z maila odsyła tu z wynikiem w adresie po `#` (token do nowego hasła, potwierdzenie emaila albo błąd) */
 function readMailLink() {
+  // link z maila gry: ?t=sb1_...
+  const own = new URLSearchParams(location.search).get('t') ?? '';
+  if (own.startsWith('sb1_')) return { token: own, confirmed: false, failed: false };
   const h = new URLSearchParams(location.hash.replace(/^#/, ''));
   const token = h.get('access_token');
   return {
@@ -45,11 +48,16 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const register = mode === 'register';
   const legal = useLegal();
-  const emailAuth = !!legal?.emailAuth;
+  const emailAuth = !!legal?.emailAuth;        // Supabase Auth: email wymagany przy rejestracji
+  const emailOn = emailAuth || !!legal?.mail;  // emaile kont działają (także przy samym SMTP, wtedy email jest opcjonalny)
 
   useEffect(() => { document.title = 'Logowanie · ScamBox'; }, []);
   // token z linku nie zostaje w pasku adresu ani w historii
-  useEffect(() => { if (location.hash) history.replaceState(null, '', location.pathname + location.search); }, []);
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    q.delete('t');
+    if (location.hash || link.token) history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : ''));
+  }, []);
 
   const go = (m: Mode) => { setMode(m); setError(''); setNotice(''); setUnconfirmed(''); };
 
@@ -68,7 +76,8 @@ export function LoginPage() {
         setNotice('Jeśli konto z tym adresem istnieje, wysłaliśmy na niego link do ustawienia nowego hasła.');
         setBusy(false);
       } else if (mode === 'reset') {
-        await post('/api/reset', { token: link.token, password: f.password });
+        // token z naszego maila zaczyna się od "sb1_", token Supabase Auth to JWT
+        await post(link.token.startsWith('sb1_') ? '/api/account/reset' : '/api/reset', { token: link.token, password: f.password });
         setMode('login');
         setNotice('Hasło zmienione. Zaloguj się nowym hasłem.');
         setBusy(false);
@@ -117,10 +126,14 @@ export function LoginPage() {
         {mode === 'reset' && <p className="muted">Ustaw nowe hasło do swojego konta.</p>}
         {first && register && <p className={styles.first}><Crown size={16} aria-hidden="true" />To pierwsze konto w tej grze. Przejmie obecny zapis.</p>}
         <form className={styles.form} onSubmit={submit} autoComplete="on">
-          {register && emailAuth && <label>Email<input name="email" type="email" required maxLength={254} autoComplete="email" autoFocus /></label>}
+          {register && emailOn && (
+            <label>{emailAuth ? 'Email' : 'Email (niewymagany, do odzyskania hasła)'}
+              <input name="email" type="email" required={emailAuth} maxLength={254} autoComplete="email" autoFocus={emailAuth} />
+            </label>
+          )}
           {mode === 'forgot' && <label>Email<input name="email" type="email" required maxLength={254} autoComplete="email" autoFocus /></label>}
           {(mode === 'login' || register) && (
-            <label>{register || !emailAuth ? 'Nazwa gracza' : 'Nazwa gracza lub email'}
+            <label>{register || !emailOn ? 'Nazwa gracza' : 'Nazwa gracza lub email'}
               <input name="username" type="text" required minLength={register ? 3 : 1} maxLength={register ? 20 : 254} autoComplete="username" autoFocus={!(register && emailAuth)} />
             </label>
           )}
@@ -142,7 +155,7 @@ export function LoginPage() {
           <Button kind="hue" big type="submit" disabled={busy}>
             {mode === 'register' ? 'Załóż konto' : mode === 'forgot' ? 'Wyślij link' : mode === 'reset' ? 'Ustaw hasło' : 'Zaloguj'}
           </Button>
-          {mode === 'login' && emailAuth && <button type="button" className={styles.linkBtn} onClick={() => go('forgot')}>Nie pamiętasz hasła?</button>}
+          {mode === 'login' && emailOn && <button type="button" className={styles.linkBtn} onClick={() => go('forgot')}>Nie pamiętasz hasła?</button>}
           {(mode === 'forgot' || mode === 'reset') && <button type="button" className={styles.linkBtn} onClick={() => go('login')}>Wróć do logowania</button>}
         </form>
         <nav className={styles.legal} aria-label="Informacje prawne">

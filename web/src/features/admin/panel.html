@@ -129,6 +129,14 @@
         <form id="achForm" class="ach-form" autocomplete="off" hidden></form>
       </div>
 
+      <div class="panel" data-sec="content" id="mailPanel">
+        <h3>Maile</h3>
+        <p class="muted small">Treść maili wysyłanych graczom: reset hasła, zmiana emaila i maile Supabase Auth (potwierdzenie konta). Zmiana działa od razu,
+          „Przywróć domyślny” wraca do pliku z kodu. Pola w podwójnych klamrach (np. <code>{{ .Link }}</code>) podmienia serwer; wartości są escapowane.
+          Maile mają tabele i style w atrybutach (klienty poczty nie czytają zewnętrznych arkuszy) - zmieniaj ostrożnie. Podgląd to przykładowe wartości.</p>
+        <div id="mailBody"></div>
+      </div>
+
       <div class="panel" data-sec="content">
         <h3>Questy</h3>
         <p class="muted small">Wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Quest trwa 24 h, potem losuje się nowy; gdy ktoś go wypełni, nowy pojawia się 6 h później. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).

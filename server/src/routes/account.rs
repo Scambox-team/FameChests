@@ -46,6 +46,8 @@ pub struct Credentials {
 pub struct PasswordChange {
     old: String,
     new: String,
+    /// powtórzone nowe hasło (jeśli przesłane, musi być takie samo)
+    repeat: String,
 }
 
 /// Pierwsze konto przejmuje zapis gry sprzed wprowadzenia kont
@@ -75,17 +77,61 @@ async fn adopt_legacy_save(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
 pub struct AuthLink {
     pub auth_id: String,
     pub email: String,
+    /// email potwierdzony linkiem (gra albo Supabase Auth)
+    pub verified: bool,
+}
+
+/// Prefiks `auth_id` kont bez konta w Supabase Auth (tryb bez GoTrue): email jest tylko w grze, hasło w hashu gry
+pub const LOCAL_PREFIX: &str = "local:";
+
+impl AuthLink {
+    pub fn is_local(&self) -> bool {
+        self.auth_id.starts_with(LOCAL_PREFIX)
+    }
+}
+
+/// Maile (reset hasła, email w koncie) działają: jest Supabase Auth albo własny SMTP
+pub fn mail_on(st: &AppState) -> bool {
+    st.cfg.gotrue.is_some() || st.cfg.mailer.configured()
+}
+
+/// Email gracza został potwierdzony (link z maila gry, pierwsze logowanie przez Supabase Auth albo udany reset hasła
+/// linkiem). Woła się to w JEDNYM miejscu po każdym potwierdzeniu; tu podpinać skutki (np. nagrody za polecenia).
+/// Zwraca true tylko za pierwszym razem (kolejne potwierdzenia nic nie robią).
+pub async fn on_email_verified(_st: &AppState, c: &mut Conn, uid: i64) -> sqlx::Result<bool> {
+    let done = sqlx::query("UPDATE user_auth SET verified_at = $1 WHERE user_id = $2 AND verified_at IS NULL")
+        .bind(now())
+        .bind(uid)
+        .execute(c)
+        .await?;
+    Ok(done.rows_affected() > 0)
+}
+
+/// Konta bez Supabase Auth, ale z własnym SMTP: email potwierdza się linkiem z maila gry
+pub fn verify_by_mail(st: &AppState) -> bool {
+    st.cfg.gotrue.is_none() && st.cfg.mailer.configured()
+}
+
+/// Email konta zapisany tylko w grze (bez Supabase Auth)
+async fn insert_local_email(c: &mut Conn, uid: i64, email: &str) -> sqlx::Result<()> {
+    sqlx::query("INSERT INTO user_auth (user_id, auth_id, email) VALUES ($1, $2, $3)")
+        .bind(uid)
+        .bind(format!("{LOCAL_PREFIX}{uid}"))
+        .bind(email)
+        .execute(c)
+        .await?;
+    Ok(())
 }
 
 pub async fn auth_link(c: &mut Conn, uid: i64) -> sqlx::Result<Option<AuthLink>> {
-    let row = sqlx::query_as::<_, (String, String)>("SELECT auth_id, email FROM user_auth WHERE user_id = $1")
+    let row = sqlx::query_as::<_, (String, String, bool)>("SELECT auth_id, email, verified_at IS NOT NULL FROM user_auth WHERE user_id = $1")
         .bind(uid)
         .fetch_optional(c)
         .await?;
-    Ok(row.map(|(auth_id, email)| AuthLink { auth_id, email }))
+    Ok(row.map(|(auth_id, email, verified)| AuthLink { auth_id, email, verified }))
 }
 
-async fn user_by_email(c: &mut Conn, email: &str) -> sqlx::Result<Option<User>> {
+pub async fn user_by_email(c: &mut Conn, email: &str) -> sqlx::Result<Option<User>> {
     let id = sqlx::query_scalar::<_, i64>("SELECT user_id FROM user_auth WHERE LOWER(email) = LOWER($1)")
         .bind(email.trim())
         .fetch_optional(&mut *c)
@@ -105,7 +151,7 @@ async fn user_by_login(c: &mut Conn, login: &str) -> sqlx::Result<Option<User>> 
     }
 }
 
-fn unavailable() -> AppError {
+pub fn unavailable() -> AppError {
     AppError::with_status(StatusCode::SERVICE_UNAVAILABLE, "Logowanie i poczta chwilowo nie działają, spróbuj za chwilę")
 }
 
@@ -125,7 +171,7 @@ fn signup_error(f: Failure) -> AppError {
     }
 }
 
-fn valid_email(email: &str) -> bool {
+pub fn valid_email(email: &str) -> bool {
     email.len() <= 254 && EMAIL_RE.is_match(email)
 }
 
@@ -158,7 +204,8 @@ async fn by_legacy(user: &User, password: &str, empty: Verdict) -> Verdict {
 /// kontom, które dopiero dopisały email (do potwierdzenia linku albo awarii Supabase Auth); po pierwszym
 /// logowaniu przez Supabase Auth jest kasowany, żeby stare hasło nie działało po jego zmianie.
 async fn verify_password(st: &AppState, user: &User, link: Option<&AuthLink>, password: &str) -> Verdict {
-    let (Some(link), Some(gt)) = (link, st.cfg.gotrue.as_ref()) else {
+    // konta "local:" nie istnieją w Supabase Auth - zawsze hash w grze
+    let (Some(link), Some(gt)) = (link.filter(|l| !l.is_local()), st.cfg.gotrue.as_ref()) else {
         return by_legacy(user, password, Verdict::Down).await;
     };
     match gt.login(&link.email, password).await {
@@ -171,7 +218,7 @@ async fn verify_password(st: &AppState, user: &User, link: Option<&AuthLink>, pa
 
 /// Nowe hasło konta: w Supabase Auth (konto z emailem) i/albo w grze (konto bez emaila lub ze starym hashem)
 pub async fn set_password(st: &AppState, c: &mut Conn, user: &User, link: Option<&AuthLink>, new: &str) -> Res<()> {
-    if let (Some(link), Some(gt)) = (link, st.cfg.gotrue.as_ref()) {
+    if let (Some(link), Some(gt)) = (link.filter(|l| !l.is_local()), st.cfg.gotrue.as_ref()) {
         gt.admin_set_password(&link.auth_id, new).await.map_err(|_| unavailable())?;
         if user.password_hash.is_empty() {
             return Ok(());
@@ -184,14 +231,22 @@ pub async fn set_password(st: &AppState, c: &mut Conn, user: &User, link: Option
 
 // ---------------------------------------------------------------- konta
 
-pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody(body): JsonBody<Credentials>) -> Res {
+pub async fn register(State(st): State<AppState>, headers: HeaderMap, jar: SignedCookieJar, JsonBody(body): JsonBody<Credentials>) -> Res {
     let name = body.username.trim();
     if !USERNAME_RE.is_match(name) {
         return bad("Nazwa: 3–20 znaków (litery, cyfry, _ . -)");
     }
     let email = body.email.trim().to_lowercase();
-    if st.cfg.gotrue.is_some() && !valid_email(&email) {
+    // z Supabase Auth email jest wymagany; bez niego opcjonalny (zapisany tylko w grze jako konto "local:")
+    if (st.cfg.gotrue.is_some() || !email.is_empty()) && !valid_email(&email) {
         return bad("Podaj poprawny adres email");
+    }
+    let local_email = st.cfg.gotrue.is_none() && !email.is_empty();
+    if local_email {
+        let mut c = st.db.acquire().await?;
+        if user_by_email(&mut c, &email).await?.is_some() {
+            return bad("Ten email jest już zarejestrowany");
+        }
     }
     if body.password.chars().count() < MIN_PASSWORD {
         return bad(password_error());
@@ -240,6 +295,8 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
                 .bind(&email)
                 .execute(&mut *tx)
                 .await?;
+        } else if local_email {
+            insert_local_email(&mut tx, new_id, &email).await?;
         }
         sqlx::query("INSERT INTO terms_accepted (user_id, version, accepted_at) VALUES ($1, $2, $3)")
             .bind(new_id)
@@ -264,6 +321,10 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
             return Err(e);
         }
     };
+    // własny SMTP bez Supabase Auth: link potwierdzający email (logowanie nie czeka na potwierdzenie)
+    if local_email && verify_by_mail(&st) {
+        super::account_mail::send_verification(&st, &super::account_mail::base_url(&st, &headers), new_id, name, &email).await;
+    }
     // z potwierdzaniem emaila gracz loguje się dopiero po kliknięciu w link z maila
     if signup.as_ref().is_some_and(|s| !s.confirmed) {
         return Ok(Json(json!({"ok": true, "first": first, "confirm": true})).into_response());
@@ -318,6 +379,10 @@ pub async fn login(
     if *via_auth && !user.password_hash.is_empty() {
         sqlx::query("UPDATE users SET password_hash = '' WHERE id = $1").bind(user.id).execute(&mut *c).await?;
     }
+    if *via_auth {
+        // Supabase Auth wpuściło gracza, więc jego email jest potwierdzony
+        on_email_verified(&st, &mut c, user.id).await?;
+    }
     ensure_state(&mut c, user.id).await?;
     let jar = jar.add(session_cookie(user.id, st.cfg.cookie_secure));
     Ok((jar, Json(json!({"ok": true}))).into_response())
@@ -348,6 +413,9 @@ pub async fn change_password(
             st.login.note(&me.username, &ip, false);
             return bad("Obecne hasło jest nieprawidłowe");
         }
+    }
+    if !body.repeat.is_empty() && body.repeat != body.new {
+        return bad("Nowe hasła nie są takie same");
     }
     if body.new.chars().count() < MIN_PASSWORD {
         return bad(format!("Nowe hasło musi mieć co najmniej {MIN_PASSWORD} znaków"));
@@ -392,9 +460,24 @@ pub async fn send_recovery(st: &AppState, email: &str) -> Res<()> {
 }
 
 /// "Zapomniałem hasła": mail z linkiem. Odpowiedź jest zawsze taka sama - nie zdradza, czy email ma konto.
-pub async fn forgot(State(st): State<AppState>, JsonBody(body): JsonBody<EmailBody>) -> Res {
-    send_recovery(&st, &body.email).await?;
+pub async fn forgot(State(st): State<AppState>, headers: HeaderMap, JsonBody(body): JsonBody<EmailBody>) -> Res {
+    if own_mail(&st) {
+        let email = body.email.trim().to_lowercase();
+        if !valid_email(&email) {
+            return bad("Podaj poprawny adres email");
+        }
+        let mut c = st.db.acquire().await?;
+        super::account_mail::deliver_reset(&st, &mut c, &super::account_mail::base_url(&st, &headers), &email, false).await?;
+    } else {
+        send_recovery(&st, &body.email).await?;
+    }
     ok(json!({"ok": true}))
+}
+
+/// Maile z tokenami (reset hasła, zmiana emaila) wysyła gra: przez SMTP albo - bez SMTP i bez Supabase Auth - tylko do logu
+/// serwera (test lokalny). Gdy jest Supabase Auth bez SMTP, maile idą jak dawniej przez niego.
+pub fn own_mail(st: &AppState) -> bool {
+    st.cfg.mailer.configured() || st.cfg.gotrue.is_none()
 }
 
 /// Link z maila nie dotarł albo wygasł: wysyła potwierdzenie emaila jeszcze raz (przyjmuje nazwę gracza albo email)
@@ -402,7 +485,7 @@ pub async fn resend(State(st): State<AppState>, JsonBody(body): JsonBody<Credent
     let Some(gt) = &st.cfg.gotrue else { return bad("Email nie jest tu włączony") };
     let mut c = st.db.acquire().await?;
     if let Some(u) = user_by_login(&mut c, body.username.trim()).await? {
-        if let Some(link) = auth_link(&mut c, u.id).await? {
+        if let Some(link) = auth_link(&mut c, u.id).await?.filter(|l| !l.is_local()) {
             match gt.resend(&link.email).await {
                 Err(Failure::Rejected { code }) if code.starts_with("over_") => {
                     return fail(StatusCode::TOO_MANY_REQUESTS, "Mail już wysłaliśmy, odczekaj chwilę przed kolejnym.");
@@ -439,21 +522,24 @@ pub async fn reset_password(State(st): State<AppState>, JsonBody(body): JsonBody
 
 /// Szablony maili Supabase Auth (HTML w `server/email/`, w wyglądzie gry). GoTrue pobiera je z tego adresu
 /// (`GOTRUE_MAILER_TEMPLATES_*` w `deploy/selfhost/docker-compose.override.yml`); są publiczne i bez danych - to sam układ z polami `{{ .ConfirmationURL }}`.
-pub async fn email_template(Path(name): Path<String>) -> Response {
-    let html = match name.as_str() {
-        "confirmation.html" => include_str!("../../email/confirmation.html"),
-        "recovery.html" => include_str!("../../email/recovery.html"),
-        "email_change.html" => include_str!("../../email/email_change.html"),
-        _ => return StatusCode::NOT_FOUND.into_response(),
-    };
-    ([(header::CONTENT_TYPE, "text/html; charset=utf-8"), (header::CACHE_CONTROL, "public, max-age=300")], html).into_response()
+/// Treść z bazy, jeśli admin ją zmienił w panelu („Maile”), inaczej domyślny plik.
+pub async fn email_template(State(st): State<AppState>, Path(name): Path<String>) -> Res {
+    let key = name.strip_suffix(".html").unwrap_or("");
+    if !crate::mail_templates::def(key).is_some_and(|d| !d.subject_used) {
+        return Err(AppError::not_found());
+    }
+    let mut c = st.db.acquire().await?;
+    let (_, html, _) = crate::mail_templates::load(&mut c, key).await?.ok_or_else(AppError::not_found)?;
+    Ok(([(header::CONTENT_TYPE, "text/html; charset=utf-8"), (header::CACHE_CONTROL, "public, max-age=60")], html).into_response())
 }
 
 /// Admin dopisuje email graczowi, który go nie ma (zgubił hasło przed dodaniem emaila): zakłada konto w Supabase Auth
 /// z losowym hasłem i zapisuje powiązanie (`user_auth`). Potem leci zwykły mail z linkiem do nowego hasła. Stare hasło
 /// z gry przestaje działać dopiero, gdy gracz ustawi nowe (`reset_password` kasuje hash).
 pub async fn admin_attach_email(st: &AppState, c: &mut Conn, user: &User, email: &str) -> Res<String> {
-    let Some(gt) = &st.cfg.gotrue else { return bad("Email nie jest tu włączony") };
+    if !mail_on(st) {
+        return bad("Email nie jest tu włączony");
+    }
     let email = email.trim().to_lowercase();
     if !valid_email(&email) {
         return bad("Podaj poprawny adres email");
@@ -461,6 +547,11 @@ pub async fn admin_attach_email(st: &AppState, c: &mut Conn, user: &User, email:
     if user_by_email(c, &email).await?.is_some() {
         return bad("Ten adres jest już przypisany do innego konta");
     }
+    // bez Supabase Auth: email tylko w grze, hasło zostaje w hashu gry
+    let Some(gt) = &st.cfg.gotrue else {
+        insert_local_email(c, user.id, &email).await?;
+        return Ok(format!("{LOCAL_PREFIX}{}", user.id));
+    };
     let password: String = rand::thread_rng().sample_iter(rand::distributions::Alphanumeric).take(40).map(char::from).collect();
     let id = gt.admin_create(&email, &password, &user.username).await.map_err(|f| match f {
         Failure::Unavailable => unavailable(),
@@ -483,7 +574,10 @@ pub async fn admin_attach_email(st: &AppState, c: &mut Conn, user: &User, email:
 pub async fn email_info(State(st): State<AppState>, Me(me): Me) -> Res {
     let mut c = st.db.acquire().await?;
     let link = auth_link(&mut c, me.id).await?;
-    ok(json!({"enabled": st.cfg.gotrue.is_some(), "email": link.map(|l| mask_email(&l.email))}))
+    // enabled: gra obsługuje emaile kont; mail: wysyła je własny SMTP (zmiana emaila linkiem)
+    // verified: email potwierdzony (konta Supabase Auth logują się dopiero po potwierdzeniu, więc zawsze true)
+    let verified = link.as_ref().is_none_or(|l| !l.is_local() || l.verified);
+    ok(json!({"enabled": mail_on(&st), "mail": st.cfg.mailer.configured(), "verified": verified, "email": link.map(|l| mask_email(&l.email))}))
 }
 
 /// Gracz sprzed emaili dopisuje adres do konta (potrzebne do odzyskania hasła). Wymaga obecnego hasła.
@@ -494,7 +588,9 @@ pub async fn add_email(
     headers: HeaderMap,
     JsonBody(body): JsonBody<EmailBody>,
 ) -> Res {
-    let Some(gt) = &st.cfg.gotrue else { return bad("Email nie jest tu włączony") };
+    if !mail_on(&st) {
+        return bad("Email nie jest tu włączony");
+    }
     let ip = client_ip(&st, &headers, Some(&addr));
     let email = body.email.trim().to_lowercase();
     if !valid_email(&email) {
@@ -515,6 +611,16 @@ pub async fn add_email(
     if user_by_email(&mut tx, &email).await?.is_some() {
         return bad("Ten email jest już zarejestrowany");
     }
+    // bez Supabase Auth: email tylko w grze (hasło zostaje w hashu gry)
+    let Some(gt) = &st.cfg.gotrue else {
+        insert_local_email(&mut tx, me.id, &email).await?;
+        tx.commit().await?;
+        let verify = verify_by_mail(&st);
+        if verify {
+            super::account_mail::send_verification(&st, &super::account_mail::base_url(&st, &headers), me.id, &me.username, &email).await;
+        }
+        return ok(json!({"ok": true, "confirm": verify}));
+    };
     let signup = gt.signup(&email, &body.password, &me.username).await.map_err(signup_error)?;
     let saved = sqlx::query("INSERT INTO user_auth (user_id, auth_id, email) VALUES ($1, $2, $3)")
         .bind(me.id)
@@ -555,5 +661,27 @@ mod tests {
             assert!(!html.contains("{{{") && !html.contains("}}}"), "niedomknięte pole szablonu");
         }
         assert!(include_str!("../../email/email_change.html").contains("{{ .NewEmail }}"));
+    }
+
+    #[test]
+    fn game_mail_templates_have_their_required_placeholders() {
+        // wszystkie szablony z panelu "Maile": wymagane pola obecne, brak nieznanych (reszta w mail_templates::tests)
+        for d in crate::mail_templates::DEFS {
+            for need in d.required {
+                assert!(d.html.contains(&format!("{{{{ .{need} }}}}")), "{}: brak pola {need}", d.name);
+            }
+        }
+        for name in ["password_reset", "email_change_request"] {
+            let html = crate::mail_templates::def(name).unwrap().html;
+            assert!(html.contains("{{ .Link }}") && html.contains("{{ .Username }}") && html.contains("{{ .ExpiresMinutes }}"), "{name}");
+        }
+        assert!(crate::mail_templates::def("email_changed_notice").unwrap().html.contains("{{ .NewEmail }}"));
+    }
+
+    #[test]
+    fn local_accounts_are_recognized() {
+        let local = super::AuthLink { auth_id: "local:7".into(), email: "a@b.pl".into(), verified: false };
+        let real = super::AuthLink { auth_id: "0b8c1c7e-aaaa".into(), email: "a@b.pl".into(), verified: true };
+        assert!(local.is_local() && !real.is_local());
     }
 }

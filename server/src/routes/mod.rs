@@ -2,7 +2,9 @@
 //! (static/js) działa bez zmian.
 
 pub mod account;
+pub mod account_mail;
 pub mod admin;
+pub mod mail_admin;
 pub mod arena;
 pub mod backups;
 pub mod cards_io;
@@ -115,6 +117,20 @@ pub fn router(st: AppState) -> Router {
         .route("/api/email", get(account::email_info).post(account::add_email))
         .route("/auth/v1/verify", get(account::auth_verify))
         .route("/email/{name}", get(account::email_template))
+        // maile gry (własny SMTP): reset hasła i zmiana emaila linkami z tokenem; edycja szablonów w panelu admina
+        .route("/api/account/reset", post(account_mail::reset_with_token))
+        .route("/api/account/password/send-link", post(account_mail::send_link))
+        .route("/api/account/email-change/request", post(account_mail::email_change_request))
+        .route("/api/account/email-change/confirm", post(account_mail::email_change_confirm))
+        .route("/api/account/email-verify", post(account_mail::verify_confirm))
+        .route("/api/account/email-verify/resend", post(account_mail::verify_resend))
+        .route("/konto/email", get(public_page))
+        .route("/konto/potwierdz", get(public_page))
+        .route("/api/admin/email-templates", get(mail_admin::admin_email_templates))
+        .route("/api/admin/email-templates/{name}", post(mail_admin::admin_email_template_save))
+        .route("/api/admin/email-templates/{name}/reset", post(mail_admin::admin_email_template_reset))
+        .route("/api/admin/email-templates/{name}/test", post(mail_admin::admin_email_template_test))
+        .route("/api/admin/users/{user_id}/email", post(admin_set_email))
         // regulamin i zgłoszenia problemów z kartami
         .route("/api/legal", get(reports::legal))
         .route("/api/terms/accept", post(reports::accept_terms))

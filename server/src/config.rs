@@ -15,7 +15,10 @@
 //!   CONTACT_EMAIL  kontakt@example.pl          adres do kontaktu (regulamin, zgłoszenia, RODO); trzymaj w zmiennych, nie w repozytorium
 //!   OWNER_IDS      1,5                        id kont właścicieli (kopie bazy, ochrona ich kont przed innymi adminami);
 //!                                             tylko tutaj - nie da się ich nadać z panelu ani z bazy
-//!   BACKUP_DIR     /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
+//!   SMTP_URL       smtp://mailpit:1025 | smtps://user:pass@host:465   własna wysyłka maili (reset hasła, zmiana emaila); bez niej: tylko log
+//!   MAIL_FROM      ScamBox <no-reply@example.pl>   nadawca maili gry (domyślnie "ScamBox <no-reply@localhost>")
+//!   PUBLIC_URL     https://scambox.pl         adres gry w linkach z maili (wymagany z GOTRUE_URL; bez niego: adres z nagłówka Host)
+//!   BACKUP_DIR    /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
 //!   BACKUP_EVERY_HOURS 24                     co ile godzin automatyczna kopia (0 = wyłączone)
 //!   BACKUP_KEEP    14                         ile kopii każdego rodzaju (automatyczne / ręczne) trzymać
 //!
@@ -74,6 +77,10 @@ pub struct Config {
     pub owner_ids: Vec<i64>,
     /// Supabase Auth (GOTRUE_URL): konta z emailem i odzyskiwaniem hasła; None = same nazwy i hasła
     pub gotrue: Option<crate::gotrue::GoTrue>,
+    /// własna wysyłka maili (SMTP_URL, MAIL_FROM); bez SMTP_URL maile trafiają tylko do logu
+    pub mailer: crate::mailer::Mailer,
+    /// adres gry w linkach z maili (PUBLIC_URL); brak = adres z nagłówka Host
+    pub public_url: Option<String>,
     pub backup_dir: PathBuf,
     pub backup_every_hours: f64,
     pub backup_keep: usize,
@@ -205,6 +212,8 @@ impl Config {
             contact_email: env("CONTACT_EMAIL"),
             owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
             gotrue,
+            mailer: crate::mailer::Mailer::new(env("SMTP_URL").as_deref(), env("MAIL_FROM").as_deref())?,
+            public_url: env("PUBLIC_URL").map(|u| u.trim_end_matches('/').to_owned()),
             backup_dir,
             backup_every_hours: env("BACKUP_EVERY_HOURS").map(|h| h.parse()).transpose()?.unwrap_or(24.0),
             backup_keep: env("BACKUP_KEEP").map(|k| k.parse()).transpose()?.unwrap_or(14).max(1),
