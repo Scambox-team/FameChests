@@ -720,3 +720,7 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
   .ls-bar { position: sticky; top: 61px; z-index: 20; margin: 0 0 10px; padding: 6px 0; background: var(--surface); }
   .ls-field { flex-basis: 100%; max-width: none; }
 }
+
+.a-testopen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 12px 0; padding: 10px 14px; border-radius: 14px; background: color-mix(in srgb, #ffd23f 14%, transparent); border: 1px solid color-mix(in srgb, #ffd23f 45%, transparent); }
+.a-testopen > span:not(.a-testopen-btns) { flex: 1 1 220px; min-width: 0; font-size: 13px; opacity: .85; }
+.a-testopen-btns { display: flex; gap: 6px; }

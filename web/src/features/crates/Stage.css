@@ -36,3 +36,8 @@
 .pick .pn { font-weight: 500; }
 .pick .pv { color: var(--muted); font-weight: 500; }
 
+
+/* testowe otwarcie z panelu admina: plakietka nad wszystkim, także nad nakładką 3D i wielkim odsłonięciem */
+.test-badge { position: fixed; z-index: 100000; top: 10px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px); padding: 6px 14px; border-radius: 999px; background: #ffd23f; color: #1b1400; font: 800 14px/20px var(--display); text-align: center; box-shadow: 0 4px 16px #0008; pointer-events: none; }
+.test-badge[hidden] { display: none; }
+@media (max-width: 820px) { .test-badge { font-size: 12px; line-height: 16px; } }

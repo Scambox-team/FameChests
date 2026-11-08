@@ -52,6 +52,8 @@ export function Stage() {
   };
   // w <body>, nie w <main>: scena musi przykryć też panel boczny (ma własny kontekst warstw)
   return createPortal(
+    <>
+    <div className="test-badge" id="testBadge" role="status" hidden>TEST: karty nie trafiają do ekwipunku</div>
     <div className="stage" id="stage" hidden>
       <div className="stage-bg" />
       <div className="stage-money" aria-label="Twoje grosze"><Money value={game.state.balance} /></div>
@@ -69,7 +71,8 @@ export function Stage() {
         </div>
       </div>
       <div className="flash" id="flash" />
-    </div>,
+    </div>
+    </>,
     document.body
   );
 }

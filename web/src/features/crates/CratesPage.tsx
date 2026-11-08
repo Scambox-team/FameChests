@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CalendarClock, Lock, Minus, Plus, Zap, Repeat } from 'lucide-react';
 
 import { api } from '../../api/client';
@@ -17,7 +18,7 @@ import { applyHue } from './crateLook';
 import { OddsLadder } from './OddsLadder';
 import { QuestBox } from './QuestBox';
 import { TopDrops } from './TopDrops';
-import { openCrates } from './opening';
+import { openCrates, openTestCrate } from './opening';
 import styles from './CratesPage.module.css';
 
 const SpotlightCard = SpotlightCardJs as any;
@@ -121,6 +122,15 @@ export function CratesPage() {
   const crate = crateOf(S.crate);
 
   useEffect(() => { document.title = 'Skrzynki · ScamBox'; }, []);
+  // panel admina: /crates?test=<id>&n=<ile> = testowe otwarcie (prawdziwe losowanie serwera, bez zapisu)
+  const [qs, setQs] = useSearchParams();
+  useEffect(() => {
+    const id = qs.get('test');
+    if (!id) return;
+    setQs({}, { replace: true });
+    if (shopCrates().some(c => c.id === id)) { S.crate = id; S.cratePicked = true; touch(); }
+    if (S.me?.isAdmin && crateOf(id)) void openTestCrate({ crate: id, count: Math.max(1, Math.min(10, +(qs.get('n') ?? 1) || 1)) });
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (crate) applyHue(crate); }, [crate?.id]);
 
   if (!crate) return <p className="muted">Sklep jest pusty, na razie nie ma żadnych skrzynek.</p>;

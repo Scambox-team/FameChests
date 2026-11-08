@@ -534,6 +534,66 @@ pub async fn admin_restore_crate(State(st): State<AppState>, Admin(me): Admin, P
 
 /// Odpina wszystkie karty od skrzynki (karty zostają w grze i u graczy). Karta, która nie ma innej skrzynki, zostaje:
 /// bez skrzynki nie mogłaby istnieć. Skrzynka Czarnych dziedziczy karty po Białych, więc czyszczą się obie.
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct TestOpenRequest {
+    count: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestDrop {
+    id: i64,
+    person: String,
+    variant: String,
+    value: i64,
+    created: f64,
+    fav: bool,
+    first: bool,
+    test: bool,
+}
+
+/// Czyste losowanie testowego otwarcia: to samo `roll` co prawdziwe otwarcie, nic nie zapisuje (id ujemne, tymczasowe)
+pub fn roll_test_drops(cat: &Catalog, cr: &catalog::Crate, count: i64) -> Result<Vec<TestDrop>, AppError> {
+    if cr.special {
+        return Err(AppError::bad("Karty specjalne zdobywa się w kasynie albo z linku — tej skrzynki nie da się losować"));
+    }
+    let now = now();
+    (0..count)
+        .map(|i| {
+            let (person, variant) = crate::game::roll::roll(cat, cr).ok_or_else(|| AppError::bad("Ta skrzynka jest pusta"))?;
+            Ok(TestDrop {
+                id: -(i + 1),
+                value: person.value(&variant),
+                person: person.id.clone(),
+                variant,
+                created: now,
+                fav: false,
+                first: false,
+                test: true,
+            })
+        })
+        .collect()
+}
+
+/// Testowe otwarcie dowolnej skrzynki przez admina: prawdziwe losowanie, zero zapisu (poza wpisem w dzienniku admina)
+pub async fn admin_test_open(
+    State(st): State<AppState>,
+    Admin(me): Admin,
+    Path(cid): Path<String>,
+    JsonBody(req): JsonBody<TestOpenRequest>,
+) -> Res {
+    let cat = st.cat();
+    let cr = cat.crates.get(&cid).ok_or_else(|| not_found("Nie ma takiej skrzynki"))?;
+    if !(1..=10).contains(&req.count) {
+        return bad("Liczba otwarć: od 1 do 10");
+    }
+    let drops = roll_test_drops(&cat, cr, req.count)?;
+    let mut c = st.db.acquire().await?;
+    log_admin(&mut c, &me, "crate_test_open", None, &format!("{} ({}): {}", cr.name, cr.id, req.count)).await?;
+    ok(json!({"test": true, "crate": cr.id, "drops": drops}))
+}
+
 pub async fn admin_clear_crate(State(st): State<AppState>, Admin(me): Admin, Path(cid): Path<String>) -> Res {
     let cat = st.cat();
     let cr = cat.crates.get(&cid).ok_or_else(|| not_found("Nie ma takiej skrzynki"))?;
@@ -1453,5 +1513,23 @@ mod tests {
         assert!(r.shop && r.allowed.is_none());
         let r: LinkRequest = serde_json::from_str(r#"{"person": "x", "maxUses": "5"}"#).unwrap();
         assert_eq!(r.max_uses, 5);
+    }
+
+    #[test]
+    fn test_open_is_pure_roll() {
+        let cat = catalog::build(&[], &[]);
+        let cr = &cat.crates["pl"];
+        let drops = roll_test_drops(&cat, cr, 10).unwrap();
+        assert_eq!(drops.len(), 10);
+        for (i, d) in drops.iter().enumerate() {
+            assert_eq!(d.id, -(i as i64 + 1));
+            assert!(d.test && !d.first && !d.fav);
+            let p = &cat.people[&d.person];
+            assert!(p.crates.contains(&cr.id));
+            let (avail, _) = cat.drop_variants(cr, Some(p));
+            assert!(d.variant == "normal" || avail.contains(&d.variant), "{}", d.variant);
+            assert_eq!(d.value, p.value(&d.variant));
+        }
+        assert!(roll_test_drops(&cat, &cat.crates["specjalne"], 1).is_err());
     }
 }
