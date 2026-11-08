@@ -201,6 +201,23 @@ impl Images {
         Ok(())
     }
 
+    /// Zdjęcie pobrane z Wikipedii: obok pliku znacznik `<plik>.wiki` - eksport (`export-catalog`) pomija takie zdjęcia,
+    /// bo każda instalacja pobierze je sama. Każdy inny zapis (`store` -> `delete`) usuwa znacznik.
+    fn save_wiki(&self, pid: &str, blob: &[u8], kind: &Kind) -> Result<(), String> {
+        self.store(pid, blob, kind, None)?;
+        let _ = std::fs::write(self.wiki_marker(pid, kind), b"");
+        Ok(())
+    }
+
+    fn wiki_marker(&self, pid: &str, kind: &Kind) -> PathBuf {
+        PathBuf::from(format!("{}.wiki", self.stem(pid, kind).display()))
+    }
+
+    /// Czy zapisane zdjęcie pochodzi z Wikipedii (a nie z panelu admina)
+    pub fn is_from_wiki(&self, pid: &str, kind: &Kind) -> bool {
+        self.wiki_marker(pid, kind).exists()
+    }
+
     pub async fn save_url(&self, pid: &str, url: &str, kind: &Kind) -> Result<(), String> {
         self.save_url_cropped(pid, url, kind, None).await
     }
@@ -215,6 +232,7 @@ impl Images {
         for (e, _) in EXTS {
             let _ = std::fs::remove_file(format!("{}.{e}", self.stem(pid, kind).display()));
         }
+        let _ = std::fs::remove_file(self.wiki_marker(pid, kind));
     }
 
     /// Usuwa pliki <pid>__<nazwa>.* poza nazwami z keep (np. wgrane naklejki wariantu, których admin nie zapisał)
@@ -322,7 +340,7 @@ impl Images {
                     let src = pages.get(title).and_then(|p| p["thumbnail"]["source"].as_str()).map(str::to_owned);
                     let mut ok = false;
                     if let Some(src) = src {
-                        match self.get(&src, 4).await.map_err(|e| e.to_string()).and_then(|b| self.save(pid, &b, &Kind::Main)) {
+                        match self.get(&src, 4).await.map_err(|e| e.to_string()).and_then(|b| self.save_wiki(pid, &b, &Kind::Main)) {
                             Ok(()) => {
                                 ok = true;
                                 tokio::time::sleep(Duration::from_millis(300)).await;
@@ -552,7 +570,7 @@ impl Images {
                     "https://commons.wikimedia.org/wiki/Special:FilePath/{}?width={THUMB_SIZE}",
                     quote(&f.replace(' ', "_"))
                 );
-                match self.get(&url, 4).await.map_err(|e| e.to_string()).and_then(|b| self.save(pid, &b, &Kind::Alt)) {
+                match self.get(&url, 4).await.map_err(|e| e.to_string()).and_then(|b| self.save_wiki(pid, &b, &Kind::Alt)) {
                     Ok(()) => {
                         found += 1;
                         missing.remove(pid);
@@ -713,6 +731,10 @@ pub fn migrate_to_webp(cache_dir: &Path) -> (usize, usize, usize) {
             let tmp = path.with_extension("webp.tmp");
             std::fs::write(&tmp, &data).map_err(|e| e.to_string())?;
             std::fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
+            // dawniej zdjęcia z Wikipedii były zawsze .jpg, a wgrane w panelu nie - zachowaj tę wiedzę dla eksportu
+            if ext == "jpg" {
+                let _ = std::fs::write(path.with_extension("webp.wiki"), b"");
+            }
             std::fs::remove_file(&path).map_err(|e| e.to_string())?;
             Ok(true)
         })();

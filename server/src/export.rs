@@ -167,9 +167,18 @@ pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usiz
         std::fs::remove_dir_all(&dir)?;
     }
     std::fs::create_dir_all(&dir)?;
-    // zdjęcia kart z katalogu (wszystkie są .webp, więc nie da się odróżnić pobranych z Wikipedii od wgranych)
-    let mut files: BTreeSet<std::path::PathBuf> =
-        export.cards.iter().filter(|c| !c.deleted).filter_map(|c| images.find(&c.id, &Kind::Main)).collect();
+    // własne zdjęcia kart: karty bez artykułu w Wikipedii albo z plikiem wgranym w panelu (zdjęcia pobrane z Wikipedii
+    // mają znacznik `.wiki` - każda instalacja pobierze je sama, nie trafiają do repozytorium)
+    let mut files: BTreeSet<std::path::PathBuf> = export
+        .cards
+        .iter()
+        .filter(|c| !c.deleted)
+        .filter_map(|c| {
+            let path = images.find(&c.id, &Kind::Main)?;
+            let from_wiki = c.data.get("wiki").is_some_and(|w| !w.is_null()) && images.is_from_wiki(&c.id, &Kind::Main);
+            (!from_wiki).then_some(path)
+        })
+        .collect();
     // zdjęcia wariantów przypisanych do kart (np. Rzulty) i własne zdjęcia wariantów z polem "photo" (np. Halloweenowa)
     let g = g();
     let all_ids: BTreeSet<String> = g
