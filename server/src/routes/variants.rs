@@ -119,7 +119,6 @@ pub async fn sticker_image(
         return Err(AppError::Status(StatusCode::NOT_FOUND));
     }
     let path = st.images.find(&sticker_file_id(&variant), &Kind::Variant(sid)).ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
-    let path = st.images.web_version_async(path, false).await;
     let cache = format!("public, max-age={}", if q.contains_key("v") { 30 * 86400 } else { 3600 });
     send_file(&path, mimetype(&path), &headers, &cache).await
 }
@@ -131,7 +130,6 @@ pub async fn egg_image(
     headers: HeaderMap,
 ) -> Res {
     let path = st.images.find(EGG_ID, &Kind::Main).ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
-    let path = st.images.web_version_async(path, false).await;
     let cache = format!("public, max-age={}", if q.contains_key("v") { 30 * 86400 } else { 0 });
     send_file(&path, mimetype(&path), &headers, &cache).await
 }

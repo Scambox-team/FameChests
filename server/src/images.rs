@@ -1,12 +1,13 @@
 //! Zdjęcia kart (port images.py): Wikipedia (główne), Wikimedia Commons / inne Wikipedie (alternatywne),
-//! upload i URL z panelu admina, lżejsze wersje WebP do wysyłania, flagi krajów z flagcdn.com.
+//! upload i URL z panelu admina (z kadrowaniem), wszystkie rastrowe zdjęcia trzymane jako WebP, flagi krajów z flagcdn.com.
 
 use std::collections::{HashMap, HashSet};
+use std::net::{IpAddr, Ipv4Addr};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
-use image::{DynamicImage, ImageDecoder, ImageReader};
+use image::{AnimationDecoder, DynamicImage, ImageDecoder, ImageReader};
 use parking_lot::Mutex;
 use regex::Regex;
 use serde_json::Value;
@@ -15,8 +16,18 @@ use crate::db::now;
 
 const USER_AGENT: &str = "CelebCrates/1.0 (private hobby project; rust-reqwest)";
 const THUMB_SIZE: u32 = 500;
+/// Dłuższy bok zapisanego zdjęcia (większe są zmniejszane, mniejszych nie powiększamy)
+pub const MAX_SIDE: u32 = 1600;
+const QUALITY: f32 = 85.0;
+const QUALITY_ALPHA: f32 = 92.0;
+/// Limit pobierania zdjęcia z linku
+const MAX_REMOTE: usize = 10 * 1024 * 1024;
+const MIN_CROP_PX: u32 = 32;
 pub const MAX_UPLOAD: usize = 8 * 1024 * 1024;
-const EXTS: [(&str, &str); 4] = [("jpg", "image/jpeg"), ("png", "image/png"), ("webp", "image/webp"), ("gif", "image/gif")];
+// webp pierwszy: gdy obok leży stary plik w innym formacie (przed migracją), wygrywa WebP
+const EXTS: [(&str, &str); 4] = [("webp", "image/webp"), ("jpg", "image/jpeg"), ("png", "image/png"), ("gif", "image/gif")];
+/// Rozszerzenia, które migracja przy starcie zamienia na .webp
+const LEGACY_EXTS: [&str; 5] = ["jpg", "jpeg", "png", "gif", "bmp"];
 const BAD_WORDS: &[&str] = &[
     "signature",
     "podpis",
@@ -67,11 +78,6 @@ const BAD_WORDS: &[&str] = &[
     "plane",
     "samolot",
 ];
-// Małe kafelki (bęben skrzynki, kuźnia, kasyno, rynek) dostają miniaturę WebP zamiast pełnego zdjęcia; duże pliki
-// (np. PNG wgrane w panelu admina) idą jako lżejszy WebP. Pliki robią się przy pierwszym użyciu w image_cache/_web.
-const THUMB_WIDTH: u32 = 240;
-const FULL_WIDTH: u32 = 600;
-const BIG_FILE: u64 = 120 * 1024;
 const ALT_LANGS: &[&str] = &["en", "pl", "de", "fr", "es", "it", "ru", "uk", "cs", "nl", "pt", "sv", "fi", "hu"];
 static FLAG_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[a-z]{2}(-[a-z0-9]{1,3})?$").unwrap());
 
@@ -99,7 +105,6 @@ pub struct Images {
     failed: Mutex<HashMap<(String, Kind), f64>>,
     flag_failed: Mutex<HashMap<String, f64>>,
     fetch_lock: tokio::sync::Mutex<()>,
-    web_lock: Mutex<()>,
 }
 
 pub fn mimetype(path: &Path) -> &'static str {
@@ -148,7 +153,6 @@ impl Images {
             failed: Mutex::default(),
             flag_failed: Mutex::default(),
             fetch_lock: tokio::sync::Mutex::new(()),
-            web_lock: Mutex::new(()),
         }
     }
 
@@ -167,25 +171,44 @@ impl Images {
 
     // ------------------------------------------------------------ zapis / usuwanie
 
+    /// Zapis wgranego pliku: dowolny obsługiwany obrazek trafia do image_cache jako WebP (animowany GIF zostaje GIF-em)
     pub fn save(&self, pid: &str, blob: &[u8], kind: &Kind) -> Result<(), String> {
-        let ext = sniff(blob).ok_or("To nie jest obsługiwany obrazek (JPG, PNG, WEBP, GIF)")?;
+        self.save_cropped(pid, blob, kind, None)
+    }
+
+    /// Jak `save`, ale najpierw wycina kadr (ułamki oryginału); kadrowany obraz jest zawsze statyczny
+    pub fn save_cropped(&self, pid: &str, blob: &[u8], kind: &Kind, crop: Option<Crop>) -> Result<(), String> {
         if blob.len() > MAX_UPLOAD {
             return Err("Plik jest za duży (max 8 MB)".into());
         }
+        self.store(pid, blob, kind, crop)
+    }
+
+    fn store(&self, pid: &str, blob: &[u8], kind: &Kind, crop: Option<Crop>) -> Result<(), String> {
+        let ext = sniff(blob).ok_or("To nie jest obsługiwany obrazek (JPG, PNG, WEBP, GIF)")?;
+        let (ext, data) = if crop.is_none() && ext == "gif" && is_animated_gif(blob) {
+            ("gif", blob.to_vec())
+        } else {
+            ("webp", process(blob, crop)?)
+        };
         std::fs::create_dir_all(&self.cache_dir).map_err(|e| e.to_string())?;
         self.delete(pid, kind);
-        std::fs::write(format!("{}.{ext}", self.stem(pid, kind).display()), blob).map_err(|e| e.to_string())?;
+        let target = format!("{}.{ext}", self.stem(pid, kind).display());
+        let tmp = format!("{target}.tmp");
+        std::fs::write(&tmp, &data).map_err(|e| e.to_string())?;
+        std::fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
         self.failed.lock().remove(&(pid.to_owned(), kind.clone()));
         Ok(())
     }
 
     pub async fn save_url(&self, pid: &str, url: &str, kind: &Kind) -> Result<(), String> {
-        let lower = url.to_lowercase();
-        if !lower.starts_with("http://") && !lower.starts_with("https://") {
-            return Err("Adres musi zaczynać się od http:// lub https://".into());
-        }
-        let blob = self.get(url, 4).await.map_err(|e| e.to_string())?;
-        self.save(pid, &blob, kind)
+        self.save_url_cropped(pid, url, kind, None).await
+    }
+
+    /// Zdjęcie z linku (z ochroną SSRF, patrz `fetch_remote`), opcjonalnie z kadrem
+    pub async fn save_url_cropped(&self, pid: &str, url: &str, kind: &Kind, crop: Option<Crop>) -> Result<(), String> {
+        let blob = fetch_remote(url.trim()).await?;
+        self.store(pid, &blob, kind, crop)
     }
 
     pub fn delete(&self, pid: &str, kind: &Kind) {
@@ -342,57 +365,13 @@ impl Images {
         self.find(pid, &Kind::Main)
     }
 
-    /// Wszystkie brakujące zdjęcia + miniatury do bębna i kafelków (w tle, przy starcie)
+    /// Wszystkie brakujące zdjęcia (w tle, przy starcie)
     pub async fn prefetch_all(self: &Arc<Self>, people: Vec<(String, Option<(String, String)>)>) {
         let res = {
             let _guard = self.fetch_lock.lock().await;
             self.fetch(&people, false).await
         };
         tracing::info!("[zdjęcia] główne: {}/{}", res.values().filter(|x| **x).count(), res.len());
-        for (pid, _) in &people {
-            if let Some(p) = self.find(pid, &Kind::Main) {
-                let _ = self.web_version_async(p, true).await;
-            }
-        }
-    }
-
-    // ------------------------------------------------------------ lżejsze wersje do wysyłania
-
-    /// Plik do wysłania przeglądarce: miniatura (thumb) albo lżejszy WebP zamiast dużego pliku - lub sam oryginał
-    pub fn web_version(&self, path: &Path, thumb: bool) -> PathBuf {
-        let original = path.to_owned();
-        if path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("gif")) {
-            return original;
-        }
-        let Ok(meta) = std::fs::metadata(path) else { return original };
-        if !thumb && meta.len() <= BIG_FILE {
-            return original;
-        }
-        let src_mtime = mtime(path).unwrap_or(0.0);
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("x").replace('.', "_");
-        let out = self.cache_dir.join("_web").join(format!("{name}{}.webp", if thumb { "__thumb" } else { "" }));
-        let fresh = || mtime(&out).is_some_and(|m| m >= src_mtime);
-        if fresh() {
-            return out;
-        }
-        let _guard = self.web_lock.lock();
-        if fresh() {
-            return out; // w międzyczasie zrobił go inny wątek
-        }
-        match make_webp(path, &out, thumb) {
-            Ok(()) => out,
-            Err(e) => {
-                tracing::warn!("[zdjęcia] nie udało się zmniejszyć {}: {e}", path.display());
-                original
-            }
-        }
-    }
-
-    /// web_version poza wątkami serwera (zmniejszanie zdjęcia trwa)
-    pub async fn web_version_async(self: &Arc<Self>, path: PathBuf, thumb: bool) -> PathBuf {
-        let me = Arc::clone(self);
-        let fallback = path.clone();
-        tokio::task::spawn_blocking(move || me.web_version(&path, thumb)).await.unwrap_or(fallback)
     }
 
     // ------------------------------------------------------------ flagi krajów (wariant flagowy)
@@ -609,23 +588,261 @@ fn quote(s: &str) -> String {
     out
 }
 
-fn make_webp(path: &Path, out: &Path, thumb: bool) -> anyhow::Result<()> {
-    let mut decoder = ImageReader::open(path)?.with_guessed_format()?.into_decoder()?;
-    let orientation = decoder.orientation()?;
-    let mut im = DynamicImage::from_decoder(decoder)?;
-    im.apply_orientation(orientation);
-    let width = if thumb { THUMB_WIDTH } else { FULL_WIDTH };
-    if im.width() > width {
-        let h = ((im.height() as f64 * width as f64 / im.width() as f64).round_ties_even() as u32).max(1);
-        im = im.resize_exact(width, h, image::imageops::FilterType::Lanczos3);
+// ---------------------------------------------------------------- przetwarzanie obrazów (WebP, kadr)
+
+/// Kadr jako ułamki oryginału (0..1): lewy górny róg i rozmiar
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct Crop {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+impl Crop {
+    /// Pole formularza: pusty napis = bez kadru, inaczej JSON {"x":..,"y":..,"w":..,"h":..}
+    pub fn parse(text: &str) -> Result<Option<Crop>, String> {
+        let text = text.trim();
+        if text.is_empty() {
+            return Ok(None);
+        }
+        let c: Crop = serde_json::from_str(text).map_err(|_| "Nieprawidłowy kadr zdjęcia".to_owned())?;
+        c.validate()?;
+        Ok(Some(c))
     }
-    let im = if im.color().has_alpha() { DynamicImage::ImageRgba8(im.to_rgba8()) } else { DynamicImage::ImageRgb8(im.to_rgb8()) };
-    let encoded = webp::Encoder::from_image(&im).map_err(|e| anyhow::anyhow!("{e}"))?.encode(if thumb { 80.0 } else { 85.0 });
-    std::fs::create_dir_all(out.parent().unwrap_or(Path::new(".")))?;
-    let tmp = out.with_extension("webp.tmp");
-    std::fs::write(&tmp, &*encoded)?;
-    std::fs::rename(&tmp, out)?;
-    Ok(())
+
+    pub fn validate(&self) -> Result<(), String> {
+        let ok = [self.x, self.y, self.w, self.h].iter().all(|v| v.is_finite())
+            && self.x >= 0.0
+            && self.y >= 0.0
+            && self.w > 0.0
+            && self.h > 0.0
+            && self.x + self.w <= 1.0 + 1e-6
+            && self.y + self.h <= 1.0 + 1e-6;
+        if ok {
+            Ok(())
+        } else {
+            Err("Kadr wychodzi poza zdjęcie".into())
+        }
+    }
+
+    /// Prostokąt w pikselach (x, y, szerokość, wysokość); błąd, gdy któryś bok < 32 px
+    fn pixels(&self, width: u32, height: u32) -> Result<(u32, u32, u32, u32), String> {
+        self.validate()?;
+        let (fw, fh) = (width as f64, height as f64);
+        let x = ((self.x * fw).round() as u32).min(width.saturating_sub(1));
+        let y = ((self.y * fh).round() as u32).min(height.saturating_sub(1));
+        let w = ((self.w * fw).round() as u32).min(width - x);
+        let h = ((self.h * fh).round() as u32).min(height - y);
+        if w < MIN_CROP_PX || h < MIN_CROP_PX {
+            return Err(format!("Kadr jest za mały (min. {MIN_CROP_PX} px)"));
+        }
+        Ok((x, y, w, h))
+    }
+}
+
+fn limits() -> image::Limits {
+    let mut l = image::Limits::default();
+    l.max_image_width = Some(12_000);
+    l.max_image_height = Some(12_000);
+    l.max_alloc = Some(384 * 1024 * 1024);
+    l
+}
+
+/// Dekoduje obrazek (z limitami wymiarów i pamięci) i obraca go zgodnie z EXIF
+pub fn decode(blob: &[u8]) -> Result<DynamicImage, String> {
+    fn bad<E>(_: E) -> String {
+        "Nie udało się odczytać obrazka".to_owned()
+    }
+    let mut decoder = ImageReader::new(std::io::Cursor::new(blob)).with_guessed_format().map_err(bad)?.into_decoder().map_err(bad)?;
+    decoder.set_limits(limits()).map_err(|_| "Obrazek jest za duży".to_owned())?;
+    let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
+    let mut im = DynamicImage::from_decoder(decoder).map_err(bad)?;
+    im.apply_orientation(orientation);
+    Ok(im)
+}
+
+fn is_animated_gif(blob: &[u8]) -> bool {
+    image::codecs::gif::GifDecoder::new(std::io::Cursor::new(blob)).map(|d| d.into_frames().take(2).count() > 1).unwrap_or(false)
+}
+
+/// Kadr -> zmniejszenie do MAX_SIDE -> WebP
+fn process(blob: &[u8], crop: Option<Crop>) -> Result<Vec<u8>, String> {
+    let mut im = decode(blob)?;
+    if let Some(c) = crop {
+        let (x, y, w, h) = c.pixels(im.width(), im.height())?;
+        im = im.crop_imm(x, y, w, h);
+    }
+    if im.width().max(im.height()) > MAX_SIDE {
+        im = im.resize(MAX_SIDE, MAX_SIDE, image::imageops::FilterType::Lanczos3);
+    }
+    let alpha = im.color().has_alpha();
+    let im = if alpha { DynamicImage::ImageRgba8(im.to_rgba8()) } else { DynamicImage::ImageRgb8(im.to_rgb8()) };
+    let encoder = webp::Encoder::from_image(&im).map_err(|e| format!("Nie udało się zapisać obrazka: {e}"))?;
+    Ok(encoder.encode(if alpha { QUALITY_ALPHA } else { QUALITY }).to_vec())
+}
+
+/// Jedyna droga zapisu zdjęcia rastrowego: dowolny obrazek -> WebP (q 85, z alfą q 92), dłuższy bok najwyżej 1600 px
+pub fn to_webp(blob: &[u8]) -> Result<Vec<u8>, String> {
+    process(blob, None)
+}
+
+/// Przy starcie: stare .jpg/.png/.gif/.bmp w image_cache -> .webp obok (oryginał znika po udanym zapisie).
+/// Zwraca (zamienione, pominięte, błędy).
+pub fn migrate_to_webp(cache_dir: &Path) -> (usize, usize, usize) {
+    let _ = std::fs::remove_dir_all(cache_dir.join("_web"));
+    let Ok(dir) = std::fs::read_dir(cache_dir) else { return (0, 0, 0) };
+    let (mut done, mut skipped, mut failed) = (0, 0, 0);
+    for entry in dir.flatten() {
+        let path = entry.path();
+        let Some(ext) = path.extension().and_then(|e| e.to_str()).map(str::to_lowercase) else { continue };
+        if !path.is_file() || !LEGACY_EXTS.contains(&ext.as_str()) {
+            continue;
+        }
+        let target = path.with_extension("webp");
+        let result = (|| -> Result<bool, String> {
+            if target.metadata().is_ok_and(|m| m.len() > 0) {
+                std::fs::remove_file(&path).map_err(|e| e.to_string())?; // WebP już jest (i wygrywa przy odczycie)
+                return Ok(true);
+            }
+            let blob = std::fs::read(&path).map_err(|e| e.to_string())?;
+            if ext == "gif" && is_animated_gif(&blob) {
+                return Ok(false);
+            }
+            let data = to_webp(&blob)?;
+            let tmp = path.with_extension("webp.tmp");
+            std::fs::write(&tmp, &data).map_err(|e| e.to_string())?;
+            std::fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
+            std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+            Ok(true)
+        })();
+        match result {
+            Ok(true) => done += 1,
+            Ok(false) => skipped += 1,
+            Err(e) => {
+                failed += 1;
+                tracing::warn!("[zdjęcia] migracja {}: {e}", path.display());
+            }
+        }
+    }
+    (done, skipped, failed)
+}
+
+// ---------------------------------------------------------------- pobieranie z linku (ochrona SSRF)
+
+/// Czy z serwera wolno łączyć się z tym adresem (tylko publiczny internet)
+pub fn ip_allowed(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => ipv4_allowed(v4),
+        IpAddr::V6(v6) => {
+            // ::ffff:a.b.c.d i ::a.b.c.d (w tym ::1 jako 0.0.0.1) wg reguł IPv4
+            if let Some(v4) = v6.to_ipv4_mapped().or_else(|| v6.to_ipv4()) {
+                return ipv4_allowed(v4);
+            }
+            let seg = v6.segments();
+            if seg[0] == 0x0064 && seg[1] == 0xff9b && seg[2..6] == [0, 0, 0, 0] {
+                let o = v6.octets(); // NAT64 64:ff9b::/96
+                return ipv4_allowed(Ipv4Addr::new(o[12], o[13], o[14], o[15]));
+            }
+            !(v6.is_unspecified()
+                || v6.is_loopback()
+                || v6.is_multicast()
+                || (seg[0] & 0xfe00) == 0xfc00 // unique local fc00::/7
+                || (seg[0] & 0xffc0) == 0xfe80 // link-local
+                || (seg[0] & 0xffc0) == 0xfec0 // site-local
+                || (seg[0] == 0x2001 && seg[1] == 0x0db8)) // dokumentacja
+        }
+    }
+}
+
+fn ipv4_allowed(ip: Ipv4Addr) -> bool {
+    let o = ip.octets();
+    !(ip.is_private()
+        || ip.is_loopback()
+        || ip.is_link_local()
+        || ip.is_multicast()
+        || ip.is_unspecified()
+        || ip.is_broadcast()
+        || ip.is_documentation()
+        || o[0] == 0
+        || o[0] >= 240
+        || (o[0] == 100 && (o[1] & 0xc0) == 64) // CGNAT 100.64.0.0/10
+        || (o[0] == 192 && o[1] == 0 && o[2] == 0) // 192.0.0.0/24
+        || (o[0] == 198 && (o[1] & 0xfe) == 18)) // 198.18.0.0/15
+}
+
+/// Pobiera obrazek spod linku: tylko http/https, port 80/443/8080, wyłącznie publiczne adresy (DNS rozwiązany i sprawdzony,
+/// połączenie idzie do sprawdzonego IP), do 3 przekierowań (każdy cel sprawdzany od nowa), 15 s, max 10 MB.
+async fn fetch_remote(url: &str) -> Result<Vec<u8>, String> {
+    let mut current = reqwest::Url::parse(url).map_err(|_| "Nieprawidłowy adres obrazka".to_owned())?;
+    for hop in 0..=3 {
+        let client = remote_client(&current).await?;
+        let mut resp = client.get(current.clone()).send().await.map_err(|e| {
+            if e.is_timeout() {
+                "Serwer zdjęcia nie odpowiedział w 15 sekund".to_owned()
+            } else {
+                "Nie udało się połączyć z adresem zdjęcia".to_owned()
+            }
+        })?;
+        if resp.status().is_redirection() {
+            if hop == 3 {
+                return Err("Za dużo przekierowań".into());
+            }
+            let loc = resp.headers().get(reqwest::header::LOCATION).and_then(|v| v.to_str().ok()).ok_or("Przekierowanie bez celu")?;
+            current = current.join(loc).map_err(|_| "Nieprawidłowe przekierowanie".to_owned())?;
+            continue;
+        }
+        if !resp.status().is_success() {
+            return Err(format!("Adres zdjęcia zwrócił błąd {}", resp.status().as_u16()));
+        }
+        if resp.content_length().is_some_and(|n| n > MAX_REMOTE as u64) {
+            return Err("Zdjęcie z linku jest za duże (max 10 MB)".into());
+        }
+        let mut body = Vec::new();
+        let read = async {
+            while let Some(chunk) = resp.chunk().await.map_err(|_| "Przerwano pobieranie zdjęcia".to_owned())? {
+                if body.len() + chunk.len() > MAX_REMOTE {
+                    return Err("Zdjęcie z linku jest za duże (max 10 MB)".to_owned());
+                }
+                body.extend_from_slice(&chunk);
+            }
+            Ok::<(), String>(())
+        };
+        tokio::time::timeout(Duration::from_secs(15), read).await.map_err(|_| "Pobieranie zdjęcia trwało za długo".to_owned())??;
+        return Ok(body);
+    }
+    Err("Za dużo przekierowań".into())
+}
+
+/// Klient HTTP związany ze sprawdzonym adresem IP celu
+async fn remote_client(url: &reqwest::Url) -> Result<reqwest::Client, String> {
+    if !matches!(url.scheme(), "http" | "https") {
+        return Err("Adres musi zaczynać się od http:// lub https://".into());
+    }
+    let port = url.port_or_known_default().unwrap_or(0);
+    if !matches!(port, 80 | 443 | 8080) {
+        return Err("Niedozwolony port w adresie zdjęcia (dozwolone 80, 443, 8080)".into());
+    }
+    let host = url.host_str().ok_or("Nieprawidłowy adres obrazka")?;
+    let bare = host.trim_start_matches('[').trim_end_matches(']');
+    let mut builder =
+        reqwest::Client::builder().user_agent(USER_AGENT).redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(15));
+    if let Ok(ip) = bare.parse::<IpAddr>() {
+        if !ip_allowed(ip) {
+            return Err("Ten adres jest niedozwolony".into());
+        }
+    } else {
+        let addrs: Vec<IpAddr> = tokio::net::lookup_host((bare, port))
+            .await
+            .map_err(|_| "Nie znaleziono serwera spod tego adresu".to_owned())?
+            .map(|a| a.ip())
+            .collect();
+        if addrs.is_empty() || addrs.iter().any(|ip| !ip_allowed(*ip)) {
+            return Err("Ten adres jest niedozwolony".into());
+        }
+        builder = builder.resolve(bare, std::net::SocketAddr::new(addrs[0], port));
+    }
+    builder.build().map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
@@ -640,5 +857,69 @@ mod tests {
         assert!(usable("File:Lech_Walesa_2009.jpg"));
         assert!(!usable("Signature of X.png"));
         assert_eq!(quote("Ąb c/d.jpg"), "%C4%84b%20c/d.jpg");
+    }
+
+    fn png(w: u32, h: u32, alpha: bool) -> Vec<u8> {
+        let mut out = std::io::Cursor::new(Vec::new());
+        let im = if alpha {
+            DynamicImage::ImageRgba8(image::RgbaImage::from_fn(w, h, |x, _| image::Rgba([200, 30, 30, if x < w / 2 { 0 } else { 255 }])))
+        } else {
+            DynamicImage::ImageRgb8(image::RgbImage::from_fn(w, h, |x, y| image::Rgb([(x % 256) as u8, (y % 256) as u8, 90])))
+        };
+        im.write_to(&mut out, image::ImageFormat::Png).unwrap();
+        out.into_inner()
+    }
+
+    #[test]
+    fn to_webp_keeps_alpha_and_shrinks() {
+        let out = to_webp(&png(200, 100, true)).unwrap();
+        assert_eq!(sniff(&out), Some("webp"));
+        let im = decode(&out).unwrap();
+        assert!(im.color().has_alpha());
+        let rgba = im.to_rgba8();
+        assert!(rgba.get_pixel(5, 50)[3] < 20);
+        assert!(rgba.get_pixel(190, 50)[3] > 235);
+        let big = to_webp(&png(3200, 1000, false)).unwrap();
+        let im = decode(&big).unwrap();
+        assert_eq!((im.width(), im.height()), (1600, 500));
+        let small = decode(&to_webp(&png(300, 200, false)).unwrap()).unwrap();
+        assert_eq!((small.width(), small.height()), (300, 200));
+        assert!(to_webp(b"not an image").is_err());
+    }
+
+    #[test]
+    fn crop_validation_and_cut() {
+        assert_eq!(Crop::parse("").unwrap(), None);
+        for bad in [
+            r#"{"x":-0.1,"y":0,"w":0.5,"h":0.5}"#,
+            r#"{"x":0.6,"y":0,"w":0.5,"h":0.5}"#,
+            r#"{"x":0,"y":0,"w":0,"h":0.5}"#,
+            r#"{"x":0,"y":0.5,"w":0.5,"h":1.2}"#,
+            r#"{"x":0,"y":0}"#,
+            "zle",
+        ] {
+            assert!(Crop::parse(bad).is_err(), "{bad}");
+        }
+        let c = Crop::parse(r#"{"x":0.25,"y":0.5,"w":0.5,"h":0.5}"#).unwrap().unwrap();
+        let out = process(&png(400, 200, false), Some(c)).unwrap();
+        let im = decode(&out).unwrap();
+        assert_eq!((im.width(), im.height()), (200, 100));
+        let tiny = Crop { x: 0.0, y: 0.0, w: 0.05, h: 0.5 };
+        assert!(process(&png(400, 200, false), Some(tiny)).unwrap_err().contains("za mały"));
+    }
+
+    #[test]
+    fn ip_filter() {
+        let ok = |s: &str| ip_allowed(s.parse().unwrap());
+        for bad in [
+            "127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "0.0.0.0", "224.0.0.1", "100.64.0.1",
+            "255.255.255.255", "::1", "::", "fe80::1", "fc00::1", "fd12::1", "ff02::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1",
+            "::ffff:169.254.169.254", "64:ff9b::7f00:1", "2001:db8::1",
+        ] {
+            assert!(!ok(bad), "{bad} powinien być odrzucony");
+        }
+        for good in ["8.8.8.8", "1.1.1.1", "93.184.216.34", "2606:4700:4700::1111", "::ffff:8.8.8.8"] {
+            assert!(ok(good), "{good} powinien przejść");
+        }
     }
 }

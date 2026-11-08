@@ -185,8 +185,7 @@ async fn image(
         st.images.ensure(&pid, p.wiki.clone(), kind == "alt").await
     };
     if let Some(path) = path {
-        // ?s=1 - mały kafelek (bęben, kuźnia, kasyno): miniatura; ?v=<wersja zdjęcia> - adres zmienia się razem ze zdjęciem
-        let path = st.images.web_version_async(path, q.get("s").map(String::as_str) == Some("1")).await;
+        // ?v=<wersja zdjęcia> - adres zmienia się razem ze zdjęciem
         let cache = if p.is_secret() {
             "private, no-store".to_owned()
         } else {
@@ -227,7 +226,6 @@ pub async fn avatar_image(State(st): State<AppState>, Me(me): Me, Path(name): Pa
     let Some(path) = st.images.ensure(&pid, p.wiki.clone(), false).await else {
         return Err(AppError::Status(StatusCode::NOT_FOUND));
     };
-    let path = st.images.web_version_async(path, true).await; // ikona gracza jest mała - wystarczy miniatura
     send_file(&path, mimetype(&path), &headers, "private, max-age=300").await
 }
 

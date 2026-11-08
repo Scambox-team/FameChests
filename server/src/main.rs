@@ -143,9 +143,19 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
     // automatyczne kopie bazy (BACKUP_EVERY_HOURS)
     tokio::spawn(st.backups.clone().run_schedule());
 
-    // zdjęcia kart i miniatury - w tle
+    // zdjęcia kart - w tle: najpierw stare pliki (jpg/png/gif/bmp) -> WebP, potem brakujące z Wikipedii
     let people: Vec<_> = st.cat().people.values().map(|p| (p.id.clone(), p.wiki.clone())).collect();
-    tokio::spawn(async move { images.prefetch_all(people).await });
+    tokio::spawn(async move {
+        let dir = images.cache_dir.clone();
+        match tokio::task::spawn_blocking(move || images::migrate_to_webp(&dir)).await {
+            Ok((done, skipped, failed)) if done + skipped + failed > 0 => {
+                tracing::info!("[zdjęcia] migracja do WebP: zamieniono {done}, pominięto {skipped} (animowane GIF-y), błędów {failed}")
+            }
+            Ok(_) => {}
+            Err(e) => tracing::warn!("[zdjęcia] migracja do WebP przerwana: {e}"),
+        }
+        images.prefetch_all(people).await
+    });
     // porzucone walki i wyzwania w Arenie
     let arena = st.arena.clone();
     tokio::spawn(async move {
