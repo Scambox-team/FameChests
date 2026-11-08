@@ -1,8 +1,9 @@
 .app { display: grid; grid-template-columns: 216px minmax(0, 1fr); min-height: 100vh; }
 
-.side { position: sticky; z-index: 2; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 20px; padding-block: 20px; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: 12px; overflow-y: auto; }
+.side { position: sticky; z-index: 2; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 20px; padding-block: 20px; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: 12px; overflow: hidden; }
 .brand { display: flex; align-items: center; gap: 9px; padding: 0 10px; font: 800 19px var(--display); letter-spacing: -.02em; }
-.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.nav > .link { flex: none; }
 .link { position: relative; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: var(--radius-s); color: #c4c4cc; transition: color .12s, background .12s; }
 .link:hover { color: #fff; background: #17171b; }
 .link.on { color: #fff; background: var(--raised); font-weight: 500; }
@@ -25,24 +26,58 @@
 .daily:hover { background: #ffffff14; }
 .ready { width: 9px; height: 9px; border-radius: 50%; background: var(--hue); }
 
+.legal { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 0 10px; font-size: 12px; line-height: 18px; color: var(--faint); }
+.legal a:hover { color: #fff; }
+
 .phoneTop, .tabbar { display: none; }
+.tabbar button.link { border: 0; background: none; font-family: inherit; }
 
 @media (max-width: 820px) {
   .app { display: block; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   .side, .topRight { display: none; }
   .top { position: static; min-height: 0; margin: 0; padding: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .title { font-size: 26px; line-height: 32px; }
+  .title { font-size: 26px; line-height: 32px; overflow-wrap: anywhere; }
   .main { padding-block: 8px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .phoneTop { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 10px; height: 52px; background: color-mix(in srgb, var(--ground) 80%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
   .phoneMoney { margin-left: auto; font: 800 18px var(--display); }
-  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .tabbar .link { height: 58px; flex-direction: column; justify-content: center; gap: 3px; padding: 0; border-radius: 0; font-size: 12px; line-height: 14px; }
+  .phoneGift { position: relative; width: 40px; height: 40px; }
+  .phoneGift .ready { position: absolute; top: 6px; right: 6px; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px); }
+  .tabbar .link { height: 58px; flex-direction: column; justify-content: center; gap: 3px; padding: 0; border-radius: 0; font-size: 12px; line-height: 14px; min-width: 0; }
+  .tabbar .link span:not(.badge) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tabbar .link.on { background: none; }
   .tabbar .badge { position: absolute; top: 5px; left: 56%; margin: 0; }
-  .sheet { position: fixed; inset: 0; z-index: 60; background: var(--ground); display: flex; flex-direction: column; gap: 16px; padding: 16px; overflow-y: auto; }
-  .sheetClose { align-self: flex-end; }
-  .sheetNav { display: flex; flex-direction: column; gap: 2px; }
-  .sheetNav .link { height: 46px; font-size: 17px; }
 }
-.legal { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 0 10px; font-size: 12px; line-height: 18px; color: var(--faint); }
-.legal a:hover { color: #fff; }
+
+/* arkusz „Więcej” (telefon: dolny pasek, komputer: pasek boczny): na telefonie wysuwa się od dołu,
+   na komputerze jako szuflada z lewej; tło zamyka go kliknięciem */
+.sheetBack { position: fixed; inset: 0; z-index: 60; display: flex; align-items: stretch; justify-content: flex-start; background: #000000b3; }
+.sheet { width: min(460px, 100%); max-height: 100vh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 24px; padding-left: max(18px, env(safe-area-inset-left, 0px)); border-radius: 0 var(--radius) var(--radius) 0; background: var(--surface); box-shadow: 18px 0 50px #000a, inset -1px 0 0 #ffffff14; animation: sheetLeft .22s ease-out; }
+.grab { display: none; }
+.sheetHead { display: flex; align-items: center; justify-content: space-between; font: 800 20px var(--display); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 68px; padding: 8px 4px; border: 0; border-radius: var(--radius-m); background: var(--raised); color: #d4d4da; font: 500 13px/16px var(--body); text-align: center; overflow-wrap: anywhere; cursor: pointer; }
+.tile:hover { color: #fff; }
+.tile:active { background: #2a2a31; }
+.tile.on { color: #fff; box-shadow: inset 0 0 0 1px var(--hue); }
+.tile.on svg { color: var(--hue); }
+.tile .badge { position: absolute; top: 6px; right: 8px; margin: 0; }
+.sheet .daily { align-self: flex-start; }
+.sheetSettings { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-m); background: var(--raised); }
+.sheetSettings h2 { font: 800 16px var(--display); }
+.sheet .foot { margin-top: 0; padding: 0; }
+.sheet .foot:empty { display: none; }
+.sheet .legal { padding: 0; }
+.sheet .legal a { display: inline-flex; align-items: center; min-height: 32px; }
+/* przycisk „Więcej” w pasku bocznym wygląda jak pozostałe pozycje */
+.nav button.link { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.nav button.link:hover { background: #17171b; }
+
+@media (max-width: 820px) {
+  .sheetBack { align-items: flex-end; }
+  .sheet { width: 100%; max-height: 88vh; max-height: 88dvh; padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-radius: var(--radius) var(--radius) 0 0; box-shadow: 0 -18px 50px #000a, inset 0 1px 0 #ffffff14; animation-name: sheetUp; }
+  .grab { display: block; align-self: center; width: 38px; height: 4px; border-radius: 2px; background: var(--control); flex: none; }
+}
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } }
+@keyframes sheetLeft { from { transform: translateX(-40px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }

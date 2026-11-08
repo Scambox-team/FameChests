@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Minus, Plus, RotateCcw, Square } from 'lucide-react';
 import { PickTile } from '../../cards/PickTile';
 import type { RouletteScene } from '../../three/rouletteScene';
+import { use3D } from '../../three/support';
 import { api } from '../../api/client';
 import { announceFirsts } from '../../game/actions';
 import { confetti, epicReveal } from '../../fx/effects';
@@ -63,9 +64,9 @@ const savedView3d = () => { try { return localStorage.getItem(VIEW_KEY) !== '2d'
 function useWheel3d(canvas: React.RefObject<HTMLCanvasElement | null>, spot: React.RefObject<HTMLDivElement | null>, want3d: boolean) {
   const scene = useRef<RouletteScene | null>(null);
   const [failed, setFailed] = useState(false);
-  const flat = failed || !want3d;
+  const flat = failed || !want3d || !use3D();
   useEffect(() => {
-    if (!want3d) return;
+    if (!want3d || !use3D()) return;
     let alive = true;
     import('../../three/rouletteScene').then(({ createRouletteScene }) => {
       if (!alive || !canvas.current) return;
@@ -179,10 +180,10 @@ export function Roulette() {
   return (
     <div className="rl-cols">
       <div className="panel rl-left">
-        <div className="hr-view rl-view" role="group" aria-label="Widok koła">
+        {use3D() && <div className="hr-view rl-view" role="group" aria-label="Widok koła">
           <button type="button" className={view3d ? 'on' : ''} aria-pressed={view3d} disabled={spinning} onClick={() => pickView(true)}><Box size={15} aria-hidden="true" />3D</button>
           <button type="button" className={view3d ? '' : 'on'} aria-pressed={!view3d} disabled={spinning} onClick={() => pickView(false)}><Square size={15} aria-hidden="true" />2D</button>
-        </div>
+        </div>}
         {flat ? <div className="rl-wheel-wrap">
           <div className="rl-rot" ref={rot} style={{ transform: `rotate(${CS.angle}deg)` }}><Wheel /></div>
           <div className="rl-ball-rot" ref={ball}><i /></div>

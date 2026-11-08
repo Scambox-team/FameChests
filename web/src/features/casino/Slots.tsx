@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SlotsScene } from '../../three/slotsScene';
+import { use3D } from '../../three/support';
 import { Bell, Cherry, Citrus, Gem, Star, type LucideIcon } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { api } from '../../api/client';
@@ -30,8 +31,9 @@ const hueNow = () => getComputedStyle(document.documentElement).getPropertyValue
 /** Automat 3D (Three.js wczytuje się dopiero tutaj); bez WebGL zostaje płaski automat z DOM-u */
 function useMachine3d(canvas: React.RefObject<HTMLCanvasElement | null>) {
   const scene = useRef<SlotsScene | null>(null);
-  const [state, setState] = useState<'load' | '3d' | 'flat'>('load');
+  const [state, setState] = useState<'load' | '3d' | 'flat'>(() => use3D() ? 'load' : 'flat');
   useEffect(() => {
+    if (!use3D()) return;
     let alive = true;
     const syms = S.cfg.slots.symbols.map((s: any) => {
       const I = ICONS[s.id];

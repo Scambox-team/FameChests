@@ -264,6 +264,28 @@ CREATE TABLE IF NOT EXISTS user_auth (
     email TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS user_auth_email ON user_auth (LOWER(email));
+-- kiedy email został potwierdzony (link z maila gry albo Supabase Auth); NULL = jeszcze nie
+ALTER TABLE user_auth ADD COLUMN IF NOT EXISTS verified_at DOUBLE PRECISION;
+
+-- jednorazowe tokeny z linków w mailach (reset hasła, zmiana emaila): w bazie tylko sha256, czas jak db::now()
+-- (sekundy); kind: password_reset | email_change
+CREATE TABLE IF NOT EXISTS account_tokens (
+    token_hash TEXT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    kind TEXT NOT NULL,
+    expires_at DOUBLE PRECISION NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DOUBLE PRECISION NOT NULL
+);
+CREATE INDEX IF NOT EXISTS account_tokens_user ON account_tokens (user_id);
+
+-- treści maili zmienione w panelu admina (brak wiersza = domyślny plik z server/email/)
+CREATE TABLE IF NOT EXISTS email_templates (
+    name TEXT PRIMARY KEY,
+    subject TEXT NOT NULL,
+    html TEXT NOT NULL,
+    updated_at DOUBLE PRECISION NOT NULL
+);
 
 -- zgody na regulamin i politykę prywatności (osobna tabela: `users` czyta się przez SELECT *)
 CREATE TABLE IF NOT EXISTS terms_accepted (

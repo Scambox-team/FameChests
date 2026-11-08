@@ -2,23 +2,41 @@
 
 Potrzebna jest baza **PostgreSQL** (wersja Rust nie używa SQLite). Najprościej w Dockerze.
 
-## 1. Baza danych
+## 0. Najprościej: cała gra w Dockerze
 
-Nowa baza w Dockerze (w folderze `server/`):
+Bez instalowania Rusta i Node (potrzebny tylko Docker). W głównym folderze repozytorium:
 
 ```sh
-cd server
-docker compose up -d        # PostgreSQL 16 na porcie 5432, baza "scambox", dane w wolumenie scambox-db
+./lokalnie.sh        # Windows (PowerShell): .\lokalnie.ps1
 ```
 
-Masz już kontener z PostgreSQL? Wystarczy nowa baza:
+Skrypt buduje obraz i uruchamia: grę (http://localhost:8000), testową bazę PostgreSQL i Mailpit (http://localhost:8025 -
+tu lądują wszystkie maile z gry, nigdzie nie wychodzą). Konto testowe: login `admin`, hasło `admin` (tworzy je start gry
+z `DEV_ADMIN_USER` + `DEV_ADMIN_PASSWORD`; tylko do testów, nigdy na produkcji). Dane (zdjęcia kart) są w folderze
+`data-lokalne/`, baza w wolumenie `scambox-local-db`. Porty zmienisz w `.env` (wzór: `.env.example`).
+
+Rust nie ma live reload: po zmianie kodu uruchom skrypt ponownie (zależności siedzą w cache'u cargo-chef, więc przebudowa
+jest krótka). Zatrzymanie: `Ctrl+C`, potem `docker compose -f docker-compose.local.yml down`. Zaczynanie od zera:
+`docker compose -f docker-compose.local.yml down -v` i usunięcie folderu `data-lokalne/`.
+
+## 1. Baza danych (do natywnego `cargo run`)
+
+Potrzebna jest baza **PostgreSQL** (wersja Rust nie używa SQLite). Najprościej testowa baza z `docker-compose.local.yml`
+(z głównego folderu):
+
+```sh
+docker compose -f docker-compose.local.yml up -d db   # PostgreSQL 16 na localhost:5433, baza "scambox", wolumen scambox-local-db
+```
+
+To baza **testowa** (hasło `postgres`, słucha tylko na 127.0.0.1) - nigdy produkcyjna. Masz już kontener z PostgreSQL?
+Wystarczy nowa baza:
 
 ```sh
 docker exec <kontener> psql -U postgres -c "CREATE DATABASE scambox"
 ```
 
 Tabele tworzą się same przy pierwszym starcie gry. Karty i skrzynki z panelu admina wczytują się z
-`catalog_export.json`, a własne zdjęcia z `custom_images/`.
+`seed/catalog_export.json`, a własne zdjęcia z `seed/custom_images/`.
 
 ## 2. Plik `.env`
 
@@ -27,8 +45,8 @@ cd server
 cp .env.example .env        # Windows: copy .env.example .env
 ```
 
-Najważniejsze: `DATABASE_URL=postgres://postgres:postgres@localhost:5432/scambox`. Pozostałe ustawienia opisuje
-`.env.example`. Klucz logowania bez `SECRET_KEY` zapisuje się w `secret_key.txt` (w folderze gry albo `DATA_DIR`).
+Najważniejsze: `DATABASE_URL=postgres://postgres:postgres@localhost:5433/scambox`. Pozostałe ustawienia opisuje
+`.env.example`. Klucz logowania bez `SECRET_KEY` zapisuje się w `secret_key.txt`. Dane (zdjęcia `image_cache/`, klucz, kopie) leżą domyślnie w `data/` w folderze gry (albo w `DATA_DIR`); stare pliki z samego folderu gry przeniosą się tam same przy starcie.
 
 ## 3. Start
 
@@ -49,14 +67,14 @@ nix shell nixpkgs#cargo nixpkgs#rustc nixpkgs#gcc nixpkgs#pkg-config -c cargo ru
 ### Windows
 
 Potrzebne: [Rust (rustup)](https://rustup.rs) i Visual Studio Build Tools (kompilator C dla biblioteki WebP).
-Potem dwuklik `start.bat` w głównym folderze gry.
+Potem dwuklik `scripts/windows/start.bat`.
 
 Pierwsze budowanie trwa kilka minut. Gra działa na **http://127.0.0.1:5000**. Pierwsze zarejestrowane konto przejmuje
 stary zapis, ale nie jest adminem: wpisz jego id w `OWNER_IDS` w `server/.env` i zrestartuj grę (właściciele dostają admina przy starcie).
 
 ## Opcje
 
-Dopisywane po `--` (np. `cargo run --release -- --lan`) albo po `start.bat`:
+Dopisywane po `--` (np. `cargo run --release -- --lan`) albo po `scripts/windows/start.bat`:
 
 | Opcja | Co |
 |---|---|
@@ -69,7 +87,7 @@ Baza dla `--test` musi istnieć: `docker exec <kontener> psql -U postgres -c "CR
 Komendy:
 
 ```sh
-cargo run --release -- export-catalog          # zmiany z panelu admina -> catalog_export.json + custom_images/
+cargo run --release -- export-catalog          # zmiany z panelu admina -> seed/catalog_export.json + seed/custom_images/
 cargo run --release -- fetch-images [--force]  # pobierz zdjęcia kart (główne i alternatywne)
 ```
 
@@ -80,7 +98,7 @@ Zatrzymanie: `Ctrl+C`. Druga kopia gry na zajętym porcie się nie uruchomi.
 Zbudowanie obrazu (z głównego folderu gry):
 
 ```sh
-docker build -f server/Dockerfile -t scambox .
+docker build -t scambox .
 ```
 
 Uruchomienie z bazą w innym kontenerze - kontener gry musi być w tej samej sieci Docker co baza:
@@ -101,6 +119,7 @@ Gra: **http://127.0.0.1:8000**.
 - `COOKIE_SECURE=0` - lokalnie gra działa po zwykłym `http://`. Bez tego przeglądarka nie zapamięta logowania.
 - Stały `SECRET_KEY` - inaczej po każdym `docker run` wszyscy są wylogowani.
 - Wolumen `scambox-data` trzyma pobrane zdjęcia kart.
+- `DEV_ADMIN_USER` + `DEV_ADMIN_PASSWORD` (opcjonalnie) - konto testowe z uprawnieniami admina, tworzone przy starcie, gdy nie istnieje; nie ustawiaj na produkcji.
 
 Zarządzanie:
 

@@ -3,8 +3,9 @@
 //! Jak w programach poleceń dużych serwisów:
 //! - atrybucja przez ciasteczko (podpisane, HttpOnly) na `WINDOW_DAYS` dni, pierwsze kliknięcie wygrywa (kolejny link
 //!   go nie nadpisuje); gdy przeglądarka blokuje ciasteczka, kod przychodzi też w treści rejestracji,
-//! - nagroda nie za samo założenie konta, tylko po "aktywacji": nowy gracz musi otworzyć `min_opened` skrzynek
-//!   i mieć konto od `min_hours` godzin - zakładanie pustych kont dla nagrody się nie opłaca,
+//! - nagroda nie za samo założenie konta, tylko po "aktywacji": najpierw polecony musi mieć POTWIERDZONY email
+//!   (`user_auth.verified_at`; `account::on_email_verified` woła `settle_referred`), potem otworzyć `min_opened`
+//!   skrzynek i mieć konto od `min_hours` godzin - zakładanie pustych kont dla nagrody się nie opłaca,
 //! - ochrona przed nadużyciami: polecenie z tego samego IP co polecający (skrót IP z solą, bez zapisywania adresów)
 //!   albo kolejne konto z jednego IP ponad `per_ip_limit` czeka na decyzję admina (`flagged`); polecający dostaje
 //!   najwyżej `monthly_cap` nagród w 30 dni (polecony dostaje swoją zawsze),
@@ -314,7 +315,68 @@ macro_rules! ref_cols {
     };
 }
 
-/// Polecenia z udziałem gracza, które czekają na aktywację: gdy polecony ją spełnił, obaj dostają nagrody
+/// Czego brakuje poleconemu do nagrody (kolejność = kolejność warunków: najpierw email)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Gap {
+    Ready,
+    /// konto bez emaila w ogóle
+    NoEmail,
+    /// email podany, ale niepotwierdzony
+    Unverified,
+    Opened,
+    Young,
+    Banned,
+}
+
+impl Gap {
+    fn key(self) -> &'static str {
+        match self {
+            Gap::Ready => "ready",
+            Gap::NoEmail => "noEmail",
+            Gap::Unverified => "email",
+            Gap::Opened => "opened",
+            Gap::Young => "young",
+            Gap::Banned => "banned",
+        }
+    }
+}
+
+/// Czysta decyzja o gotowości polecenia do nagrody (bez bazy, do testów)
+pub fn readiness(has_email: bool, verified: bool, opened: i64, min_opened: i64, age_secs: f64, min_hours: f64, banned: bool) -> Gap {
+    if banned {
+        Gap::Banned
+    } else if !has_email {
+        Gap::NoEmail
+    } else if !verified {
+        Gap::Unverified
+    } else if opened < min_opened {
+        Gap::Opened
+    } else if age_secs < min_hours * 3600.0 {
+        Gap::Young
+    } else {
+        Gap::Ready
+    }
+}
+
+/// (ma email, email potwierdzony) - konto bez wiersza `user_auth` albo z pustym emailem nie ma emaila
+async fn email_state(c: &mut Conn, uid: i64) -> sqlx::Result<(bool, bool)> {
+    let row: Option<(String, bool)> = sqlx::query_as("SELECT email, verified_at IS NOT NULL FROM user_auth WHERE user_id = $1")
+        .bind(uid)
+        .fetch_optional(c)
+        .await?;
+    Ok(row.map(|(e, v)| (!e.is_empty(), v)).unwrap_or((false, false)))
+}
+
+async fn gap_of(c: &mut Conn, cfg: &RefConfig, r: &RefRow) -> sqlx::Result<Gap> {
+    let (has_email, verified) = email_state(c, r.referred_id).await?;
+    let banned: i32 = sqlx::query_scalar("SELECT banned FROM users WHERE id = $1").bind(r.referred_id).fetch_optional(&mut *c).await?.unwrap_or(1);
+    // skrzynki liczymy dopiero, gdy email jest w porządku
+    let opened = if has_email && verified { opened(c, r.referred_id).await? } else { 0 };
+    Ok(readiness(has_email, verified, opened, cfg.min_opened, now() - r.created_at, cfg.min_hours, banned != 0))
+}
+
+/// Polecenia z udziałem gracza, które czekają na aktywację: gdy polecony ją spełnił (email potwierdzony, skrzynki,
+/// wiek konta), obaj dostają nagrody
 pub async fn settle(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<()> {
     let pending: Vec<RefRow> = sqlx::query_as(concat!(
         "SELECT ", ref_cols!(), " FROM referrals ",
@@ -331,14 +393,17 @@ pub async fn settle(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<()> {
         return Ok(());
     }
     for r in pending {
-        let opened = opened(c, r.referred_id).await?;
-        let banned: i32 = sqlx::query_scalar("SELECT banned FROM users WHERE id = $1").bind(r.referred_id).fetch_optional(&mut *c).await?.unwrap_or(1);
-        if opened < cfg.min_opened || now() - r.created_at < cfg.min_hours * 3600.0 || banned != 0 {
-            continue;
+        if gap_of(c, &cfg, &r).await? == Gap::Ready {
+            reward(c, cat, &cfg, &r).await?;
         }
-        reward(c, cat, &cfg, &r).await?;
     }
     Ok(())
+}
+
+/// Po potwierdzeniu emaila (`account::on_email_verified`): rozlicza polecenia tego gracza (przy zerowych progach
+/// nagroda przychodzi od razu)
+pub async fn settle_referred(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<()> {
+    settle(c, cat, uid).await
 }
 
 async fn opened(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
@@ -483,16 +548,39 @@ pub async fn my_referral(
     let users = users_by_id(&mut c, &cat, rows.iter().map(|r| Some(r.referred_id))).await?;
     let mut list = vec![];
     for r in &rows {
-        let opened = if r.status == "pending" { opened(&mut c, r.referred_id).await? } else { 0 };
+        let (gap, opened) = if r.status == "pending" || r.status == "flagged" {
+            let gap = gap_of(&mut c, &cfg, r).await?;
+            let o = if matches!(gap, Gap::Opened | Gap::Young | Gap::Ready) { opened(&mut c, r.referred_id).await? } else { 0 };
+            (gap.key(), o)
+        } else {
+            ("ready", 0)
+        };
         list.push(json!({
             "user": users.get(&r.referred_id),
             "status": if r.status == "flagged" { "pending" } else { r.status.as_str() }, // graczowi nie mówimy o podejrzeniach
+            "missing": gap,
             "opened": opened.min(cfg.min_opened),
             "readyAt": r.created_at + cfg.min_hours * 3600.0,
             "created": r.created_at,
             "rewarded": r.rewarded_at,
         }));
     }
+    // kto mnie polecił (nick na bieżąco po stałym id)
+    let mine: Option<RefRow> = sqlx::query_as(concat!("SELECT ", ref_cols!(), " FROM referrals WHERE referred_id = $1"))
+        .bind(me.id)
+        .fetch_optional(&mut *c)
+        .await?;
+    let referred_by = match mine {
+        Some(r) => {
+            let u = users_by_id(&mut c, &cat, [Some(r.referrer_id)]).await?;
+            let open = r.status == "pending" || r.status == "flagged";
+            let missing = if open { gap_of(&mut c, &cfg, &r).await?.key() } else { "ready" };
+            u.get(&r.referrer_id).map(|user| {
+                json!({"user": user, "status": if r.status == "flagged" { "pending" } else { r.status.as_str() }, "missing": missing})
+            })
+        }
+        None => None,
+    };
     let count = |s: &str| rows.iter().filter(|r| r.status == s).count();
     ok(json!({
         "enabled": true,
@@ -505,6 +593,7 @@ pub async fn my_referral(
         "reward": reward_view(&cat, &cfg),
         "monthlyCap": cfg.monthly_cap,
         "list": list,
+        "referredBy": referred_by,
     }))
 }
 
@@ -541,6 +630,14 @@ async fn admin_view(st: &AppState) -> Res {
     )
     .fetch_one(&mut *c)
     .await?;
+    let verified: std::collections::HashSet<i64> = sqlx::query_scalar::<_, i64>(
+        "SELECT user_id FROM user_auth WHERE verified_at IS NOT NULL AND user_id = ANY($1)",
+    )
+    .bind(rows.iter().map(|r| r.referred_id).collect::<Vec<_>>())
+    .fetch_all(&mut *c)
+    .await?
+    .into_iter()
+    .collect();
     let top: Vec<(i64, i64)> = sqlx::query_as(
         "SELECT referrer_id, COUNT(*) FROM referrals WHERE status = 'rewarded' GROUP BY 1 ORDER BY 2 DESC LIMIT 10",
     )
@@ -563,6 +660,7 @@ async fn admin_view(st: &AppState) -> Res {
             "referred": users.get(&r.referred_id),
             "referrer": users.get(&r.referrer_id),
             "status": r.status,
+            "emailVerified": verified.contains(&r.referred_id),
             "reason": r.reason,
             "created": r.created_at,
             "rewarded": r.rewarded_at,
@@ -647,5 +745,18 @@ mod tests {
         assert!(clean_code("ABC").is_none());
         assert!(clean_code("ABCDEFG0").is_none(), "0 nie ma w alfabecie");
         assert!(clean_code("../../x").is_none());
+    }
+
+    #[test]
+    fn readiness_order() {
+        // (ma email, potwierdzony, otwarte, min otwarte, wiek s, min godzin, zablokowany)
+        let r = |e, v, o, mo, age, mh, b| readiness(e, v, o, mo, age, mh, b);
+        assert_eq!(r(false, false, 99, 5, 1e9, 0.0, false), Gap::NoEmail, "bez emaila nie ma nagrody");
+        assert_eq!(r(true, false, 99, 5, 1e9, 0.0, false), Gap::Unverified, "niepotwierdzony email blokuje mimo progów");
+        assert_eq!(r(true, true, 4, 5, 1e9, 0.0, false), Gap::Opened);
+        assert_eq!(r(true, true, 5, 5, 3599.0, 1.0, false), Gap::Young);
+        assert_eq!(r(true, true, 5, 5, 3600.0, 1.0, false), Gap::Ready);
+        assert_eq!(r(true, true, 0, 0, 0.0, 0.0, false), Gap::Ready, "zerowe progi: nagroda zaraz po potwierdzeniu");
+        assert_eq!(r(true, true, 5, 5, 1e9, 0.0, true), Gap::Banned);
     }
 }

@@ -1,0 +1,65 @@
+# ScamBox - test lokalny. Uruchom: docker compose -f docker-compose.local.yml up --build
+# (albo skryptem lokalnie.ps1 / lokalnie.sh). Gra: http://localhost:8000, maile z gry: http://localhost:8025 (Mailpit).
+# Konto testowe: login admin, hasło admin (DEV_ADMIN_*; tylko do testów!). Porty zmienisz w .env: SCAMBOX_PORT, SCAMBOX_MAIL_PORT, SCAMBOX_DB_PORT.
+# To jest baza TESTOWA, nigdy produkcyjna. Zaczynanie od zera: docker compose -f docker-compose.local.yml down -v i usuń folder data-lokalne.
+# Sama baza do natywnego `cargo run` w server/: docker compose -f docker-compose.local.yml up -d db
+# (DATABASE_URL=postgres://postgres:postgres@localhost:5433/scambox).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: scambox
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d scambox"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    ports:
+      # tylko localhost - baza testowa z hasłem "postgres" nie może być widoczna z sieci
+      - "127.0.0.1:${SCAMBOX_DB_PORT:-5433}:5432"
+    volumes:
+      - scambox-local-db:/var/lib/postgresql/data
+
+  # Fałszywy serwer poczty: wszystkie maile z gry (potwierdzenia, reset hasła itd.) lądują tu i nigdzie nie wychodzą.
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:${SCAMBOX_MAIL_PORT:-8025}:8025"
+
+  app:
+    build: .
+    image: famechests:local
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+      - "${SCAMBOX_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/scambox"
+      SECRET_KEY: "dev-local-only"
+      # lokalnie zwykły http://, bez proxy
+      COOKIE_SECURE: "0"
+      TRUST_PROXY: "0"
+      DATA_DIR: "/data"
+      PUBLIC_URL: "http://localhost:${SCAMBOX_PORT:-8000}"
+      SMTP_URL: "smtp://mailpit:1025"
+      MAIL_FROM: "ScamBox lokalnie <no-reply@scambox.local>"
+      # konto testowe tworzone przy starcie (jeśli nie istnieje) i od razu admin
+      DEV_ADMIN_USER: "admin"
+      DEV_ADMIN_PASSWORD: "admin"
+      OWNER_IDS: "1"
+      OPERATOR_NAME: "ScamBox (test lokalny)"
+      CONTACT_EMAIL: "kontakt@scambox.local"
+      TZ: Europe/Warsaw
+      # metryki Prometheus wyłączone
+      METRICS_ADDR: ""
+    volumes:
+      # zdjęcia kart, kopie bazy: w folderze data-lokalne obok projektu; usuń go, żeby zacząć od zera
+      - ./data-lokalne:/data
+
+volumes:
+  scambox-local-db:

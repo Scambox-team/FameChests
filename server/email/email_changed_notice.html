@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>ScamBox: adres email został zmieniony</title>
+</head>
+<body style="margin:0;padding:0;background:#08080a;">
+<!-- podgląd w skrzynce odbiorczej -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#08080a;">Adres email Twojego konta w ScamBox został zmieniony.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080a;">
+  <tr><td align="center" style="padding:32px 14px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+      <tr><td style="padding:0 4px 18px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td width="36" height="36" valign="middle" style="width:36px;height:36px;"><img src="{{ .SiteURL }}/static/icons/icon-192.png" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:0;border-radius:10px;"></td>
+          <td style="padding-left:12px;font-family:'Bricolage Grotesque','Hanken Grotesk',Arial,Helvetica,sans-serif;font-weight:800;font-size:22px;letter-spacing:-0.3px;color:#ffffff;">ScamBox</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="background:#131316;border:1px solid #26262c;border-radius:20px;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td height="5" style="height:5px;line-height:5px;font-size:0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td height="5" bgcolor="#9aa3ad" style="height:5px;line-height:5px;font-size:0;background:#9aa3ad;">&nbsp;</td>
+              <td height="5" bgcolor="#4fc34f" style="height:5px;line-height:5px;font-size:0;background:#4fc34f;">&nbsp;</td>
+              <td height="5" bgcolor="#4b8bff" style="height:5px;line-height:5px;font-size:0;background:#4b8bff;">&nbsp;</td>
+              <td height="5" bgcolor="#a35bff" style="height:5px;line-height:5px;font-size:0;background:#a35bff;">&nbsp;</td>
+              <td height="5" bgcolor="#ff4040" style="height:5px;line-height:5px;font-size:0;background:#ff4040;">&nbsp;</td>
+              <td height="5" bgcolor="#ffc531" style="height:5px;line-height:5px;font-size:0;background:#ffc531;">&nbsp;</td>
+              <td height="5" bgcolor="#19e6ff" style="height:5px;line-height:5px;font-size:0;background:#19e6ff;">&nbsp;</td>
+              <td height="5" bgcolor="#ff5cf0" style="height:5px;line-height:5px;font-size:0;background:#ff5cf0;">&nbsp;</td>
+              <td height="5" bgcolor="#f3e3b0" style="height:5px;line-height:5px;font-size:0;background:#f3e3b0;">&nbsp;</td>
+            </tr></table>
+          </td></tr>
+          <tr><td style="padding:34px 34px 8px;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;">
+            <h1 style="margin:0 0 14px;font-family:'Bricolage Grotesque','Hanken Grotesk',Arial,Helvetica,sans-serif;font-weight:800;font-size:28px;line-height:1.15;letter-spacing:-0.5px;color:#ffffff;">Adres email został zmieniony</h1>
+            <p style="margin:0 0 10px;font-size:16px;line-height:1.55;color:#b8b8c0;">Cześć {{ .Username }}! Adres email Twojego konta w ScamBox został zmieniony na {{ .NewEmail }}. Od teraz na ten nowy adres będą przychodzić wiadomości z gry, w tym linki do zmiany hasła.</p>
+          </td></tr>
+          <tr><td style="padding:22px 34px 30px;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td style="border-top:1px solid #26262c;padding-top:16px;font-size:13px;line-height:1.55;color:#96969f;">To nie Ty? Skontaktuj się z administratorem gry jak najszybciej, zanim ktoś przejmie konto.</td>
+            </tr></table>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td align="center" style="padding:20px 10px 0;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6f6f78;">
+        ScamBox &middot; gra w otwieranie skrzynek z kartami znanych osób<br>
+        Ta wiadomość została wysłana do gracza {{ .Username }} na poprzedni adres konta. Nie odpowiadaj na nią.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

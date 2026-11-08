@@ -1,6 +1,6 @@
 # ScamBox na własnym serwerze (Docker + self-hosted Supabase)
 
-Cała gra w jednym `docker compose`: serwer gry (obraz z `server/Dockerfile`), Supabase z Postgresem 17
+Cała gra w jednym `docker compose`: serwer gry (obraz z `Dockerfile`), Supabase z Postgresem 17
 (oficjalny zestaw self-hosted) i HTTPS - **Cloudflare Tunnel** (domyślnie, działa za CGNAT) albo Caddy.
 
 ```
@@ -97,6 +97,14 @@ sama go podaje pod `/email/<nazwa>.html`, a `auth` pobiera przez sieć Dockera (
 `docker-compose.override.yml`) - po zmianie pliku wystarczy zbudować nowy obraz gry; gdy `game` nie odpowiada,
 GoTrue wysyła swój zwykły, brzydszy mail. Na Supabase w chmurze wklej te pliki w Authentication -> Email Templates
 (pola `{{ .ConfirmationURL }}` zostają). Lokalnie przed wysyłką można je otworzyć w przeglądarce: `http://127.0.0.1:5000/email/recovery.html`.
+
+**Własna poczta gry** (opcjonalnie, `GAME_SMTP_URL` i `GAME_MAIL_FROM` w `.env`): gdy jest ustawiona, to gra sama wysyła
+reset hasła (admin, „Nie pamiętasz hasła?”, „Wyślij mi link” w profilu) i zmianę emaila linkiem z jednorazowym tokenem
+`sb1_...` (ważny godzinę, w bazie tylko jego sha256), a nie Supabase Auth. Treść tych maili (i maili Supabase Auth) edytuje
+się w panelu admina: Treści i wydarzenia -> Maile (podgląd na żywo, „Wyślij test do mnie”, „Przywróć domyślny”). Bez
+`GAME_SMTP_URL` zostaje stare zachowanie przez Supabase Auth. Bez Supabase Auth w ogóle (test lokalny, brak `GOTRUE_URL`)
+konta mogą mieć email zapisany tylko w grze (`user_auth.auth_id` = `local:<id>`), a maile bez SMTP trafiają do logu gry
+z gotowym linkiem.
 
 Sprawdzenie: załóż konto na stronie gry, mail z linkiem powinien przyjść w minutę (sprawdź też spam). Nie przychodzi?
 `docker compose logs auth` pokaże błąd SMTP (zły login/hasło, port, niezweryfikowany nadawca).

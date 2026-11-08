@@ -4,7 +4,8 @@ import { imgUrl, person } from '../../game/rules';
 import { S, useGame } from '../../game/store';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
-import { createFlappy, type FlappyHud, type FlappyScene } from '../../three/flappyScene';
+import type { FlappyHud, FlappyScene } from '../../three/flappyScene';
+import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import './flappy.css';
 
 // Zakładka Gry -> Flappy: leci wybrana karta z kolekcji (scena w three/flappyScene.ts). Rekord i wybór karty są w przeglądarce.
@@ -35,14 +36,17 @@ export function FlappyPage() {
   actRef.current = act;
 
   useEffect(() => {
-    if (!canvas.current || !chosen) return;
+    if (!canvas.current || !chosen || !use3D()) return;
     const p = person(chosen.person);
-    let top = best;
-    const g = createFlappy(canvas.current, { photo: imgUrl(chosen.person, chosen.variant), name: p.name, color: color(chosen.person) },
-      h => { setHud(h); if (h.best > top) { top = h.best; write('flappyBest', String(top)); } },
-      top, k => { if (k === 'flap') Sound.click(); });
-    scene.current = g;
-    return () => { g.destroy(); scene.current = null; };
+    let top = best, alive = true;
+    const cv = canvas.current;
+    import('../../three/flappyScene').then(({ createFlappy }) => {
+      if (!alive) return;
+      scene.current = createFlappy(cv, { photo: imgUrl(chosen.person, chosen.variant), name: p.name, color: color(chosen.person) },
+        h => { setHud(h); if (h.best > top) { top = h.best; write('flappyBest', String(top)); } },
+        top, k => { if (k === 'flap') Sound.click(); });
+    });
+    return () => { alive = false; scene.current?.destroy(); scene.current = null; };
   }, [chosen?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -55,6 +59,13 @@ export function FlappyPage() {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
+  if (!use3D()) return (
+    <div className="panel fl-off">
+      <h3>Ta gra wymaga grafiki 3D</h3>
+      <p className="muted">Grafika 3D jest wyłączona w ustawieniach (albo przeglądarka nie obsługuje WebGL).</p>
+      {hasWebGL() && <Button kind="hue" onClick={() => { setUser3DOff(false); location.reload(); }}>Włącz grafikę 3D</Button>}
+    </div>
+  );
   if (!chosen) return <p className="muted">Nie masz jeszcze żadnej karty. Otwórz skrzynkę i wróć tu polatać.</p>;
   return (
     <div className="fl-page">

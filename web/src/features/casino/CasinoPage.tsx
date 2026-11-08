@@ -6,6 +6,7 @@ import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
 import { Blackjack } from './Blackjack';
 import { CasinoIntro } from './CasinoIntro';
+import { casinoIntroWanted, markCasinoIntroSeen } from './introPref';
 import { Horses } from './Horses';
 import { Jackpot } from './Jackpot';
 import { Poker } from './Poker';
@@ -67,8 +68,8 @@ function LeaveGuard() {
 
 export function CasinoPage() {
   const game = useGame();
-  const [intro, setIntro] = useState(true);   // GIF przy każdym wejściu do kasyna
-  const endIntro = useCallback(() => setIntro(false), []);
+  const [intro, setIntro] = useState(casinoIntroWanted);   // GIF raz na sesję (można wyłączyć w ustawieniach)
+  const endIntro = useCallback(() => { markCasinoIntroSeen(); setIntro(false); }, []);
   useEffect(() => { document.title = 'Kasyno · ScamBox'; }, []);
   const games = GAMES.filter(g => g.id !== 'horses' || horsesVisible()).map(g => g.id === 'horses' && !horsesOn() ? { ...g, sub: 'Podgląd 3D (test)' } : g);
   const pick = (t: string) => {

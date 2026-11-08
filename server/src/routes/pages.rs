@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, Query, RawQuery, State};
 use axum::http::{header, HeaderMap, StatusCode, Uri};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use serde_json::json;
@@ -19,7 +19,7 @@ use crate::state::AppState;
 use crate::web::{send_file, svg_response};
 
 /// Widoki gry pod własnym adresem (ta sama strona index.html, widok wybiera JS)
-pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer"];
+pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer", "ustawienia"];
 
 /// Strona gry: jedna aplikacja z web/dist, adres wybiera ekran po stronie przeglądarki
 fn app_page() -> Response {
@@ -36,8 +36,10 @@ const MYSTERY_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
   <text x="150" y="268" font-family="Arial" font-weight="bold" font-size="34" fill="#f3e3b0" text-anchor="middle" letter-spacing="6">???</text>
 </svg>"##;
 
-pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser) -> Res {
-    if u.is_some() {
+pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser, RawQuery(query): RawQuery) -> Res {
+    // link z maila z tokenem (?t=sb1_...) otwiera formularz nowego hasła także zalogowanemu
+    let mail_link = query.as_deref().is_some_and(|q| q.starts_with("t=sb1_") || q.contains("&t=sb1_"));
+    if u.is_some() && !mail_link {
         return Ok(Redirect::to("/").into_response());
     }
     let n = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM users"#).fetch_one(&st.db).await?;
@@ -183,8 +185,7 @@ async fn image(
         st.images.ensure(&pid, p.wiki.clone(), kind == "alt").await
     };
     if let Some(path) = path {
-        // ?s=1 - mały kafelek (bęben, kuźnia, kasyno): miniatura; ?v=<wersja zdjęcia> - adres zmienia się razem ze zdjęciem
-        let path = st.images.web_version_async(path, q.get("s").map(String::as_str) == Some("1")).await;
+        // ?v=<wersja zdjęcia> - adres zmienia się razem ze zdjęciem
         let cache = if p.is_secret() {
             "private, no-store".to_owned()
         } else {
@@ -225,7 +226,6 @@ pub async fn avatar_image(State(st): State<AppState>, Me(me): Me, Path(name): Pa
     let Some(path) = st.images.ensure(&pid, p.wiki.clone(), false).await else {
         return Err(AppError::Status(StatusCode::NOT_FOUND));
     };
-    let path = st.images.web_version_async(path, true).await; // ikona gracza jest mała - wystarczy miniatura
     send_file(&path, mimetype(&path), &headers, "private, max-age=300").await
 }
 

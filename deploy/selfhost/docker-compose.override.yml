@@ -51,11 +51,11 @@ services:
 
   game:
     container_name: scambox-game
-    # Obraz: budowany z repozytorium (server/Dockerfile) albo pobrany gotowy z ghcr.io - patrz README.md
+    # Obraz: budowany z repozytorium (Dockerfile) albo pobrany gotowy z ghcr.io - patrz README.md
     image: ${GAME_IMAGE:-scambox:local}
     build:
       context: ../..
-      dockerfile: server/Dockerfile
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -84,6 +84,16 @@ services:
       GOTRUE_URL: http://auth:9999
       GOTRUE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       PUBLIC_URL: ${GAME_PUBLIC_URL}
+      # własna poczta gry (reset hasła i zmiana emaila z tokenem, szablony edytowalne w panelu admina): ten sam serwer
+      # SMTP co Supabase Auth (SMTP_* z .env). GAME_SMTP_URL (np. smtps://user:haslo@host:465) ma pierwszeństwo.
+      SMTP_URL: ${GAME_SMTP_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-ScamBox}
+      MAIL_FROM: ${GAME_MAIL_FROM:-}
       TRUST_PROXY: "1"
       METRICS_ADDR: ""
       RUST_LOG: ${GAME_RUST_LOG:-scambox=info}

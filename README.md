@@ -5,26 +5,33 @@ The server is written in Rust (`server/`: axum + tokio + sqlx, PostgreSQL); the 
 `templates/`) is plain HTML/CSS/JS and is embedded into the server executable.
 
 ## Running it
-You need [Rust (rustup)](https://rustup.rs) and a PostgreSQL database (easiest: `docker compose up -d` in `server/`).
+You need [Rust (rustup)](https://rustup.rs) and a PostgreSQL database (easiest: `docker compose -f docker-compose.local.yml up -d db`, it listens on localhost:5433).
 
 1. `copy server\.env.example server\.env` and set `DATABASE_URL`.
-2. Double-click `start.bat` (or `cd server && cargo run --release`).
+2. Double-click `scripts/windows/start.bat` (or `cd server && cargo run --release`).
 3. Open http://127.0.0.1:5000
 
 Details (Linux, NixOS, Docker, options `--lan` / `--test` / `--dev`): [docs/uruchamianie.md](docs/uruchamianie.md).
 
+## Local test in Docker (Test lokalny w Dockerze)
+Only Docker is needed (no Rust, no Node). From the repository root run `./lokalnie.sh` (Windows PowerShell: `.\lokalnie.ps1`), which
+starts the game (http://localhost:8000), a throw-away PostgreSQL and Mailpit (http://localhost:8025, catches every e-mail
+the game sends). Test account: login `admin`, password `admin`. Rust has no live reload: after changing code run the
+script again (dependencies are cached). Data lives in `data-lokalne/`; start from scratch with
+`docker compose -f docker-compose.local.yml down -v` and by deleting that folder. Optional ports: `.env.example`.
+
 ### Playing with friends (same network / Wi-Fi)
-Double-click `start_lan.bat`. The console shows an address like `http://192.168.1.23:5000`; your friends open it in
+Double-click `scripts/windows/start_lan.bat`. The console shows an address like `http://192.168.1.23:5000`; your friends open it in
 their browser. (Windows may ask to allow access through the firewall; choose "Allow".)
 If a friend can't connect, the network probably blocks traffic between devices (common in dorms) — use Tailscale.
 
 ### Playing with friends over Tailscale (recommended)
-Double-click `start_tailscale.bat`. It runs `tailscale serve`, which makes the game available **only within your
+Double-click `scripts/windows/start_tailscale.bat`. It runs `tailscale serve`, which makes the game available **only within your
 Tailscale network**, over HTTPS, at `https://<computer-name>.<tailnet>.ts.net`.
 To stop sharing: `tailscale serve --https=443 off`.
 
 ### Hosting (Azure App Service, Windows)
-`build_azure.bat` builds `dist\scambox-azure.zip` = `scambox.exe` (everything is inside it) + `web.config`.
+`scripts/windows/build_azure.bat` builds `dist\scambox-azure.zip` = `scambox.exe` (everything is inside it) + `web.config`.
 Deploy the zip and set `DATABASE_URL` / `SECRET_KEY` in the app settings: [docs/hosting.md](docs/hosting.md).
 
 ## Accounts
@@ -49,7 +56,7 @@ Cards and crates added in the admin panel live in the database (which also holds
     cd server
     cargo run --release -- export-catalog
 
-It writes `catalog_export.json` + `custom_images/` (cards and crates only, no player data). A new installation
+It writes `seed/catalog_export.json` + `seed/custom_images/` (cards and crates only, no player data). A new installation
 (empty database) loads them automatically on first start (they are also embedded in the executable).
 
 ## Files

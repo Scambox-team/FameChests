@@ -12,6 +12,7 @@ import { esc, fmt, sleep } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
 import type { CrateScene } from '../../three/crateScene';
+import { use3D } from '../../three/support';
 import { crateHue, crateLook3d } from './crateLook';
 
 const STRIP = 54, WIN = 46, EGG_EDGE = 6;
@@ -155,6 +156,7 @@ async function lidBeforeResult(o: Opening) {
 // Otwieranie poza sklepem (ekwipunek): ta sama scena 3D nad ekranem. Skrzynki spadają w piramidę, wieka się otwierają,
 // a gdy pokazuje się scena z bębnami, nakładka gaśnie. Bez WebGL otwieranie idzie dalej bez niej.
 async function sceneOverlay(o: Opening) {
+  if (!use3D()) return;
   const el = document.createElement('div');
   el.className = 'crate-overlay';
   el.innerHTML = '<canvas aria-hidden="true"></canvas>';

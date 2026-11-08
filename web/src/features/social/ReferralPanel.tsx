@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Copy, Gift, Share2 } from 'lucide-react';
+import { Check, Copy, Gift, MailCheck, Share2, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../../api/client';
 import { Sound } from '../../sound/sound';
@@ -17,6 +17,16 @@ export function activation(r: any) {
   if (r.minOpened > 0) parts.push(`otworzy ${r.minOpened} ${skrzynek(r.minOpened)}`);
   if (r.minHours > 0) parts.push(`będzie grać od ${r.minHours >= 24 ? `${Math.round(r.minHours / 24)} dni` : `${r.minHours} godz.`}`);
   return parts.join(' i ');
+}
+
+/** Status polecenia dla gracza: nagrodzone / odrzucone albo czego jeszcze brakuje */
+function statusText(x: any, r: any) {
+  if (x.status === 'rewarded') return 'Nagrody przyznane';
+  if (x.status === 'rejected') return 'Bez nagrody';
+  if (x.missing === 'email' || x.missing === 'noEmail') return 'Czeka na potwierdzenie emaila';
+  if (x.missing === 'opened') return `Otworzył ${x.opened} z ${r.minOpened} skrzynek`;
+  if (x.missing === 'young') return 'Konto za młode';
+  return 'Czeka na sprawdzenie';
 }
 
 export function ReferralPanel() {
@@ -40,10 +50,18 @@ export function ReferralPanel() {
         <div>
           <h2>Poleć znajomym</h2>
           <p className="muted small">
-            Wyślij swój link. Gdy ktoś założy z niego konto{when ? ` i ${when}` : ''}, dostaniecie nagrody:
+            Wyślij swój link. Gdy ktoś założy z niego konto, potwierdzi email{when ? ` i ${when}` : ''}, dostaniecie nagrody:
           </p>
         </div>
       </div>
+      {data.referredBy && (
+        <p className={s.by}>
+          <UserCheck size={16} aria-hidden="true" /> Polecił Cię: <UserLink user={data.referredBy.user} />
+          {data.referredBy.status === 'pending' && data.referredBy.missing !== 'ready' && (
+            <span className="muted small"> ({statusText(data.referredBy, r)})</span>
+          )}
+        </p>
+      )}
       <div className={s.rewards}>
         {r.referrer && <div><span className="muted small">Ty</span><b>{r.referrer}</b></div>}
         {r.referred && <div><span className="muted small">Twój znajomy</span><b>{r.referred}</b></div>}
@@ -64,19 +82,20 @@ export function ReferralPanel() {
         <ul className={s.list}>
           {data.list.map((x: any, i: number) => (
             <li key={i}>
-              {x.user ? <UserLink user={x.user} /> : <span className="muted">konto usunięte</span>}
+              <span className={s.who}>
+                {x.user ? <UserLink user={x.user} /> : <span className="muted">konto usunięte</span>}
+                <span className="muted small">{new Date(x.created * 1000).toLocaleDateString()}</span>
+              </span>
               <span className={`${s.st} ${s[x.status] ?? ''}`}>
-                {x.status === 'rewarded' ? 'Nagrody przyznane'
-                  : x.status === 'rejected' ? 'Bez nagrody'
-                  : r.minOpened > 0 && x.opened < r.minOpened ? `Skrzynki: ${x.opened}/${r.minOpened}`
-                  : x.readyAt * 1000 > Date.now() ? `Nagroda za ${Math.ceil((x.readyAt * 1000 - Date.now()) / 3600000)} godz.` : 'Czeka na sprawdzenie'}
+                {statusText(x, r)}
               </span>
             </li>
           ))}
         </ul>
       )}
       <p className="muted small">
-        Liczą się tylko nowe konta. Konta zakładane przez jedną osobę na kilku profilach nie dostają nagród.
+        <MailCheck size={14} aria-hidden="true" /> Najpierw polecony musi potwierdzić email, dopiero potem liczą się pozostałe warunki.
+        {' '}Liczą się tylko nowe konta. Konta zakładane przez jedną osobę na kilku profilach nie dostają nagród.
         {data.monthlyCap > 0 ? ` Możesz dostać najwyżej ${data.monthlyCap} nagród w 30 dni.` : ''}
         {' '}<button type="button" className={s.refresh} onClick={() => refetch()}>Odśwież</button>
       </p>
