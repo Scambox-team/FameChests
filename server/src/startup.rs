@@ -31,12 +31,46 @@ impl FirstDrop {
     }
 }
 
+/// Konto testowe z DEV_ADMIN_USER + DEV_ADMIN_PASSWORD (docker-compose.local.yml): tworzone, gdy nie ma gracza o tej nazwie,
+/// i od razu admin. Istniejącego gracza nie rusza (hasła nie nadpisuje). Hasło bez minimalnej długości - TYLKO do testów.
+async fn ensure_dev_admin(pool: &PgPool) -> anyhow::Result<()> {
+    let var = |k: &str| std::env::var(k).ok().map(|v| v.trim().to_owned()).filter(|v| !v.is_empty());
+    let (Some(name), Some(password)) = (var("DEV_ADMIN_USER"), var("DEV_ADMIN_PASSWORD")) else {
+        return Ok(());
+    };
+    tracing::warn!("DEV_ADMIN_USER/DEV_ADMIN_PASSWORD ustawione: konto testowe \"{name}\" z hasłem z zmiennej. TYLKO do testów lokalnych - nigdy na produkcji!");
+    let mut tx = pool.begin().await?;
+    let exists: Option<i64> =
+        sqlx::query_scalar("SELECT id FROM users WHERE LOWER(username) = LOWER($1)").bind(&name).fetch_optional(&mut *tx).await?;
+    if exists.is_some() {
+        return Ok(());
+    }
+    let hash = crate::auth::hash_password_async(password).await;
+    let id: i64 = sqlx::query_scalar("INSERT INTO users (username, password_hash, is_admin, created_at) VALUES ($1, $2, 1, $3) RETURNING id")
+        .bind(&name)
+        .bind(hash)
+        .bind(now())
+        .fetch_one(&mut *tx)
+        .await?;
+    crate::game::ensure_state(&mut tx, id).await?;
+    sqlx::query("INSERT INTO terms_accepted (user_id, version, accepted_at) VALUES ($1, $2, $3)")
+        .bind(id)
+        .bind(crate::routes::reports::TERMS_VERSION)
+        .bind(now())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    tracing::warn!("Utworzono konto testowe \"{name}\" (admin, id {id})");
+    Ok(())
+}
+
 pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Catalog> {
     db::init_schema(pool).await?;
     drop_removed_variants(pool).await?;
     // pierwsze konto nie dostaje już admina samo: właściciele z OWNER_IDS są adminami (inaczej na świeżej bazie nie byłoby
     // kto ma nadać pierwszego admina), reszta - jak dotąd - z panelu
     sqlx::query("UPDATE users SET is_admin = 1 WHERE is_admin = 0 AND id = ANY($1)").bind(&cfg.owner_ids).execute(pool).await?;
+    ensure_dev_admin(pool).await?;
     let mut tx = pool.begin().await?;
     // klaser pamięta karty, które gracz kiedykolwiek miał: uzupełniamy z obecnych kart i z aktywności
     sqlx::query!(
@@ -100,7 +134,7 @@ pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Cat
     .await?;
     tx.commit().await?;
     if export::import_if_empty(pool, &cfg.base_dir).await? {
-        tracing::info!("Wczytano karty i skrzynki z catalog_export.json");
+        tracing::info!("Wczytano karty i skrzynki z seed/catalog_export.json");
     }
     export::copy_custom_images(&cfg.base_dir, &cfg.data_dir)?;
     let mut cat = catalog::load(&mut *pool.acquire().await?).await?;

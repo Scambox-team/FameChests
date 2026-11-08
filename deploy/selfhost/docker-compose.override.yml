@@ -51,11 +51,11 @@ services:
 
   game:
     container_name: scambox-game
-    # Obraz: budowany z repozytorium (server/Dockerfile) albo pobrany gotowy z ghcr.io - patrz README.md
+    # Obraz: budowany z repozytorium (Dockerfile) albo pobrany gotowy z ghcr.io - patrz README.md
     image: ${GAME_IMAGE:-scambox:local}
     build:
       context: ../..
-      dockerfile: server/Dockerfile
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       db:

@@ -29,7 +29,7 @@ karty, gablota, oferty na rynku, lobby jackpota, osiągnięcia, panel admina.
 Paczka na Azure ([hosting.md](hosting.md)) z tymi samymi `DATABASE_URL`, `SECRET_KEY` i `DB_SCHEMA`.
 `DATA_DIR` na Azure Windows domyślnie `D:\home\data` - jeśli wersja Python trzymała zdjęcia gdzie indziej
 (np. `/home/data` na Linuksie), zdjęcia pobiorą się z Wikipedii od nowa, a własne zdjęcia od admina wczytają się
-z `custom_images/` (zrób wcześniej `cargo run --release -- export-catalog`).
+z `seed/custom_images/` (zrób wcześniej `cargo run --release -- export-catalog`).
 
 ### 3. Powrót (jeśli coś nie działa)
 

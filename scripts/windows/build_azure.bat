@@ -1,16 +1,16 @@
 @echo off
-rem Paczka na Azure App Service (Windows): buduje scambox.exe (static/, web/dist, zdjecia z custom_images/ i
-rem catalog_export.json sa w srodku) i robi dist\scambox-azure.zip = scambox.exe + web.config.
+rem Paczka na Azure App Service (Windows): buduje scambox.exe (static/, web/dist, zdjecia z seed\custom_images i
+rem seed\catalog_export.json sa w srodku) i robi dist\scambox-azure.zip = scambox.exe + web.config.
 rem Wdrozenie: docs\hosting.md (az webapp deploy ... --type zip albo przeciagniecie do Kudu).
 rem Baza nie jest potrzebna do zbudowania (zapytania sprawdzane z server\.sqlx).
 setlocal
-cd /d "%~dp0web"
+cd /d "%~dp0..\..\web"
 call npm ci || goto :error
 call npm run build || goto :error
-cd /d "%~dp0server"
+cd /d "%~dp0..\..\server"
 set SQLX_OFFLINE=true
 cargo build --release || goto :error
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 if exist dist\azure rmdir /s /q dist\azure
 mkdir dist\azure || goto :error
 copy /y server\target\release\scambox.exe dist\azure\ >nul || goto :error

@@ -7,11 +7,11 @@ Gra + Supabase (Postgres 17) + HTTPS (Caddy) w jednym `docker compose`, z migrac
 
 ## Azure App Service (Windows) - sam plik .exe
 
-Cała gra to jeden plik `scambox.exe`: w środku są `web/`, `static/`, `custom_images/`, `catalog_export.json` i
+Cała gra to jeden plik `scambox.exe`: w środku są `web/`, `static/`, `seed/` (zdjęcia i katalog startowy) i
 dane gry (`server/data/game.json`). Python ani żadne inne pliki nie są potrzebne. IIS na App Service uruchamia exe przez
 HttpPlatformHandler (`deploy/azure/web.config`) i przekazuje mu ruch.
 
-1. **Paczka** - dwuklik `build_azure.bat` (albo `cargo build --release` w `server/`). Wynik: `dist\scambox-azure.zip`
+1. **Paczka** - dwuklik `scripts/windows/build_azure.bat` (albo `cargo build --release` w `server/`). Wynik: `dist\scambox-azure.zip`
    (`scambox.exe` + `web.config`). Baza nie jest potrzebna do budowania.
 2. **Aplikacja** w portalu Azure: Web App, *Publish: Code*, *Runtime stack*: dowolny (np. .NET - nie jest używany),
    *Operating System: Windows*. W *Configuration -> General settings*: **Platform: 64 Bit**, *Always On*: włączone
@@ -39,7 +39,7 @@ dane graczy zostają (szczegóły: [przejscie-z-pythona.md](przejscie-z-pythona.
 
 ## Azure App Service (Linux) - obraz Dockera
 
-Wdrażanie robi `.github/workflows/azure.yml` po każdym pushu do `main`: buduje `server/Dockerfile`, wysyła obraz do
+Wdrażanie robi `.github/workflows/azure.yml` po każdym pushu do `main`: buduje `Dockerfile`, wysyła obraz do
 `ghcr.io/<właściciel repo>/famechests` i podmienia go w aplikacji. Jednorazowo:
 
 1. **Logowanie GitHub -> Azure**: Deployment Center -> GitHub, *Authentication type: User-assigned identity* - portal
@@ -62,10 +62,10 @@ Wdrażanie robi `.github/workflows/azure.yml` po każdym pushu do `main`: buduje
 ## Obraz
 
 ```sh
-docker build -f server/Dockerfile -t scambox .     # z głównego folderu gry
+docker build -t scambox .     # z głównego folderu gry
 ```
 
-Obraz zawiera serwer, `web/`, `static/`, `catalog_export.json` i `custom_images/`. Zapytania do bazy są
+Obraz zawiera serwer, `web/`, `static/`, `seed/catalog_export.json` i `seed/custom_images/`. Zapytania do bazy są
 sprawdzane przy budowaniu z `server/.sqlx/` - baza nie jest potrzebna do zbudowania.
 
 ## Zmienne środowiskowe
@@ -74,7 +74,7 @@ sprawdzane przy budowaniu z `server/.sqlx/` - baza nie jest potrzebna do zbudowa
 |---|---|---|
 | `DATABASE_URL` | - (wymagana) | `postgresql://użytkownik:hasło@serwer:5432/baza?sslmode=require` |
 | `SECRET_KEY` | - | klucz ciasteczek logowania; stały, długi, losowy (bez niego: `DATA_DIR/secret_key.txt`) |
-| `DATA_DIR` | folder gry | zdjęcia (`image_cache/`) i klucz - folder, który przetrwa restart |
+| `DATA_DIR` | `<folder gry>/data` (na Azure `%HOME%/data`) | zdjęcia (`image_cache/`) i klucz - folder, który przetrwa restart |
 | `DB_SCHEMA` | - | tabele gry w osobnym schemacie zamiast `public` (np. Supabase) |
 | `DB_POOL_SIZE` | 10 | połączenia z bazą |
 | `PORT`, `BIND` | 8000, 0.0.0.0 | adres serwera |

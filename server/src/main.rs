@@ -71,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
             let pool = db::connect(&cfg).await?;
             let (crates, cards, imgs) = export::export_catalog(&pool, &cfg).await?;
             println!(
-                "Wyeksportowano: {crates} skrzynek, {cards} kart, {imgs} własnych zdjęć -> catalog_export.json, custom_images/"
+                "Wyeksportowano: {crates} skrzynek, {cards} kart, {imgs} własnych zdjęć -> seed/catalog_export.json, seed/custom_images/"
             );
             Ok(())
         }

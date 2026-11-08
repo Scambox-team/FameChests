@@ -10,3 +10,8 @@ web/dist/
 deploy/selfhost/.env
 deploy/selfhost/volumes/
 deploy/selfhost/backups/
+/data/
+/data-lokalne/
+/dist/
+.git/
+.claude/

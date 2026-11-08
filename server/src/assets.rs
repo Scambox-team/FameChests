@@ -1,5 +1,5 @@
 //! Pliki gry wbudowane w plik wykonywalny (scambox.exe działa sam, bez folderu gry): static/, web/dist/,
-//! custom_images/ i catalog_export.json. W wersji debug (cargo run bez --release) rust-embed czyta je z dysku przy każdym
+//! seed/custom_images/ i seed/catalog_export.json. W wersji debug (cargo run bez --release) rust-embed czyta je z dysku przy każdym
 //! zapytaniu - zmiany widać od razu.
 
 use std::borrow::Cow;
@@ -17,7 +17,7 @@ use rust_embed::RustEmbed;
 pub struct Static;
 
 #[derive(RustEmbed)]
-#[folder = "../custom_images/"]
+#[folder = "../seed/custom_images/"]
 pub struct CustomImages;
 
 /// Zbudowany frontend (web/dist, `npm run build` w web/). Brak folderu nie blokuje kompilacji serwera.
@@ -26,8 +26,8 @@ pub struct CustomImages;
 #[allow_missing = true]
 pub struct Web;
 
-/// catalog_export.json z repozytorium (zmiany z panelu admina dla nowej instalacji)
-pub const CATALOG_EXPORT: &str = include_str!("../../catalog_export.json");
+/// seed/catalog_export.json z repozytorium (zmiany z panelu admina dla nowej instalacji)
+pub const CATALOG_EXPORT: &str = include_str!("../../seed/catalog_export.json");
 
 /// Plik z static/ (ścieżka względna, np. "js/app.js")
 pub fn static_file(path: &str) -> Option<Cow<'static, [u8]>> {

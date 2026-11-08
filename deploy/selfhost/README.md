@@ -1,6 +1,6 @@
 # ScamBox na własnym serwerze (Docker + self-hosted Supabase)
 
-Cała gra w jednym `docker compose`: serwer gry (obraz z `server/Dockerfile`), Supabase z Postgresem 17
+Cała gra w jednym `docker compose`: serwer gry (obraz z `Dockerfile`), Supabase z Postgresem 17
 (oficjalny zestaw self-hosted) i HTTPS - **Cloudflare Tunnel** (domyślnie, działa za CGNAT) albo Caddy.
 
 ```
