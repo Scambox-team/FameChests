@@ -5,6 +5,8 @@ import { applyCustomVariants } from '../cards/cardHtml';
 import { person } from './rules';
 import { S, touch } from './store';
 import type { Config, StateResponse } from './types';
+import { enforceThemes } from '../styles/theme';
+import { toast } from '../ui/Toaster';
 
 function applyStateResponse(st: StateResponse) {
   S.state = st.state;
@@ -21,7 +23,15 @@ export function applyMe(me: any) {
   S.dailyClaimable = !!me.dailyClaimable;
   S.badges = { market: me.market || 0, casino: me.jackpotInvites || 0, friends: (me.incoming || 0) + (me.unread || 0) + (me.trades || 0) };
   S.jpLobby = me.jackpotLobby;
+  S.themes = me.themes ?? [];
+  enforceThemes(S.themes);
+  if (me.themeNew && !themeToastShown) {
+    themeToastShown = true;
+    toast('Odblokowano motyw Frutiger Aero — włączysz go w Ustawieniach');
+    api('/api/themes/seen', {}).catch(() => { themeToastShown = false; });
+  }
 }
+let themeToastShown = false;
 
 export async function refreshConfig() {
   S.cfg = await api<Config>('/api/config');

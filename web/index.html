@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="ScamBox">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>ScamBox</title>
-  <script>try{if(localStorage.getItem("theme")==="y2k")document.documentElement.dataset.theme="y2k"}catch(e){}</script>
+  <script>try{var t=localStorage.getItem("theme");if(t==="y2k"||t==="aero")document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">

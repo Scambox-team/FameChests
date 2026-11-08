@@ -51,7 +51,7 @@ impl Ctx {
 
 /// patch_seen: ostatnia obejrzana lista zmian; market_seen: kiedy gracz ostatnio oglądał rynek;
 /// jackpot_seen: koniec (ms) ostatniej gry w jackpot, której wynik gracz już widział
-pub fn state_keys() -> [(&'static str, i64); 14] {
+pub fn state_keys() -> [(&'static str, i64); 15] {
     [
         ("balance", g().starting_balance),
         ("opened", 0),
@@ -68,6 +68,8 @@ pub fn state_keys() -> [(&'static str, i64); 14] {
         ("jackpot_seen", 0),
         // 1 = przy następnym wejściu do ekwipunku czeka karta, którą zabierze UFO
         ("ufo_visit", 0),
+        // motyw Frutiger Aero: 0 = zablokowany, 1 = odblokowany (czeka powiadomienie), 2 = odblokowany i pokazany
+        ("themeAero", 0),
     ]
 }
 
@@ -323,6 +325,9 @@ pub async fn insert_for(
     )
     .fetch_one(&mut *c)
     .await?;
+    if variant.split('+').any(|p| p == "aero") {
+        unlock_theme_aero(c, uid).await?;
+    }
     let first =
         if source != "casino" { note_hall_of_fame(c, uid, hidden, pid, variant, source, now, new_for_me).await? } else { false };
     Ok(NewItem {
@@ -334,6 +339,29 @@ pub async fn insert_for(
         fav: false,
         first,
     })
+}
+
+/// Odblokowanie motywu Frutiger Aero (wylosowana karta z wariantem aero); raz, w transakcji tworzącej kartę
+pub async fn unlock_theme_aero(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
+    sqlx::query(
+        "INSERT INTO user_state (user_id, key, value) VALUES ($1, 'themeAero', 1)          ON CONFLICT (user_id, key) DO UPDATE SET value = 1 WHERE user_state.value = 0",
+    )
+    .bind(uid)
+    .execute(c)
+    .await?;
+    Ok(())
+}
+
+/// Gracze, którzy mieli kartę aero przed wprowadzeniem motywu: ustawia flagę (raz). true = świeżo odblokowany.
+pub async fn backfill_theme_aero(c: &mut Conn, uid: i64) -> sqlx::Result<bool> {
+    let n = sqlx::query(
+        "INSERT INTO user_state (user_id, key, value)          SELECT $1::bigint, 'themeAero', 1 WHERE EXISTS (SELECT 1 FROM items WHERE user_id = $1 AND variant ~ '(^|[+])aero([+]|$)')             OR EXISTS (SELECT 1 FROM user_collected WHERE user_id = $1 AND variant ~ '(^|[+])aero([+]|$)')          ON CONFLICT (user_id, key) DO UPDATE SET value = 1 WHERE user_state.value = 0",
+    )
+    .bind(uid)
+    .execute(c)
+    .await?
+    .rows_affected();
+    Ok(n > 0)
 }
 
 /// Hall of Fame: kto pierwszy zdobył tę kartę w tym wariancie (i kiedy) + ile ich w ogóle wypadło.
