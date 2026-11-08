@@ -1,0 +1,33 @@
+/* Eventy na stronie startowej i kalendarz adwentowy */
+.tile { grid-column: 1 / -1; position: relative; overflow: hidden; isolation: isolate; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;
+  min-height: 170px; padding: 22px; border-radius: var(--radius-l, 18px); background: linear-gradient(135deg, #1d1d24, #121216); box-shadow: inset 0 0 0 1px #ffffff12; }
+.deco { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.copy { display: grid; gap: 6px; max-width: 70ch; }
+.when { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.name { margin: 0; font: 800 28px/1.05 var(--display); letter-spacing: -.02em; }
+.lead { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.drops { margin: 0; font-size: 13px; font-weight: 600; }
+/* Dzień Niepodległości: biel i czerwień flagi, delikatnie falujące pasy */
+.ev_niepodleglosc { background: linear-gradient(180deg, #f4f4f4 0 50%, #dc143c 50% 100%); color: #1a1a1a; }
+.ev_niepodleglosc .deco { background: linear-gradient(90deg, #0000, #ffffff40 50%, #0000) 0 0 / 200% 100%; animation: evWave 6s linear infinite; }
+.ev_niepodleglosc .lead, .ev_niepodleglosc .when { color: #2a2a2a; }
+.ev_niepodleglosc .drops { color: #fff; text-shadow: 0 1px 2px #0006; }
+@keyframes evWave { to { background-position: -200% 0; } }
+/* Święta: zieleń choinki, czerwień, padający śnieg */
+.ev_swieta { background: radial-gradient(120% 140% at 0 0, #1f6b3a, #0f3a22 60%, #08200f); }
+.ev_swieta .deco { background: radial-gradient(#fff .15rem, #0000 .2rem) 0 0 / 40px 40px, radial-gradient(#fff9 .1rem, #0000 .15rem) 20px 20px / 30px 30px; animation: evSnow 12s linear infinite; opacity: .6; }
+@keyframes evSnow { to { background-position: 0 400px, 20px 320px; } }
+.won { padding: 10px 14px; border-radius: var(--radius-s); background: #2bd96b22; }
+.calendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
+.door { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 104px; padding: 10px; border-radius: var(--radius-s);
+  background: linear-gradient(160deg, #8a1f2c, #5a0f1a); box-shadow: inset 0 0 0 2px #e8c35a55; }
+.door:nth-child(3n) { background: linear-gradient(160deg, #1f6b3a, #0f3a22); }
+.door:nth-child(4n) { background: linear-gradient(160deg, #23406b, #12223a); }
+.num { font: 800 26px/1 var(--display); color: #f4e2a8; text-shadow: 0 2px 0 #0006; }
+.today { box-shadow: inset 0 0 0 2px #ffd36e, 0 0 18px #ffd36e66; }
+.opened { background: #ffffff10 !important; box-shadow: inset 0 0 0 1px #ffffff1a; }
+.opened .num { color: var(--muted); text-shadow: none; }
+.missed { opacity: .5; }
+.rewards { font-size: 12px; line-height: 1.3; color: var(--text); }
+.rewards small { display: block; color: var(--muted); }
+.lock { align-self: flex-end; opacity: .6; }

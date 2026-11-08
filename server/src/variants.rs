@@ -481,6 +481,8 @@ pub struct VariantState {
     pub sticker_cards: HashMap<String, IndexMap<String, CardStickers>>,
     /// klucz -> projekt z kreatora (kolejność jak w tabeli)
     pub custom: IndexMap<String, Value>,
+    /// eventy gry (zakładka Eventy, wiersz `__events`, a bez niego "gameEvents" z game.json)
+    pub game_events: Vec<crate::events::GameEvent>,
 }
 
 /// Wiersz catalog_variants: (id, dane)
@@ -533,6 +535,16 @@ impl VariantState {
                     .filter_map(|(pid, own)| clean_card_stickers(own).map(|o| (pid.clone(), o)))
                     .collect();
                 out.sticker_cards.insert(id.clone(), cards);
+            }
+        }
+        // eventy: dropy wariantów to zwykłe wydarzenia wariantu (wypadają ze wszystkich skrzynek w czasie eventu)
+        let row = rows.iter().find(|(id, _)| id == crate::events::EVENTS_ROW).map(|(_, d)| d);
+        out.game_events = crate::events::events_from_row(row);
+        for ev in &out.game_events {
+            for (v, e) in ev.variant_events() {
+                if g.variant_defaults.contains_key(&v) {
+                    out.cfg.entry(v).or_default().events.push(e);
+                }
             }
         }
         out

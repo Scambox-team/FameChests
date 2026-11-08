@@ -289,6 +289,8 @@ pub struct GameData {
     pub variant_boost_max: f64,
     pub variant_chance_max: f64,
     pub sticker_library: IndexMap<String, String>,
+    /// eventy domyślne ("gameEvents" w game.json) - admin zmienia je w zakładce Eventy (catalog_variants, wiersz __events)
+    pub game_events: Value,
     pub sticker_anims: IndexMap<String, String>,
     pub sticker_max: usize,
     pub custom_prefix: String,
@@ -469,6 +471,7 @@ impl GameData {
             variant_boost_max: get(&raw, "variantBoostMax")?,
             variant_chance_max: get(&raw, "variantChanceMax")?,
             sticker_library: get(&raw, "stickerLibrary")?,
+            game_events: raw.get("gameEvents").cloned().unwrap_or(Value::Array(vec![])),
             sticker_anims: get(&raw, "stickerAnims")?,
             sticker_max: get(&raw, "stickerMax")?,
             custom_prefix: get(&raw, "customPrefix")?,

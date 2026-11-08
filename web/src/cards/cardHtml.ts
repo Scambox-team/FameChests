@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -805,6 +805,13 @@ function analogPhoto(p, variant) {
     <i class="vx-photo ah-phase ah-ph-shelter">${shelter}${ahTears(shelter, 2)}</i>
     <i class="vx-photo ah-scan top"></i><i class="vx-photo ah-roll"></i><i class="vx-photo ah-grain">${ahNoise(.16)}</i><i class="vx-photo ah-burst">${ahNoise(1)}</i>`;
 }
+// Polska (event Dzień Niepodległości, makieta Polska 1): biało-czerwona karta - w tle łowicka wycinanka (obrazek w CSS),
+// dwie skrzyżowane flagi na drzewcach falują nad kartą, kotylion w rogu zdjęcia, baner „11 LISTOPADA” nad nazwą.
+// Celowo bez godła (godło RP jest chronione prawem) - tylko flaga, kotylion i motywy ludowe. Inna niż Flagowa (ta barwi kartę).
+const plFlag = (cls) => `<i class="pls-flag ${cls}"><b class="pls-pole"></b><b class="pls-cloth"><u></u></b></i>`;
+const PLS_KOTYLION = `<svg class="pls-kot" viewBox="0 0 40 52" aria-hidden="true"><path d="M14 28 L8 50 L14 46 L18 51 L20 30Z M26 28 L32 50 L26 46 L22 51 L20 30Z" fill="#dc143c"/>
+  ${Array.from({ length: 16 }, (_, k) => `<ellipse cx="20" cy="9" rx="3.6" ry="9" fill="${k % 2 ? "#dc143c" : "#fff"}" transform="rotate(${k * 22.5} 20 20)"/>`).join("")}
+  <circle cx="20" cy="20" r="7" fill="#fff"/><circle cx="20" cy="20" r="4.4" fill="#dc143c"/></svg>`;
 // Tabloid: żółte kółko, strzałka i napis na zdjęciu. Położenie (środek x, y w % zdjęcia), skala s i obrót r każdego
 // elementu oraz napis ustawia admin w edycji karty (pole karty vx.tabloid, catalog::clean_vx) - tu wartości domyślne.
 export const TABLOID_DEF = { circle: { x: 62, y: 34, s: 1, r: 0 }, arrow: { x: 30, y: 58, s: 1, r: -35 }, text: { x: 20, y: 86, s: 1, r: -4 } };
@@ -889,6 +896,7 @@ export const VX_PHOTO = {
   chessblack: '<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn"><i class="cs-beads"></i></i>',
   covid: '<i class="vx-photo cvd-tint"></i><b class="cvd-scale"><u></u>100 nm</b>',
   barbie: '<i class="vx-photo bbg-rim"></i>',
+  polska: `<i class="vx-photo pls-light"></i>${PLS_KOTYLION}`,
   // Polaroid: filtr odbitki, ciemna warstwa wywoływania znika w pętli 10 s, winieta
   polaroid: '<i class="vx-photo pd-tone"></i><i class="vx-photo pd-develop"></i><i class="vx-photo pd-vig"></i>',
   wizytowka: '<i class="vx-photo wz-qr"></i>',
@@ -926,6 +934,7 @@ export const VX_DECO = {
   covid: () => '<div class="vx-deco"><i class="cvd-sms"><b>⚠ KOMUNIKAT · TERAZ</b>Zostań w domu. Wychodź tylko, gdy to konieczne.</i></div>',
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   barbie: () => `<div class="vx-deco bbg-shine"></div><div class="vx-deco">${bbgGlints(22)}</div>`,
+  polska: () => `<div class="vx-deco">${plFlag("l")}${plFlag("r")}</div>`,
   hawaii: () => `<div class="vx-deco vx-clip">${hiDeco()}</div>`,
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
   scratch: () => `<div class="vx-deco">${zdBurst("DO<br>100 000<br>ZŁ", 16, 30, -12, 31, "#ffd21a", "#c81e1e")}${zdBurst("x20!", 86, 52, 10, 22, "#ff2f92", "#fff")}</div>`,
@@ -1067,6 +1076,7 @@ export function variantTop(variant, p) {
   if (parts.includes("chesswhite") || parts.includes("chessblack")) return '<div class="cs-mark"><i></i>♚\uFE0E<i></i></div>';
   if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
   if (parts.includes("barbie")) return '<div class="bbg-heart"></div>';
+  if (parts.includes("polska")) return '<div class="pls-banner"><span>11 LISTOPADA</span><b>NIEPODLEGŁA</b></div>';
   if (parts.includes("analog")) return `<div class="ah-bar"><b>${esc(variantText(p, "analog", "bar"))}</b><span>NADAWANY O 03:00</span></div>`;
   if (parts.includes("wizytowka")) return `<div class="wz-corp"><i class="wz-logo"></i><b>${esc(variantText(p, "wizytowka", "company"))}</b></div>`;
   if (parts.includes("tabloid")) return '<div class="tb-mast"><b>SZOK</b><span>DNIA</span><small>NR 666 · CENA 2,50 ZŁ</small></div>';
@@ -1109,6 +1119,7 @@ export function variantSub(variant, pid) {
   if (parts.includes("covid")) return "SARS-CoV-2 · SYTUACJA NADZWYCZAJNA";
   if (parts.includes("rgb")) return "RGB SYNC · TRYB: SPEKTRUM";
   if (parts.includes("barbie")) return "♡ GLITTER QUEEN ♡";
+  if (parts.includes("polska")) return "NARODOWE ŚWIĘTO NIEPODLEGŁOŚCI";
   if (parts.includes("polaroid")) return '<span class="pd-hand">potrząśnij mną!</span>';
   if (parts.includes("analog")) return esc(variantText(person(pid), "analog", "sub"));
   if (parts.includes("wizytowka")) return wzSub(person(pid));

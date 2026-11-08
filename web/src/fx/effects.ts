@@ -379,6 +379,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
         ${viewerActions.myItemFor?.(pid, variant) ? `<div class="vi-actions vi-social">
           <button class="btn primary" data-act="share">Pokaż znajomym</button>
           <button class="btn" data-act="pin">${viewerActions.showcaseHas?.(pid, variant) ? "Zdejmij z gabloty" : "Do gabloty"}</button>
+          <button class="btn" data-act="fav" aria-pressed="${!!viewerActions.isFavorite?.(pid, variant, uid)}">${viewerActions.isFavorite?.(pid, variant, uid) ? "Usuń z ulubionych" : "Do ulubionych"}</button>
           ${isBlank(variant) && S.items.some(i => i.id === +uid) ? '<button class="btn primary" data-act="draw">Rysuj na karcie</button>' : ""}
           ${scratchable(variant, uid) ? '<button class="btn primary" data-act="scratch">Zdrap kartę</button>' : ""}
         </div>` : ""}
@@ -405,6 +406,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     if (act === "report") return viewerActions.openReport?.(pid, variant);
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
+    if (act === "fav") return viewerActions.toggleFavorite?.(pid, variant, uid).then(() => openViewer(pid, variant, uid));
     if (act === "draw") return viewerActions.openDrawing?.(+uid);
     if (act === "scratch") return viewerActions.openScratch?.(+uid);
     if (act === "flip" || e.target.closest(".viewer-flipper")) {

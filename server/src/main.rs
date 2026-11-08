@@ -19,6 +19,7 @@ mod data;
 mod db;
 mod domain;
 mod error;
+mod events;
 mod export;
 mod game;
 mod gotrue;

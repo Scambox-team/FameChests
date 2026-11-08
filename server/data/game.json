@@ -572,6 +572,7 @@
    "chance": 0.006,
    "mult": 10.0,
    "off": true,
+   "extraSource": "casino",
    "desc": "Los na loterię: fiolet ze złotem, srebrną folię ze zdjęcia zdrapujesz sam monetą, a dookoła wybuchy z kwotami i pula nagród."
   },
   "anime": {
@@ -653,6 +654,13 @@
     "shelter": {"label": "Plansza schronu", "default": "UDAJ SIĘ DO NAJBLIŻSZEGO SCHRONU", "max": 50}
    },
    "desc": "Horror analogowy: komunikat alarmowy na granatowej planszy - w miejscu zdjęcia pętla godło urzędu ScamBox, zdjęcie, komunikat o schronie, wszystko z zakłóceniami sygnału; godło obraca się w tle. Napisy z panelu, własne zdjęcie karty."
+  },
+  "polska": {
+   "name": "Polska",
+   "chance": 0.03,
+   "mult": 9.0,
+   "off": true,
+   "desc": "Na Dzień Niepodległości: biało-czerwone flagi powiewające nad kartą, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
   },
   "covid": {
    "name": "COVID",
@@ -4144,6 +4152,52 @@
  "variantEventMax": 40,
  "variantBoostMax": 50,
  "variantChanceMax": 0.2,
+ "gameEvents": [
+  {
+   "id": "niepodleglosc",
+   "name": "Dzień Niepodległości",
+   "desc": "11 listopada - Narodowe Święto Niepodległości. Przez cały event ze wszystkich skrzynek może wypaść karta w biało-czerwonym wariancie Polska.",
+   "start": "2026-11-10",
+   "end": "2026-11-16",
+   "enabled": true,
+   "drops": [{"variant": "polska", "chance": 0.03}]
+  },
+  {
+   "id": "swieta",
+   "name": "Święta",
+   "desc": "Kalendarz adwentowy: od 1 do 24 grudnia codziennie otwórz jedno okienko i odbierz nagrodę.",
+   "start": "2026-12-01",
+   "end": "2026-12-24",
+   "enabled": true,
+   "drops": [],
+   "advent": [
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_mega", "count": 1}]
+   ]
+  }
+ ],
  "stickerLibrary": {
   "glasses": "Okulary „deal with it”",
   "illuminati": "Oko Illuminati",

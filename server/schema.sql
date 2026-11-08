@@ -275,3 +275,8 @@ CREATE TABLE IF NOT EXISTS card_reports (
     admin_note TEXT NOT NULL DEFAULT '', handled_by TEXT NOT NULL DEFAULT '', handled_at DOUBLE PRECISION
 );
 CREATE INDEX IF NOT EXISTS card_reports_status ON card_reports (status, id DESC);
+-- kalendarz adwentowy eventów (src/events.rs): nagroda za dzień `day` eventu `event_id`, raz na gracza
+CREATE TABLE IF NOT EXISTS advent_claims (
+    user_id BIGINT NOT NULL, event_id TEXT NOT NULL, day INTEGER NOT NULL, claimed_at DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (user_id, event_id, day)
+);

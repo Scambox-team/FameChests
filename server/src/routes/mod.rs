@@ -19,6 +19,7 @@ pub mod game_rankings;
 pub mod quests;
 pub mod reports;
 pub mod shop;
+pub mod events;
 pub mod snake;
 pub mod social;
 pub mod variants;
@@ -97,6 +98,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/reports", get(admin_page))
         .route("/admin/backups", get(admin_page))
         .route("/admin/games", get(admin_page))
+        .route("/admin/events", get(admin_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -203,6 +205,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/snake/start", post(snake::snake_start))
         .route("/api/games/snake/finish", post(snake::snake_finish))
         .route("/api/admin/snake", post(snake::admin_snake_save))
+        .route("/api/events", get(events::events_list))
+        .route("/api/events/{id}/advent", post(events::advent_claim))
+        .route("/api/admin/events", get(events::admin_events).post(events::admin_events_save))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
         .route("/api/pinball/finish", post(pinball::pinball_finish))
