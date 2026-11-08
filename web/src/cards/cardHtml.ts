@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -844,6 +844,7 @@ let hiDecoCache = null;   // ten sam rysunek na każdej karcie
 const hiDeco = () => hiDecoCache ||= hiFrond("f1", -40) + hiFrond("f2", 130) + hiFrond("f3", 40) +
   vxSvg(hiFlower(2, 86, 5, "#ff3d7f", 20) + hiFlower(62, 46, 4.6, "#ffcf3d", 60) + hiPlumeria(7, 88, 3.2, 10), "0 0 63 88", "hi-flowers");
 export const VX_BG = {
+  snow: () => '<i class="snw-fog"></i>',
   anime: anSpeed,
   hawaii: () => '<i class="hi-dapple"></i>',
   analog: () => `${ahSeal("ah-seal ah-spin")}<i class="ah-scan"></i>${ahNoise(.08)}`,
@@ -935,6 +936,10 @@ export const VX_DECO = {
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   barbie: () => `<div class="vx-deco bbg-shine"></div><div class="vx-deco">${bbgGlints(22)}</div>`,
   polska: () => `<div class="vx-deco">${plFlag("l")}${plFlag("r")}</div>`,
+  // Sugar Cane: miętowe cukierki w rogach karty (nieruchome - wariant jest statyczny)
+  sugarcane: () => '<div class="vx-deco"><i class="sgc-mint a"></i><i class="sgc-mint b"></i><i class="sgc-mint c"></i><i class="sgc-mint d"></i></div>',
+  // Śnieżny: dwie warstwy płatków (jeden obrazek w CSS na warstwę, przesuwany transformem)
+  snow: () => '<div class="vx-deco vx-clip"><i class="snw-layer a"></i><i class="snw-layer b"></i></div>',
   hawaii: () => `<div class="vx-deco vx-clip">${hiDeco()}</div>`,
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
   scratch: () => `<div class="vx-deco">${zdBurst("DO<br>100 000<br>ZŁ", 16, 30, -12, 31, "#ffd21a", "#c81e1e")}${zdBurst("x20!", 86, 52, 10, 22, "#ff2f92", "#fff")}</div>`,
@@ -1101,6 +1106,7 @@ export function variantSub(variant, pid) {
   if (parts.includes("noir")) return "— Ta sprawa śmierdziała od początku.";
   if (parts.includes("hollywood")) return "SEANS O ZMIERZCHU · 1969";
   if (parts.includes("usa")) return "TO PRAWDZIWA HISTORIA";
+  if (parts.includes("sugarcane")) return "SŁODKICH ŚWIĄT";
   if (parts.includes("komuna")) return "NAPRZÓD KU JASNEJ PRZYSZŁOŚCI!";
   if (parts.includes("apollo")) return "▲ ORZEŁ ODŁĄCZA SIĘ · 20.07.1969";
   if (parts.includes("cobalt")) return "Co-60 · T½ 5,27 LAT";

@@ -1890,4 +1890,7 @@ export const EN: Record<string, string> = {
   "Święta": "Christmas",
   "Kalendarz adwentowy: od 1 do 24 grudnia codziennie otwórz jedno okienko i odbierz nagrodę.": "Advent calendar: every day from 1 to 24 December, open one door and claim your reward.",
   "Na Dzień Niepodległości: biało-czerwone flagi powiewające nad kartą, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek.": "For Independence Day: white-and-red flags waving above the card, a Łowicz paper-cut in the background, a cockade and an 11 November banner. Drops from every crate during the event.",
+  "Śnieżny": "Snowy",
+  "Na święta: ramka w czerwono-białe paski jak laska cukrowa, miętowe cukierki w rogach, biało-różowe wnętrze. Wypada w czasie eventu Święta ze wszystkich skrzynek.": "For Christmas: a red-and-white striped frame like a candy cane, peppermints in the corners and a white-and-pink inside. Drops from every crate during the Christmas event.",
+  "Na święta: przez kartę pada gęsty śnieg, przy dole zimowa mgła, zdjęcie lekko przyprószone szronem. Wypada w czasie eventu Święta ze wszystkich skrzynek.": "For Christmas: thick snow falls across the card, winter mist at the bottom and a photo lightly dusted with frost. Drops from every crate during the Christmas event.",
 };

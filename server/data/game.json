@@ -662,6 +662,20 @@
    "off": true,
    "desc": "Na Dzień Niepodległości: biało-czerwone flagi powiewające nad kartą, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
   },
+  "sugarcane": {
+   "name": "Sugar Cane",
+   "chance": 0.03,
+   "mult": 6.0,
+   "off": true,
+   "desc": "Na święta: ramka w czerwono-białe paski jak laska cukrowa, miętowe cukierki w rogach, biało-różowe wnętrze. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "snow": {
+   "name": "Śnieżny",
+   "chance": 0.03,
+   "mult": 6.0,
+   "off": true,
+   "desc": "Na święta: przez kartę pada gęsty śnieg, przy dole zimowa mgła, zdjęcie lekko przyprószone szronem. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,
@@ -4169,7 +4183,10 @@
    "start": "2026-12-01",
    "end": "2026-12-24",
    "enabled": true,
-   "drops": [],
+   "drops": [
+    {"variant": "sugarcane", "chance": 0.03},
+    {"variant": "snow", "chance": 0.03}
+   ],
    "advent": [
     [{"type": "chest", "kind": "money_daily", "count": 1}],
     [{"type": "chest", "kind": "money_daily", "count": 1}],
