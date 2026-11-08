@@ -47,7 +47,7 @@ services:
       DATA_DIR: "/data"
       PUBLIC_URL: "http://localhost:${SCAMBOX_PORT:-8000}"
       SMTP_URL: "smtp://mailpit:1025"
-      MAIL_FROM: "ScamBox (lokalnie) <no-reply@scambox.local>"
+      MAIL_FROM: "ScamBox lokalnie <no-reply@scambox.local>"
       # konto testowe tworzone przy starcie (jeśli nie istnieje) i od razu admin
       DEV_ADMIN_USER: "admin"
       DEV_ADMIN_PASSWORD: "admin"
