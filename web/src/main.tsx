@@ -15,12 +15,15 @@ import './fx/css/reveal.css';
 import './fx/css/viewer.css';
 import './styles/tokens.css';
 import './styles/base.css';
+import './styles/theme-y2k.css';
 
 import { App } from './app/App';
 import { startI18n } from './i18n/i18n';
+import { applyTheme } from './styles/theme';
 
 const queries = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } } });
 
+applyTheme();
 void startI18n();
 
 createRoot(document.getElementById('root')!).render(

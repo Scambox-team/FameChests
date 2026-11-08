@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { Crate } from '../../game/types';
+import { use3D } from '../../three/support';
 import { CrateArt } from './CrateArt';
 import { crateLook3d as look } from './crateLook';
 import { crate3d } from './opening';
@@ -18,7 +19,7 @@ interface Props {
 export function CrateStage({ crate, hero, onOpen, label, count }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<HTMLButtonElement>(null);
-  const [flat, setFlat] = useState(false);
+  const [flat, setFlat] = useState(() => !use3D());
   const current = useRef(crate);
   current.current = crate;
   const howMany = useRef(count);
@@ -26,6 +27,7 @@ export function CrateStage({ crate, hero, onOpen, label, count }: Props) {
   const lastClick = useRef(0);
 
   useEffect(() => {
+    if (flat) return;
     let alive = true, destroy = () => {};
     import('../../three/crateScene').then(({ createCrateScene }) => {
       if (!alive || !canvas.current) return;

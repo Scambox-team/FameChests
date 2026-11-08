@@ -1,5 +1,6 @@
 .page { position: relative; min-height: 100vh; display: grid; place-items: center; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: hidden; }
 .sky { position: absolute; inset: 0; opacity: .75; }
+.skyFlat { position: absolute; inset: 0; background: radial-gradient(60% 50% at 20% 15%, #5a2a8a55, transparent 70%), radial-gradient(50% 45% at 85% 80%, #e0264a33, transparent 70%), radial-gradient(1px 1px at 20px 30px, #fff9, transparent), radial-gradient(1px 1px at 90px 120px, #fff7, transparent), radial-gradient(1.5px 1.5px at 150px 60px, #fffc, transparent); background-size: auto, auto, 180px 160px, 180px 160px, 180px 160px; }
 .box { position: relative; width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 28px; border-radius: var(--radius); background: var(--surface); }
 .lang { position: absolute; top: 16px; right: 16px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 800 34px/40px var(--display); letter-spacing: -.03em; }

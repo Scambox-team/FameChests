@@ -10,6 +10,7 @@ import { Sound } from '../sound/sound';
 import { kindIcon, typeIcon } from '../icons/cardIcons';
 import { crateIconPath } from '../icons/crateIcons';
 import { crateLook3d } from '../features/crates/crateLook';
+import { use3D } from '../three/support';
 
 const $ = (s, el: any = document) => el.querySelector(s);
 const $$ = (s, el: any = document) => [...el.querySelectorAll(s)];
@@ -119,7 +120,7 @@ export function cardBackHTML() {
 // Three.js wczytuje się dopiero tutaj; bez WebGL albo przy ograniczonym ruchu zostaje płaska wersja poniżej.
 // Skrzynka ma wygląd tej, którą właśnie otwieramy; nagrody z kasyna, kuźni i linków dostają ciemną skrzynkę „domu”.
 export async function epicReveal(drop, opts: { fast?: boolean; auto?: boolean } = {}) {
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (use3D() && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     try {
       const { epicReveal3d } = await import("./reveal3d");
       const crate = S.opening?.crate ? crateOf(S.opening.crate) : null;

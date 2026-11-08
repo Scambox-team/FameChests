@@ -8,3 +8,11 @@
 .back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; text-decoration: none; }
 .back:hover { color: var(--text); }
 .main { padding: 16px 20px 40px; }
+
+@media (max-width: 700px) {
+  .head { position: static; padding: 8px 12px; gap: 8px 12px; }
+  .back { margin-left: auto; }
+  .tabs { order: 3; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .tabs a { flex: none; white-space: nowrap; padding: 10px 14px; }
+  .main { padding: 12px 12px 32px; }
+}
