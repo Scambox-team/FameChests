@@ -84,10 +84,16 @@ services:
       GOTRUE_URL: http://auth:9999
       GOTRUE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       PUBLIC_URL: ${GAME_PUBLIC_URL}
-      # własna poczta gry (reset hasła i zmiana emaila z tokenem, szablony edytowalne w panelu admina); puste = maile tylko
-      # w logu gry, a reset hasła idzie przez Supabase Auth. Np. smtps://user:haslo@smtp.example.com:465
+      # własna poczta gry (reset hasła i zmiana emaila z tokenem, szablony edytowalne w panelu admina): ten sam serwer
+      # SMTP co Supabase Auth (SMTP_* z .env). GAME_SMTP_URL (np. smtps://user:haslo@host:465) ma pierwszeństwo.
       SMTP_URL: ${GAME_SMTP_URL:-}
-      MAIL_FROM: ${GAME_MAIL_FROM:-ScamBox <no-reply@localhost>}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-ScamBox}
+      MAIL_FROM: ${GAME_MAIL_FROM:-}
       TRUST_PROXY: "1"
       METRICS_ADDR: ""
       RUST_LOG: ${GAME_RUST_LOG:-scambox=info}

@@ -16,8 +16,9 @@
 //!   OWNER_IDS      1,5                        id kont właścicieli (kopie bazy, ochrona ich kont przed innymi adminami);
 //!                                             tylko tutaj - nie da się ich nadać z panelu ani z bazy
 //!   SMTP_URL       smtp://mailpit:1025 | smtps://user:pass@host:465   własna wysyłka maili (reset hasła, zmiana emaila); bez niej: tylko log
-//!   MAIL_FROM      ScamBox <no-reply@example.pl>   nadawca maili gry (domyślnie "ScamBox <no-reply@localhost>")
-//!   PUBLIC_URL     https://scambox.pl         adres gry w linkach z maili (wymagany z GOTRUE_URL; bez niego: adres z nagłówka Host)
+//!   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS   zamiast SMTP_URL (te same co GOTRUE_SMTP_*; 465 = TLS, 587 = STARTTLS)
+//!   MAIL_FROM      ScamBox <no-reply@example.pl>   nadawca maili gry (bez niego SMTP_SENDER_NAME + SMTP_ADMIN_EMAIL)
+//!   PUBLIC_URL     https://scambox.pl         adres gry w linkach z maili (wymagany z GOTRUE_URL; bez niego linki wskazują na localhost)
 //!   BACKUP_DIR    /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
 //!   BACKUP_EVERY_HOURS 24                     co ile godzin automatyczna kopia (0 = wyłączone)
 //!   BACKUP_KEEP    14                         ile kopii każdego rodzaju (automatyczne / ręczne) trzymać
@@ -256,7 +257,7 @@ impl Config {
             contact_email: env("CONTACT_EMAIL"),
             owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
             gotrue,
-            mailer: crate::mailer::Mailer::new(env("SMTP_URL").as_deref(), env("MAIL_FROM").as_deref())?,
+            mailer: crate::mailer::Mailer::from_config(&crate::mailer::MailConfig::from_env(env))?,
             public_url: env("PUBLIC_URL").map(|u| u.trim_end_matches('/').to_owned()),
             backup_dir,
             backup_every_hours: env("BACKUP_EVERY_HOURS").map(|h| h.parse()).transpose()?.unwrap_or(24.0),
