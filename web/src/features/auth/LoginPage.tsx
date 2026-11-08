@@ -3,6 +3,7 @@ import { Crown, Gift } from 'lucide-react';
 import { Logo } from '../../app/Logo';
 import { LangSwitch } from '../../app/Settings';
 import { Button } from '../../ui/Button';
+import { use3D } from '../../three/support';
 import { Link } from 'react-router-dom';
 import { useLegal } from '../legal/useLegal';
 import styles from './LoginPage.module.css';
@@ -108,9 +109,9 @@ export function LoginPage() {
   return (
     <main className={styles.page}>
       <div className={styles.sky} aria-hidden="true">
-        <Suspense fallback={null}>
+        {use3D() ? <Suspense fallback={null}>
           <Galaxy hueShift={320} density={.7} glowIntensity={.2} saturation={.25} starSpeed={.25} speed={.5} mouseRepulsion={false} clickWarp={false} />
-        </Suspense>
+        </Suspense> : <div className={styles.skyFlat} />}
       </div>
       <section className={styles.box}>
         <div className={styles.lang}><LangSwitch /></div>

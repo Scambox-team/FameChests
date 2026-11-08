@@ -635,3 +635,20 @@ body.a-chess .a-secnav { display: none; }
 .a-imp-row-r.error { background: #3a1520; }
 .a-imp-row-r small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 900px) { .a-gc-filters { grid-template-columns: 1fr 1fr; } .a-gc-filters input { grid-column: 1 / -1; } }
+
+/* telefon: zakładki i działy przewijają się w poziomie zamiast się łamać, tabele nie wychodzą poza ekran */
+@media (max-width: 700px) {
+  .a-secnav { flex-wrap: nowrap; overflow-x: auto; padding: 12px 12px 0; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .a-secnav button { flex: none; white-space: nowrap; min-height: 40px; }
+  .admin { padding: 12px; gap: 14px; }
+  .a-page table { display: block; max-width: 100%; overflow-x: auto; }
+  .a-page img, .a-page canvas, .a-page video { max-width: 100%; }
+  .a-page input:not([type=checkbox], [type=radio], [type=color], [type=range], [type=file]), .a-page select, .a-page textarea { font-size: 16px; max-width: 100%; }
+  .a-page .btn { min-height: 40px; }
+  .a-page .btn.tiny { min-height: 34px; }
+  .modal { padding: 8px; }
+  .modal-box { padding: 16px; gap: 16px; max-width: 100%; }
+  .a-user { grid-template-columns: minmax(0, 1fr); }
+  .a-user-actions { justify-content: flex-start; }
+  .a-card-form, .a-card-fields { min-width: 0; max-width: 100%; }
+}
