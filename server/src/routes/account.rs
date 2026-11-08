@@ -39,6 +39,9 @@ pub struct Credentials {
     email: String,
     /// zgoda na regulamin i politykę prywatności oraz potwierdzenie wieku (tylko przy rejestracji)
     terms: bool,
+    /// kod polecenia z adresu strony (gdy przeglądarka nie zapisała ciasteczka z /r/<kod>)
+    #[serde(rename = "ref")]
+    ref_code: String,
 }
 
 #[derive(Deserialize, Default)]
@@ -184,7 +187,15 @@ pub async fn set_password(st: &AppState, c: &mut Conn, user: &User, link: Option
 
 // ---------------------------------------------------------------- konta
 
-pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody(body): JsonBody<Credentials>) -> Res {
+pub async fn register(
+    State(st): State<AppState>,
+    addr: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    jar: SignedCookieJar,
+    JsonBody(body): JsonBody<Credentials>,
+) -> Res {
+    let ip = super::referral::ip_hash(&st, &crate::auth::client_ip(&st, &headers, Some(&addr)));
+    let ref_code = super::referral::ref_code(&jar, &body.ref_code);
     let name = body.username.trim();
     if !USERNAME_RE.is_match(name) {
         return bad("Nazwa: 3–20 znaków (litery, cyfry, _ . -)");
@@ -233,6 +244,11 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
             adopt_legacy_save(&mut tx, new_id).await?;
         }
         ensure_state(&mut tx, new_id).await?;
+        // polecenie (reflink): przypisanie do polecającego, nagrody po aktywacji konta
+        super::referral::note_ip(&mut tx, new_id, &ip).await?;
+        if let Some(code) = &ref_code {
+            super::referral::attach(&mut tx, new_id, code, &ip).await?;
+        }
         if let Some(s) = &signup {
             sqlx::query("INSERT INTO user_auth (user_id, auth_id, email) VALUES ($1, $2, $3)")
                 .bind(new_id)
@@ -264,9 +280,10 @@ pub async fn register(State(st): State<AppState>, jar: SignedCookieJar, JsonBody
             return Err(e);
         }
     };
+    let jar = super::referral::clear_cookie(jar);
     // z potwierdzaniem emaila gracz loguje się dopiero po kliknięciu w link z maila
     if signup.as_ref().is_some_and(|s| !s.confirmed) {
-        return Ok(Json(json!({"ok": true, "first": first, "confirm": true})).into_response());
+        return Ok((jar, Json(json!({"ok": true, "first": first, "confirm": true}))).into_response());
     }
     let jar = jar.add(session_cookie(new_id, st.cfg.cookie_secure));
     Ok((jar, Json(json!({"ok": true, "first": first}))).into_response())
@@ -319,6 +336,7 @@ pub async fn login(
         sqlx::query("UPDATE users SET password_hash = '' WHERE id = $1").bind(user.id).execute(&mut *c).await?;
     }
     ensure_state(&mut c, user.id).await?;
+    super::referral::note_ip(&mut c, user.id, &super::referral::ip_hash(&st, &ip)).await?;
     let jar = jar.add(session_cookie(user.id, st.cfg.cookie_secure));
     Ok((jar, Json(json!({"ok": true}))).into_response())
 }

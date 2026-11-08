@@ -3051,6 +3051,225 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 .pick.v-analog { box-shadow: inset 0 0 0 2px #dfe6ff, inset 0 0 0 4px #0a1550, inset 0 -26px 26px -18px var(--rc); }
 .avv-analog img { box-shadow: 0 0 0 2px #0a1550, 0 0 8px #8fa6ff !important; }
 
+/* Polska (event Dzień Niepodległości, makieta Polska 1) - biało-czerwona karta; w tle łowicka wycinanka (--pls-wyc, kolorowe
+   kwiaty z papieru na czerwieni), w dwóch rogach biało-czerwone szarfy (pls-sash, przebiega po nich połysk),
+   kotylion pls-kot w rogu zdjęcia, baner pls-banner nad nazwą (variantTop). Bez godła (chronione prawem). Inna niż Flagowa:
+   tamta tylko barwi kartę na kolory flagi kraju. */
+.card.v-polska { --frame: linear-gradient(180deg, #fff 0 50%, #dc143c 50% 100%); --spin: initial; box-shadow: 0 6px 18px #0009;
+  --pls-wyc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg transform='translate(20 20)'%3E%3Cg fill='%23ffffff' fill-opacity='.16'%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8'/%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8' transform='rotate(60)'/%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8' transform='rotate(120)'/%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8' transform='rotate(180)'/%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8' transform='rotate(240)'/%3E%3Cellipse cx='0' cy='-10' rx='3.5' ry='8' transform='rotate(300)'/%3E%3C/g%3E%3Ccircle r='4.5' fill='%23ffd23d' fill-opacity='.35'/%3E%3Ccircle r='2' fill='%232fa84f' fill-opacity='.45'/%3E%3C/g%3E%3C/svg%3E"); }
+.card.v-polska .card-inner { background: var(--pls-wyc) 0 0 / 15cqw 15cqw, linear-gradient(180deg, #e8173f, #b30d2c 60%, #8a0a22); color: #fff; }
+.card.v-polska .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-polska :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #fff; border: none; border-left: .8cqw solid #dc143c; border-radius: .25em; }
+.card.v-polska .card-attack { padding-inline: .45em; margin-top: 1.5%; }
+.card.v-polska .card-foot { padding: .1em .45em; }
+.card.v-polska :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name) { color: #8a0a22; text-shadow: none; }
+.card.v-polska .card-hp { color: #fff; }
+.card.v-polska .card-name { font: 700 .95em/1.05 Cinzel, serif; color: #fff; text-shadow: 0 .3cqw 0 #6a0618, 0 0 2cqw #0005; }
+.card.v-polska .card-sub { margin-inline: 0; font: 700 .5em Rubik, sans-serif; font-style: normal; letter-spacing: .06em; }
+.card.v-polska .card-photo { border: .8cqw solid #fff; border-image: none; border-radius: .25em; box-shadow: 0 0 0 .4cqw #dc143c, 0 1cqw 2cqw #0005; }
+.card.v-polska .card-photo > img, .r-secret.v-polska .sc-art img { filter: saturate(1.08) contrast(1.04); }
+.vx-photo.pls-light { background: linear-gradient(160deg, #ffffff30, transparent 40%, #dc143c18); }
+.card-photo > .pls-kot { position: absolute; z-index: 3; right: 2%; bottom: 2%; width: 15cqw; height: 19.5cqw; filter: drop-shadow(0 .6cqw .6cqw #0006); }
+.pls-banner { flex: none; display: flex; align-items: center; justify-content: center; gap: 2cqw; margin: 0 -1cqw 1.4cqw; padding: .8cqw 2cqw;
+  background: linear-gradient(180deg, #fff 0 50%, #f2f2f2 50%); color: #dc143c; font: 700 3cqw/1 Rubik, sans-serif; letter-spacing: .14em; box-shadow: 0 .4cqw 0 #6a0618; }
+.pls-banner b { font: 900 3.4cqw/1 Cinzel, serif; color: #8a0a22; }
+/* flagi na drzewcach w górnych rogach, skrzyżowane nad kartą; płótno faluje (transform), dwa pasy biały i czerwony */
+.vx-deco > .pls-sash { position: absolute; display: block; width: 50cqw; height: 7cqw; overflow: hidden; transform: rotate(-45deg); background: linear-gradient(#fff 0 50%, #dc143c 50%); box-shadow: 0 .6cqw 1.4cqw #0007; }
+.vx-deco > .pls-sash.a { left: -17.5cqw; top: 3.5cqw; } .vx-deco > .pls-sash.b { right: -17.5cqw; bottom: 3.5cqw; }
+.pls-sash u { position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background: linear-gradient(90deg, transparent, #fffa, transparent); transform: translateX(-100%); will-change: transform; animation: plsShine 4s ease-in-out infinite; }
+.pls-sash.b u { animation-delay: -2s; }
+@keyframes plsShine { 55%, 100% { transform: translateX(400%); } }
+.var-tag.vt-polska, .ph.vt-polska { background: linear-gradient(180deg, #fff 0 50%, #dc143c 50%); color: #1a1a1a; border: 1px solid #dc143c; font-weight: 800; text-shadow: 0 0 2px #fff; }
+.vdot.vt-polska { background: linear-gradient(180deg, #fff 0 50%, #dc143c 50%); }
+.odd.odd-v.vt-polska { border-left-color: #dc143c; }
+.r-secret.v-polska .sc-border { background: linear-gradient(180deg, #fff 0 50%, #dc143c 50%); animation: none; }
+.pick.v-polska { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #dc143c, inset 0 -26px 26px -18px var(--rc); }
+.avv-polska img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #dc143c !important; }
+
+/* Sugar Cane (event Święta, makieta Candy Cane 1, bez animacji) - ramka w czerwono-białe ukośne paski laski cukrowej,
+   biało-różowe wnętrze, miętowe cukierki-spirale w rogach (sgc-mint w VX_DECO), czerwona nazwa. Klasy sgc- (cd- to Cukierkowa). */
+.card.v-sugarcane { --frame: repeating-linear-gradient(135deg, #e8173f 0 6%, #fff 6% 12%); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-sugarcane .card-inner { background: radial-gradient(circle at 30% 18%, #fff, #ffe9ee 70%, #ffd9e2); color: #8a0f24; }
+.card.v-sugarcane :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #fff; border: .4cqw solid #e8173f55; border-radius: .4em; box-shadow: 0 .4cqw 1cqw #e8173f1f; }
+.card.v-sugarcane :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #8a0f24; text-shadow: none; }
+.card.v-sugarcane .card-name { font-weight: 900; color: #e8173f; text-shadow: 0 .25cqw 0 #fff, 0 .5cqw 1cqw #e8173f33; }
+.card.v-sugarcane .card-sub { font-weight: 800; letter-spacing: .06em; }
+.card.v-sugarcane .card-photo { border: .8cqw solid #e8173f; border-image: none; border-radius: 2cqw; box-shadow: 0 0 0 .5cqw #fff, 0 1cqw 2cqw #8a0f2433; }
+.card.v-sugarcane .card-photo > img, .r-secret.v-sugarcane .sc-art img { filter: saturate(1.06) brightness(1.03); }
+.vx-deco > .sgc-mint { width: 13cqw; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 .7cqw #fff, 0 1cqw 1.6cqw #0004;
+  background: radial-gradient(circle, #fff 0 14%, transparent 15%), conic-gradient(#e8173f 0 12.5%, #fff 0 25%, #e8173f 0 37.5%, #fff 0 50%, #e8173f 0 62.5%, #fff 0 75%, #e8173f 0 87.5%, #fff 0); }
+.vx-deco > .sgc-mint.a { left: -3cqw; top: -3cqw; transform: rotate(10deg); } .vx-deco > .sgc-mint.b { right: -3cqw; top: -3cqw; transform: rotate(40deg); }
+.vx-deco > .sgc-mint.c { left: -3cqw; bottom: -3cqw; transform: rotate(70deg); } .vx-deco > .sgc-mint.d { right: -3cqw; bottom: -3cqw; transform: rotate(25deg); }
+.r-secret.v-sugarcane .sc-border { background: repeating-linear-gradient(135deg, #e8173f 0 8px, #fff 8px 16px); animation: none; }
+.pick.v-sugarcane { box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px #e8173f, inset 0 -26px 26px -18px var(--rc); }
+.avv-sugarcane img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e8173f !important; }
+
+/* Śnieżny (event Święta, makieta Śnieżny 1) - gęsty śnieg przez całą kartę: dwie warstwy płatków (snw-layer, obrazek z kropek
+   w CSS, wysoka na dwie karty, zjeżdża transformem), mgła przy dole snw-fog, zdjęcie chłodniejsze i przyprószone, panele jak zaspy. */
+.card.v-snow { --frame: linear-gradient(160deg, #fff, #b8c8d8 50%, #fff); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-snow .card-inner { background: linear-gradient(#6f8399, #a9b9ca 60%, #c9d6e3); color: #24384d; }
+.card.v-snow .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-snow :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #ffffffd0; border: none; border-radius: 2.5cqw; box-shadow: 0 -.7cqw 0 -.1cqw #fff; }
+.card.v-snow :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name) { color: #24384d; text-shadow: none; }
+.card.v-snow .card-hp { color: #fff; }
+.card.v-snow .card-name { color: #fff; text-shadow: 0 .3cqw .8cqw #24384d, 0 0 2cqw #fff6; }
+.card.v-snow .card-photo { border: .6cqw solid #fff; border-image: none; border-radius: 1.4cqw; box-shadow: 0 0 2cqw #fff8; }
+.card.v-snow .card-photo > img, .r-secret.v-snow .sc-art img, .pick.v-snow img, .avv-snow img { filter: brightness(1.08) contrast(.88) saturate(.72); }
+.vx-bg > .snw-fog { left: 0; right: 0; bottom: 0; height: 45%; background: linear-gradient(transparent, #fffd); animation: snwFog 6s ease-in-out infinite; }
+@keyframes snwFog { 50% { opacity: .55; } }
+.vx-deco > .snw-layer { left: 0; top: -100%; width: 100%; height: 200%; will-change: transform; animation: snwDown 9s linear infinite;
+  background: radial-gradient(circle, #fff 0 .5cqw, transparent .6cqw) 0 0 / 14cqw 12cqw, radial-gradient(circle, #fffc 0 .35cqw, transparent .45cqw) 7cqw 6cqw / 11cqw 9cqw;
+  filter: drop-shadow(0 0 .5cqw #fff); }
+.vx-deco > .snw-layer.b { animation-duration: 14s; opacity: .7;
+  background: radial-gradient(circle, #fff 0 .8cqw, transparent .9cqw) 3cqw 2cqw / 21cqw 17cqw, radial-gradient(circle, #fffa 0 .25cqw, transparent .35cqw) 0 0 / 8cqw 7cqw; }
+@keyframes snwDown { to { transform: translate(-4cqw, 50%); } }
+.r-secret.v-snow .sc-border { background: linear-gradient(160deg, #fff, #b8c8d8, #fff); animation: none; }
+.pick.v-snow { box-shadow: inset 0 0 0 2px #fff, inset 0 -26px 26px -18px var(--rc); }
+.avv-snow img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #b8c8d8 !important; }
+
+/* Lodowy (event Święta, makieta Lodowy 4 + filtr „Lodowy duotone”) - tło z oszlifowanych lodowych fasetek (--ic-facets, jeden
+   obrazek w CSS), przez które przebiega tęczowy błysk pryzmatu (ic-prism), zdjęcie w dwóch kolorach lodu: czarno-białe pod
+   błękitem (ic-light, multiply) i granatem (ic-dark, screen), co kilka sekund biały odblask (ic-glare). Klasy ic-. */
+.card.v-ice { --frame: linear-gradient(135deg, #fff, #9fdcff, #e2f7ff, #6cb6ff, #fff); --spin: initial; box-shadow: 0 6px 18px #0009, 0 0 14px #9fdcff55;
+  --ic-facets: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 63 88' preserveAspectRatio='none'%3E%3Cpath d='M-5.0 80.6 l10.9 -2.3 l2.8 10.9Z' fill='%238fd0ff' opacity='0.40'/%3E%3Cpath d='M46.1 65.2 l13.4 1.5 l1.6 13.4Z' fill='%23eefcff' opacity='0.36'/%3E%3Cpath d='M20.4 60.8 l15.0 -3.6 l2.2 15.0Z' fill='%23b9e6ff' opacity='0.67'/%3E%3Cpath d='M49.9 6.4 l13.1 3.4 l2.3 13.1Z' fill='%238fd0ff' opacity='0.51'/%3E%3Cpath d='M57.0 79.5 l11.7 -1.3 l4.0 11.7Z' fill='%23b9e6ff' opacity='0.32'/%3E%3Cpath d='M15.2 34.8 l10.9 3.5 l0.7 10.9Z' fill='%238fd0ff' opacity='0.65'/%3E%3Cpath d='M-1.0 20.4 l13.6 0.1 l-0.9 13.6Z' fill='%23dff6ff' opacity='0.66'/%3E%3Cpath d='M-1.3 29.0 l11.4 1.3 l5.1 11.4Z' fill='%238fd0ff' opacity='0.32'/%3E%3Cpath d='M22.6 21.4 l11.6 -0.6 l-2.0 11.6Z' fill='%238fd0ff' opacity='0.53'/%3E%3Cpath d='M10.9 79.3 l12.6 2.9 l1.6 12.6Z' fill='%238fd0ff' opacity='0.48'/%3E%3Cpath d='M29.3 59.1 l17.4 -0.8 l2.5 17.4Z' fill='%23b9e6ff' opacity='0.51'/%3E%3Cpath d='M18.8 25.7 l11.9 2.4 l4.5 11.9Z' fill='%23dff6ff' opacity='0.62'/%3E%3Cpath d='M0.3 32.8 l9.5 -3.4 l6.0 9.5Z' fill='%23dff6ff' opacity='0.53'/%3E%3Cpath d='M4.8 37.5 l13.9 -2.9 l5.1 13.9Z' fill='%23eefcff' opacity='0.65'/%3E%3Cpath d='M55.2 79.4 l15.6 -1.8 l-5.9 15.6Z' fill='%23dff6ff' opacity='0.28'/%3E%3Cpath d='M-4.9 52.4 l10.3 1.9 l-0.1 10.3Z' fill='%238fd0ff' opacity='0.36'/%3E%3Cpath d='M55.0 16.9 l11.7 3.2 l-4.6 11.7Z' fill='%23b9e6ff' opacity='0.25'/%3E%3Cpath d='M57.1 54.2 l17.2 -3.8 l4.8 17.2Z' fill='%23dff6ff' opacity='0.69'/%3E%3Cpath d='M33.4 58.2 l10.7 -2.2 l-3.5 10.7Z' fill='%238fd0ff' opacity='0.27'/%3E%3Cpath d='M47.3 60.2 l15.1 -0.0 l-5.6 15.1Z' fill='%23dff6ff' opacity='0.66'/%3E%3Cpath d='M3.9 59.0 l16.9 -3.7 l4.6 16.9Z' fill='%23eefcff' opacity='0.70'/%3E%3Cpath d='M59.9 66.1 l12.2 -2.0 l2.7 12.2Z' fill='%23eefcff' opacity='0.43'/%3E%3Cpath d='M11.0 32.7 l16.9 0.5 l-1.8 16.9Z' fill='%238fd0ff' opacity='0.58'/%3E%3Cpath d='M17.8 62.4 l12.2 -2.4 l-2.3 12.2Z' fill='%23eefcff' opacity='0.70'/%3E%3Cpath d='M38.0 76.1 l17.2 -2.4 l1.7 17.2Z' fill='%23dff6ff' opacity='0.47'/%3E%3Cpath d='M32.9 66.7 l17.5 -0.1 l-3.8 17.5Z' fill='%23b9e6ff' opacity='0.32'/%3E%3Cpath d='M40.1 43.5 l13.6 0.1 l3.1 13.6Z' fill='%23b9e6ff' opacity='0.59'/%3E%3Cpath d='M-3.2 22.8 l13.4 -2.4 l2.7 13.4Z' fill='%23b9e6ff' opacity='0.36'/%3E%3Cpath d='M39.9 34.9 l8.8 2.2 l3.9 8.8Z' fill='%23eefcff' opacity='0.66'/%3E%3Cpath d='M41.3 84.2 l8.3 2.1 l1.2 8.3Z' fill='%238fd0ff' opacity='0.65'/%3E%3Cpath d='M-2.5 7.6 l8.8 -3.1 l-5.0 8.8Z' fill='%23dff6ff' opacity='0.52'/%3E%3Cpath d='M59.3 12.9 l9.3 -2.4 l2.1 9.3Z' fill='%23dff6ff' opacity='0.46'/%3E%3Cpath d='M62.6 34.3 l14.7 2.2 l-1.2 14.7Z' fill='%23b9e6ff' opacity='0.28'/%3E%3Cpath d='M10.6 70.1 l17.7 -2.8 l5.1 17.7Z' fill='%238fd0ff' opacity='0.30'/%3E%3C/svg%3E"); }
+.card.v-ice .card-inner { background: var(--ic-facets) 0 0 / 100% 100%, linear-gradient(160deg, #cdeeff, #6ebcf5); color: #08304f; }
+.card.v-ice .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-ice :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #ffffff59; border: .3cqw solid #fff; border-radius: .4em; }
+.card.v-ice :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #08304f; text-shadow: none; }
+.card.v-ice .card-name { color: #08304f; text-shadow: 0 0 .3em #fff, 0 0 .6em #fff; }
+.card.v-ice .card-photo { border: .8cqw solid #ffffffcc; border-image: none; border-radius: .35em; box-shadow: 0 0 2cqw #ffffffaa; overflow: hidden; isolation: isolate; }
+.card.v-ice .card-photo > img, .r-secret.v-ice .sc-art img { filter: grayscale(1) contrast(1.2) brightness(1.05); }
+.pick.v-ice img, .avv-ice img { filter: grayscale(1) sepia(.35) hue-rotate(170deg) saturate(1.5) brightness(1.05); }
+.vx-photo.ic-light { background: #b6e4ff; mix-blend-mode: multiply; }
+.vx-photo.ic-dark { background: #0b3a66; mix-blend-mode: screen; opacity: .8; }
+.vx-photo.ic-glare { inset: -20% auto -20% -60%; width: 30%; background: linear-gradient(90deg, transparent, #fffc, transparent); transform: skewX(-20deg); will-change: transform; animation: icSweep 5s ease-in-out infinite; }
+.vx-bg > .ic-prism { top: -20%; bottom: -20%; left: -60%; width: 45%; transform: skewX(-20deg); will-change: transform;
+  background: linear-gradient(90deg, transparent, #ff6a6a55, #ffd23d55, #2bd96b55, #3ba2ff55, #b46bff55, transparent); animation: icSweep 4.5s ease-in-out infinite; }
+@keyframes icSweep { 0% { translate: 0 0; } 60%, 100% { translate: 360% 0; } }
+.r-secret.v-ice .sc-border { background: linear-gradient(135deg, #fff, #9fdcff, #e2f7ff, #6cb6ff); animation: none; }
+.pick.v-ice { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #9fdcff, inset 0 -26px 26px -18px var(--rc); }
+
+/* Świąteczny (event Święta, makieta „Sanie nad miastem”; najlepszy wariant eventu) - czerwony aksamit w złotej, mieniącej się ramce
+   (własne ::before), nad nazwą nocne niebo z księżycem, gwiazdami i sańmi z reniferami (xm-sky w variantTop), w tle karty ośnieżone
+   miasteczko z zapalającymi się oknami i dymem z komina (xm-town w VX_BG - dolne panele są półprzezroczyste, żeby było je widać),
+   śnieg (snw-layer jak w Śnieżnym) i lampki biegnące po ramce (xm-bulb). Naklejki od admina (np. czapka Mikołaja). Klasy xm-. */
+.card.v-christmas { --frame: linear-gradient(135deg, #fff2b0, #d4af37 25%, #8a6a12 50%, #f6dc7a 75%, #b8902a); --spin: initial; box-shadow: 0 6px 18px #000a, 0 0 16px #d4af3766; }
+.card.v-christmas::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--frame); background-size: 200% 200%; animation: xmGold 4s linear infinite; }
+@keyframes xmGold { 50% { background-position: 100% 100%; } }
+.card.v-christmas .card-inner { background: repeating-linear-gradient(45deg, #0000 0 4cqw, #d4af3712 4cqw 4.4cqw), radial-gradient(100% 70% at 50% 0, #b3142a, #7a0b18 55%, #3d0309); color: #ffeec2; }
+.card.v-christmas .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-christmas :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #4a050e8c; border: .3cqw solid #d4af37; border-radius: .4em; }
+.card.v-christmas :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #ffeec2; text-shadow: 0 .2cqw .4cqw #000a; }
+.card.v-christmas .card-name { font: 900 1em/1.05 Georgia, serif; color: #ffe08a; text-shadow: 0 .1em 0 #3a0006, 0 0 .4em #d4af37; }
+.card.v-christmas .card-sub { font: italic 700 .66em/1.2 Georgia, serif; }
+.card.v-christmas .card-photo { border: .7cqw solid #d4af37; border-image: none; border-radius: .35em; box-shadow: 0 0 2cqw #d4af3766; }
+.card.v-christmas .card-photo > img, .r-secret.v-christmas .sc-art img { filter: saturate(1.08) contrast(1.04) sepia(.08); }
+.xm-sky { flex: none; position: relative; height: 12cqw; margin: -1cqw -1cqw .6cqw; overflow: hidden; border-radius: 1.2cqw; background: linear-gradient(#070b26, #2a1640); box-shadow: inset 0 0 0 .3cqw #d4af3766; }
+.xm-sky > i { position: absolute; display: block; }
+.xm-moon { right: 8%; top: 12%; width: 7cqw; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff8d6, #f0d27a); box-shadow: 0 0 3cqw #ffe9a0; }
+.xm-star { width: 1.6cqw; aspect-ratio: 1; background: #fff; transform: scale(var(--s)); animation: xmTwinkle 2.2s ease-in-out infinite;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); }
+@keyframes xmTwinkle { 50% { opacity: .2; } }
+.xm-fly { top: 22%; left: 0; width: 58cqw; height: 8cqw; will-change: transform; animation: xmFly 6s linear infinite; }
+.xm-fly > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+@keyframes xmFly { 0% { transform: translate(-60cqw, 1.5cqw); } 50% { transform: translate(20cqw, -.8cqw); } 100% { transform: translate(100cqw, 1cqw); } }
+.xm-trail { position: absolute; display: block; right: 100%; top: 55%; width: 26cqw; height: 1.4cqw; border-radius: 1cqw;
+  background: radial-gradient(circle, #fff 0 .3cqw, transparent .45cqw) 0 50% / 2.6cqw 100% repeat-x, linear-gradient(90deg, transparent, #ffe08aaa); }
+.vx-bg > .xm-town { position: absolute; left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 40%; }
+.xm-win { animation: xmWin 5s steps(1) infinite; }
+@keyframes xmWin { 0% { opacity: 1; } 60% { opacity: .25; } 80% { opacity: 1; } }
+.vx-bg > .xm-smoke { left: 64%; bottom: 38%; width: 6cqw; height: 16cqw; }
+.xm-smoke b { position: absolute; bottom: 0; left: 10%; width: 3cqw; aspect-ratio: 1; border-radius: 50%; background: #ffffffa0; filter: blur(.4cqw); animation: xmSmoke 3s ease-out infinite; }
+.xm-smoke b:nth-child(2) { animation-delay: -1s; } .xm-smoke b:nth-child(3) { animation-delay: -2s; }
+@keyframes xmSmoke { from { transform: none; opacity: .9; } to { transform: translate(2.5cqw, -14cqw) scale(2.4); opacity: 0; } }
+.vx-bg > .xm-sheen { top: -20%; bottom: -20%; left: -60%; width: 35%; transform: skewX(-20deg); will-change: transform; background: linear-gradient(90deg, transparent, #ffe9a055, transparent); animation: icSweep 5s ease-in-out infinite; }
+.vx-deco > .xm-bulb { width: 2.6cqw; height: 3.4cqw; border-radius: 50% 50% 45% 45%; background: var(--c); transform: translate(-50%, -50%); opacity: .3; animation: xmChase 2.4s linear infinite; }
+@keyframes xmChase { 0%, 18% { opacity: 1; box-shadow: 0 0 2.6cqw var(--c), inset 0 0 .6cqw #fff; } 30%, 100% { opacity: .3; box-shadow: none; } }
+.r-secret.v-christmas .sc-border { background: linear-gradient(135deg, #fff2b0, #d4af37, #8a6a12, #f6dc7a); animation: none; }
+.pick.v-christmas { box-shadow: inset 0 0 0 2px #d4af37, inset 0 0 0 4px #b3142a, inset 0 -26px 26px -18px var(--rc); }
+.avv-christmas img { box-shadow: 0 0 0 2px #d4af37, 0 0 0 4px #b3142a !important; }
+
+/* Choinka (event Święta, makieta „Bombki przed zdjęciem”) - ciemna zieleń, gałązki świerku z górnych rogów (tre-branch), złota
+   gwiazda nad nazwą (tre-star), kolorowe bombki (tre-ball: nitka, złota zawieszka, kula z odblaskiem; gładkie / w paski / w kropki)
+   po bokach i przed zdjęciem (VX_PHOTO). Klasy tre- (tr- to Tarot). */
+.card.v-tree { --frame: linear-gradient(160deg, #2a8a4a, #0c2a17 50%, #3aa05a); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-tree .card-inner { background: radial-gradient(circle at 50% 40%, #154a2a, #061409); color: #e8ffee; }
+.card.v-tree :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #071a0ecc; border: .3cqw solid #2a8a4a; border-radius: .4em; }
+.card.v-tree :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #e8ffee; text-shadow: none; }
+.card.v-tree .card-name { color: #fff; text-shadow: 0 0 .4em #2a8a4a; }
+.card.v-tree .card-photo { border: .6cqw solid #c41e3a; border-image: none; border-radius: .35em; overflow: hidden; }
+.card.v-tree .card-photo > img, .r-secret.v-tree .sc-art img { filter: saturate(1.06) brightness(1.02); }
+.vx-deco > svg.tre-branch { position: absolute; width: 58%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 .6cqw .8cqw #0007); }
+.vx-deco > svg.tre-branch.a { left: -18%; top: -18%; } .vx-deco > svg.tre-branch.b { right: -18%; top: -18%; }
+.tre-ball { position: absolute; display: block; z-index: 2; width: var(--sz); height: calc(var(--len) + var(--sz)); margin-left: calc(var(--sz) / -2); transform-origin: 50% 0;
+  animation: treSwing 3.4s ease-in-out infinite; filter: drop-shadow(0 .6cqw .6cqw #0006);
+  background: radial-gradient(circle calc(var(--sz) * .16) at 36% calc(100% - var(--sz) * .64), #fffe, transparent),
+    radial-gradient(circle calc(var(--sz) / 2) at 50% calc(100% - var(--sz) / 2), var(--c) 0 45%, color-mix(in srgb, var(--c) 55%, #000) 96%, transparent 100%),
+    linear-gradient(#f0d58a, #8a6a1a) 50% calc(100% - var(--sz) + .1cqw) / calc(var(--sz) * .32) calc(var(--sz) * .2) no-repeat,
+    linear-gradient(#d8c48a, #d8c48a) 50% 0 / .25cqw calc(100% - var(--sz)) no-repeat; }
+.tre-ball.stripe::after, .tre-ball.dots::after { content: ""; position: absolute; left: 0; bottom: 0; width: var(--sz); height: var(--sz); border-radius: 50%; }
+.tre-ball.stripe::after { background: linear-gradient(transparent 38%, #ffffffa0 38% 50%, transparent 50% 62%, #ffffff60 62% 68%, transparent 68%); }
+.tre-ball.dots::after { background: radial-gradient(circle, #fffc 0 .35cqw, transparent .45cqw) 0 0 / 1.7cqw 1.7cqw; opacity: .8; }
+@keyframes treSwing { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.tre-star { flex: none; position: relative; z-index: 2; text-align: center; font-size: 9cqw; line-height: 1; margin: -1cqw 0 -2cqw; color: #ffe08a;
+  text-shadow: 0 0 2cqw #ffd23d, 0 0 5cqw #d4af37; animation: treGlow 2.4s ease-in-out infinite; }
+@keyframes treGlow { 50% { opacity: .65; } }
+.r-secret.v-tree .sc-border { background: linear-gradient(160deg, #2a8a4a, #0c2a17, #3aa05a); animation: none; }
+.pick.v-tree { box-shadow: inset 0 0 0 2px #2a8a4a, inset 0 0 0 4px #c41e3a, inset 0 -26px 26px -18px var(--rc); }
+.avv-tree img { box-shadow: 0 0 0 2px #2a8a4a, 0 0 0 4px #c41e3a !important; }
+
+/* Prezentowy (event Święta, makieta 1 „Kokarda i rozdarcie”) - odpakowana karta: kremowe wnętrze, złota wstążka dookoła ramki (gf-frame)
+   i mała kokarda w rogu. Moja nieodpakowana karta jest zapakowana (gf-wrap z giftWrapHTML w cardHtml.ts: czerwony papier, złote
+   wstążki, kokarda gf-bow). Klasa unwrap = odpakowanie (kokarda się rozwiązuje, wstążki zsuwają, papier pęka w zygzak, sypią się
+   strzępki), rewrap = ta sama animacja od tyłu. Czas animacji = GIFT_MS w fx/effects.ts. Klasy gf-. */
+.card.v-gift { --frame: linear-gradient(160deg, #ffe08a, #c41e3a 30%, #8a0016 70%, #ffe08a); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-gift .card-inner { background: radial-gradient(circle at 50% 20%, #fff, #f6e7d0); color: #6a0010; }
+.card.v-gift :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #fff; border: .3cqw solid #d4af37; border-radius: .4em; }
+.card.v-gift :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #6a0010; text-shadow: none; }
+.card.v-gift .card-name { color: #c41e3a; }
+.card.v-gift .card-sub { font-weight: 800; letter-spacing: .05em; }
+.card.v-gift .card-photo { border: .6cqw solid #d4af37; border-image: none; border-radius: .35em; }
+.vx-deco > .gf-frame { inset: 1cqw; border: 1.3cqw solid transparent; border-image: linear-gradient(135deg, #fff2b0, #d4af37, #8a6a12, #f6dc7a, #b8902a) 1; filter: drop-shadow(0 .3cqw .4cqw #0004); }
+.gf-bow { position: absolute; display: block; left: 50%; top: 40%; width: 50cqw; height: 28cqw; margin: -14cqw 0 0 -25cqw; filter: drop-shadow(0 .8cqw 1cqw #0006); }
+.vx-deco > .gf-bow.small { left: auto; right: -4cqw; top: -2cqw; width: 26cqw; height: 15cqw; margin: 0; transform: rotate(22deg); }
+.gf-bow b { position: absolute; display: block; }
+.gf-bow .lp { top: 4%; width: 48%; height: 66%; }
+.gf-bow .lp.l { left: 2%; transform-origin: 100% 60%; transform: rotate(-12deg); border-radius: 70% 30% 30% 70% / 60% 45% 55% 40%;
+  background: radial-gradient(ellipse 40% 30% at 82% 52%, #7a5a0a, transparent 75%), radial-gradient(ellipse 30% 40% at 30% 30%, #fff6c8aa, transparent 70%), linear-gradient(160deg, #fff2b0, #e2bc4a 40%, #b8902a 75%, #8a6a12); }
+.gf-bow .lp.r { right: 2%; transform-origin: 0 60%; transform: rotate(12deg); border-radius: 30% 70% 70% 30% / 45% 60% 40% 55%;
+  background: radial-gradient(ellipse 40% 30% at 18% 52%, #7a5a0a, transparent 75%), radial-gradient(ellipse 30% 40% at 70% 30%, #fff6c8aa, transparent 70%), linear-gradient(200deg, #fff2b0, #e2bc4a 40%, #b8902a 75%, #8a6a12); }
+.gf-bow .tl { top: 42%; width: 13%; height: 85%; transform-origin: 50% 0; background: linear-gradient(90deg, #b8902a, #ffe08a 50%, #b8902a); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%); }
+.gf-bow .tl.l { left: 38%; transform: rotate(24deg); } .gf-bow .tl.r { right: 38%; transform: rotate(-24deg); }
+.gf-bow .kn { left: 43%; top: 22%; width: 14%; height: 40%; border-radius: 30%; background: radial-gradient(circle at 40% 35%, #fff4c0, #d4af37 60%, #8a6a12); box-shadow: 0 .4cqw .8cqw #0006; }
+.gf-wrap { position: absolute; inset: 0; z-index: 6; overflow: hidden; border-radius: inherit; pointer-events: none; --gfp: repeating-linear-gradient(45deg, #c41e3a 0 4cqw, #a8142c 4cqw 8cqw); }
+.gf-wrap > i { position: absolute; display: block; }
+.gf-rib { background: linear-gradient(90deg, #b8902a, #ffe08a 50%, #b8902a); box-shadow: 0 0 1cqw #0005; }
+.gf-rib.v { left: 44%; width: 12%; top: 0; bottom: 0; } .gf-rib.h { left: 0; right: 0; top: 36%; height: 9%; background: linear-gradient(#b8902a, #ffe08a 50%, #b8902a); }
+.gf-half { inset: 0; background: var(--gfp); }
+.gf-half.l { clip-path: polygon(0 0, 50% 0, 46% 8%, 52% 16%, 45% 25%, 53% 34%, 46% 43%, 52% 52%, 45% 61%, 53% 70%, 46% 79%, 52% 88%, 47% 100%, 0 100%); transform-origin: 25% 100%; }
+.gf-half.r { clip-path: polygon(50% 0, 100% 0, 100% 100%, 47% 100%, 52% 88%, 46% 79%, 53% 70%, 45% 61%, 52% 52%, 46% 43%, 53% 34%, 45% 25%, 52% 16%, 46% 8%); transform-origin: 75% 100%; }
+.gf-wrap > .gf-scrap { width: 3.4cqw; height: 2.4cqw; background: var(--gfp); clip-path: polygon(0 10%, 40% 0, 100% 20%, 85% 70%, 100% 100%, 30% 85%, 0 100%); opacity: 0; }
+.gf-wrap:is(.unwrap, .rewrap) :is(.gf-half, .gf-rib, .gf-bow b, .gf-scrap) { animation-duration: 2.8s; animation-timing-function: ease-in-out; animation-fill-mode: both; }
+.gf-wrap.rewrap :is(.gf-half, .gf-rib, .gf-bow b, .gf-scrap) { animation-direction: reverse; }
+.gf-wrap:is(.unwrap, .rewrap) .gf-half.l { animation-name: gfHalfL; } .gf-wrap:is(.unwrap, .rewrap) .gf-half.r { animation-name: gfHalfR; }
+.gf-wrap:is(.unwrap, .rewrap) .gf-rib.v { animation-name: gfRibV; } .gf-wrap:is(.unwrap, .rewrap) .gf-rib.h { animation-name: gfRibH; }
+.gf-wrap:is(.unwrap, .rewrap) .gf-bow .lp.l { animation-name: gfLoopL; } .gf-wrap:is(.unwrap, .rewrap) .gf-bow .lp.r { animation-name: gfLoopR; }
+.gf-wrap:is(.unwrap, .rewrap) .gf-bow .tl.l { animation-name: gfTailL; } .gf-wrap:is(.unwrap, .rewrap) .gf-bow .tl.r { animation-name: gfTailR; }
+.gf-wrap:is(.unwrap, .rewrap) .gf-bow .kn { animation-name: gfKnot; } .gf-wrap:is(.unwrap, .rewrap) .gf-scrap { animation-name: gfScrap; }
+@keyframes gfHalfL { 0%, 44% { transform: none; opacity: 1; } 52% { transform: rotate(-3deg); opacity: 1; } 84% { opacity: 1; } 96%, 100% { transform: translate(-28%, 75%) rotate(-32deg); opacity: 0; } }
+@keyframes gfHalfR { 0%, 44% { transform: none; opacity: 1; } 52% { transform: rotate(3deg); opacity: 1; } 84% { opacity: 1; } 96%, 100% { transform: translate(28%, 75%) rotate(32deg); opacity: 0; } }
+@keyframes gfRibV { 0%, 22% { transform: none; } 42%, 100% { transform: translateY(110%); } }
+@keyframes gfRibH { 0%, 22% { transform: none; } 42%, 100% { transform: translateX(110%); } }
+@keyframes gfLoopL { 0%, 4% { transform: rotate(-12deg); opacity: 1; } 18% { transform: rotate(-60deg) translate(-3cqw, 1cqw) scale(.9); opacity: 1; } 32%, 100% { transform: rotate(-120deg) translate(-8cqw, 34cqw) scale(.6); opacity: 0; } }
+@keyframes gfLoopR { 0%, 4% { transform: rotate(12deg); opacity: 1; } 18% { transform: rotate(60deg) translate(3cqw, 1cqw) scale(.9); opacity: 1; } 32%, 100% { transform: rotate(120deg) translate(8cqw, 34cqw) scale(.6); opacity: 0; } }
+@keyframes gfTailL { 0%, 8% { transform: rotate(24deg); opacity: 1; } 30%, 100% { transform: translateY(50cqw) rotate(70deg); opacity: 0; } }
+@keyframes gfTailR { 0%, 8% { transform: rotate(-24deg); opacity: 1; } 30%, 100% { transform: translateY(50cqw) rotate(-70deg); opacity: 0; } }
+@keyframes gfKnot { 0%, 12% { transform: none; opacity: 1; } 26%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes gfScrap { 0%, 45% { transform: none; opacity: 0; } 49% { opacity: 1; } 76% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 1; } 92%, 100% { transform: translate(var(--dx), calc(var(--dy) + 20cqw)) rotate(var(--r)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gf-wrap:is(.unwrap, .rewrap) :is(.gf-half, .gf-rib, .gf-bow b, .gf-scrap) { animation-duration: .01s; } }
+.pick.v-gift { box-shadow: inset 0 0 0 2px #d4af37, inset 0 0 0 4px #c41e3a, inset 0 -26px 26px -18px var(--rc); }
+.avv-gift img { box-shadow: 0 0 0 2px #d4af37, 0 0 0 4px #c41e3a !important; }
+
 /* COVID - alarm pod mikroskopem: koguty cvd-beam, cząsteczki cvd-float, czarno-białe zdjęcie pod czerwoną nakładką cvd-tint, podziałka cvd-scale, pasek ALERT w variantTop, komunikat cvd-sms w VX_DECO (bez niego przy kilku zdolnościach). Naklejki na zdjęciu z /stickers */
 .card.v-covid .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
 .card.v-covid { --frame: #e8101e; --spin: initial; --panel: #120406d8; --cvd-v1: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff8a5a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff8a5a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff8a5a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff8a5a'/><circle cx='20' cy='20' r='11.5' fill='%23ff8a5a'/></svg>"); --cvd-v2: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff2a3e'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff2a3e'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff2a3e'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff2a3e'/><circle cx='20' cy='20' r='11.5' fill='%23ff2a3e'/></svg>"); --cvd-v3: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ffd21a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ffd21a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ffd21a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ffd21a'/><circle cx='20' cy='20' r='11.5' fill='%23ffd21a'/></svg>"); box-shadow: 0 6px 18px #0009; animation: cvdAlert 1.6s steps(1) infinite; }

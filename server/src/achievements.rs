@@ -749,7 +749,12 @@ impl Progress {
 
 /// Nagrody za osiągnięcie dla zalogowanego gracza: pieniądze, skrzynki, karty
 async fn grant(c: &mut Conn, cx: &Ctx, d: &Value) -> sqlx::Result<()> {
-    for r in rewards(d) {
+    grant_rewards(c, cx, rewards(d), "achievement").await
+}
+
+/// Nagrody (pieniądze, skrzynki, karty) dla zalogowanego gracza - osiągnięcia, kalendarz adwentowy; `source` = źródło kart
+pub async fn grant_rewards(c: &mut Conn, cx: &Ctx, list: &[Value], source: &str) -> sqlx::Result<()> {
+    for r in list {
         let n = r.get("count").and_then(Value::as_i64).unwrap_or(1);
         match s(r, "type") {
             "money" => add_state(c, cx.uid(), "balance", r.get("amount").and_then(Value::as_i64).unwrap_or(0)).await?,
@@ -759,7 +764,7 @@ async fn grant(c: &mut Conn, cx: &Ctx, d: &Value) -> sqlx::Result<()> {
                 let variant = if g().variants.contains_key(v) { v } else { "normal" };
                 let mut items = vec![];
                 for _ in 0..n {
-                    items.push(insert_item(c, cx, s(r, "person"), variant, "achievement").await?);
+                    items.push(insert_item(c, cx, s(r, "person"), variant, source).await?);
                 }
                 note_drops(c, cx, &drops_of(&items), "drop").await?;
             }

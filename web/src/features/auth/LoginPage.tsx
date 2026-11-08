@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { Crown } from 'lucide-react';
+import { Crown, Gift } from 'lucide-react';
 import { Logo } from '../../app/Logo';
 import { LangSwitch } from '../../app/Settings';
 import { Button } from '../../ui/Button';
@@ -28,6 +28,9 @@ function readMailLink() {
   };
 }
 
+/** Kod polecenia z linku /r/<kod> (serwer przekierowuje na /login?ref=<kod> i zapisuje ciasteczko) */
+const refCode = () => (new URLSearchParams(location.search).get('ref') ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+
 async function post(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => null);
@@ -38,7 +41,9 @@ async function post(url: string, body: unknown) {
 export function LoginPage() {
   const first = document.documentElement.dataset.first === '1';
   const [link] = useState(readMailLink);
-  const [mode, setMode] = useState<Mode>(link.token ? 'reset' : first ? 'register' : 'login');
+  const [ref] = useState(refCode);
+  const [invite, setInvite] = useState<any>(null);
+  const [mode, setMode] = useState<Mode>(link.token ? 'reset' : first || ref ? 'register' : 'login');
   const [error, setError] = useState(link.failed ? 'Link wygasł albo został już użyty. Poproś o nowy.' : '');
   const [notice, setNotice] = useState(link.confirmed ? 'Adres email potwierdzony. Możesz się zalogować.' : '');
   const [unconfirmed, setUnconfirmed] = useState('');
@@ -48,6 +53,10 @@ export function LoginPage() {
   const emailAuth = !!legal?.emailAuth;
 
   useEffect(() => { document.title = 'Logowanie · ScamBox'; }, []);
+  useEffect(() => {
+    if (!ref) return;
+    fetch(`/api/referral/invite/${ref}`).then(r => r.ok ? r.json() : null).then(setInvite).catch(() => {});
+  }, [ref]);
   // token z linku nie zostaje w pasku adresu ani w historii
   useEffect(() => { if (location.hash) history.replaceState(null, '', location.pathname + location.search); }, []);
 
@@ -73,7 +82,7 @@ export function LoginPage() {
         setNotice('Hasło zmienione. Zaloguj się nowym hasłem.');
         setBusy(false);
       } else {
-        const data = await post(`/api/${mode}`, { username: f.username, email: f.email, password: f.password, terms: register && !!f.terms });
+        const data = await post(`/api/${mode}`, { username: f.username, email: f.email, password: f.password, terms: register && !!f.terms, ref: register ? ref : '' });
         if (data.confirm) {
           setMode('login');
           setNotice(`Wysłaliśmy link potwierdzający na ${f.email}. Kliknij w niego, a potem zaloguj się.`);
@@ -115,6 +124,15 @@ export function LoginPage() {
         )}
         {mode === 'forgot' && <p className="muted">Podaj email przypisany do konta. Wyślemy na niego link do ustawienia nowego hasła.</p>}
         {mode === 'reset' && <p className="muted">Ustaw nowe hasło do swojego konta.</p>}
+        {invite && register && (
+          <div className={styles.invite}>
+            <Gift size={22} aria-hidden="true" />
+            <div>
+              <b>{invite.user?.username} zaprasza cię do ScamBox</b>
+              {invite.reward?.referred && <span>{invite.reward.minOpened > 0 ? `Załóż konto i otwórz ${invite.reward.minOpened} ${invite.reward.minOpened === 1 ? 'skrzynkę' : invite.reward.minOpened < 5 ? 'skrzynki' : 'skrzynek'}, a dostaniesz ` : 'Załóż konto, a dostaniesz '}<b>{invite.reward.referred}</b>.</span>}
+            </div>
+          </div>
+        )}
         {first && register && <p className={styles.first}><Crown size={16} aria-hidden="true" />To pierwsze konto w tej grze. Przejmie obecny zapis.</p>}
         <form className={styles.form} onSubmit={submit} autoComplete="on">
           {register && emailAuth && <label>Email<input name="email" type="email" required maxLength={254} autoComplete="email" autoFocus /></label>}

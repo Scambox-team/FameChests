@@ -25,6 +25,7 @@ const html = (__html: string) => ({ dangerouslySetInnerHTML: { __html } });
 
 import { GameRanking } from './GameRanking';
 const AimPage = lazy(() => import('../aim/AimPage').then(m => ({ default: m.AimPage })));
+const AIM_ON = false;     // Strzelnica wyłączona (zakładka i adres /games/aim)
 const FLAPPY_ON = false;   // Flappy jest gotowy, ale na razie wyłączony (zakładka i adres /games/flappy)
 const FlappyPage = lazy(() => import('../flappy/FlappyPage').then(m => ({ default: m.FlappyPage })));
 const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
@@ -336,7 +337,7 @@ export function ChessPage() {
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
   // gry: Szachy (podzakładki Partie / Figury), Pinball, Strzelnica, Snake (i wyłączony Flappy); adresy /games, /games/figures, /games/pinball, /games/aim, /games/snake
-  const view = tab === 'figures' || tab === 'pinball' || tab === 'snake' || tab === 'aim' || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
+  const view = tab === 'figures' || tab === 'pinball' || tab === 'snake' || (AIM_ON && tab === 'aim') || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
   const game = view === 'figures' ? 'games' : view;
   const go = (v: string) => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); };
   if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
@@ -344,7 +345,7 @@ export function ChessPage() {
   return (
     <div id="view-games">
       <Tabs label="Gry" value={game} onChange={go}
-        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, { id: 'aim', label: 'Strzelnica' }, { id: 'snake', label: 'Snake' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, ...(AIM_ON ? [{ id: 'aim', label: 'Strzelnica' }] : []), { id: 'snake', label: 'Snake' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
       {game === 'games' && (
         <div className="ch-subtabs">
           <Tabs label="Szachy" value={view} onChange={go} items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />

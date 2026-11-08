@@ -19,6 +19,7 @@ mod data;
 mod db;
 mod domain;
 mod error;
+mod events;
 mod export;
 mod game;
 mod gotrue;
@@ -120,6 +121,7 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
 
     let pool = db::connect(&cfg).await?;
     let cat = startup::init_db(&pool, &cfg).await?;
+    routes::poker::restore(&pool).await?; // stoły pokera były w pamięci - przyniesione karty wracają do graczy
     let images = Arc::new(Images::new(&cfg.data_dir));
     let st = AppState {
         db: pool,
@@ -150,6 +152,8 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
             arena.inner.lock().await.cleanup();
         }
     });
+    // poker: czas tury i kolejne rozdania
+    tokio::spawn(routes::poker::run_ticker(st.clone()));
     // nowy dzień: katalog od nowa - rotacja skrzynek i sezony w sklepie
     let daily = st.clone();
     tokio::spawn(async move {

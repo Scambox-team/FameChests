@@ -1,0 +1,31 @@
+/* Zakładka panelu admina „Eventy” */
+.box { display: flex; flex-direction: column; gap: 14px; max-width: 1100px; }
+.head { display: flex; flex-direction: column; gap: 10px; }
+.head p { margin: 0; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.event { padding: 0; overflow: hidden; }
+.summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; padding: 14px 16px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.summary:hover { background: #ffffff08; }
+.chip { padding: 2px 10px; border-radius: 999px; background: #ffffff14; font-size: 12px; }
+.trwa { background: #2bd96b33; color: #7dffb0; }
+.zaplanowany { background: #4f86ff33; color: #a8c4ff; }
+.zakonczony { opacity: .6; }
+.body { display: flex; flex-direction: column; gap: 10px; padding: 0 16px 16px; }
+.body h4 { margin: 10px 0 0; font-size: 15px; }
+.grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; }
+.grid label, .day label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.wide { grid-column: 1 / -1; }
+.box input, .box select, .box textarea { padding: 7px 9px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; font-size: 14px; }
+.chk { flex-direction: row !important; align-items: center; gap: 8px !important; color: var(--text) !important; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.inline input { width: 90px; }
+.days { display: grid; gap: 6px; }
+.day { display: grid; grid-template-columns: 34px minmax(160px, 2fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) 70px 100px; gap: 8px; align-items: end; padding: 8px; border-radius: var(--radius-s); background: #ffffff06; }
+.dayN { align-self: center; font: 700 18px/1 var(--display); text-align: center; }
+.day small { font-size: 11px; }
+.dirty { position: sticky; bottom: 10px; align-self: flex-start; margin: 0; padding: 8px 14px; border-radius: 999px; background: var(--hue); color: #fff; font-weight: 600; }
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+  .day { grid-template-columns: 30px 1fr 1fr; }
+}

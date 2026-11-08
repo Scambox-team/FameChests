@@ -189,6 +189,8 @@ struct StateResponse {
     drawn: Vec<i64>,
     /// moje Zdrapki zdrapane do końca
     scratched: Vec<i64>,
+    /// moje Prezentowe karty już odpakowane
+    unwrapped: Vec<i64>,
 }
 
 pub async fn state(State(st): State<AppState>, Me(me): Me) -> Res {
@@ -202,6 +204,7 @@ pub async fn state(State(st): State<AppState>, Me(me): Me) -> Res {
         collected: collected_list(&mut c, &cat, me.id).await?,
         drawn: super::drawings::drawn_items(&mut c, me.id).await?,
         scratched: super::scratch::scratched_items(&mut c, me.id).await?,
+        unwrapped: super::gift::unwrapped_items(&mut c, me.id).await?,
     })
 }
 

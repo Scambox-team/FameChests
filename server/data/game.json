@@ -572,6 +572,7 @@
    "chance": 0.006,
    "mult": 10.0,
    "off": true,
+   "extraSource": "casino",
    "desc": "Los na loterię: fiolet ze złotem, srebrną folię ze zdjęcia zdrapujesz sam monetą, a dookoła wybuchy z kwotami i pula nagród."
   },
   "anime": {
@@ -653,6 +654,56 @@
     "shelter": {"label": "Plansza schronu", "default": "UDAJ SIĘ DO NAJBLIŻSZEGO SCHRONU", "max": 50}
    },
    "desc": "Horror analogowy: komunikat alarmowy na granatowej planszy - w miejscu zdjęcia pętla godło urzędu ScamBox, zdjęcie, komunikat o schronie, wszystko z zakłóceniami sygnału; godło obraca się w tle. Napisy z panelu, własne zdjęcie karty."
+  },
+  "polska": {
+   "name": "Polska",
+   "chance": 0.03,
+   "mult": 9.0,
+   "off": true,
+   "desc": "Na Dzień Niepodległości: biało-czerwone szarfy w rogach karty, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
+  },
+  "sugarcane": {
+   "name": "Sugar Cane",
+   "chance": 0.03,
+   "mult": 6.0,
+   "off": true,
+   "desc": "Na święta: ramka w czerwono-białe paski jak laska cukrowa, miętowe cukierki w rogach, biało-różowe wnętrze. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "snow": {
+   "name": "Śnieżny",
+   "chance": 0.03,
+   "mult": 6.0,
+   "off": true,
+   "desc": "Na święta: przez kartę pada gęsty śnieg, przy dole zimowa mgła, zdjęcie lekko przyprószone szronem. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "ice": {
+   "name": "Lodowy",
+   "chance": 0.03,
+   "mult": 7,
+   "off": true,
+   "desc": "Na święta: tło z oszlifowanych lodowych fasetek, przez które przebiega tęczowy błysk pryzmatu, zdjęcie w dwóch kolorach lodu - granatowe cienie i lodowato białe światła. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "christmas": {
+   "name": "Świąteczny",
+   "chance": 0.01,
+   "mult": 12,
+   "off": true,
+   "stickers": true,
+   "desc": "Najlepszy wariant świąt: czerwony aksamit w złotej ramce, sanie z reniferami przelatują nad nazwą, w tle ośnieżone miasteczko z zapalającymi się oknami, pada śnieg, lampki biegną po ramce. Naklejki od admina (np. czapka Mikołaja). Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "tree": {
+   "name": "Choinka",
+   "chance": 0.03,
+   "mult": 7,
+   "off": true,
+   "desc": "Na święta: gałązki świerku z górnych rogów, złota gwiazda nad nazwą i kolorowe bombki - także przed zdjęciem. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "gift": {
+   "name": "Prezentowy",
+   "chance": 0.02,
+   "mult": 8,
+   "off": true,
+   "desc": "Na święta: karta przychodzi zapakowana w czerwony papier ze złotą kokardą - właściciel sam ją odpakowuje, a w podglądzie może ją zapakować ponownie. Wypada w czasie eventu Święta ze wszystkich skrzynek."
   },
   "covid": {
    "name": "COVID",
@@ -4144,6 +4195,59 @@
  "variantEventMax": 40,
  "variantBoostMax": 50,
  "variantChanceMax": 0.2,
+ "gameEvents": [
+  {
+   "id": "niepodleglosc",
+   "name": "Dzień Niepodległości",
+   "desc": "11 listopada - Narodowe Święto Niepodległości. Przez cały event ze wszystkich skrzynek może wypaść karta w biało-czerwonym wariancie Polska.",
+   "start": "2026-11-10",
+   "end": "2026-11-16",
+   "enabled": true,
+   "drops": [{"variant": "polska", "chance": 0.03}]
+  },
+  {
+   "id": "swieta",
+   "name": "Święta",
+   "desc": "Kalendarz adwentowy: od 1 do 24 grudnia codziennie otwórz jedno okienko i odbierz nagrodę.",
+   "start": "2026-12-01",
+   "end": "2026-12-24",
+   "enabled": true,
+   "drops": [
+    {"variant": "sugarcane", "chance": 0.03},
+    {"variant": "snow", "chance": 0.03},
+    {"variant": "ice", "chance": 0.03},
+    {"variant": "tree", "chance": 0.03},
+    {"variant": "gift", "chance": 0.02},
+    {"variant": "christmas", "chance": 0.01}
+   ],
+   "advent": [
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_daily", "count": 1}],
+    [{"type": "chest", "kind": "money_mega", "count": 1}]
+   ]
+  }
+ ],
  "stickerLibrary": {
   "glasses": "Okulary „deal with it”",
   "illuminati": "Oko Illuminati",
@@ -4160,7 +4264,8 @@
   "pineapple": "Ananas",
   "ukulele": "Ukulele",
   "surfboard": "Deska surfingowa",
-  "coconut": "Kokos z parasolką"
+  "coconut": "Kokos z parasolką",
+  "santahat": "Czapka Mikołaja"
  },
  "stickerAnims": {
   "none": "Bez ruchu",

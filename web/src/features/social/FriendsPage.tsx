@@ -15,6 +15,7 @@ import { toast } from '../../ui/Toaster';
 import { Avatar, UserLink } from '../../ui/UserLink';
 import { TradeBuilder } from './TradeBuilder';
 import { TradesPanel } from './Trades';
+import { ReferralPanel } from './ReferralPanel';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
@@ -113,6 +114,7 @@ export function FriendsPage() {
       stats={[['Znajomi', String(fr.friends.length)], ['Zaproszenia', String(fr.incoming.length)], ['Oferty dla ciebie', String(tr.incoming.length)]]} />
     <div className={s.cols}>
       <div className={s.stack}>
+        <ReferralPanel />
         <section className={s.panel}>
           <h2>Znajomi</h2>
           <form className={s.addFriend} onSubmit={invite} autoComplete="off">

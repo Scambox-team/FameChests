@@ -10,15 +10,19 @@ pub mod casino;
 pub mod chess;
 pub mod drawings;
 pub mod scratch;
+pub mod gift;
 pub mod horses;
 pub mod market;
 pub mod pinball;
+pub mod poker;
 pub mod pages;
 pub mod aim;
 pub mod game_rankings;
 pub mod quests;
+pub mod referral;
 pub mod reports;
 pub mod shop;
+pub mod events;
 pub mod snake;
 pub mod social;
 pub mod variants;
@@ -97,6 +101,10 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/reports", get(admin_page))
         .route("/admin/backups", get(admin_page))
         .route("/admin/games", get(admin_page))
+        .route("/admin/events", get(admin_page))
+        .route("/admin/referrals", get(admin_page))
+        // polecenia: link /r/<kod> działa bez logowania
+        .route("/r/{code}", get(referral::ref_landing))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -105,6 +113,11 @@ pub fn router(st: AppState) -> Router {
         .route("/drawing/{id}/{layer}", get(drawings::drawing_image))
         // konta
         .route("/api/register", post(register))
+        .route("/api/referral", get(referral::my_referral))
+        .route("/api/referral/seen", post(referral::referral_seen))
+        .route("/api/referral/invite/{code}", get(referral::ref_invite))
+        .route("/api/admin/referrals", get(referral::admin_referrals).post(referral::admin_referral_config))
+        .route("/api/admin/referrals/{referred}", post(referral::admin_referral_decide))
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         .route("/api/password", post(change_password))
@@ -187,6 +200,12 @@ pub fn router(st: AppState) -> Router {
         .route("/api/casino/jackpot/{jid}/cards", post(casino_jackpot_cards))
         .route("/api/casino/jackpot/{jid}/ready", post(casino_jackpot_ready))
         .route("/api/casino/jackpot/{jid}/seen", post(casino_jackpot_seen))
+        .route("/api/casino/poker", get(poker::poker_lobby).post(poker::poker_create))
+        .route("/api/casino/poker/{tid}", get(poker::poker_table))
+        .route("/api/casino/poker/{tid}/join", post(poker::poker_join))
+        .route("/api/casino/poker/{tid}/rebuy", post(poker::poker_rebuy))
+        .route("/api/casino/poker/{tid}/act", post(poker::poker_act))
+        .route("/api/casino/poker/{tid}/leave", post(poker::poker_leave))
         .route("/api/casino/horses", get(horses::casino_horses))
         .route("/api/casino/horses/bet", post(horses::casino_horses_bet))
         .route("/api/casino/horses/bet/{bid}/cancel", post(horses::casino_horses_cancel))
@@ -203,6 +222,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/snake/start", post(snake::snake_start))
         .route("/api/games/snake/finish", post(snake::snake_finish))
         .route("/api/admin/snake", post(snake::admin_snake_save))
+        .route("/api/events", get(events::events_list))
+        .route("/api/events/{id}/advent", post(events::advent_claim))
+        .route("/api/admin/events", get(events::admin_events).post(events::admin_events_save))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
         .route("/api/pinball/finish", post(pinball::pinball_finish))
@@ -221,6 +243,8 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/chess/{id}/draw", post(chess::chess_draw))
         .route("/api/items/{id}/drawing", get(drawings::drawing_info).post(drawings::drawing_save))
         .route("/api/items/{id}/scratch", post(scratch::scratch_item))
+        .route("/api/items/{id}/unwrap", post(gift::unwrap_item))
+        .route("/api/items/{id}/rewrap", post(gift::rewrap_item))
         // arena (tylko admini)
         .route("/api/arena/inbox", get(arena_inbox))
         .route("/api/arena/start", post(arena_start))

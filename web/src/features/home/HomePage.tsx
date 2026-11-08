@@ -10,6 +10,7 @@ import { UserLink } from '../../ui/UserLink';
 import { CrateArt } from '../crates/CrateArt';
 import { PatchNotes } from '../notices/Notices';
 import { QuestTile } from './QuestTile';
+import { EventsTile } from '../events/EventsTile';
 import s from './home.module.css';
 
 const MEDALS = ['#e5b94a', '#c2c6cf', '#c98a55'];
@@ -20,6 +21,7 @@ export function HomePage() {
   return (
     <div className={s.home}>
       <div className={s.tiles}>
+        <EventsTile />
         <CratesTile />
         <ArenaTile />
         <QuestTile />

@@ -195,7 +195,9 @@ export function cardValue(pid, v = "normal") {
 // small - mały kafelek (bęben, kuźnia, kasyno...): serwer wysyła lekką miniaturę zamiast pełnego zdjęcia
 export function imgUrl(pid, variant: any = null, small = false) {
   // część wariantu z własnym zdjęciem, a gdy brak - zdjęcie z "photoFallback" (Lampionowa -> Halloweenowa)
-  const p = person(pid), has = x => x && p.variantPhotos?.[x] != null, parts = variant ? variantParts(variant) : [];
+  // warianty kart (z polem "cards", np. Rzulty) mają pierwszeństwo przed warstwami (halloween+rzulty -> zdjęcie Rzultego)
+  const cardVar = x => (S.cfg?.variants[x]?.cards?.length ? 1 : 0);
+  const p = person(pid), has = x => x && p.variantPhotos?.[x] != null, parts = variant ? [...variantParts(variant)].sort((a, b) => cardVar(b) - cardVar(a)) : [];
   const part = parts.find(has) || parts.map(x => S.cfg?.variants[x]?.photoFallback).find(has);
   const vv = part ? p.variantPhotos[part] : null;
   return `/img/${p.imgAs || pid}${vv != null ? "/" + part : ""}?v=${vv ?? (p.imgv || 0)}${small ? "&s=1" : ""}${p.imgq ? "&" + p.imgq : ""}`;

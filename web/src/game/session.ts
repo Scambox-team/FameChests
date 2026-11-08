@@ -12,6 +12,7 @@ function applyStateResponse(st: StateResponse) {
   S.showcase = st.showcase ?? [];
   S.drawn = new Set(st.drawn ?? []);
   S.scratched = new Set(st.scratched ?? []);
+  S.unwrapped = new Set(st.unwrapped ?? []);
   S.chests = st.chests ?? S.chests;
 }
 

@@ -243,6 +243,7 @@ const VR_SOURCES = {
   quest: { chip: "quest", title: "Nagroda za codzienny quest" },
   market: { chip: "rynek", title: "Premia kupującego na rynku" },
   marketSeller: { chip: "rynek", title: "Premia sprzedającego na rynku" },
+  casino: { chip: "kasyno", title: "Wygrane w kasynie (gdy wartość karty pasuje do puli), także gdy wariant jest wyłączony" },
   pinball: { chip: "pinball", title: "Nagroda za wynik w Pinballu" },
 };
 function vrExtraHTML(v) {

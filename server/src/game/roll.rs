@@ -100,11 +100,15 @@ pub fn roll_money(kind: &str) -> i64 {
 /// Zwraca ([(karta, wariant)], reszta w pieniądzach).
 pub fn house_cards(cat: &Catalog, value: i64) -> (Vec<(Arc<Person>, String)>, i64) {
     let g = g();
-    // CASINO_VARIANTS: zwykła i warianty włączone, nie zablokowane przez admina w kasynie
+    // CASINO_VARIANTS: zwykła i warianty włączone (albo z "extraSource": "casino", np. Zdrapka - wypada z kasyna także
+    // wyłączona, gdy jej wartość pasuje do puli), nie zablokowane przez admina w kasynie
     let casino: Vec<String> = g
         .casino_variants
         .iter()
-        .filter(|v| *v == "normal" || (cat.variant_enabled(v) && cat.variant_house_ok(v)))
+        .filter(|v| {
+            *v == "normal"
+                || ((cat.variant_enabled(v) || g.variant(v).extra_source.as_deref() == Some("casino")) && cat.variant_house_ok(v))
+        })
         .cloned()
         .collect();
     let mut pool: Vec<(i64, &Arc<Person>, String)> = cat

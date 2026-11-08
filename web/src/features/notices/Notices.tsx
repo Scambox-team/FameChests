@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Gift } from 'lucide-react';
+import { syncInventory } from '../../game/session';
+import { Sound } from '../../sound/sound';
+import { Avatar } from '../../ui/UserLink';
 import { api } from '../../api/client';
 import { S, touch, useGame } from '../../game/store';
 import { Button } from '../../ui/Button';
@@ -8,9 +12,18 @@ import { TermsDialog } from '../legal/TermsDialog';
 import styles from './Notices.module.css';
 
 // Okienka gry pokazywane jedno po drugim: wiadomości od adminów, lista zmian, codzienna skrzynka.
-type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' };
+type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' } | { kind: 'referral'; list: any[] };
 
 const seenMessages = new Set<number>();
+const seenReferrals = new Set<string>();
+
+/** Nagrody za polecenia (reflinki) z /api/me: okienko raz na nagrodę */
+export function showReferral(list: any[] = []) {
+  const fresh = list.filter(n => !seenReferrals.has(`${n.role}:${n.referredId}`));
+  if (!fresh.length) return;
+  fresh.forEach(n => seenReferrals.add(`${n.role}:${n.referredId}`));
+  queueNotice({ kind: 'referral', list: fresh });
+}
 
 export function queueNotice(n: Notice) {
   S.notices = [...(S.notices ?? []), n];
@@ -38,6 +51,7 @@ export function showMessages(list: any[] = []) {
 export function startNotices(me: any) {
   showTerms(me);
   showMessages(me.messages);
+  showReferral(me.referral);
   if (me.patchNotes?.length) queueNotice({ kind: 'patch', notes: me.patchNotes });
   if (me.dailyClaimable) queueNotice({ kind: 'daily' });
 }
@@ -53,6 +67,28 @@ function Messages({ list, onClose }: { list: any[]; onClose: () => void }) {
         </article>
       ))}
       <Button kind="hue" onClick={onClose}>OK</Button>
+    </Modal>
+  );
+}
+
+function Referral({ list, onClose }: { list: any[]; onClose: () => void }) {
+  useEffect(() => {
+    Sound.win();
+    api('/api/referral/seen', { ids: list.map(n => n.referredId) }).catch(() => {});
+    syncInventory(null, true);   // skrzynki i grosze z nagrody
+  }, [list]);
+  return (
+    <Modal title="Nagroda za polecenie" onClose={onClose}>
+      {list.map(n => (
+        <article key={`${n.role}:${n.referredId}`} className={styles.note}>
+          <header><b><Gift size={16} aria-hidden="true" /> {n.role === 'referrer' ? 'Twój znajomy dołączył do gry' : 'Witamy z polecenia'}</b></header>
+          <p>{n.other && <Avatar user={n.other} size={20} />} {n.role === 'referrer'
+            ? <>Gracz <b>{n.other?.username}</b> założył konto z twojego linku i zaczął grać. Dostajesz: <b>{n.reward}</b>.</>
+            : <>Twoje konto powstało z polecenia gracza <b>{n.other?.username}</b>. Dostajesz: <b>{n.reward}</b>.</>}</p>
+        </article>
+      ))}
+      <p className="muted small">Skrzynki czekają w ekwipunku.</p>
+      <Button kind="hue" onClick={onClose}>Super</Button>
     </Modal>
   );
 }
@@ -85,5 +121,6 @@ export function Notices() {
   if (next.kind === 'terms') return <TermsDialog onDone={() => { termsQueued = false; close(); }} />;
   if (next.kind === 'messages') return <Messages list={next.list} onClose={close} />;
   if (next.kind === 'patch') return <PatchNotes notes={next.notes} onClose={close} />;
+  if (next.kind === 'referral') return <Referral list={next.list} onClose={close} />;
   return <DailyDialog onClose={close} />;
 }

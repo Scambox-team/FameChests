@@ -4,7 +4,10 @@
 import { S } from '../game/store';
 import { joinVariant, splitVariant } from '../game/rules';
 import { abilitiesOf, baseVariant, beerSub, cardValue, crateOf, crateVariants, isBlank, isCombo, isSpecial, isSpecialCard, sellableCard, person, plural, possibleVariants, rand, rarityIdx, rarityShare, variantChance, variantName, variantParts, vClass, vtClass, imgUrl } from '../game/rules';
-import { cardHTML, scratchable } from '../cards/cardHtml';
+import { cardHTML, giftRewrappable, giftWrapHTML, giftWrapped, scratchable } from '../cards/cardHtml';
+import { api } from '../api/client';
+import { touch } from '../game/store';
+import { toast } from '../ui/Toaster';
 import { esc, fmt, sleep } from '../lib/format';
 import { Sound } from '../sound/sound';
 import { kindIcon, typeIcon } from '../icons/cardIcons';
@@ -379,8 +382,11 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
         ${viewerActions.myItemFor?.(pid, variant) ? `<div class="vi-actions vi-social">
           <button class="btn primary" data-act="share">Pokaż znajomym</button>
           <button class="btn" data-act="pin">${viewerActions.showcaseHas?.(pid, variant) ? "Zdejmij z gabloty" : "Do gabloty"}</button>
+          <button class="btn" data-act="fav" aria-pressed="${!!viewerActions.isFavorite?.(pid, variant, uid)}">${viewerActions.isFavorite?.(pid, variant, uid) ? "Usuń z ulubionych" : "Do ulubionych"}</button>
           ${isBlank(variant) && S.items.some(i => i.id === +uid) ? '<button class="btn primary" data-act="draw">Rysuj na karcie</button>' : ""}
           ${scratchable(variant, uid) ? '<button class="btn primary" data-act="scratch">Zdrap kartę</button>' : ""}
+          ${giftWrapped(variant, uid) ? '<button class="btn primary" data-act="unwrap">Odpakuj</button>' : ""}
+          ${giftRewrappable(variant, uid) ? '<button class="btn" data-act="rewrap">Zapakuj ponownie</button>' : ""}
         </div>` : ""}
         <div class="muted small">Porusz kursorem nad kartą, aby ją przechylić. Kliknij kartę, aby ją obrócić.</div>
         <button type="button" class="vi-link" data-act="report">Zgłoś problem z kartą</button>
@@ -405,13 +411,38 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     if (act === "report") return viewerActions.openReport?.(pid, variant);
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
+    if (act === "fav") return viewerActions.toggleFavorite?.(pid, variant, uid).then(() => openViewer(pid, variant, uid));
     if (act === "draw") return viewerActions.openDrawing?.(+uid);
     if (act === "scratch") return viewerActions.openScratch?.(+uid);
+    // Prezentowy: kliknięcie zapakowanej karty też ją odpakowuje
+    if (act === "unwrap" || (giftWrapped(variant, uid) && e.target.closest(".viewer-flipper"))) return giftPlay(el, pid, variant, +uid, true);
+    if (act === "rewrap") return giftPlay(el, pid, variant, +uid, false);
     if (act === "flip" || e.target.closest(".viewer-flipper")) {
       el.querySelector(".viewer-flipper").classList.toggle("flipped");
       Sound.page();
     }
   });
+}
+
+// Prezentowy: odpakowanie (papier pęka, kokarda się rozwiązuje) albo ta sama animacja od tyłu przy „Zapakuj ponownie”.
+// Zapis na serwerze najpierw (przy błędzie nic się nie dzieje), potem animacja na karcie w podglądzie i świeży podgląd.
+const GIFT_MS = 2800;
+let giftBusy = false;
+async function giftPlay(el, pid, variant, uid, open) {
+  if (giftBusy) return;
+  giftBusy = true;
+  try {
+    await api(`/api/items/${uid}/${open ? "unwrap" : "rewrap"}`, {});
+    const card = el.querySelector(".viewer-flipper .card");
+    if (open) card?.querySelector(".gf-wrap")?.classList.add("unwrap");
+    else card?.querySelector(".shine")?.insertAdjacentHTML("beforebegin", giftWrapHTML("rewrap"));
+    Sound.whoosh();
+    await sleep(GIFT_MS);
+    if (open) { S.unwrapped.add(uid); Sound.win(); } else S.unwrapped.delete(uid);
+    touch();
+    if (el.isConnected) openViewer(pid, variant, uid);
+  } catch (e) { Sound.error(); toast(e.message, true); }
+  finally { giftBusy = false; }
 }
 
 // rozwinięty wybór wariantów zostaje rozwinięty przy kolejnych podglądach

@@ -14,6 +14,7 @@ export interface Store {
   chests: Record<string, number>;
   drawn: Set<number>;
   scratched: Set<number>;
+  unwrapped: Set<number>;
   collected: Set<string>;
   badges: { market: number; casino: number; friends: number };
   dailyClaimable: boolean;
@@ -29,6 +30,7 @@ export const S: Store = {
   chests: {},
   drawn: new Set(),
   scratched: new Set(),
+  unwrapped: new Set(),
   collected: new Set(),
   badges: { market: 0, casino: 0, friends: 0 },
   dailyClaimable: false

@@ -30,7 +30,7 @@ import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
-import { Notices, showMessages, showTerms, startNotices } from '../features/notices/Notices';
+import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
 import { achPoll } from '../features/achievements/popups';
@@ -48,6 +48,7 @@ function onMe(me: any) {
   if (me.achUnseen && !S.opening) achPoll();
   if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
+  if (me.referral?.length) showReferral(me.referral);
   showTerms(me);
 }
 

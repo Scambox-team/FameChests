@@ -13,6 +13,21 @@ import './variant-mockups.css';
 export const vmN = (a, b, d = 0) => rand(a, b).toFixed(d);
 export const vmSvg = (body, vb = "0 0 63 88", cls = "", par = "none") =>
   `<svg class="${cls}" viewBox="${vb}" preserveAspectRatio="${par}" aria-hidden="true">${body}</svg>`;
+const vmPick = arr => arr[Math.floor(Math.random() * arr.length)];
+// rzeczy rozrzucone po karcie (kropki, iskry, płatki): losowe miejsce i opóźnienie animacji
+const vmScatter = (n, cls, extra = () => "", y = [2, 96], x = [2, 96]) => Array.from({ length: n }, () =>
+  `<i class="${cls}" style="left:${vmN(...x)}%;top:${vmN(...y)}%;animation-delay:-${vmN(0, 6, 1)}s;${extra()}"></i>`).join("");
+// rzeczy rozłożone po obwodzie karty (lampki, kwiaty): n punktów, f(x%, y%, k)
+const vmPerimeter = (n, f) => Array.from({ length: n }, (_, k) => {
+  let d = k / n * 302, x, y;
+  if (d < 63) { x = d; y = 0; } else if ((d -= 63) < 88) { x = 63; y = d; } else if ((d -= 88) < 63) { x = 63 - d; y = 88; } else { x = 0; y = 88 - (d - 63); }
+  return f((x / .63).toFixed(1), (y / .88).toFixed(1), k);
+}).join("");
+// unikalne id (gradienty i filtry SVG - każda makieta ma własne)
+let vmIdN = 0;
+const vmId = p => `${p}${++vmIdN}`;
+// makieta z panelami ze zmiennych --x-* (variant-mockups.css)
+const X = o => ({ ...o, cls: `vmx${o.cls ? " " + o.cls : ""}` });
 
 // ---------------------------------------------------------------- PROPOZYCJE (obecnie żadnych)
 
@@ -73,4 +88,3 @@ VARIANT_PROPOSALS.push({
       sub: () => `POCHŁONIĘTO · ${vmN(1, 99)}%` },
   ],
 });
-
