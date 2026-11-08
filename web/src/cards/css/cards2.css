@@ -3270,6 +3270,77 @@ a.icon-btn { display: grid; place-items: center; text-decoration: none; }
 .pick.v-gift { box-shadow: inset 0 0 0 2px #d4af37, inset 0 0 0 4px #c41e3a, inset 0 -26px 26px -18px var(--rc); }
 .avv-gift img { box-shadow: 0 0 0 2px #d4af37, 0 0 0 4px #c41e3a !important; }
 
+/* ASCII Art (makieta ASCII 1 „Terminal”) - cała karta jak ekran terminala: czarne tło, białe znaki monospace, ramka ze znaków + - |
+   (ASCII_BOX w VX_DECO), nazwa z „> ” i migającym kursorem, panele z przerywaną obwódką; zdjęcie przerysowane na znaki (asciiCanvas). */
+.card.v-ascii { --frame: #0b0b0b; --spin: initial; box-shadow: 0 6px 18px #000c, 0 0 0 .3cqw #2a2a2a; }
+.card.v-ascii .card-inner { background: #000; color: #e8e8e8; }
+.card.v-ascii .card-inner * { font-family: Consolas, "DejaVu Sans Mono", "Courier New", monospace !important; }
+.card.v-ascii .card-name { color: #f4f4f4; font-weight: 700; letter-spacing: 0; text-shadow: 0 0 .6cqw #fff6; }
+.card.v-ascii .card-name::before { content: "> "; color: #8a8a8a; }
+.card.v-ascii .card-name::after { content: "_"; animation: ascBlink 1s steps(1) infinite; }
+@keyframes ascBlink { 50% { opacity: 0; } }
+.card.v-ascii :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: transparent; border: .3cqw dashed #8a8a8a; border-radius: 0; box-shadow: none; }
+.card.v-ascii :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #e8e8e8; text-shadow: none; }
+.card.v-ascii .card-photo { background: #000; border: .3cqw solid #cfcfcf; border-image: none; border-radius: 0; box-shadow: none; }
+pre.vx-deco.asc-box { position: absolute; inset: 0; margin: 0; color: #bdbdbd; font-family: Consolas, "Courier New", monospace; font-size: 4.9cqw;
+  letter-spacing: calc(100cqw / 34 - .55em); line-height: calc(139.7cqw / 28); white-space: pre; overflow: hidden; pointer-events: none; }
+.r-secret.v-ascii .sc-border { background: #cfcfcf; animation: none; }
+.pick.v-ascii { background: #000; box-shadow: inset 0 0 0 2px #cfcfcf; }
+.pick.v-ascii img, .avv-ascii img { filter: grayscale(1) contrast(1.5) brightness(.95); }
+
+/* Drewniany (makieta Drewno 2 „Dąb”) - prosta i tania karta: jasny dąb z prostymi słojami (--wd-oak, szum SVG jako jeden obrazek),
+   ramka z ciemnego dębu (--frame), napisy jak wypalone, panele wyfrezowane w desce, zdjęcie w drewnianej ramce; bez animacji. */
+.card.v-wood {
+  --wd-oak: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22300%22%20height%3D%22420%22%20viewBox%3D%220%200%20300%20420%22%3E%3Cfilter%20id%3D%22w%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.09%200.006%22%20numOctaves%3D%224%22%20seed%3D%224%22%2F%3E%3CfeColorMatrix%20type%3D%22saturate%22%20values%3D%220%22%2F%3E%3CfeComponentTransfer%3E%3CfeFuncR%20type%3D%22table%22%20tableValues%3D%22.78%20.62%20.74%20.58%20.7%20.55%20.76%22%2F%3E%3CfeFuncG%20type%3D%22table%22%20tableValues%3D%22.55%20.41%20.52%20.38%20.49%20.36%20.54%22%2F%3E%3CfeFuncB%20type%3D%22table%22%20tableValues%3D%22.3%20.2%20.28%20.18%20.26%20.17%20.3%22%2F%3E%3CfeFuncA%20type%3D%22discrete%22%20tableValues%3D%221%22%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%22300%22%20height%3D%22420%22%20filter%3D%22url%28%23w%29%22%2F%3E%3C%2Fsvg%3E");
+  --wd-oak-dark: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22300%22%20height%3D%22420%22%20viewBox%3D%220%200%20300%20420%22%3E%3Cfilter%20id%3D%22w%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.09%200.006%22%20numOctaves%3D%224%22%20seed%3D%229%22%2F%3E%3CfeColorMatrix%20type%3D%22saturate%22%20values%3D%220%22%2F%3E%3CfeComponentTransfer%3E%3CfeFuncR%20type%3D%22table%22%20tableValues%3D%22.42%20.3%20.38%20.27%20.36%22%2F%3E%3CfeFuncG%20type%3D%22table%22%20tableValues%3D%22.25%20.17%20.22%20.15%20.21%22%2F%3E%3CfeFuncB%20type%3D%22table%22%20tableValues%3D%22.12%20.07%20.1%20.06%20.1%22%2F%3E%3CfeFuncA%20type%3D%22discrete%22%20tableValues%3D%221%22%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%22300%22%20height%3D%22420%22%20filter%3D%22url%28%23w%29%22%2F%3E%3C%2Fsvg%3E");
+  --frame: var(--wd-oak-dark) 0 0 / cover; --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-wood .card-inner { background: var(--wd-oak) 0 0 / 100% 100%, #b07a45; color: #2a1405; }
+.card.v-wood :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #00000014; border: none; border-radius: .6cqw; box-shadow: inset 0 .5cqw .9cqw #0007, inset 0 -.2cqw .3cqw #ffffff30; }
+.card.v-wood :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #2a1405; text-shadow: 0 .15cqw 0 #ffe9c260; }
+.card.v-wood .card-name { color: #2a1405; font-weight: 800; text-shadow: 0 .2cqw 0 #ffe2b370, 0 -.1cqw 0 #0005; }
+.card.v-wood .card-photo { border: 1cqw solid #4a2a10; border-image: none; border-radius: .6cqw; box-shadow: inset 0 0 1.5cqw #000a, 0 .4cqw .6cqw #0006; }
+.card.v-wood .card-photo > img, .r-secret.v-wood .sc-art img { filter: sepia(.18) saturate(1.05) contrast(1.03); }
+.r-secret.v-wood .sc-border { background: var(--wd-oak-dark) 0 0 / cover; animation: none; }
+.pick.v-wood { box-shadow: inset 0 0 0 3px #8a5a2b, inset 0 -26px 26px -18px var(--rc); }
+.avv-wood img { box-shadow: 0 0 0 2px #c08a50, 0 0 0 4px #4a2a10 !important; }
+
+/* Dowód osobisty (makieta Dowód 1 „Nowy dowód”) - cała karta to warstwa .id-card (dowodCard w cardHtml.ts): na zwykłej, pionowej karcie
+   obrócona o 90°, w podglądzie karta jest pozioma (viewer.css) i dowód stoi prosto. .id-card jest kontenerem - cqw = szerokość dowodu.
+   Zwykła zawartość karty jest ukryta (nadal jest w DOM-ie dla dostępności). Klasy id-. */
+.card.v-dowod { --frame: #ece7f0; --spin: initial; box-shadow: 0 6px 18px #0008; }
+.card.v-dowod :is(.card-inner, .sc-frame, .sc-border), .card.v-dowod > .var-tag { visibility: hidden; }
+.vx-deco.id-card { position: absolute; inset: auto; left: 50%; top: 50%; width: 139.68%; height: 71.59%; transform: translate(-50%, -50%) rotate(90deg);
+  container-type: inline-size; z-index: 4; border-radius: 4.5% / 7.2%; overflow: hidden; color: #1a1a2a; font-family: Arial, Helvetica, sans-serif; }
+.vf .card.v-dowod { aspect-ratio: 85.6 / 54; border-radius: 4.5% / 7.2%; }
+.vf .card.v-dowod .vx-deco.id-card { left: 0; top: 0; width: 100%; height: 100%; transform: none; }
+.viewer-stage:has(.card.v-dowod) { width: min(640px, 92vw, calc((100vh - 60px) * 1.585)); aspect-ratio: 85.6 / 54; }
+.id-card > * { position: absolute; display: block; }
+.id-card > .id-guil { inset: 0; background: repeating-radial-gradient(circle at 25% 135%, #0000 0 .55cqw, #c0447f1c .55cqw .7cqw),
+  repeating-radial-gradient(circle at 95% -35%, #0000 0 .6cqw, #3b5cc21c .6cqw .75cqw), linear-gradient(100deg, #f6e1ec, #eedcf0 35%, #e2e3f6 65%, #e4eef8); }
+.id-card > .id-shield { left: 3.5cqw; top: 3cqw; width: 9cqw; height: 10.5cqw; background: #d4202c; clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%); display: grid; place-items: center; }
+.id-shield b { color: #fff; font: 900 3.6cqw/1 Arial, sans-serif; margin-top: -1.6cqw; }
+.id-card > .id-head { left: 14.5cqw; top: 3cqw; font-size: 3.2cqw; line-height: 1.22; color: #2a2440; white-space: nowrap; }
+.id-head b { font-weight: 400; } .id-head span { font-size: 2.1cqw; color: #4a4466; }
+.id-card > .id-sb { right: 3.5cqw; top: 3cqw; width: 13cqw; height: 8.6cqw; background: #1f3f9e; color: #ffd23d; display: grid; place-items: center; font: 800 3.8cqw/1 Arial, sans-serif; border-radius: .3cqw; }
+.id-card > .id-chip-mark { right: 20cqw; top: 10cqw; width: 7.5cqw; height: 3cqw; background: linear-gradient(90deg, #1e8a5a, #36c08a, #1e8a5a); border-radius: .5cqw; }
+.id-card > .id-photo { left: 3.5cqw; top: 17cqw; width: 25cqw; height: 33cqw; overflow: hidden; }
+.id-photo img, .id-ghost img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; filter: grayscale(1) contrast(1.08); }
+.id-card > .id-fields { left: 31.5cqw; top: 14.5cqw; right: 17cqw; display: grid; grid-template-columns: 1.15fr .85fr; column-gap: 2cqw; row-gap: .5cqw; }
+.id-f small { display: block; font: 600 1.5cqw/1.1 Arial, sans-serif; color: #4a3a5a; white-space: nowrap; }
+.id-f small em { font-style: italic; font-weight: 400; margin-left: .4cqw; }
+.id-f b { display: block; font: 700 2.6cqw/1.15 Arial, sans-serif; color: #111; letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.id-f.big, .id-f.wide { grid-column: 1 / -1; } .id-f.big b { font-size: 3.5cqw; letter-spacing: .05em; }
+.id-card > .id-ghost { right: 4cqw; top: 25cqw; width: 11cqw; height: 13.5cqw; overflow: hidden; opacity: .5; mix-blend-mode: multiply; }
+.id-ghost img { filter: grayscale(1) contrast(.7) brightness(1.15); }
+.id-card > .id-sign { left: 31.5cqw; bottom: 3cqw; }
+.id-sign small, .id-can small { display: block; font: 600 1.5cqw/1.1 Arial, sans-serif; color: #4a3a5a; } .id-sign small em, .id-can small em { font-style: italic; font-weight: 400; }
+.id-sign i { display: block; margin-top: .3cqw; font: italic 4.6cqw/1 "Segoe Script", "Brush Script MT", cursive; color: #1a1a4a; white-space: nowrap; }
+.id-card > .id-can { right: 3.5cqw; bottom: 2.6cqw; text-align: right; }
+.id-can b { display: block; font: 500 4.6cqw/1 "OCR B", Consolas, monospace; letter-spacing: .15em; color: #111; }
+.id-card > .id-water { left: 34cqw; top: 26cqw; font: 800 6.5cqw/1 Arial, sans-serif; letter-spacing: .1em; color: #3b2a6a; opacity: .07; transform: rotate(-24deg); pointer-events: none; }
+.pick.v-dowod { box-shadow: inset 0 0 0 3px #e6d6ee, inset 0 0 0 5px #8a6aa8, inset 0 -26px 26px -18px var(--rc); }
+.pick.v-dowod img, .avv-dowod img { filter: grayscale(1) contrast(1.08); }
+
 /* COVID - alarm pod mikroskopem: koguty cvd-beam, cząsteczki cvd-float, czarno-białe zdjęcie pod czerwoną nakładką cvd-tint, podziałka cvd-scale, pasek ALERT w variantTop, komunikat cvd-sms w VX_DECO (bez niego przy kilku zdolnościach). Naklejki na zdjęciu z /stickers */
 .card.v-covid .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
 .card.v-covid { --frame: #e8101e; --spin: initial; --panel: #120406d8; --cvd-v1: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff8a5a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff8a5a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff8a5a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff8a5a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff8a5a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff8a5a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff8a5a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff8a5a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff8a5a'/><circle cx='20' cy='20' r='11.5' fill='%23ff8a5a'/></svg>"); --cvd-v2: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ff2a3e'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ff2a3e'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ff2a3e'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ff2a3e'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ff2a3e'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ff2a3e'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ff2a3e'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ff2a3e' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ff2a3e'/><circle cx='20' cy='20' r='11.5' fill='%23ff2a3e'/></svg>"); --cvd-v3: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M31.0 20.0 L36.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='37.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M29.5 25.5 L33.9 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M25.5 29.5 L28.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M20.0 31.0 L20.0 36.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='37.0' r='2.2' fill='%23ffd21a'/><path d='M14.5 29.5 L12.0 33.9' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='34.7' r='2.2' fill='%23ffd21a'/><path d='M10.5 25.5 L6.1 28.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='28.5' r='2.2' fill='%23ffd21a'/><path d='M9.0 20.0 L4.0 20.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='3.0' cy='20.0' r='2.2' fill='%23ffd21a'/><path d='M10.5 14.5 L6.1 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='5.3' cy='11.5' r='2.2' fill='%23ffd21a'/><path d='M14.5 10.5 L12.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='11.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M20.0 9.0 L20.0 4.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='20.0' cy='3.0' r='2.2' fill='%23ffd21a'/><path d='M25.5 10.5 L28.0 6.1' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='28.5' cy='5.3' r='2.2' fill='%23ffd21a'/><path d='M29.5 14.5 L33.9 12.0' stroke='%23ffd21a' stroke-width='1.6'/><circle cx='34.7' cy='11.5' r='2.2' fill='%23ffd21a'/><circle cx='20' cy='20' r='11.5' fill='%23ffd21a'/></svg>"); box-shadow: 0 6px 18px #0009; animation: cvdAlert 1.6s steps(1) infinite; }

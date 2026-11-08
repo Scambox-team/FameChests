@@ -705,6 +705,27 @@
    "off": true,
    "desc": "Na święta: karta przychodzi zapakowana w czerwony papier ze złotą kokardą - właściciel sam ją odpakowuje, a w podglądzie może ją zapakować ponownie. Wypada w czasie eventu Święta ze wszystkich skrzynek."
   },
+  "ascii": {
+   "name": "ASCII Art",
+   "chance": 0.006,
+   "mult": 8,
+   "off": true,
+   "desc": "Karta jak ekran terminala: białe znaki na czarnym tle, ramka ze znaków, a zdjęcie przerobione na ASCII art."
+  },
+  "wood": {
+   "name": "Drewniany",
+   "chance": 0.02,
+   "mult": 3,
+   "off": true,
+   "desc": "Karta z jasnego dębu: proste słoje, wypalone napisy, panele wyfrezowane w desce i ramka z ciemnego drewna."
+  },
+  "dowod": {
+   "name": "Dowód osobisty",
+   "chance": 0.005,
+   "mult": 10,
+   "off": true,
+   "desc": "Karta wzorowana na polskim dowodzie: zdjęcie, rubryki ze statystykami karty, podpis i numer. W podglądzie pozioma."
+  },
   "covid": {
    "name": "COVID",
    "chance": 0.005,

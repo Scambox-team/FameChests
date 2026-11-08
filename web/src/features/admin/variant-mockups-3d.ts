@@ -24,7 +24,7 @@ async function mount(canvas) {
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = T.SRGBColorSpace;
   const scene = new T.Scene(), camera = new T.PerspectiveCamera(35, 1, .1, 100);
-  const sc = (kind === 'holo' ? buildHolo : buildAero)(T, scene, camera, look, pid);
+  const sc = (kind === 'holo' ? buildHolo : kind === 'aero2' ? buildAero2 : buildAero)(T, scene, camera, look, pid);
   let visible = true, w = 0, h = 0;
   const io = new IntersectionObserver(e => { visible = e[0].isIntersecting; });
   io.observe(canvas);
@@ -51,7 +51,7 @@ const VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionM
 // obraz hologramu: jasność zdjęcia (albo przezroczystość napisów) w kolorze hologramu, linie skanowania, migotanie,
 // ziarno, poziome pasy zakłóceń przesuwające wiersze w bok; dodawane światło (AdditiveBlending)
 const HOLO_FRAG = `
-uniform sampler2D map; uniform float time, glitch, grain, opacity, radial, useAlpha, scanK; uniform vec3 color; varying vec2 vUv;
+uniform sampler2D map; uniform float time, glitch, grain, opacity, radial, useAlpha, scanK, build; uniform vec3 color; varying vec2 vUv;
 float rnd(vec2 c){ return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
 void main(){
   vec2 uv = vUv;
@@ -68,11 +68,13 @@ void main(){
   float n = (rnd(vUv * vec2(512.0, 384.0) + fract(time * 7.0)) - 0.5) * grain;
   float a = clamp((l * 1.2 + (useAlpha > 0.5 ? 0.0 : 0.05)) * scan * band * flick * edge * opacity + n * edge, 0.0, 1.0);
   if (useAlpha < 0.5) a *= t.a;
-  gl_FragColor = vec4(color * (0.5 + l * 0.95) + g * 0.15, a);
+  float edgeB = smoothstep(build - 0.025, build, vUv.y) * step(vUv.y, build) * step(build, 0.999);   // świecąca linia budowania obrazu
+  a = a * step(vUv.y, build) + edgeB * 0.7;
+  gl_FragColor = vec4(color * (0.5 + l * 0.95) + g * 0.15 + edgeB, a);
 }`;
 const holoMat = (T, tex, o = {}) => new T.ShaderMaterial({
   uniforms: { map: { value: tex }, time: { value: 0 }, glitch: { value: 0 }, color: { value: new T.Color(o.color ?? 0x5fc8ff) }, grain: { value: o.grain ?? .14 },
-    opacity: { value: o.opacity ?? 1 }, radial: { value: o.radial ? 1 : 0 }, useAlpha: { value: o.text ? 1 : 0 }, scanK: { value: o.scan ?? .38 } },
+    opacity: { value: o.opacity ?? 1 }, radial: { value: o.radial ? 1 : 0 }, useAlpha: { value: o.text ? 1 : 0 }, scanK: { value: o.scan ?? .38 }, build: { value: 1 } },
   vertexShader: VERT, fragmentShader: HOLO_FRAG, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
 });
 
@@ -158,75 +160,59 @@ function motes(T, n, r, height, y0, color) {
   return pts;
 }
 
+// wersja 2 (makieta Hologram 1 po uwagach): małe urządzenie, duża postać i duży panel statystyk; tryby różnią się zakłóceniami
+const HOLO_MODES = {
+  1: { base: .02, peak: .3, thr: 1.85, grain: .06, scan: .26, ghost: false, weak: false },   // czysty sygnał
+  2: { base: .08, peak: 1, thr: 1.5, grain: .14, scan: .38, ghost: false, weak: false },     // lekkie zakłócenia
+  3: { base: .45, peak: 1.7, thr: .9, grain: .4, scan: .5, ghost: true, weak: false },       // mocne zakłócenia, rozjechane kolory
+  4: { base: .15, peak: 1.2, thr: 1.4, grain: .24, scan: .45, ghost: false, weak: true },    // słaby sygnał: obraz się buduje i gaśnie
+};
 function buildHolo(T, scene, camera, look, pid) {
-  const st = personStats(pid);
-  const color = look === 3 ? 0x4aa8ff : 0x5fc8ff;
+  const M = HOLO_MODES[look] || HOLO_MODES[2], st = personStats(pid), color = 0x5fc8ff;
   scene.add(new T.AmbientLight(0xffffff, .55));
   const dl = new T.DirectionalLight(0xffffff, 1.1); dl.position.set(2, 4, 5); scene.add(dl);
-  const pl = new T.PointLight(color, 3, 6); pl.position.set(0, .5, .8); scene.add(pl);
+  const pl = new T.PointLight(color, 2.5, 5); pl.position.set(0, .4, .7); scene.add(pl);
   const root = new T.Group(); scene.add(root);
-  const mats = [];
-  const photoTex = new T.TextureLoader().load(imgUrl(pid, 'normal'), t => {
-    const a = t.image.width / t.image.height;
-    if (photo) photo.scale.x = photo.scale.y * a * (look === 2 ? 1.25 : 1);
+  const dev = projector(T, .55, .14); root.add(dev.group);
+  root.add(beam(T, .18, 1.15, 2.7, color, dev.top));
+  const mats = [], ghosts = [];
+  let photo;
+  const tex = new T.TextureLoader().load(imgUrl(pid, 'normal'), t => {
+    if (!photo) return;
+    photo.scale.x = photo.scale.y * t.image.width / t.image.height;
+    ghosts.forEach(g => g.scale.copy(photo.scale));
   });
-  photoTex.colorSpace = T.SRGBColorSpace;
-  let photo, dev, extra = [], ring, chips = [];
-  const pm = holoMat(T, photoTex, { color, grain: look === 3 ? .5 : .14, radial: look === 2, scan: look === 3 ? .55 : .38 });
-  mats.push(pm);
-  if (look === 1) {   // projektor stołowy: postać + panel statystyk obok, całość powoli się obraca
-    dev = projector(T, 1, .22); root.add(dev.group);
-    root.add(beam(T, .35, 1.0, 2.3, color, dev.top));
-    photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.5, 1.9, 1); photo.position.set(0, dev.top + 1.1, 0); root.add(photo);
-    const sm = holoMat(T, statsTexture(T, st), { color, text: true, opacity: .95 }); mats.push(sm);
-    const panel = new T.Mesh(new T.PlaneGeometry(1.05, 1.31), sm); panel.position.set(1.15, dev.top + 1.25, .25); panel.rotation.y = -.45; root.add(panel);
-    root.position.x = -.35;
-    camera.position.set(0, 1.9, 7.4); camera.lookAt(0, 1.25, 0);
-  } else if (look === 2) {   // popiersie w kole, dookoła obraca się pierścień z napisami
-    dev = projector(T, .85, .2); root.add(dev.group);
-    root.add(beam(T, .3, .9, 2.1, color, dev.top));
-    photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.7, 1.7, 1); photo.position.set(0, dev.top + 1.25, 0); root.add(photo);
-    const tex = statsTexture(T, st, 'strip'); tex.wrapS = T.RepeatWrapping; tex.repeat.x = 1;
-    const rm = holoMat(T, tex, { color, text: true, opacity: .9, scan: .2 }); mats.push(rm);
-    ring = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, .22, 96, 1, true), rm); ring.position.y = dev.top + .55; root.add(ring);
-    const ring2 = new T.Mesh(new T.TorusGeometry(1.1, .006, 6, 128), new T.MeshBasicMaterial({ color, transparent: true, opacity: .7, blending: T.AdditiveBlending }));
-    ring2.rotation.x = Math.PI / 2; ring2.position.y = dev.top + 2.0; root.add(ring2); extra.push(ring2);
-    camera.position.set(0, 2.3, 6.6); camera.lookAt(0, 1.2, 0);
-  } else if (look === 3) {   // wiadomość z daleka: smukły nadajnik, drobna ziarnista postać, mocne zakłócenia
-    dev = projector(T, .55, .55, true); root.add(dev.group);
-    root.add(beam(T, .12, .7, 2.2, color, dev.top));
-    photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.25, 1.65, 1); photo.position.set(0, dev.top + 1.15, 0); root.add(photo);
-    const sm = holoMat(T, statsTexture(T, st), { color, text: true, opacity: .8, grain: .4 }); mats.push(sm);
-    const panel = new T.Mesh(new T.PlaneGeometry(.75, .94), sm); panel.position.set(.95, dev.top + .7, .1); panel.rotation.y = -.3; root.add(panel);
-    camera.position.set(0, 1.7, 6.2); camera.lookAt(.2, 1.3, 0);
-  } else {   // stół taktyczny: szeroki dysk z siatką, postać w środku, trzy panele krążą dookoła
-    dev = projector(T, 1.5, .15); root.add(dev.group);
-    for (let i = 1; i <= 4; i++) {
-      const rg = new T.Mesh(new T.RingGeometry(i * .32, i * .32 + .008, 96), new T.MeshBasicMaterial({ color, transparent: true, opacity: .55, blending: T.AdditiveBlending, side: T.DoubleSide }));
-      rg.rotation.x = -Math.PI / 2; rg.position.y = dev.top + .01; root.add(rg);
-    }
-    root.add(beam(T, .3, .85, 2.0, color, dev.top));
-    photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.25, 1.6, 1); photo.position.set(0, dev.top + 1.0, 0); root.add(photo);
-    const items = [['HP', st.hp], ['ATAK', st.ab[0]?.value ?? '-'], ['WARTOŚĆ', `${st.val}`]];
-    chips = items.map((it, k) => {
-      const m = holoMat(T, statsTexture(T, it, 'chip'), { color, text: true, opacity: .95 }); mats.push(m);
-      const ch = new T.Mesh(new T.PlaneGeometry(.62, .31), m); ch.userData.a = k / items.length * Math.PI * 2; root.add(ch); return ch;
-    });
-    camera.position.set(0, 2.9, 6.6); camera.lookAt(0, 1.0, 0);
+  tex.colorSpace = T.SRGBColorSpace;
+  const pm = holoMat(T, tex, { color, grain: M.grain, scan: M.scan }); mats.push(pm);
+  photo = new T.Mesh(new T.PlaneGeometry(1, 1), pm); photo.scale.set(1.85, 2.35, 1); photo.position.set(-.15, dev.top + 1.32, 0); root.add(photo);
+  if (M.ghost) for (const [c, dx] of [[0xff3a7a, -.035], [0x3affea, .035]]) {
+    const gm = holoMat(T, tex, { color: c, grain: M.grain, scan: M.scan, opacity: .3 }); mats.push(gm);
+    const g = new T.Mesh(new T.PlaneGeometry(1, 1), gm); g.scale.copy(photo.scale); g.position.copy(photo.position); g.userData.dx = dx; root.add(g); ghosts.push(g);
   }
-  const dust = motes(T, 70, .7, 2.2, dev.top, color); root.add(dust);
-  let last = 0;
+  const sm = holoMat(T, statsTexture(T, st), { color, text: true, grain: M.grain * .6, scan: M.scan * .6, opacity: .95 }); mats.push(sm);
+  const panel = new T.Mesh(new T.PlaneGeometry(1.3, 1.62), sm); panel.position.set(1.18, dev.top + 1.45, .3); panel.rotation.y = -.38; root.add(panel);
+  const dust = motes(T, 80, .9, 2.7, dev.top, color); root.add(dust);
+  root.position.x = -.28;
+  camera.position.set(0, 1.55, 6.7); camera.lookAt(.12, 1.45, 0);
+  let last = 0, drop = 0;
   return {
     update(t) {
       const dt = Math.min(.05, t - last); last = t;
-      const glitch = (Math.sin(t * 1.3) + Math.sin(t * 3.1 + 1.7)) > (look === 3 ? 1.1 : 1.55) ? 1 : (look === 3 ? .35 : .08);
-      for (const m of mats) { m.uniforms.time.value = t; m.uniforms.glitch.value = glitch; }
+      const glitch = (Math.sin(t * 1.3) + Math.sin(t * 3.1 + 1.7)) > M.thr ? M.peak : M.base;
+      let opac = 1, build = 1;
+      if (M.weak) {
+        const cyc = t % 7;
+        build = cyc < 1.3 ? cyc / 1.3 : 1;   // obraz rysuje się od dołu do góry
+        if (drop <= 0 && Math.random() < .006) drop = .25 + Math.random() * .4;   // chwilowa utrata sygnału
+        drop -= dt;
+        opac = drop > 0 ? .08 : .6 + .4 * (.5 + .5 * Math.sin(t * 2.3));
+      }
+      for (const m of mats) { m.uniforms.time.value = t; m.uniforms.glitch.value = glitch; m.uniforms.build.value = build; }
       scene.traverse(o => { if (o.material?.uniforms?.time && !mats.includes(o.material)) o.material.uniforms.time.value = t; });
-      if (look === 1) root.rotation.y = Math.sin(t * .35) * .35;
-      if (look === 2) { ring.rotation.y = t * .5; photo.position.y = dev.top + 1.25 + Math.sin(t * 1.2) * .03; }
-      if (look === 3) photo.position.x = glitch > .5 ? (Math.random() - .5) * .05 : 0;
-      if (look === 4) chips.forEach(ch => { const a = ch.userData.a + t * .4; ch.position.set(Math.cos(a) * 1.15, dev.top + 1.45 + Math.sin(t + ch.userData.a) * .06, Math.sin(a) * 1.15); ch.lookAt(camera.position); });
-      if (look !== 2 && look !== 4) photo.lookAt(camera.position.x, photo.position.y + root.position.y, camera.position.z);
+      pm.uniforms.opacity.value = opac; sm.uniforms.opacity.value = .95 * opac;
+      photo.position.x = -.15 + (glitch > .9 ? (Math.random() - .5) * .07 : 0);
+      ghosts.forEach(g => { g.material.uniforms.opacity.value = (glitch > .9 ? .55 : .18) * opac; g.position.x = photo.position.x + g.userData.dx * (glitch > .9 ? 3 : 1); });
+      root.rotation.y = Math.sin(t * .3) * .22;
       dev.ring.material.color.setHSL(.55, 1, .65 + Math.sin(t * 3) * .12);
       dev.leds.forEach((l, i) => l.visible = Math.sin(t * 4 + i) > -.3);
       dust.userData.tick(dt);
@@ -352,6 +338,82 @@ function buildAero(T, scene, camera, look) {
           o.position.y += Math.sin(t * .8 + u.ph) * .002;
         }
       }
+    },
+  };
+}
+
+// ================================================================ FRUTIGER AERO 3D, wersja 2: rybki (mniej), jedna duża nieruchoma planeta z wieżowcami
+// w rogu, szklane kule; looki różnią się rogiem planety, rozstawieniem kul i tłem (CSS)
+
+// szklane okna wieżowca: niebieskie szkło, część okien zapalona
+function cityTexture(T, seed) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const g = c.getContext('2d'), grd = g.createLinearGradient(0, 0, 64, 0);
+  grd.addColorStop(0, '#1b4a72'); grd.addColorStop(.5, '#3d86c0'); grd.addColorStop(1, '#173f62');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 128);
+  let s = seed;
+  const r = () => (s = s * 16807 % 2147483647) / 2147483647;
+  for (let y = 4; y < 124; y += 9) for (let x = 5; x < 60; x += 14) { g.fillStyle = r() < .45 ? '#ffe7a0' : r() < .5 ? '#9fd8ff' : '#0f2a44'; g.fillRect(x, y, 9, 5); }
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
+}
+// duża planeta: trawiasta kula, po stronie zwróconej do środka karty skupisko wieżowców, dookoła drzewka i szklana atmosfera
+function cityPlanet(T, r, dir) {
+  const g = new T.Group();
+  g.add(new T.Mesh(new T.SphereGeometry(r, 56, 40), new T.MeshStandardMaterial({ map: grassTexture(T, 110), roughness: .8 })));
+  const up = new T.Vector3(0, 1, 0);
+  for (let i = 0; i < 13; i++) {
+    const n = dir.clone().add(new T.Vector3().randomDirection().multiplyScalar(.42)).normalize();
+    const h = r * (.22 + Math.random() * .55), w = r * (.07 + Math.random() * .06);
+    const geo = new T.BoxGeometry(w, h, w); geo.translate(0, h / 2, 0);
+    const tex = cityTexture(T, 7 + i * 31); tex.wrapT = T.RepeatWrapping; tex.repeat.set(1, h / (r * .4));
+    const b = new T.Mesh(geo, new T.MeshStandardMaterial({ map: tex, roughness: .25, metalness: .2, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: .55 }));
+    b.position.copy(n.clone().multiplyScalar(r * .97)); b.quaternion.setFromUnitVectors(up, n); g.add(b);
+  }
+  const trunk = new T.MeshStandardMaterial({ color: 0x6b4423, roughness: .8 }), leaf = new T.MeshStandardMaterial({ color: 0x1f8a3a, roughness: .6 });
+  for (let i = 0; i < 26; i++) {
+    const n = new T.Vector3().randomDirection();
+    if (n.dot(dir) > .8) continue;   // wieżowce mają swoje miejsce
+    const tree = new T.Group();
+    const tr = new T.Mesh(new T.CylinderGeometry(r * .015, r * .02, r * .1, 6), trunk); tr.position.y = r * .05; tree.add(tr);
+    const cr = new T.Mesh(new T.SphereGeometry(r * .055, 10, 8), leaf); cr.position.y = r * .13; tree.add(cr);
+    tree.position.copy(n.clone().multiplyScalar(r * .98)); tree.quaternion.setFromUnitVectors(up, n); g.add(tree);
+  }
+  g.add(new T.Mesh(new T.SphereGeometry(r * 1.18, 48, 32), bubbleMat(T, 0x8fd8ff, .12)));
+  return g;
+}
+const AERO2 = {
+  1: { planet: [-1.0, -1.6, .85], orbs: [[.34, 0x2fd0ff, .95, 1.5], [.22, 0x7cff6a, 1.05, .45], [.18, 0x2fd0ff, -.95, 1.6], [.15, 0xffffff, .2, 1.75]] },
+  2: { planet: [1.0, 1.65, .85], orbs: [[.32, 0x2fd0ff, -.95, -1.5], [.22, 0x7cff6a, -1.05, -.5], [.18, 0x2fd0ff, .95, -1.65], [.15, 0xffffff, -.3, -1.8]] },
+  3: { planet: [1.0, -1.6, .82], orbs: [[.3, 0x2fd0ff, -1.0, 1.45], [.2, 0x2fd0ff, -1.05, .2], [.24, 0x7cff6a, .95, 1.55]] },
+  4: { planet: [-1.0, 1.65, .82], orbs: [[.3, 0x7cff6a, 1.0, -1.45], [.22, 0x2fd0ff, 1.05, -.2], [.18, 0x2fd0ff, -.95, -1.6]] },
+};
+function buildAero2(T, scene, camera, look) {
+  const C = AERO2[look] || AERO2[1];
+  camera.position.set(0, 0, 6); camera.lookAt(0, 0, 0);
+  scene.add(new T.HemisphereLight(0xcff6ff, 0x6fbf4a, 1.3));
+  const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(-2, 4, 5); scene.add(dl);
+  const mats = [], orbs = [], fishes = [];
+  const [px, py, pr] = C.planet;
+  const dir = new T.Vector3(-px, -py, 2.2).normalize();
+  const planetG = cityPlanet(T, pr, dir); planetG.position.set(px, py, 0); scene.add(planetG);
+  planetG.traverse(o => o.material?.uniforms?.time && mats.push(o.material));
+  C.orbs.forEach(([r, tint, x, y], k) => {
+    const m = bubbleMat(T, tint, .55); mats.push(m);
+    const b = new T.Mesh(new T.SphereGeometry(r, 36, 24), m); b.position.set(x, y, .4); b.userData = { y0: y, ph: k * 1.7 }; scene.add(b); orbs.push(b);
+  });
+  [['#ff7a1a', '#ffffff'], ['#2a7de1', '#ffd23d'], ['#18c7c1', '#ffffff']].forEach(([a, b], k) => {
+    const f = fish(T, a, b); f.userData = { rx: 1.05, rz: 1.1, y: [-.9, .25, 1.15][k] * (py < 0 ? -1 : 1) * -1, sp: (.35 + k * .08) * (k % 2 ? -1 : 1), ph: k * 2.1 };
+    f.scale.setScalar(.5 + k * .06); scene.add(f); fishes.push(f);
+  });
+  return {
+    update(t) {
+      for (const m of mats) m.uniforms.time.value = t;
+      orbs.forEach(o => { o.position.y = o.userData.y0 + Math.sin(t * .7 + o.userData.ph) * .06; });
+      fishes.forEach(o => {
+        const u = o.userData, a = t * u.sp + u.ph, x = Math.cos(a) * u.rx * 1.2, z = Math.sin(a) * u.rz, y = u.y + Math.sin(t * .8 + u.ph) * .1;
+        const nx = Math.cos(a + .05 * Math.sign(u.sp)) * u.rx * 1.2, nz = Math.sin(a + .05 * Math.sign(u.sp)) * u.rz;
+        o.position.set(x, y, z); o.rotation.y = -Math.atan2(nz - z, nx - x); o.children[1].rotation.y = Math.sin(t * 9 + u.ph) * .5;
+      });
     },
   };
 }

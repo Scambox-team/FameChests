@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -193,9 +193,83 @@ function fxCrop(img, ratio, W) {
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
   return [c, ctx, W, H];
 }
+// ASCII Art (makieta ASCII 1 „Terminal”): zdjęcie przerysowane na znaki w przeglądarce (FX_KINDS.ascii -> asciiCanvas, wynik w FX_CACHE):
+// mały canvas cols x rows, jasność pola -> znak z palety (białe na czarnym: jaśniej = gęściej), tło połączone z brzegiem zdjęcia
+// (mediana brzegu, flood fill) -> spacje, żeby postać stała na czarnym; potem znaki rysowane na canvasie w rozdzielczości ekranu.
+const ASCII_RAMP = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+function asciiCanvas(img, ratio, W, cols = 64) {
+  const rows = Math.max(8, Math.round(cols * .6 / ratio));
+  const c0 = document.createElement("canvas"); c0.width = cols; c0.height = rows;
+  const x0 = c0.getContext("2d", { willReadFrequently: true });
+  const nw = img.naturalWidth, nh = img.naturalHeight;
+  let sx = 0, sy = 0, sw = nw, sh = nh;
+  if (nw / nh > ratio) { sw = nh * ratio; sx = (nw - sw) / 2; } else { sh = nw / ratio; sy = (nh - sh) * .18; }
+  x0.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+  const d = x0.getImageData(0, 0, cols, rows).data, n = cols * rows, L = new Float32Array(n);
+  for (let i = 0; i < n; i++) L[i] = (d[i * 4] * .299 + d[i * 4 + 1] * .587 + d[i * 4 + 2] * .114) / 255;
+  const sorted = Float32Array.from(L).sort(), lo = sorted[Math.floor(n * .02)], hi = sorted[Math.floor(n * .98)] || 1;
+  for (let i = 0; i < n; i++) L[i] = Math.min(1, Math.max(0, (L[i] - lo) / Math.max(.05, hi - lo))) ** 1.1;
+  const edge = [];
+  for (let x = 0; x < cols; x++) edge.push(L[x], L[(rows - 1) * cols + x]);
+  for (let y = 0; y < rows; y++) edge.push(L[y * cols], L[y * cols + cols - 1]);
+  edge.sort((a, b) => a - b);
+  const bgL = edge[Math.floor(edge.length / 2)], near = i => Math.abs(L[i] - bgL) < .1, bg = new Uint8Array(n), queue = [];
+  const seed = i => { if (!bg[i] && near(i)) { bg[i] = 1; queue.push(i); } };
+  for (let x = 0; x < cols; x++) { seed(x); seed((rows - 1) * cols + x); }
+  for (let y = 0; y < rows; y++) { seed(y * cols); seed(y * cols + cols - 1); }
+  while (queue.length) {
+    const i = queue.pop(), x = i % cols, y = (i - x) / cols;
+    if (x > 0) seed(i - 1); if (x < cols - 1) seed(i + 1); if (y > 0) seed(i - cols); if (y < rows - 1) seed(i + cols);
+  }
+  const useBg = bg.reduce((a, b) => a + b, 0) < n * .8;
+  const out = document.createElement("canvas"), OW = Math.max(360, W), OH = Math.round(OW / ratio);
+  out.width = OW; out.height = OH;
+  const o = out.getContext("2d"), cw = OW / cols, lh = OH / rows;
+  o.fillStyle = "#000"; o.fillRect(0, 0, OW, OH);
+  o.font = `${Math.min(lh, cw / .55).toFixed(2)}px Consolas, "DejaVu Sans Mono", "Courier New", monospace`;
+  o.fillStyle = "#f2f2f2"; o.textBaseline = "top"; o.shadowColor = "#ffffff70"; o.shadowBlur = cw * .4;
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const i = y * cols + x;
+    if (useBg && bg[i]) continue;
+    const ch = ASCII_RAMP[Math.min(ASCII_RAMP.length - 1, Math.floor(L[i] * ASCII_RAMP.length))];
+    if (ch !== " ") o.fillText(ch, x * cw, y * lh);
+  }
+  return out;
+}
+// ramka karty ze znaków + - | (34 x 28 znaków na całą kartę)
+const ASCII_BOX = `<pre class="vx-deco asc-box">${"+" + "-".repeat(32) + "+\n" + ("|" + " ".repeat(32) + "|\n").repeat(26) + "+" + "-".repeat(32) + "+"}</pre>`;
+
+// Dowód osobisty (makieta Dowód 1 „Nowy dowód”): karta wzorowana na polskim dowodzie - napisy „Rzeczpospolita ScamBoxowa /
+// Dowód kolekcjonerski”, tarcza SB zamiast godła, bez flagi UE (ma przypominać dowód, nie udawać dokumentu). Cały dowód to warstwa
+// .id-card nad kartą: na zwykłej (pionowej) karcie obrócona o 90° (kafelki w ekwipunku i klaserze się nie rozjeżdżają),
+// w podglądzie (viewer.css) karta jest pozioma i dowód stoi prosto. .id-card jest kontenerem, więc cqw = szerokość dowodu.
+const idSplit = name => { const w = String(name).trim().split(/\s+/); return w.length > 1 ? [w[w.length - 1], w.slice(0, -1).join(" ")] : [w[0], "—"]; };
+const idField = (pl, en, val, cls = "") => `<div class="id-f ${cls}"><small>${pl}<em>/ ${en}</em></small><b>${esc(String(val))}</b></div>`;
+function dowodCard(p) {
+  if (!p) return "";
+  const crate = crateOf(p.crate), ab = abilitiesOf(p)[0], [sur, giv] = idSplit(p.name), photo = imgUrl(p.id, "normal");
+  const nat = !p.country || p.country === "pl" ? "POLSKIE" : String(p.country).toUpperCase();
+  return `<div class="vx-deco id-card">
+    <i class="id-guil"></i><i class="id-shield"><b>SB</b></i>
+    <div class="id-head"><b>Rzeczpospolita ScamBoxowa</b> <span>Republic of ScamBox</span><br><b>Dowód kolekcjonerski</b> <span>Collector card</span></div>
+    <i class="id-sb">SB</i><i class="id-chip-mark"></i>
+    <div class="id-photo"><img src="${photo}" alt="" loading="lazy" draggable="false"></div>
+    <div class="id-fields">
+      ${idField("NAZWISKO", "SURNAME", sur.toUpperCase(), "big")}${idField("IMIONA", "GIVEN NAMES", giv.toUpperCase(), "big")}
+      ${idField("OBYWATELSTWO", "NATIONALITY", nat)}${idField("RZADKOŚĆ", "RARITY", (S.cfg.rarities[p.rarity]?.name || p.rarity).toUpperCase())}
+      ${idField("SERIA I NUMER KARTY", "CARD NUMBER", `${crate?.code || "SB"}${String(p.number || 0).padStart(6, "0")}`)}${idField("PUNKTY ŻYCIA", "HP", p.hp)}
+      ${idField("ATAK", "ATTACK", ab ? `${ab.name} · ${ab.value}` : "—", "wide")}
+    </div>
+    <div class="id-ghost"><img src="${photo}" alt="" loading="lazy" draggable="false"></div>
+    <div class="id-sign"><small>PODPIS<em>/ SIGNATURE</em></small><i>${esc(p.name)}</i></div>
+    <div class="id-can"><b>${String(cardValue(p.id)).padStart(6, "0")}</b><small>WARTOŚĆ<em>/ VALUE</em></small></div>
+    <i class="id-water">KOLEKCJONERSKI</i>
+  </div>`;
+}
 // Przerysowania zdjęcia po wczytaniu: (img, proporcje, szerokość ekranowa) -> canvas. Blueprint: kontur białą kreską; Dolarowa:
 // rycina (poziome faliste linie, grubsze w cieniach) zielonym tuszem, na ekranową rozdzielczość (bez mory); Glitch: patrz glitchPhoto
 const FX_KINDS = {
+  ascii: img => asciiCanvas(img, ...fxArgs(img)),
   neon: img => neonCanvas(img, ...fxArgs(img)), thermal: img => heatCanvas(img, ...fxArgs(img)),
   blueprint: img => linesCanvas(img, fxArgs(img)[0], "#e8f4ff"),
   mosaic: img => mosaicCanvas(img, fxArgs(img)[0]),
@@ -979,6 +1053,8 @@ export const VX_DECO = {
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   barbie: () => `<div class="vx-deco bbg-shine"></div><div class="vx-deco">${bbgGlints(22)}</div>`,
   polska: () => PLS_SASHES,
+  ascii: () => ASCII_BOX,
+  dowod: p => dowodCard(p),
   christmas: () => `<div class="vx-deco vx-clip"><i class="snw-layer a"></i><i class="snw-layer b"></i></div><div class="vx-deco">${xmLights(30)}</div>`,
   tree: () => `<div class="vx-deco vx-clip">${TRE_BRANCHES}</div><div class="vx-deco vx-clip">${treBalls(4, 3, 18, [4, 16])}${treBalls(4, 82, 97, [4, 16])}</div>`,
   gift: () => `<div class="vx-deco"><i class="gf-frame"></i>${GF_BOW("small")}</div>`,
