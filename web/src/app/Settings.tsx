@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { FlaskConical, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { FlaskConical, Lock, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { lang, setLang } from '../i18n/i18n';
 import { Sound } from '../sound/sound';
-import { getTheme, setTheme } from '../styles/theme';
+import { getTheme, setTheme, type Theme } from '../styles/theme';
+import { useGame } from '../game/store';
 import { hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
 import styles from './Settings.module.css';
@@ -12,7 +13,9 @@ import styles from './Settings.module.css';
 export function SettingsPanel({ className }: { className?: string }) {
   const [on, setOn] = useState(Sound.enabled);
   const [vol, setVol] = useState(Math.round(Sound.volume * 100));
-  const [y2k, setY2k] = useState(() => getTheme() === 'y2k');
+  const [theme, setThemeState] = useState<Theme>(getTheme);
+  const game = useGame();
+  const aeroOpen = game.themes.includes('aero');
   const [birds, setBirds] = useState(() => !casinoIntroOff());
   const webgl = hasWebGL();
 
@@ -27,7 +30,8 @@ export function SettingsPanel({ className }: { className?: string }) {
     setUser3DOff(!want);
     location.reload();
   };
-  const toggleY2k = (want: boolean) => { setY2k(want); setTheme(want ? 'y2k' : 'default'); };
+  const pickTheme = (t: Theme) => { setThemeState(t); setTheme(t); };
+  const current: Theme = theme === 'aero' && !aeroOpen ? 'default' : theme;
 
   return (
     <div className={`${styles.body} ${className ?? ''}`}>
@@ -49,10 +53,24 @@ export function SettingsPanel({ className }: { className?: string }) {
       </div>
       <div className={styles.sep}>
         <div className={styles.group}><FlaskConical size={14} strokeWidth={1.8} aria-hidden="true" />Eksperymentalne</div>
-        <label className={styles.check}>
-          <input type="checkbox" checked={y2k} onChange={e => toggleY2k(e.target.checked)} />
-          <span><b>Motyw Y2K</b><small>Róż, brokat i kanciaste krawędzie.</small></span>
-        </label>
+        <fieldset className={styles.themes}>
+          <legend>Motyw</legend>
+          <label className={styles.check}>
+            <input type="radio" name="theme" checked={current === 'default'} onChange={() => pickTheme('default')} />
+            <span><b>Domyślny</b><small>Ciemny, spokojny wygląd gry.</small></span>
+          </label>
+          <label className={styles.check}>
+            <input type="radio" name="theme" checked={current === 'y2k'} onChange={() => pickTheme('y2k')} />
+            <span><b>Y2K</b><small>Róż, brokat i kanciaste krawędzie.</small></span>
+          </label>
+          <label className={`${styles.check} ${aeroOpen ? '' : styles.locked}`}>
+            <input type="radio" name="theme" checked={current === 'aero'} disabled={!aeroOpen} onChange={() => pickTheme('aero')} />
+            <span>
+              <b>Frutiger Aero{!aeroOpen && <Lock size={13} strokeWidth={2} aria-hidden="true" className={styles.lock} />}</b>
+              <small>{aeroOpen ? 'Błękit nieba, szkło i bąbelki.' : 'Odblokujesz po wylosowaniu karty w wariancie Frutiger Aero'}</small>
+            </span>
+          </label>
+        </fieldset>
         <label className={styles.check}>
           <input type="checkbox" checked={birds} onChange={e => { setBirds(e.target.checked); setCasinoIntroOff(!e.target.checked); }} />
           <span><b>Ptasia wróżba</b><small>Coś leci, zanim usiądziesz do stołu.</small></span>

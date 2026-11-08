@@ -184,6 +184,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/users/{name}", get(profile))
         .route("/api/ranking", get(ranking))
         .route("/api/me", get(me))
+        .route("/api/themes/seen", post(social::themes_seen))
         .route("/api/messages/seen", post(messages_seen))
         .route("/api/halloffame", get(hall_of_fame))
         .route("/api/patchnotes", get(patch_notes))

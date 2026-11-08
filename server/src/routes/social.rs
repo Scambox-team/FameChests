@@ -901,6 +901,20 @@ struct MeResponse {
     needs_terms: bool,
     /// nagrody za polecenia (reflinki), których gracz jeszcze nie widział
     referral: Vec<super::referral::RefNote>,
+    /// odblokowane motywy interfejsu (poza domyślnym i Y2K): "aero" - Frutiger Aero
+    themes: Vec<&'static str>,
+    /// motyw został właśnie odblokowany i gracz jeszcze o tym nie wie (powiadomienie raz)
+    theme_new: bool,
+}
+
+/// POST /api/themes/seen: gracz zobaczył powiadomienie o odblokowaniu motywu
+pub async fn themes_seen(State(st): State<AppState>, Me(me): Me) -> Res {
+    let mut c = st.db.acquire().await?;
+    sqlx::query("UPDATE user_state SET value = 2 WHERE user_id = $1 AND key = 'themeAero' AND value = 1")
+        .bind(me.id)
+        .execute(&mut *c)
+        .await?;
+    ok(json!({"ok": true}))
 }
 
 /// Odpytywane co 30 s (w lobby co 5 s) przez każdy otwarty ekran gry. Odnawia też ciasteczko logowania.
@@ -910,7 +924,10 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     super::horses::settle_my_horses(&cx).await?;
     let mut c = st.db.acquire().await?;
     let uid = cx.uid();
-    let state = get_state(&mut c, uid).await?;
+    let mut state = get_state(&mut c, uid).await?;
+    if state["themeAero"] == 0 && !cx.me.admin() && backfill_theme_aero(&mut c, uid).await? {
+        state.insert("themeAero".into(), 1);
+    }
     let incoming =
         sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM friendships WHERE addressee_id = $1 AND status = 'pending'"#, uid)
             .fetch_one(&mut *c)
@@ -962,6 +979,8 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         horse_news: super::horses::horse_news(&mut c, uid).await?,
         referral: super::referral::notes(&mut c, &cx.cat, uid).await?,
         needs_terms: !super::reports::terms_ok(&mut c, uid).await?,
+        themes: if cx.me.admin() || state["themeAero"] > 0 { vec!["aero"] } else { vec![] },
+        theme_new: !cx.me.admin() && state["themeAero"] == 1,
     };
     let jar = jar.add(session_cookie(uid, st.cfg.cookie_secure));
     Ok((jar, Json(body)).into_response())
