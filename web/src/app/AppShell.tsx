@@ -65,7 +65,7 @@ function useOwner(isAdmin: boolean) {
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** Arkusz „Więcej” na telefonie: wszystko, co na komputerze jest w pasku bocznym, plus ustawienia */
+/** Arkusz „Więcej” (dolny pasek na telefonie, pasek boczny na komputerze): wszystkie ekrany, konto, ustawienia i strony prawne */
 function MoreSheet({ items, account, onClose }: { items: NavItem[]; account: NavItem[]; onClose: () => void }) {
   const game = useGame();
   const box = useRef<HTMLDivElement>(null);
@@ -127,13 +127,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const moreCount = items.filter(i => !i.primary).reduce((n, i) => n + (i.badge ? S.badges[i.badge] : 0), 0);
 
   useEffect(() => { setSheet(false); }, [pathname]);
-  // po powiększeniu okna do układu z paskiem bocznym arkusz nie ma sensu
-  useEffect(() => {
-    const mq = matchMedia('(min-width: 821px)');
-    const off = () => { if (mq.matches) setSheet(false); };
-    mq.addEventListener('change', off);
-    return () => mq.removeEventListener('change', off);
-  }, []);
 
   return (
     <div className={styles.app}>
@@ -143,6 +136,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className={styles.nav} aria-label="Główna">
           {items.map(i => <NavEntry key={i.id} item={i} />)}
           {account.filter(i => i.href || i.id === 'settings').map(i => <NavEntry key={i.id} item={i} />)}
+          <button className={styles.link} type="button" aria-haspopup="dialog" aria-expanded={sheet} onClick={() => setSheet(true)}>
+            <MoreHorizontal size={17} strokeWidth={1.6} aria-hidden="true" />
+            <span>Więcej</span>
+          </button>
         </nav>
         <div className={styles.foot}>
           <Link className={styles.user} to={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><MyAvatar /><span>{game.me?.username}</span></Link>
