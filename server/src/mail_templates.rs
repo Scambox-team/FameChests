@@ -37,7 +37,7 @@ const URL: Placeholder = ph("ConfirmationURL", "adres linku z maila", "{SITE}/au
 const LINK: Placeholder = ph("Link", "adres linku z maila (ważny godzinę)", "{SITE}/login?t=sb1_PRZYKLAD");
 const LINK_DAY: Placeholder = ph("Link", "adres linku z maila (ważny 24 godziny)", "{SITE}/konto/potwierdz?t=sb1_PRZYKLAD");
 const MINUTES_DAY: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "1440");
-const USERNAME: Placeholder = ph("Username", "nazwa gracza", "Gracz123");
+const USERNAME: Placeholder = ph("Username", "nazwa gracza", "{USER}");
 const MINUTES: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "60");
 const EMAIL: Placeholder = ph("Email", "adres, na który wysłano mail", "gracz@example.com");
 const NEW_EMAIL: Placeholder = ph("NewEmail", "nowy adres email", "nowy@example.com");
@@ -129,9 +129,14 @@ pub fn render(tpl: &str, vars: &[(&str, &str)]) -> String {
         .into_owned()
 }
 
-/// Przykładowe wartości pól szablonu (podgląd, mail próbny); `{SITE}` w przykładowych linkach = adres gry (PUBLIC_URL)
-pub fn samples(d: &Def, site: &str) -> Vec<(&'static str, String)> {
-    d.placeholders.iter().map(|p| (p.name, p.sample.replace("{SITE}", site.trim_end_matches('/')))).collect()
+/// Przykładowa wartość pola: `{SITE}` = adres gry (PUBLIC_URL), `{USER}` = nick admina, który ogląda podgląd
+fn fill(sample: &str, site: &str, user: &str) -> String {
+    sample.replace("{SITE}", site.trim_end_matches('/')).replace("{USER}", if user.is_empty() { "Gracz123" } else { user })
+}
+
+/// Przykładowe wartości pól szablonu (podgląd, mail próbny)
+pub fn samples(d: &Def, site: &str, user: &str) -> Vec<(&'static str, String)> {
+    d.placeholders.iter().map(|p| (p.name, fill(p.sample, site, user))).collect()
 }
 
 /// `samples` w postaci, którą przyjmuje `render`
@@ -198,7 +203,7 @@ pub async fn reset(c: &mut Conn, name: &str) -> sqlx::Result<()> {
 }
 
 /// Opis szablonu dla panelu admina
-pub fn view(d: &Def, subject: &str, html: &str, is_default: bool, site: &str) -> Value {
+pub fn view(d: &Def, subject: &str, html: &str, is_default: bool, site: &str, user: &str) -> Value {
     let site = site.trim_end_matches('/');
     json!({
         "name": d.name,
@@ -208,7 +213,7 @@ pub fn view(d: &Def, subject: &str, html: &str, is_default: bool, site: &str) ->
         "isDefault": is_default,
         "subjectUsed": d.subject_used,
         "required": d.required,
-        "placeholders": d.placeholders.iter().map(|p| json!({"name": p.name, "desc": p.desc, "sample": p.sample.replace("{SITE}", site)})).collect::<Vec<_>>(),
+        "placeholders": d.placeholders.iter().map(|p| json!({"name": p.name, "desc": p.desc, "sample": fill(p.sample, site, user)})).collect::<Vec<_>>(),
     })
 }
 
@@ -230,7 +235,7 @@ mod tests {
                 assert!(d.html.contains(&format!("{{{{ .{need} }}}}")), "{}: brak {need}", d.name);
             }
             assert!(!d.html.contains("{{{") && !d.html.contains("}}}"), "{}: niedomknięte pole", d.name);
-            let out = render(d.html, &sample_refs(&samples(d, "https://scambox.pl")));
+            let out = render(d.html, &sample_refs(&samples(d, "https://scambox.pl", "Gracz123")));
             assert!(!out.contains("{{"), "{}: nie podstawiono pól", d.name);
         }
     }
