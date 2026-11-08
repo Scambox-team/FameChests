@@ -9,7 +9,7 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -806,9 +806,48 @@ function analogPhoto(p, variant) {
     <i class="vx-photo ah-scan top"></i><i class="vx-photo ah-roll"></i><i class="vx-photo ah-grain">${ahNoise(.16)}</i><i class="vx-photo ah-burst">${ahNoise(1)}</i>`;
 }
 // Polska (event Dzień Niepodległości, makieta Polska 1): biało-czerwona karta - w tle łowicka wycinanka (obrazek w CSS),
-// dwie skrzyżowane flagi na drzewcach falują nad kartą, kotylion w rogu zdjęcia, baner „11 LISTOPADA” nad nazwą.
+// biało-czerwone szarfy w dwóch rogach karty, kotylion w rogu zdjęcia, baner „11 LISTOPADA” nad nazwą.
 // Celowo bez godła (godło RP jest chronione prawem) - tylko flaga, kotylion i motywy ludowe. Inna niż Flagowa (ta barwi kartę).
-const plFlag = (cls) => `<i class="pls-flag ${cls}"><b class="pls-pole"></b><b class="pls-cloth"><u></u></b></i>`;
+// Polska: zamiast flag na drzewcach biało-czerwone szarfy owinięte wokół lewego górnego i prawego dolnego rogu (makieta „Szarfy w rogach”)
+const PLS_SASHES = '<div class="vx-deco vx-clip"><i class="pls-sash a"><u></u></i><i class="pls-sash b"><u></u></i></div>';
+
+// punkty na obwodzie karty (lampki, iskierki): n punktów, f(x%, y%, k)
+const vxPerimeter = (n, f) => Array.from({ length: n }, (_, k) => {
+  let d = k / n * 302, x, y;
+  if (d < 63) { x = d; y = 0; } else if ((d -= 63) < 88) { x = 63; y = d; } else if ((d -= 88) < 63) { x = 63 - d; y = 88; } else { x = 0; y = 88 - (d - 63); }
+  return f((x / .63).toFixed(1), (y / .88).toFixed(1), k);
+}).join("");
+
+// Świąteczny (makieta „Sanie nad miastem”): nad nazwą nocne niebo z sańmi (variantTop), w tle karty ośnieżone miasteczko
+// z zapalającymi się oknami i dymem z komina (VX_BG), śnieg i lampki biegnące po ramce (VX_DECO), naklejki od admina (czapka Mikołaja).
+const XM_COLORS = ["#ff3b3b", "#ffd23d", "#2bd96b", "#3ba2ff", "#ff7ad9"];
+const xmDeer = c => `<g fill="${c}" stroke="${c}" stroke-linecap="round"><ellipse cx="18" cy="16" rx="11" ry="5" stroke="none"/><path d="M26 14 L31 6 L36 6 L37 8.5 L32 9.5 L29 16Z" stroke="none"/><path d="M32 6 L30 1 M31 3 L28 2 M34 6 L35 1 M34.5 3 L37.5 2 M10 19 L7 28 M13 20 L14 28 M23 20 L22 28 M26 19 L29 27" stroke-width="1.6" fill="none"/></g>`;
+const XM_SLEIGH = `<svg class="xm-sleigh" viewBox="0 0 116 28" aria-hidden="true"><g fill="#f6dc7a"><path d="M4 12 Q4 20 11 20 H30 L34 11 H24 L20 5 H12Z"/><circle cx="17" cy="4" r="3"/><path d="M13 7 Q17 2 21 7 L21 11 H13Z"/></g><path d="M1 24 H31 Q36 24 36 19 M10 20 V24 M26 20 V24" stroke="#f6dc7a" stroke-width="1.5" fill="none"/><path d="M34 14 L44 14 M58 14 L68 14 M82 14 L92 14" stroke="#f6dc7a" stroke-width=".8"/>${[40, 64, 88].map(x => `<g transform="translate(${x} -2) scale(.7)">${xmDeer("#f6dc7a")}</g>`).join("")}</svg>`;
+const XM_TOWN = `<svg class="xm-town" viewBox="0 40 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 V70 L8 62 L16 70 V60 H22 V54 L32 44 L42 54 V66 L50 58 L60 66 V52 L68 46 L76 52 V68 L84 60 L92 68 L100 62 V100Z" fill="#1a0f1c"/><path d="M0 70 L8 62 L16 70 M22 54 L32 44 L42 54 M42 66 L50 58 L60 66 M60 52 L68 46 L76 52 M76 68 L84 60 L92 68" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>${[[5, 76], [9, 86], [27, 62], [34, 70], [27, 80], [48, 72], [52, 84], [65, 60], [71, 74], [66, 86], [86, 76], [94, 80], [90, 90]].map(([x, y], k) => `<rect class="xm-win" x="${x}" y="${y}" width="4" height="5" fill="#ffd36e" style="animation-delay:-${(k * .7).toFixed(1)}s"/>`).join("")}<rect x="64" y="41" width="5" height="9" fill="#1a0f1c"/></svg>`;
+const xmLights = n => vxPerimeter(n, (x, y, k) => `<i class="xm-bulb" style="left:${x}%;top:${y}%;--c:${XM_COLORS[k % 5]};animation-delay:${(k * .08).toFixed(2)}s"></i>`);
+const xmSky = () => `<div class="xm-sky"><i class="xm-moon"></i>${Array.from({ length: 7 }, () => `<i class="xm-star" style="left:${vxN(4, 70)}%;top:${vxN(10, 80)}%;--s:${vxN(.5, 1.2, 2)};animation-delay:-${vxN(0, 2, 1)}s"></i>`).join("")}<i class="xm-fly">${XM_SLEIGH}<i class="xm-trail"></i></i></div>`;
+
+// Choinka (makieta „Bombki przed zdjęciem”): gałązki świerku z górnych rogów, złota gwiazda nad nazwą, bombki po bokach
+// i pięć bombek zwisających z górnej krawędzi zdjęcia (VX_PHOTO).
+const treBranch = (cls, rot) => `<svg class="tre-branch ${cls}" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${rot} 50 50)"><path d="M50 98 L50 4" stroke="#3a2a18" stroke-width="2.2"/>${Array.from({ length: 16 }, (_, k) => { const y = 8 + k * 5.6, l = 6 + k * 1.9;
+  return `<path d="M50 ${y.toFixed(1)} l${l.toFixed(1)} ${(l * .55).toFixed(1)} M50 ${y.toFixed(1)} l-${l.toFixed(1)} ${(l * .55).toFixed(1)}" stroke="${k % 2 ? "#1f6b3a" : "#2a8a4a"}" stroke-width="2.6" stroke-linecap="round"/>`; }).join("")}</g></svg>`;
+const TRE_BRANCHES = `${treBranch("a", 135)}${treBranch("b", -135)}`;
+const TRE_COLORS = ["#c41e3a", "#d4af37", "#2a7de1", "#e8e8f0", "#8a2be2", "#e84a8a"];
+const TRE_PATTERNS = ["", "stripe", "dots"];
+// bombki: n sztuk równo od x0 do x1 (% szerokości), długość nitki z zakresu lens (cqw), y = miejsce zawieszenia (%)
+const treBalls = (n, x0, x1, lens, y = -2) => Array.from({ length: n }, (_, k) =>
+  `<i class="tre-ball ${TRE_PATTERNS[Math.floor(rand(0, 3))]}" style="left:${(x0 + (x1 - x0) * (n > 1 ? k / (n - 1) : .5)).toFixed(1)}%;top:${y}%;--len:${vxN(lens[0], lens[1], 1)}cqw;--c:${TRE_COLORS[(k + Math.floor(rand(0, 6))) % 6]};--sz:${vxN(4.5, 7.5, 1)}cqw;animation-delay:-${vxN(0, 3, 1)}s"></i>`).join("");
+
+// Prezentowy (makieta 1 „Kokarda i rozdarcie”): odpakowana karta ma złotą wstążkę dookoła ramki i małą kokardę w rogu.
+// Moja karta, której jeszcze nie odpakowałem (S.unwrapped), jest zapakowana w papier (giftWrapHTML nad całą kartą);
+// odpakowanie i „Zapakuj ponownie” w podglądzie (fx/effects.ts) grają tę samą animację w obie strony (klasy unwrap / rewrap).
+const isGift = v => variantParts(v || "").includes("gift");
+const GF_BOW = cls => `<i class="gf-bow ${cls}"><b class="tl l"></b><b class="tl r"></b><b class="lp l"></b><b class="lp r"></b><b class="kn"></b></i>`;
+export const giftWrapped = (variant, uid) => isGift(variant) && +uid > 0 && S.items.some(i => i.id === +uid) && !S.unwrapped?.has(+uid);
+export const giftRewrappable = (variant, uid) => isGift(variant) && +uid > 0 && S.items.some(i => i.id === +uid) && !!S.unwrapped?.has(+uid);
+export const giftWrapHTML = (cls = "") => `<div class="gf-wrap ${cls}"><i class="gf-half l"></i><i class="gf-half r"></i><i class="gf-rib v"></i><i class="gf-rib h"></i>${GF_BOW("")}${
+  Array.from({ length: 12 }, () => `<i class="gf-scrap" style="left:${vxN(40, 60)}%;top:${vxN(35, 60)}%;--dx:${vxN(-30, 30)}cqw;--dy:${vxN(10, 60)}cqw;--r:${vxN(-400, 400)}deg"></i>`).join("")}</div>`;
+const giftWrap = (variant, uid) => giftWrapped(variant, uid) ? giftWrapHTML() : "";
 const PLS_KOTYLION = `<svg class="pls-kot" viewBox="0 0 40 52" aria-hidden="true"><path d="M14 28 L8 50 L14 46 L18 51 L20 30Z M26 28 L32 50 L26 46 L22 51 L20 30Z" fill="#dc143c"/>
   ${Array.from({ length: 16 }, (_, k) => `<ellipse cx="20" cy="9" rx="3.6" ry="9" fill="${k % 2 ? "#dc143c" : "#fff"}" transform="rotate(${k * 22.5} 20 20)"/>`).join("")}
   <circle cx="20" cy="20" r="7" fill="#fff"/><circle cx="20" cy="20" r="4.4" fill="#dc143c"/></svg>`;
@@ -844,6 +883,8 @@ let hiDecoCache = null;   // ten sam rysunek na każdej karcie
 const hiDeco = () => hiDecoCache ||= hiFrond("f1", -40) + hiFrond("f2", 130) + hiFrond("f3", 40) +
   vxSvg(hiFlower(2, 86, 5, "#ff3d7f", 20) + hiFlower(62, 46, 4.6, "#ffcf3d", 60) + hiPlumeria(7, 88, 3.2, 10), "0 0 63 88", "hi-flowers");
 export const VX_BG = {
+  ice: () => '<i class="ic-prism"></i>',
+  christmas: () => `<i class="xm-sheen"></i>${XM_TOWN}<i class="xm-smoke"><b></b><b></b><b></b></i>`,
   snow: () => '<i class="snw-fog"></i>',
   anime: anSpeed,
   hawaii: () => '<i class="hi-dapple"></i>',
@@ -892,6 +933,8 @@ export const VX_BG = {
   cheese: () => `${chHoles(15)}<i class="ch-mold"></i>`,
 };
 export const VX_PHOTO = {
+  ice: '<i class="vx-photo ic-light"></i><i class="vx-photo ic-dark"></i><i class="vx-photo ic-glare"></i>',
+  tree: () => treBalls(5, 10, 90, [.5, 4], 0),
   scratch: uid => scratchPhoto(uid),   // scratch.js: folia do zdrapania / zdrapana / pokaz (bez numeru egzemplarza)
   chesswhite: `<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn">${CS_CORNERS("cs-v")}<i class="cs-crest"></i></i>`,
   chessblack: '<i class="vx-photo cs-fade"></i><i class="vx-photo cs-orn"><i class="cs-beads"></i></i>',
@@ -935,7 +978,10 @@ export const VX_DECO = {
   covid: () => '<div class="vx-deco"><i class="cvd-sms"><b>⚠ KOMUNIKAT · TERAZ</b>Zostań w domu. Wychodź tylko, gdy to konieczne.</i></div>',
   anime: () => `<div class="vx-deco">${anSfx("ドドド", 84, 22, 12)}${anSfx("ゴゴゴ", 14, 60, -10, "b")}</div>`,
   barbie: () => `<div class="vx-deco bbg-shine"></div><div class="vx-deco">${bbgGlints(22)}</div>`,
-  polska: () => `<div class="vx-deco">${plFlag("l")}${plFlag("r")}</div>`,
+  polska: () => PLS_SASHES,
+  christmas: () => `<div class="vx-deco vx-clip"><i class="snw-layer a"></i><i class="snw-layer b"></i></div><div class="vx-deco">${xmLights(30)}</div>`,
+  tree: () => `<div class="vx-deco vx-clip">${TRE_BRANCHES}</div><div class="vx-deco vx-clip">${treBalls(4, 3, 18, [4, 16])}${treBalls(4, 82, 97, [4, 16])}</div>`,
+  gift: () => `<div class="vx-deco"><i class="gf-frame"></i>${GF_BOW("small")}</div>`,
   // Sugar Cane: miętowe cukierki w rogach karty (nieruchome - wariant jest statyczny)
   sugarcane: () => '<div class="vx-deco"><i class="sgc-mint a"></i><i class="sgc-mint b"></i><i class="sgc-mint c"></i><i class="sgc-mint d"></i></div>',
   // Śnieżny: dwie warstwy płatków (jeden obrazek w CSS na warstwę, przesuwany transformem)
@@ -1082,6 +1128,8 @@ export function variantTop(variant, p) {
   if (parts.includes("covid")) return '<div class="cvd-bar">⚠ ALERT ⚠ ALERT ⚠ ALERT</div>';
   if (parts.includes("barbie")) return '<div class="bbg-heart"></div>';
   if (parts.includes("polska")) return '<div class="pls-banner"><span>11 LISTOPADA</span><b>NIEPODLEGŁA</b></div>';
+  if (parts.includes("christmas")) return xmSky();
+  if (parts.includes("tree")) return '<div class="tre-star">★</div>';
   if (parts.includes("analog")) return `<div class="ah-bar"><b>${esc(variantText(p, "analog", "bar"))}</b><span>NADAWANY O 03:00</span></div>`;
   if (parts.includes("wizytowka")) return `<div class="wz-corp"><i class="wz-logo"></i><b>${esc(variantText(p, "wizytowka", "company"))}</b></div>`;
   if (parts.includes("tabloid")) return '<div class="tb-mast"><b>SZOK</b><span>DNIA</span><small>NR 666 · CENA 2,50 ZŁ</small></div>';
@@ -1107,6 +1155,8 @@ export function variantSub(variant, pid) {
   if (parts.includes("hollywood")) return "SEANS O ZMIERZCHU · 1969";
   if (parts.includes("usa")) return "TO PRAWDZIWA HISTORIA";
   if (parts.includes("sugarcane")) return "SŁODKICH ŚWIĄT";
+  if (parts.includes("christmas")) return "WESOŁYCH ŚWIĄT!";
+  if (parts.includes("gift")) return "OD: SCAMBOX · DLA: CIEBIE";
   if (parts.includes("komuna")) return "NAPRZÓD KU JASNEJ PRZYSZŁOŚCI!";
   if (parts.includes("apollo")) return "▲ ORZEŁ ODŁĄCZA SIĘ · 20.07.1969";
   if (parts.includes("cobalt")) return "Co-60 · T½ 5,27 LAT";
@@ -1275,7 +1325,7 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
         <span class="card-value">${T("value", fmt(cardValue(pid, variant)))}</span>
       </div>
     </div>
-    ${variantLayers(variant, p, bs)}
+    ${variantLayers(variant, p, bs)}${giftWrap(variant, uid)}
     <div class="shine"></div>
   </div>`;
 }
@@ -1306,7 +1356,7 @@ function secretCardHTML(p, variant, uid = null) {
       <div class="sc-frame"></div>
       <div class="sc-border"></div>
     </div>
-    ${variantLayers(variant, p)}
+    ${variantLayers(variant, p)}${giftWrap(variant, uid)}
     <div class="shine"></div>
   </div>`;
 }

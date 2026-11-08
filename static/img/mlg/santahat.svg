@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 64">
+  <!-- czapka Mikołaja: czerwony wór przechylony w prawo, biały futrzany otok i pompon -->
+  <defs>
+    <linearGradient id="shRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4a4a"/>
+      <stop offset=".55" stop-color="#d4141c"/>
+      <stop offset="1" stop-color="#8a0a10"/>
+    </linearGradient>
+    <radialGradient id="shFur" cx=".4" cy=".35" r=".75">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".7" stop-color="#f1f1f4"/>
+      <stop offset="1" stop-color="#cfd3dc"/>
+    </radialGradient>
+  </defs>
+  <path d="M8 48 C10 28 22 10 40 6 C52 3 64 8 70 18 C73 23 72 30 68 33 C64 26 58 22 52 23 C60 30 64 40 66 48 Z" fill="url(#shRed)"/>
+  <path d="M40 6 C48 5 56 10 58 16 C52 12 46 12 40 14 C30 18 22 30 18 46 L12 47 C14 30 24 12 40 6 Z" fill="#ffffff" opacity=".18"/>
+  <path d="M52 23 C58 27 62 36 64 46" stroke="#6a0608" stroke-width="1.2" fill="none" opacity=".45"/>
+  <g fill="url(#shFur)">
+    <rect x="3" y="44" width="68" height="15" rx="7.5"/>
+    <circle cx="70" cy="34" r="8"/>
+  </g>
+  <g fill="#c8ccd6" opacity=".7">
+    <circle cx="12" cy="52" r="1.6"/><circle cx="21" cy="49" r="1.3"/><circle cx="30" cy="54" r="1.5"/><circle cx="40" cy="50" r="1.2"/>
+    <circle cx="49" cy="54" r="1.6"/><circle cx="58" cy="49" r="1.3"/><circle cx="64" cy="54" r="1.2"/><circle cx="67" cy="31" r="1.4"/><circle cx="73" cy="37" r="1.2"/>
+  </g>
+</svg>

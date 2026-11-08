@@ -660,7 +660,7 @@
    "chance": 0.03,
    "mult": 9.0,
    "off": true,
-   "desc": "Na Dzień Niepodległości: biało-czerwone flagi powiewające nad kartą, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
+   "desc": "Na Dzień Niepodległości: biało-czerwone szarfy w rogach karty, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
   },
   "sugarcane": {
    "name": "Sugar Cane",
@@ -675,6 +675,35 @@
    "mult": 6.0,
    "off": true,
    "desc": "Na święta: przez kartę pada gęsty śnieg, przy dole zimowa mgła, zdjęcie lekko przyprószone szronem. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "ice": {
+   "name": "Lodowy",
+   "chance": 0.03,
+   "mult": 7,
+   "off": true,
+   "desc": "Na święta: tło z oszlifowanych lodowych fasetek, przez które przebiega tęczowy błysk pryzmatu, zdjęcie w dwóch kolorach lodu - granatowe cienie i lodowato białe światła. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "christmas": {
+   "name": "Świąteczny",
+   "chance": 0.01,
+   "mult": 12,
+   "off": true,
+   "stickers": true,
+   "desc": "Najlepszy wariant świąt: czerwony aksamit w złotej ramce, sanie z reniferami przelatują nad nazwą, w tle ośnieżone miasteczko z zapalającymi się oknami, pada śnieg, lampki biegną po ramce. Naklejki od admina (np. czapka Mikołaja). Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "tree": {
+   "name": "Choinka",
+   "chance": 0.03,
+   "mult": 7,
+   "off": true,
+   "desc": "Na święta: gałązki świerku z górnych rogów, złota gwiazda nad nazwą i kolorowe bombki - także przed zdjęciem. Wypada w czasie eventu Święta ze wszystkich skrzynek."
+  },
+  "gift": {
+   "name": "Prezentowy",
+   "chance": 0.02,
+   "mult": 8,
+   "off": true,
+   "desc": "Na święta: karta przychodzi zapakowana w czerwony papier ze złotą kokardą - właściciel sam ją odpakowuje, a w podglądzie może ją zapakować ponownie. Wypada w czasie eventu Święta ze wszystkich skrzynek."
   },
   "covid": {
    "name": "COVID",
@@ -4185,7 +4214,11 @@
    "enabled": true,
    "drops": [
     {"variant": "sugarcane", "chance": 0.03},
-    {"variant": "snow", "chance": 0.03}
+    {"variant": "snow", "chance": 0.03},
+    {"variant": "ice", "chance": 0.03},
+    {"variant": "tree", "chance": 0.03},
+    {"variant": "gift", "chance": 0.02},
+    {"variant": "christmas", "chance": 0.01}
    ],
    "advent": [
     [{"type": "chest", "kind": "money_daily", "count": 1}],
@@ -4231,7 +4264,8 @@
   "pineapple": "Ananas",
   "ukulele": "Ukulele",
   "surfboard": "Deska surfingowa",
-  "coconut": "Kokos z parasolką"
+  "coconut": "Kokos z parasolką",
+  "santahat": "Czapka Mikołaja"
  },
  "stickerAnims": {
   "none": "Bez ruchu",

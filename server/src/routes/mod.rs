@@ -10,6 +10,7 @@ pub mod casino;
 pub mod chess;
 pub mod drawings;
 pub mod scratch;
+pub mod gift;
 pub mod horses;
 pub mod market;
 pub mod pinball;
@@ -226,6 +227,8 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/chess/{id}/draw", post(chess::chess_draw))
         .route("/api/items/{id}/drawing", get(drawings::drawing_info).post(drawings::drawing_save))
         .route("/api/items/{id}/scratch", post(scratch::scratch_item))
+        .route("/api/items/{id}/unwrap", post(gift::unwrap_item))
+        .route("/api/items/{id}/rewrap", post(gift::rewrap_item))
         // arena (tylko admini)
         .route("/api/arena/inbox", get(arena_inbox))
         .route("/api/arena/start", post(arena_start))

@@ -211,6 +211,11 @@ CREATE TABLE IF NOT EXISTS card_scratched (
     item_id BIGINT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
     at DOUBLE PRECISION NOT NULL
 );
+-- Prezentowy: egzemplarz odpakowany przez właściciela (idzie za kartą, znika razem z nią; zapakowanie ponownie usuwa wiersz)
+CREATE TABLE IF NOT EXISTS card_unwrapped (
+    item_id BIGINT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+    at DOUBLE PRECISION NOT NULL
+);
 -- quest: person_id albo variant = cel; winner_id = kto pierwszy go wypełnił. Klucz `day`: dawniej dzień (RRRR-MM-DD),
 -- teraz kolejny numer (q1, q2...); quest trwa od starts_at do ends_at (24 h), po wypełnieniu następny po 6 h
 CREATE TABLE IF NOT EXISTS daily_quests (

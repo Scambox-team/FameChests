@@ -102,6 +102,7 @@ export interface StateResponse {
   showcase?: number[];
   drawn?: number[];
   scratched?: number[];
+  unwrapped?: number[];
   chests?: Record<string, number>;
   collected?: [string, string][];
 }
