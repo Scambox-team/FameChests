@@ -32,7 +32,13 @@ export interface Opening {
   dropOverlay?: () => void;
   /** skrzynka testowa admina: wynik losuje przeglądarka, karty nie trafiają do ekwipunku */
   test?: boolean;
+  /** testowe otwarcie z panelu admina: prawdziwe losowanie serwera (/api/admin/crates/<id>/test-open), bez zapisu */
+  srvTest?: boolean;
 }
+
+/** Testowe otwarcie dowolnej skrzynki (panel admina -> /crates?test=<id>&n=<ile>) */
+export interface TestOpenArgs { crate: string; count: number }
+const testBadge = (on: boolean) => { const b = document.getElementById('testBadge'); if (b) b.hidden = !on; };
 
 function weightedPerson(crateId: string) {
   const crate = crateOf(crateId), byR: Record<string, string[]> = {};
@@ -87,11 +93,14 @@ function autoNext(o: Opening) {
 
 // ---------------------------------------------------------------- przebieg
 
-export async function openCrates() {
+export const openCrates = () => run();
+export const openTestCrate = (t: TestOpenArgs) => run(t);
+async function run(t?: TestOpenArgs) {
   if (S.opening) return;
-  const crate = crateOf(S.crate);
-  if (!crate) return;
-  const cost = (S.count - Math.min(S.chests[crate.id] || 0, S.count)) * crate.price;
+  const crate = crateOf(t ? t.crate : S.crate);
+  if (!crate || (t && !S.me?.isAdmin)) return;
+  const cnt = t ? t.count : S.count;
+  const cost = t ? 0 : (S.count - Math.min(S.chests[crate.id] || 0, S.count)) * crate.price;
   if (S.state.balance < cost) {
     Sound.error();
     const msg = `Brakuje ci ${fmt(cost - S.state.balance)}, żeby otworzyć ${S.count} ${plural(S.count, 'skrzynkę', 'skrzynki', 'skrzynek')}.`;
@@ -100,19 +109,23 @@ export async function openCrates() {
     return;
   }
   Sound.unlock();
-  if (!S.autoRun && S.auto && !crate.test) S.autoRun = { rounds: 0, spent: 0 };
+  if (!S.autoRun && S.auto && !crate.test && !t) S.autoRun = { rounds: 0, spent: 0 };
   if (S.autoRun) { S.autoRun.rounds++; S.autoRun.spent += cost; }
-  const o: Opening = { crate: S.crate, count: S.count, fast: S.fast, test: !!crate.test };
+  const o: Opening = { crate: crate.id, count: cnt, fast: S.fast, test: !!crate.test || !!t, srvTest: !!t };
   S.opening = o;
+  if (t) testBadge(true);
   touch();
   const ownedBefore = new Set(S.items.map(i => i.person));
   let res: any;
   try {
     Sound.open();
-    [res] = await Promise.all([o.test ? testOpen(crate, S.count) : api('/api/open', { crate: S.crate, count: S.count }), lidBeforeResult(o)]);
+    const fetch = t ? api(`/api/admin/crates/${encodeURIComponent(t.crate)}/test-open`, { count: cnt }).then(r => ({ drops: r.drops.map((d: Drop) => ({ ...d, sold: true })), discovered: [], skins: [] }))
+      : o.test ? testOpen(crate, S.count) : api('/api/open', { crate: S.crate, count: S.count });
+    [res] = await Promise.all([fetch, lidBeforeResult(o)]);
     if (res.discovered.length) await refreshConfig();
   } catch (e: any) {
     S.opening = null;
+    testBadge(false);
     crate3d.scene?.close();
     o.dropOverlay?.();
     touch();
@@ -206,7 +219,7 @@ function showStage(o: Opening) {
   stage.hidden = false;
   o.dropOverlay?.();
   document.body.style.overflow = 'hidden';
-  $('#stageTitle').textContent = `${crateOf(o.crate).name} × ${o.drops!.length}${S.autoRun ? `, runda ${S.autoRun.rounds}` : ''}`;
+  $('#stageTitle').textContent = `${crateOf(o.crate).name} × ${o.drops!.length}${o.srvTest ? ' (test)' : ''}${S.autoRun ? `, runda ${S.autoRun.rounds}` : ''}`;
   $('#autoStopBtn').hidden = !S.autoRun;
   if (S.autoRun) $('#autoStopBtn').textContent = `Zatrzymaj auto (runda ${S.autoRun.rounds})`;
   $('#reels').hidden = false;
@@ -337,7 +350,7 @@ function showResults(o: Opening, afterEpic: boolean) {
   results.style.setProperty('--rcw', `${rcw}px`);
   const seenNew = new Set<string>();
   results.innerHTML = drops.map((d, i) => {
-    const p = person(d.person), isNew = !o.ownedBefore!.has(d.person) && !seenNew.has(d.person);
+    const p = person(d.person), isNew = !o.test && !o.ownedBefore!.has(d.person) && !seenNew.has(d.person);
     if (isNew) seenNew.add(d.person);
     const big = rarityIdx(p.rarity) >= rarityIdx('gold');
     return `<div class="result r-${p.rarity}${big ? ' big' : ''}" data-id="${d.id}" style="--rc:${S.cfg.rarities[p.rarity].color}; animation-delay:${i * (o.fast ? 25 : 70)}ms">
@@ -374,13 +387,13 @@ function showResults(o: Opening, afterEpic: boolean) {
 export function updateStageBar() {
   const o: Opening = S.opening;
   const unsold = o.drops!.filter(d => !d.sold), sellable = unsold.filter(d => !d.fav);
-  $('#stageSum').textContent = o.test ? 'Skrzynka testowa: karty nie trafiają do ekwipunku' : unsold.length ? `Wartość: ${fmt(unsold.reduce((a, d) => a + d.value, 0))}` : 'Wszystko sprzedane';
+  $('#stageSum').textContent = o.test ? 'TEST: karty nie trafiają do ekwipunku' : unsold.length ? `Wartość: ${fmt(unsold.reduce((a, d) => a + d.value, 0))}` : 'Wszystko sprzedane';
   const sellAll = $('#sellAllBtn');
   sellAll.hidden = !sellable.length;
   sellAll.textContent = `Sprzedaj ${sellable.length < unsold.length ? 'resztę' : 'wszystko'} (${fmt(sellable.reduce((a, d) => a + d.value, 0))})`;
   const again = $('#againBtn');
   again.hidden = false;
-  again.textContent = `Otwórz ponownie (${o.count} × ${fmt(crateOf(o.crate).price)})`;
+  again.textContent = o.srvTest ? 'Otwórz testowo ponownie' : `Otwórz ponownie (${o.count} × ${fmt(crateOf(o.crate).price)})`;
   $('#closeBtn').hidden = false;
   $('#closeBtn').textContent = unsold.length ? 'Zatrzymaj i zamknij' : 'Zamknij';
 }
@@ -424,6 +437,8 @@ export async function setDropFavorite(id: number) {
 
 export function closeStage() {
   stopAuto();
+  const back = S.opening?.srvTest;
+  testBadge(false);
   $('#stage').hidden = true;
   document.body.style.overflow = '';
   $('#reels').innerHTML = '';
@@ -431,10 +446,12 @@ export function closeStage() {
   S.opening = null;
   crate3d.scene?.close();
   touch();
+  if (back) location.assign('/admin#skrzynki');
 }
 
 export async function openAgain() {
   const o: Opening = S.opening;
+  if (o.srvTest) { S.opening = null; testBadge(false); $('#stage').hidden = true; document.body.style.overflow = ''; crate3d.scene?.close(); return run({ crate: o.crate, count: o.count }); }
   S.crate = o.crate;
   S.count = o.count;
   S.opening = null;

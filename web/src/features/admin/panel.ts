@@ -130,6 +130,9 @@ export function startPanel() {
         </div>
       </div>
       <input type="hidden" name="id" value="${esc(c.id || "")}">
+      ${!isNew && !c.hidden && !c.special ? `<div class="a-testopen"><b>Otwórz testowo</b>
+        <span>Prawdziwe losowanie zapisanej skrzynki. Bez kosztów, karty nie trafiają do ekwipunku, osiągnięć ani rankingu.</span>
+        <span class="a-testopen-btns"><button class="btn" type="button" data-act="test-open" data-n="1">1</button><button class="btn" type="button" data-act="test-open" data-n="5">5</button><button class="btn" type="button" data-act="test-open" data-n="10">10</button></span></div>` : ""}
       <div class="a-grid">
         <label>Nazwa<input type="text" name="name" value="${esc(c.name)}" required maxlength="60" placeholder="np. Skrzynka YouTuberów"></label>
         <label>Krótka nazwa<input type="text" name="short" value="${esc(c.short)}" maxlength="24" placeholder="np. YouTube"></label>
@@ -1100,6 +1103,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       const act = e.target.closest("[data-act]")?.dataset.act; if (!act) return;
       const c = A.cat.crates.find(x => x.id === A.crate);
       try {
+        if (act === "test-open") { location.assign(`/crates?test=${encodeURIComponent(c.id)}&n=${+e.target.closest("[data-n]").dataset.n || 1}`); return; }
         if (act === "cancel-crate") { A.crate = A.cat.crates.find(x => !x.hidden)?.id || null; return render(); }
         if (act === "delete-crate") {
           const msg = c.builtin ? `Ukryć skrzynkę „${c.name}”? (Można ją przywrócić.)`
