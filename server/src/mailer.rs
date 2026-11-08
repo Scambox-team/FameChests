@@ -32,6 +32,8 @@ pub struct MailConfig {
     pub from: Option<String>,
     pub sender_name: Option<String>,
     pub sender_email: Option<String>,
+    /// adres gry (PUBLIC_URL) - pole {{ .SiteURL }} w mailach (ikona w nagłówku)
+    pub site: Option<String>,
 }
 
 impl MailConfig {
@@ -48,6 +50,7 @@ impl MailConfig {
             from: env("MAIL_FROM"),
             sender_name: env("SMTP_SENDER_NAME"),
             sender_email: env("SMTP_ADMIN_EMAIL"),
+            site: env("PUBLIC_URL"),
         }
     }
 }
@@ -56,6 +59,7 @@ impl MailConfig {
 pub struct Mailer {
     transport: Option<AsyncSmtpTransport<Tokio1Executor>>,
     from: Mailbox,
+    site: String,
 }
 
 const DEFAULT_FROM: &str = "ScamBox <no-reply@localhost>";
@@ -107,7 +111,8 @@ impl Mailer {
             (None, Some(p)) => Some(transport_from_parts(p).map_err(|e| anyhow::anyhow!("SMTP_HOST: {e}"))?),
             (None, None) => None,
         };
-        Ok(Mailer { transport, from: sender(cfg) })
+        let site = cfg.site.as_deref().unwrap_or("http://localhost:8000").trim_end_matches('/').to_owned();
+        Ok(Mailer { transport, from: sender(cfg), site })
     }
 
     /// Jest serwer SMTP (bez niego maile trafiają tylko do logu)
@@ -117,6 +122,7 @@ impl Mailer {
 
     /// Wysyła mail HTML (z wersją tekstową). Bez SMTP: ostrzeżenie w logu z adresatem, tematem i pierwszym linkiem.
     pub async fn send(&self, to: &str, subject: &str, html: &str) -> Result<(), String> {
+        let html = &crate::mail_templates::render(html, &[("SiteURL", &self.site)]);
         let Some(transport) = &self.transport else {
             tracing::warn!("Brak serwera SMTP (SMTP_URL albo SMTP_HOST) - mail nie wyszedł. Do: {to}, temat: \"{subject}\", link: {}", first_link(html));
             return Ok(());

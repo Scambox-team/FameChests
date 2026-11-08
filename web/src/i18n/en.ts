@@ -2044,6 +2044,8 @@ export const EN: Record<string, string> = {
   "Ustawienia: dźwięk, język, grafika": "Settings: sound, language, graphics",
   "Eksperymentalne": "Experimental",
   "Motyw Y2K": "Y2K theme",
+  "Ptasia wróżba": "Bird omen",
+  "Coś leci, zanim usiądziesz do stołu.": "Something flies by before you sit at the table.",
   "Róż, brokat i kanciaste krawędzie.": "Pink, glitter and sharp corners.",
   "Grafika 3D": "3D graphics",
   "Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.": "Turn off if the game runs slowly. Flat versions will be used.",

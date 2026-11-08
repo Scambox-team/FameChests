@@ -38,6 +38,7 @@ const LINK: Placeholder = ph("Link", "adres linku z maila (ważny godzinę)", "{
 const LINK_DAY: Placeholder = ph("Link", "adres linku z maila (ważny 24 godziny)", "{SITE}/konto/potwierdz?t=sb1_PRZYKLAD");
 const MINUTES_DAY: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "1440");
 const USERNAME: Placeholder = ph("Username", "nazwa gracza", "{USER}");
+const SITE_URL: Placeholder = ph("SiteURL", "adres gry (np. do ikony w nagłówku)", "{SITE}");
 const MINUTES: Placeholder = ph("ExpiresMinutes", "ile minut link jest ważny", "60");
 const EMAIL: Placeholder = ph("Email", "adres, na który wysłano mail", "gracz@example.com");
 const NEW_EMAIL: Placeholder = ph("NewEmail", "nowy adres email", "nowy@example.com");
@@ -50,7 +51,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/password_reset.html"),
         subject_used: true,
         required: &["Link"],
-        placeholders: &[LINK, USERNAME, MINUTES],
+        placeholders: &[SITE_URL, LINK, USERNAME, MINUTES],
     },
     Def {
         name: "email_change_request",
@@ -59,7 +60,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/email_change_request.html"),
         subject_used: true,
         required: &["Link"],
-        placeholders: &[LINK, USERNAME, MINUTES],
+        placeholders: &[SITE_URL, LINK, USERNAME, MINUTES],
     },
     Def {
         name: "email_changed_notice",
@@ -68,7 +69,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/email_changed_notice.html"),
         subject_used: true,
         required: &["NewEmail"],
-        placeholders: &[USERNAME, NEW_EMAIL],
+        placeholders: &[SITE_URL, USERNAME, NEW_EMAIL],
     },
     Def {
         name: "email_verify",
@@ -77,7 +78,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/email_verify.html"),
         subject_used: true,
         required: &["Link"],
-        placeholders: &[LINK_DAY, USERNAME, MINUTES_DAY],
+        placeholders: &[SITE_URL, LINK_DAY, USERNAME, MINUTES_DAY],
     },
     Def {
         name: "confirmation",
@@ -86,7 +87,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/confirmation.html"),
         subject_used: false,
         required: &["ConfirmationURL"],
-        placeholders: &[URL, EMAIL],
+        placeholders: &[SITE_URL, URL, EMAIL],
     },
     Def {
         name: "recovery",
@@ -95,7 +96,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/recovery.html"),
         subject_used: false,
         required: &["ConfirmationURL"],
-        placeholders: &[URL, EMAIL],
+        placeholders: &[SITE_URL, URL, EMAIL],
     },
     Def {
         name: "email_change",
@@ -104,7 +105,7 @@ pub static DEFS: &[Def] = &[
         html: include_str!("../email/email_change.html"),
         subject_used: false,
         required: &["ConfirmationURL"],
-        placeholders: &[URL, EMAIL, NEW_EMAIL],
+        placeholders: &[SITE_URL, URL, EMAIL, NEW_EMAIL],
     },
 ];
 

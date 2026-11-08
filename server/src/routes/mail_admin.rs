@@ -82,7 +82,7 @@ pub async fn admin_email_template_test(
     };
     let samples = tpl::samples(d, &site(&st), &me.username);
     let vars = tpl::sample_refs(&samples);
-    let subject = format!("[test] {}", tpl::render(&subject, &vars));
+    let subject = tpl::render(&subject, &vars);
     st.cfg.mailer.send(&link.email, &subject, &tpl::render(&html, &vars)).await.map_err(|e| {
         tracing::warn!("mail próbny nie wyszedł: {e}");
         super::account::unavailable()

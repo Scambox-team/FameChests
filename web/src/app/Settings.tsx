@@ -4,6 +4,7 @@ import { lang, setLang } from '../i18n/i18n';
 import { Sound } from '../sound/sound';
 import { getTheme, setTheme } from '../styles/theme';
 import { hasWebGL, setUser3DOff, user3DOff } from '../three/support';
+import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
 import styles from './Settings.module.css';
 
 /** Zawartość ustawień: dźwięk, język, grafika 3D i funkcje eksperymentalne (zapamiętane w przeglądarce).
@@ -12,6 +13,7 @@ export function SettingsPanel({ className }: { className?: string }) {
   const [on, setOn] = useState(Sound.enabled);
   const [vol, setVol] = useState(Math.round(Sound.volume * 100));
   const [y2k, setY2k] = useState(() => getTheme() === 'y2k');
+  const [birds, setBirds] = useState(() => !casinoIntroOff());
   const webgl = hasWebGL();
 
   const change = (v: number) => {
@@ -50,6 +52,10 @@ export function SettingsPanel({ className }: { className?: string }) {
         <label className={styles.check}>
           <input type="checkbox" checked={y2k} onChange={e => toggleY2k(e.target.checked)} />
           <span><b>Motyw Y2K</b><small>Róż, brokat i kanciaste krawędzie.</small></span>
+        </label>
+        <label className={styles.check}>
+          <input type="checkbox" checked={birds} onChange={e => { setBirds(e.target.checked); setCasinoIntroOff(!e.target.checked); }} />
+          <span><b>Ptasia wróżba</b><small>Coś leci, zanim usiądziesz do stołu.</small></span>
         </label>
       </div>
     </div>
