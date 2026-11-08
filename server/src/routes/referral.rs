@@ -31,7 +31,7 @@ use crate::catalog::Catalog;
 use crate::data::g;
 use crate::db::{now, Conn};
 use crate::error::{bad, Res};
-use crate::game::{add_chests, add_state, get_state, users_by_id, valid_chest_kind};
+use crate::game::{add_chests, add_state, get_state, log_admin, users_by_id, valid_chest_kind};
 use crate::state::AppState;
 use crate::text::fmt_money;
 
@@ -83,6 +83,53 @@ impl Default for RefConfig {
     }
 }
 
+/// Same nagrody (bez progów i limitów): globalne z `RefConfig` albo własny zestaw admina
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct RewardSet {
+    pub referrer_crate: String,
+    pub referrer_count: i64,
+    pub referrer_money: i64,
+    pub referred_crate: String,
+    pub referred_count: i64,
+    pub referred_money: i64,
+}
+
+impl RefConfig {
+    pub fn rewards(&self) -> RewardSet {
+        RewardSet {
+            referrer_crate: self.referrer_crate.clone(),
+            referrer_count: self.referrer_count,
+            referrer_money: self.referrer_money,
+            referred_crate: self.referred_crate.clone(),
+            referred_count: self.referred_count,
+            referred_money: self.referred_money,
+        }
+    }
+}
+
+/// Wybór zestawu nagród dla polecenia z linku danego gracza (czysta decyzja, do testów): admin z własnym zestawem
+/// używa go dla obu stron, każdy inny (też były admin) - zestawu globalnego
+pub fn pick_rewards(cfg: &RefConfig, referrer_is_admin: bool, own: Option<RewardSet>) -> RewardSet {
+    match own {
+        Some(set) if referrer_is_admin => set,
+        _ => cfg.rewards(),
+    }
+}
+
+/// Zestaw nagród dla polecenia z linku tego gracza
+pub async fn rewards_for(c: &mut Conn, cfg: &RefConfig, referrer: i64) -> sqlx::Result<RewardSet> {
+    let is_admin: Option<i32> = sqlx::query_scalar("SELECT is_admin FROM users WHERE id = $1").bind(referrer).fetch_optional(&mut *c).await?;
+    let is_admin = is_admin.unwrap_or(0) != 0;
+    let own = if is_admin { own_set(c, referrer).await? } else { None };
+    Ok(pick_rewards(cfg, is_admin, own))
+}
+
+async fn own_set(c: &mut Conn, admin: i64) -> sqlx::Result<Option<RewardSet>> {
+    let row: Option<String> = sqlx::query_scalar("SELECT data FROM referral_admin_rewards WHERE admin_id = $1").bind(admin).fetch_optional(c).await?;
+    Ok(row.and_then(|d| serde_json::from_str(&d).ok()))
+}
+
 pub async fn config(c: &mut Conn) -> sqlx::Result<RefConfig> {
     let row: Option<String> = sqlx::query_scalar("SELECT data FROM referral_config WHERE id = 1").fetch_optional(c).await?;
     Ok(row.and_then(|d| serde_json::from_str(&d).ok()).unwrap_or_default())
@@ -115,12 +162,12 @@ struct RewardView {
     min_hours: f64,
 }
 
-fn reward_view(cat: &Catalog, cfg: &RefConfig) -> RewardView {
+fn reward_view(cat: &Catalog, cfg: &RefConfig, set: &RewardSet) -> RewardView {
     RewardView {
-        referrer: reward_text(cat, &cfg.referrer_crate, cfg.referrer_count, cfg.referrer_money),
-        referred: reward_text(cat, &cfg.referred_crate, cfg.referred_count, cfg.referred_money),
-        referrer_crate: cfg.referrer_crate.clone(),
-        referred_crate: cfg.referred_crate.clone(),
+        referrer: reward_text(cat, &set.referrer_crate, set.referrer_count, set.referrer_money),
+        referred: reward_text(cat, &set.referred_crate, set.referred_count, set.referred_money),
+        referrer_crate: set.referrer_crate.clone(),
+        referred_crate: set.referred_crate.clone(),
         min_opened: cfg.min_opened,
         min_hours: cfg.min_hours,
     }
@@ -431,7 +478,8 @@ async fn reward(c: &mut Conn, cat: &Catalog, cfg: &RefConfig, r: &RefRow) -> sql
     if taken == 0 {
         return Ok(());
     }
-    let referred = give(c, cat, r.referred_id, &cfg.referred_crate, cfg.referred_count, cfg.referred_money).await?;
+    let set = rewards_for(c, cfg, r.referrer_id).await?;
+    let referred = give(c, cat, r.referred_id, &set.referred_crate, set.referred_count, set.referred_money).await?;
     let month: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM referrals WHERE referrer_id = $1 AND referrer_reward != '' AND rewarded_at > $2",
     )
@@ -442,7 +490,7 @@ async fn reward(c: &mut Conn, cat: &Catalog, cfg: &RefConfig, r: &RefRow) -> sql
     let referrer = if cfg.monthly_cap > 0 && month >= cfg.monthly_cap {
         String::new() // limit polecającego - polecony i tak dostaje swoją nagrodę
     } else {
-        give(c, cat, r.referrer_id, &cfg.referrer_crate, cfg.referrer_count, cfg.referrer_money).await?
+        give(c, cat, r.referrer_id, &set.referrer_crate, set.referrer_count, set.referrer_money).await?
     };
     sqlx::query(
         "UPDATE referrals SET referrer_reward = $1, referred_reward = $2, seen_referrer = $3, seen_referred = 0 WHERE referred_id = $4",
@@ -575,13 +623,16 @@ pub async fn my_referral(
             let u = users_by_id(&mut c, &cat, [Some(r.referrer_id)]).await?;
             let open = r.status == "pending" || r.status == "flagged";
             let missing = if open { gap_of(&mut c, &cfg, &r).await?.key() } else { "ready" };
+            let set = rewards_for(&mut c, &cfg, r.referrer_id).await?;
             u.get(&r.referrer_id).map(|user| {
-                json!({"user": user, "status": if r.status == "flagged" { "pending" } else { r.status.as_str() }, "missing": missing})
+                json!({"user": user, "status": if r.status == "flagged" { "pending" } else { r.status.as_str() }, "missing": missing,
+                       "reward": reward_view(&cat, &cfg, &set)})
             })
         }
         None => None,
     };
     let count = |s: &str| rows.iter().filter(|r| r.status == s).count();
+    let mine_set = rewards_for(&mut c, &cfg, me.id).await?;
     ok(json!({
         "enabled": true,
         "code": code,
@@ -590,11 +641,118 @@ pub async fn my_referral(
         "signups": rows.len(),
         "pending": count("pending") + count("flagged"),
         "rewarded": count("rewarded"),
-        "reward": reward_view(&cat, &cfg),
+        "reward": reward_view(&cat, &cfg, &mine_set),
+        "ownRewards": mine_set != cfg.rewards(),
         "monthlyCap": cfg.monthly_cap,
         "list": list,
         "referredBy": referred_by,
     }))
+}
+
+// ---------------------------------------------------------------- wpisanie kodu w profilu
+
+/// Tyle godzin od założenia konta można jeszcze wpisać kod polecenia
+const CLAIM_HOURS: f64 = 24.0;
+
+/// Kod z tego, co wpisał gracz: sam kod (wielkość liter i spacje bez znaczenia) albo link (`https://.../r/KOD`,
+/// `/r/KOD`, z parametrami, `#` albo ukośnikiem na końcu)
+pub fn extract_code(input: &str) -> Option<String> {
+    let input = input.trim();
+    if input.is_empty() || input.len() > 300 {
+        return None;
+    }
+    if let Some(pos) = input.to_ascii_lowercase().rfind("/r/") {
+        let rest = &input[pos + 3..];
+        let end = rest.find(|ch: char| matches!(ch, '/' | '?' | '#' | '&') || ch.is_whitespace()).unwrap_or(rest.len());
+        return clean_code(&rest[..end]);
+    }
+    let plain: String = input.trim_matches('/').chars().filter(|ch| !ch.is_whitespace()).collect();
+    clean_code(&plain)
+}
+
+/// Ile godzin zostało na wpisanie kodu (None = konto ma już 24 h albo więcej)
+pub fn claim_hours_left(age_secs: f64) -> Option<f64> {
+    let left = CLAIM_HOURS - age_secs / 3600.0;
+    (left > 0.0).then_some(left)
+}
+
+/// Stan pola „wpisz kod” w profilu: czy można wpisać, ile czasu zostało, kto poleca i jakie będą nagrody
+async fn claim_state(st: &AppState, me: &crate::auth::User) -> Res {
+    let cat = st.cat();
+    let mut c = st.db.acquire().await?;
+    let cfg = config(&mut c).await?;
+    let by: Option<i64> = sqlx::query_scalar("SELECT referrer_id FROM referrals WHERE referred_id = $1").bind(me.id).fetch_optional(&mut *c).await?;
+    let left = claim_hours_left(now() - me.created_at);
+    let by_view = match by {
+        Some(rid) => {
+            let users = users_by_id(&mut c, &cat, [Some(rid)]).await?;
+            let set = rewards_for(&mut c, &cfg, rid).await?;
+            users.get(&rid).map(|u| json!({"user": u, "reward": reward_view(&cat, &cfg, &set)}))
+        }
+        None => None,
+    };
+    ok(json!({
+        "enabled": cfg.enabled,
+        "canClaim": cfg.enabled && by.is_none() && left.is_some(),
+        "hoursLeft": left,
+        "referredBy": by_view,
+    }))
+}
+
+pub async fn claim_info(State(st): State<AppState>, Me(me): Me) -> Res {
+    claim_state(&st, &me).await
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct ClaimRequest {
+    code: String,
+}
+
+/// Gracz bez polecenia i z kontem młodszym niż 24 h wpisuje kod albo link polecający (ta sama ochrona IP co przy rejestracji)
+pub async fn claim(
+    State(st): State<AppState>,
+    Me(me): Me,
+    addr: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    JsonBody(req): JsonBody<ClaimRequest>,
+) -> Res {
+    let ip = client_ip(&st, &headers, Some(&addr));
+    // limit prób (zgadywanie kodów): jak nieudane logowania, osobne klucze
+    let (who, from) = (format!("refclaim:{}", me.id), format!("refclaim:{ip}"));
+    let wait = st.login.blocked(&who, &from);
+    if wait > 0 {
+        return bad(format!("Za dużo prób. Spróbuj ponownie za {} min.", wait / 60 + 1));
+    }
+    let mut tx = st.db.begin().await?;
+    crate::db::lock_me(&mut tx, me.id).await?;
+    let cfg = config(&mut tx).await?;
+    if !cfg.enabled {
+        return bad("Polecenia są teraz wyłączone");
+    }
+    if sqlx::query_scalar::<_, bool>("SELECT EXISTS (SELECT 1 FROM referrals WHERE referred_id = $1)").bind(me.id).fetch_one(&mut *tx).await? {
+        return bad("Twoje konto ma już polecenie");
+    }
+    if claim_hours_left(now() - me.created_at).is_none() {
+        return bad("Kod można wpisać tylko do 24 godzin od założenia konta");
+    }
+    let owner = match extract_code(&req.code) {
+        Some(code) => code_owner(&mut tx, &code).await?.map(|o| (code, o)),
+        None => None,
+    };
+    let Some((code, owner)) = owner else {
+        st.login.note(&who, &from, false);
+        return bad("Nie ma takiego kodu");
+    };
+    if owner == me.id {
+        return bad("Nie możesz użyć własnego kodu");
+    }
+    let hash = ip_hash(&st, &ip);
+    note_ip(&mut tx, me.id, &hash).await?;
+    attach(&mut tx, me.id, &code, &hash).await?;
+    settle(&mut tx, &st.cat(), me.id).await?;
+    tx.commit().await?;
+    claim_state(&st, &me).await
 }
 
 /// Kto zaprasza (strona rejestracji, bez logowania)
@@ -605,16 +763,17 @@ pub async fn ref_invite(State(st): State<AppState>, Path(code): Path<String>) ->
     let cfg = config(&mut c).await?;
     let Some(owner) = code_owner(&mut c, &code).await?.filter(|_| cfg.enabled) else { return bad("Ten link polecający nie działa") };
     let users = users_by_id(&mut c, &cat, [Some(owner)]).await?;
-    ok(json!({"user": users.get(&owner), "reward": reward_view(&cat, &cfg)}))
+    let set = rewards_for(&mut c, &cfg, owner).await?;
+    ok(json!({"user": users.get(&owner), "reward": reward_view(&cat, &cfg, &set)}))
 }
 
 // ---------------------------------------------------------------- admin
 
-pub async fn admin_referrals(State(st): State<AppState>, Admin(_): Admin) -> Res {
-    admin_view(&st).await
+pub async fn admin_referrals(State(st): State<AppState>, Admin(me): Admin) -> Res {
+    admin_view(&st, me.id).await
 }
 
-async fn admin_view(st: &AppState) -> Res {
+async fn admin_view(st: &AppState, me_id: i64) -> Res {
     let cat = st.cat();
     let mut c = st.db.acquire().await?;
     let cfg = config(&mut c).await?;
@@ -649,9 +808,28 @@ async fn admin_view(st: &AppState) -> Res {
     for (k, m) in &g().money_chests {
         crates.push(json!({"id": format!("money_{k}"), "name": m.name, "mode": "money"}));
     }
+    // własne zestawy nagród adminów (tylko obecnych adminów; były admin wraca do globalnych)
+    let sets: Vec<(i64, String, f64)> = sqlx::query_as(
+        "SELECT a.admin_id, a.data, a.updated_at FROM referral_admin_rewards a JOIN users u ON u.id = a.admin_id
+         WHERE u.is_admin != 0 ORDER BY a.updated_at DESC",
+    )
+    .fetch_all(&mut *c)
+    .await?;
+    let set_users = users_by_id(&mut c, &cat, sets.iter().map(|s| Some(s.0))).await?;
+    let admin_sets: Vec<serde_json::Value> = sets
+        .iter()
+        .filter_map(|(id, data, at)| {
+            let set: RewardSet = serde_json::from_str(data).ok()?;
+            let v = reward_view(&cat, &cfg, &set);
+            Some(json!({"user": set_users.get(id), "mine": *id == me_id, "set": set, "referrer": v.referrer, "referred": v.referred, "updated": at}))
+        })
+        .collect();
+    let mine_set: Option<RewardSet> = sets.iter().find(|s| s.0 == me_id).and_then(|s| serde_json::from_str(&s.1).ok());
     ok(json!({
         "config": cfg,
-        "reward": reward_view(&cat, &cfg),
+        "reward": reward_view(&cat, &cfg, &cfg.rewards()),
+        "mine": mine_set,
+        "adminSets": admin_sets,
         "crates": crates,
         "stats": {"clicks": stats.0, "signups": stats.1, "rewarded": stats.2, "flagged": stats.3},
         "top": top.iter().map(|(u, n)| json!({"user": top_users.get(u), "count": n})).collect::<Vec<_>>(),
@@ -668,7 +846,7 @@ async fn admin_view(st: &AppState) -> Res {
     }))
 }
 
-pub async fn admin_referral_config(State(st): State<AppState>, Admin(_): Admin, JsonBody(mut cfg): JsonBody<RefConfig>) -> Res {
+pub async fn admin_referral_config(State(st): State<AppState>, Admin(me): Admin, JsonBody(mut cfg): JsonBody<RefConfig>) -> Res {
     let cat = st.cat();
     for kind in [&cfg.referrer_crate, &cfg.referred_crate] {
         if !kind.is_empty() && !valid_chest_kind(&cat, kind) {
@@ -693,7 +871,52 @@ pub async fn admin_referral_config(State(st): State<AppState>, Admin(_): Admin, 
         .bind(data)
         .execute(&st.db)
         .await?;
-    admin_view(&st).await
+    admin_view(&st, me.id).await
+}
+
+/// Własny zestaw nagród admina: zapis zawsze dotyczy zalogowanego admina (`me.id`), cudzych zestawów nie da się zmienić
+pub async fn admin_referral_mine(State(st): State<AppState>, Admin(me): Admin, JsonBody(mut set): JsonBody<RewardSet>) -> Res {
+    let cat = st.cat();
+    for kind in [&set.referrer_crate, &set.referred_crate] {
+        if !kind.is_empty() && !valid_chest_kind(&cat, kind) {
+            return bad(format!("Nie ma skrzynki „{kind}”"));
+        }
+    }
+    set.referrer_count = set.referrer_count.clamp(0, 100);
+    set.referred_count = set.referred_count.clamp(0, 100);
+    set.referrer_money = set.referrer_money.clamp(0, 100_000_000);
+    set.referred_money = set.referred_money.clamp(0, 100_000_000);
+    let referrer = reward_text(&cat, &set.referrer_crate, set.referrer_count, set.referrer_money);
+    let referred = reward_text(&cat, &set.referred_crate, set.referred_count, set.referred_money);
+    if referrer.is_empty() && referred.is_empty() {
+        return bad("Ustaw jakąś nagrodę albo użyj globalnych");
+    }
+    let data = serde_json::to_string(&set).map_err(anyhow::Error::from)?;
+    let mut tx = st.db.begin().await?;
+    sqlx::query(
+        "INSERT INTO referral_admin_rewards (admin_id, data, updated_at) VALUES ($1, $2, $3)
+         ON CONFLICT (admin_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
+    )
+    .bind(me.id)
+    .bind(data)
+    .bind(now())
+    .execute(&mut *tx)
+    .await?;
+    let details = format!("polecający: {}; polecony: {}", if referrer.is_empty() { "nic" } else { &referrer }, if referred.is_empty() { "nic" } else { &referred });
+    log_admin(&mut tx, &me, "referral_own_rewards", None, &details).await?;
+    tx.commit().await?;
+    admin_view(&st, me.id).await
+}
+
+/// „Użyj globalnych”: usuwa własny zestaw zalogowanego admina
+pub async fn admin_referral_mine_clear(State(st): State<AppState>, Admin(me): Admin) -> Res {
+    let mut tx = st.db.begin().await?;
+    let gone = sqlx::query("DELETE FROM referral_admin_rewards WHERE admin_id = $1").bind(me.id).execute(&mut *tx).await?.rows_affected();
+    if gone > 0 {
+        log_admin(&mut tx, &me, "referral_own_rewards", None, "wrócił do nagród globalnych").await?;
+    }
+    tx.commit().await?;
+    admin_view(&st, me.id).await
 }
 
 #[derive(Deserialize, Default)]
@@ -705,7 +928,7 @@ pub struct DecideRequest {
 /// Podejrzane polecenie: zatwierdź (czeka na aktywację jak zwykłe) albo odrzuć (bez nagród)
 pub async fn admin_referral_decide(
     State(st): State<AppState>,
-    Admin(_): Admin,
+    Admin(me): Admin,
     Path(referred): Path<i64>,
     JsonBody(req): JsonBody<DecideRequest>,
 ) -> Res {
@@ -720,7 +943,7 @@ pub async fn admin_referral_decide(
         settle(&mut c, &st.cat(), referred).await?;
     }
     drop(c);
-    admin_view(&st).await
+    admin_view(&st, me.id).await
 }
 
 /// Usuwany gracz: jego kod i polecenia
@@ -745,6 +968,52 @@ mod tests {
         assert!(clean_code("ABC").is_none());
         assert!(clean_code("ABCDEFG0").is_none(), "0 nie ma w alfabecie");
         assert!(clean_code("../../x").is_none());
+    }
+
+    #[test]
+    fn extract_forms() {
+        let code = new_code();
+        let low = code.to_lowercase();
+        assert_eq!(extract_code(&code).as_deref(), Some(code.as_str()));
+        assert_eq!(extract_code(&format!("  {low} ")).as_deref(), Some(code.as_str()));
+        let spaced = format!("{} {}", &code[..4], &code[4..]);
+        assert_eq!(extract_code(&spaced).as_deref(), Some(code.as_str()));
+        for link in [
+            format!("https://scambox.pl/r/{code}"),
+            format!("https://scambox.pl/r/{code}/"),
+            format!("http://localhost:8080/r/{low}?utm=x&a=b"),
+            format!("/r/{code}"),
+            format!("scambox.pl/r/{code}#top"),
+            format!("  https://SCAMBOX.pl/R/{code} "),
+            format!("{code}/"),
+        ] {
+            assert_eq!(extract_code(&link).as_deref(), Some(code.as_str()), "{link}");
+        }
+        for junk in ["", "   ", "ABC", "https://scambox.pl/", "https://scambox.pl/r/", "https://scambox.pl/r/ZZZ", "../../etc", "ABCDEFG0", "<script>"] {
+            assert!(extract_code(junk).is_none(), "{junk}");
+        }
+        assert!(extract_code(&"A".repeat(500)).is_none());
+        assert!(extract_code(&format!("https://x.pl/r/{code}{code}")).is_none(), "za długi kod");
+    }
+
+    #[test]
+    fn reward_set_choice() {
+        let cfg = RefConfig { referrer_crate: "a".into(), referrer_count: 2, referred_crate: "b".into(), referred_count: 1, ..Default::default() };
+        let own = RewardSet { referrer_crate: "x".into(), referrer_count: 5, referrer_money: 100, referred_crate: "y".into(), referred_count: 3, referred_money: 0 };
+        assert_eq!(pick_rewards(&cfg, true, Some(own.clone())), own, "admin z zestawem: jego zestaw dla obu stron");
+        assert_eq!(pick_rewards(&cfg, true, None), cfg.rewards(), "admin bez zestawu: globalny");
+        assert_eq!(pick_rewards(&cfg, false, None), cfg.rewards(), "zwykły gracz: globalny");
+        assert_eq!(pick_rewards(&cfg, false, Some(own)), cfg.rewards(), "były admin: zestaw nie działa");
+    }
+
+    #[test]
+    fn claim_window() {
+        assert!(claim_hours_left(0.0).is_some());
+        let left = claim_hours_left(19.0 * 3600.0).unwrap();
+        assert!((left - 5.0).abs() < 1e-9);
+        assert!(claim_hours_left(24.0 * 3600.0 - 1.0).is_some());
+        assert!(claim_hours_left(24.0 * 3600.0).is_none());
+        assert!(claim_hours_left(1e9).is_none());
     }
 
     #[test]

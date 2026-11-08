@@ -9,16 +9,24 @@ import r from './ReferralsAdmin.module.css';
 
 // Zakładka panelu admina „Polecenia” (routes/referral.rs): nagrody za reflinki, warunek aktywacji, limity,
 // lista poleceń z podejrzanymi (to samo IP, kilka kont z jednego IP) do zatwierdzenia albo odrzucenia.
-interface Cfg {
-  enabled: boolean;
+interface RewardSet {
   referrerCrate: string; referrerCount: number; referrerMoney: number;
   referredCrate: string; referredCount: number; referredMoney: number;
+}
+interface Cfg extends RewardSet {
+  enabled: boolean;
   minOpened: number; minHours: number; monthlyCap: number; perIpLimit: number;
 }
+const EMPTY: RewardSet = { referrerCrate: '', referrerCount: 1, referrerMoney: 0, referredCrate: '', referredCount: 1, referredMoney: 0 };
+/** Początek formularza własnych nagród: kopia globalnych */
+const pick = (c: Cfg): RewardSet => ({
+  referrerCrate: c.referrerCrate, referrerCount: c.referrerCount, referrerMoney: c.referrerMoney,
+  referredCrate: c.referredCrate, referredCount: c.referredCount, referredMoney: c.referredMoney,
+});
 const STATUS: Record<string, string> = { pending: 'Czeka na aktywację', flagged: 'Podejrzane', rewarded: 'Nagrodzone', rejected: 'Odrzucone' };
 
-function RewardFields({ who, cfg, set, crates }: { who: 'referrer' | 'referred'; cfg: Cfg; set: (c: Partial<Cfg>) => void; crates: any[] }) {
-  const k = (f: string) => `${who}${f}` as keyof Cfg;
+function RewardFields({ who, cfg, set, crates }: { who: 'referrer' | 'referred'; cfg: RewardSet; set: (c: Partial<RewardSet>) => void; crates: any[] }) {
+  const k = (f: string) => `${who}${f}` as keyof RewardSet;
   return (
     <div className={r.reward}>
       <h4>{who === 'referrer' ? 'Polecający (właściciel linku)' : 'Polecony (nowy gracz)'}</h4>
@@ -38,7 +46,20 @@ export default function ReferralsAdmin() {
   const [data, setData] = useState<any>(null);
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [busy, setBusy] = useState(false);
-  const apply = (d: any) => { setData(d); setCfg(d.config); };
+  const [mine, setMine] = useState<RewardSet | null>(null);
+  const apply = (d: any) => { setData(d); setCfg(d.config); setMine(d.mine ?? { ...EMPTY, ...pick(d.config) }); };
+  const saveMine = async () => {
+    setBusy(true);
+    try { apply(await api('/api/admin/referrals/mine', mine)); toast('Zapisano własne nagrody'); }
+    catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
+  const clearMine = async () => {
+    setBusy(true);
+    try { apply(await api('/api/admin/referrals/mine/clear', {})); toast('Używasz nagród globalnych'); }
+    catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
   useEffect(() => { api('/api/admin/referrals').then(apply).catch(e => toast(e.message, true)); }, []);
   const set = (c: Partial<Cfg>) => setCfg(x => ({ ...x!, ...c }));
   const save = async (over: Partial<Cfg> = {}) => {
@@ -82,6 +103,39 @@ export default function ReferralsAdmin() {
             : <Button disabled={busy} onClick={() => save({ enabled: true })}>Zapisz i włącz</Button>}
         </div>
         {data.config.enabled && <p className="small">Gracze widzą: ty dostajesz <b>{data.reward.referrer || 'nic'}</b>, znajomy dostaje <b>{data.reward.referred || 'nic'}</b>.</p>}
+      </div>
+
+      <div className="panel">
+        <h3>Moje nagrody za polecenia</h3>
+        <p className="muted small">Polecenia z TWOJEGO linku dostają te nagrody (obie strony) zamiast globalnych. Progi aktywacji, limity i ochrona zostają globalne.
+          Zestawy innych adminów widzisz niżej, ale zmieniasz tylko własny.
+          {data.mine ? ' Teraz używasz własnego zestawu.' : ' Teraz używasz nagród globalnych.'}</p>
+        {mine && <div className={r.rewards}>
+          <RewardFields who="referrer" cfg={mine} set={c => setMine(x => ({ ...x!, ...c }))} crates={data.crates} />
+          <RewardFields who="referred" cfg={mine} set={c => setMine(x => ({ ...x!, ...c }))} crates={data.crates} />
+        </div>}
+        <div className={s.btns}>
+          <Button kind="hue" disabled={busy} onClick={saveMine}>Zapisz moje nagrody</Button>
+          <Button disabled={busy || !data.mine} onClick={clearMine}>Użyj globalnych</Button>
+        </div>
+      </div>
+
+      <div className="panel">
+        <h3>Nagrody adminów</h3>
+        {!data.adminSets.length && <p className="muted small">Żaden admin nie ma własnego zestawu, wszystkie linki używają nagród globalnych.</p>}
+        {data.adminSets.length > 0 && <table className={r.table}>
+          <thead><tr className="muted small"><td>Admin</td><td>Polecający dostaje</td><td>Polecony dostaje</td><td>Zmieniono</td></tr></thead>
+          <tbody>
+            {data.adminSets.map((x: any) => (
+              <tr key={x.user?.username ?? x.updated}>
+                <td>{x.user ? <UserLink user={x.user} /> : '—'}{x.mine && <span className="muted small"> (Ty)</span>}</td>
+                <td>{x.referrer || <span className="muted">nic</span>}</td>
+                <td>{x.referred || <span className="muted">nic</span>}</td>
+                <td className="muted small">{timeAgo(x.updated)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>}
       </div>
 
       <div className="panel">
