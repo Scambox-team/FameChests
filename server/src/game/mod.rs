@@ -325,7 +325,7 @@ pub async fn insert_for(
     )
     .fetch_one(&mut *c)
     .await?;
-    if variant.split('+').any(|p| p == "aero") {
+    if source == "drop" && variant.split('+').any(|p| p == "aero") {
         unlock_theme_aero(c, uid).await?;
     }
     let first =
@@ -352,10 +352,11 @@ pub async fn unlock_theme_aero(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
     Ok(())
 }
 
-/// Gracze, którzy mieli kartę aero przed wprowadzeniem motywu: ustawia flagę (raz). true = świeżo odblokowany.
+/// Gracze, którzy wylosowali kartę aero ze skrzynki przed wprowadzeniem motywu (user_collected, source drop albo stare
+/// wpisy bez źródła): ustawia flagę (raz). true = świeżo odblokowany.
 pub async fn backfill_theme_aero(c: &mut Conn, uid: i64) -> sqlx::Result<bool> {
     let n = sqlx::query(
-        "INSERT INTO user_state (user_id, key, value)          SELECT $1::bigint, 'themeAero', 1 WHERE EXISTS (SELECT 1 FROM items WHERE user_id = $1 AND variant ~ '(^|[+])aero([+]|$)')             OR EXISTS (SELECT 1 FROM user_collected WHERE user_id = $1 AND variant ~ '(^|[+])aero([+]|$)')          ON CONFLICT (user_id, key) DO UPDATE SET value = 1 WHERE user_state.value = 0",
+        "INSERT INTO user_state (user_id, key, value)          SELECT $1::bigint, 'themeAero', 1 WHERE EXISTS (SELECT 1 FROM user_collected WHERE user_id = $1 AND variant ~ '(^|[+])aero([+]|$)' AND (source = 'drop' OR source IS NULL))          ON CONFLICT (user_id, key) DO UPDATE SET value = 1 WHERE user_state.value = 0",
     )
     .bind(uid)
     .execute(c)
