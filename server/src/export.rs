@@ -1,7 +1,7 @@
 //! Eksport zmian z panelu admina (karty, skrzynki, warianty) do repozytorium i ich wczytanie w nowej instalacji:
-//!   - catalog_export.json - skrzynki i karty dodane/zmienione/ukryte w panelu admina oraz zmiany wariantów
+//!   - seed/catalog_export.json - skrzynki i karty dodane/zmienione/ukryte w panelu admina oraz zmiany wariantów
 //!     (ustawienia, naklejki, kreator) - BEZ danych graczy,
-//!   - custom_images/      - zdjęcia wgrane w panelu admina (karty bez artykułu w Wikipedii albo z własnym plikiem),
+//!   - seed/custom_images/ - zdjęcia wgrane w panelu admina (karty bez artykułu w Wikipedii albo z własnym plikiem),
 //!     wgrane naklejki wariantów i obrazek easter egga.
 //!
 //! Oba są też wbudowane w plik wykonywalny (assets.rs) - nowa instalacja na serwerze nie potrzebuje folderu gry.
@@ -18,8 +18,8 @@ use crate::config::Config;
 use crate::data::g;
 use crate::images::{Images, Kind};
 
-const EXPORT_FILE: &str = "catalog_export.json";
-const IMAGES_DIR: &str = "custom_images";
+const EXPORT_FILE: &str = "seed/catalog_export.json";
+const IMAGES_DIR: &str = "seed/custom_images";
 
 /// Zmiana z panelu admina (wiersz catalog_crates / catalog_cards)
 #[derive(Debug, Serialize, Deserialize)]
@@ -97,9 +97,18 @@ pub async fn import_if_empty(pool: &PgPool, base: &Path) -> anyhow::Result<bool>
     Ok(true)
 }
 
+/// Plik już jest (dla obrazków: w dowolnym formacie - stary .jpg użytkownika czeka na migrację do .webp)
+fn has_image(target: &Path) -> bool {
+    if target.exists() {
+        return true;
+    }
+    let is_image = target.extension().and_then(|e| e.to_str()).is_some_and(|e| ["webp", "jpg", "jpeg", "png", "gif", "bmp"].contains(&e));
+    is_image && ["webp", "jpg", "jpeg", "png", "gif", "bmp"].iter().any(|e| target.with_extension(e).exists())
+}
+
 /// Własne zdjęcia z repozytorium -> image_cache (tylko brakujące). Przy każdym starcie, bo na nowym serwerze baza bywa
 /// przeniesiona ze starego zapisu (nie jest pusta), a folder ze zdjęciami jest pusty.
-/// Folder gry bez custom_images/ (serwer z samym plikiem wykonywalnym) - kopie wbudowane w plik.
+/// Folder gry bez seed/custom_images/ (serwer z samym plikiem wykonywalnym) - kopie wbudowane w plik.
 pub fn copy_custom_images(base: &Path, data_dir: &Path) -> std::io::Result<()> {
     let src = base.join(IMAGES_DIR);
     let cache = data_dir.join("image_cache");
@@ -107,7 +116,7 @@ pub fn copy_custom_images(base: &Path, data_dir: &Path) -> std::io::Result<()> {
     if !src.is_dir() {
         for name in crate::assets::CustomImages::iter() {
             let target = cache.join(name.as_ref());
-            if !target.exists() {
+            if !has_image(&target) {
                 if let Some(f) = crate::assets::CustomImages::get(&name) {
                     std::fs::write(target, f.data)?;
                 }
@@ -118,14 +127,14 @@ pub fn copy_custom_images(base: &Path, data_dir: &Path) -> std::io::Result<()> {
     for entry in std::fs::read_dir(&src)? {
         let entry = entry?;
         let target = cache.join(entry.file_name());
-        if !target.exists() {
+        if !has_image(&target) {
             std::fs::copy(entry.path(), target)?;
         }
     }
     Ok(())
 }
 
-/// catalog_export.json + custom_images/. Zwraca (skrzynki, karty, zdjęcia).
+/// seed/catalog_export.json + seed/custom_images/. Zwraca (skrzynki, karty, zdjęcia).
 pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usize, usize, usize)> {
     let crates = sqlx::query!("SELECT id, data, deleted FROM catalog_crates ORDER BY id")
         .fetch_all(pool)
@@ -158,16 +167,16 @@ pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usiz
         std::fs::remove_dir_all(&dir)?;
     }
     std::fs::create_dir_all(&dir)?;
-    // własne zdjęcia: karty bez artykułu w Wikipedii albo z wgranym plikiem (nie-JPG z Wikipedii)
+    // własne zdjęcia kart: karty bez artykułu w Wikipedii albo z plikiem wgranym w panelu (zdjęcia pobrane z Wikipedii
+    // mają znacznik `.wiki` - każda instalacja pobierze je sama, nie trafiają do repozytorium)
     let mut files: BTreeSet<std::path::PathBuf> = export
         .cards
         .iter()
         .filter(|c| !c.deleted)
         .filter_map(|c| {
             let path = images.find(&c.id, &Kind::Main)?;
-            let from_wiki = c.data.get("wiki").is_some_and(|w| !w.is_null());
-            let jpg = path.extension().is_some_and(|e| e.eq_ignore_ascii_case("jpg"));
-            (!from_wiki || !jpg).then_some(path)
+            let from_wiki = c.data.get("wiki").is_some_and(|w| !w.is_null()) && images.is_from_wiki(&c.id, &Kind::Main);
+            (!from_wiki).then_some(path)
         })
         .collect();
     // zdjęcia wariantów przypisanych do kart (np. Rzulty) i własne zdjęcia wariantów z polem "photo" (np. Halloweenowa)

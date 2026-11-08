@@ -1,6 +1,7 @@
 // Ikony skrzynek z modelu 3D: Three.js wczytuje się dopiero przy pierwszej ikonie, do tego czasu (i bez WebGL) zostaje płaski rysunek
 import { useEffect, useState } from 'react';
 import type { CrateLook } from '../../three/crateModel';
+import { use3D } from '../../three/support';
 
 const key = (l: CrateLook) => `${l.c1}|${l.c2}|${l.hue}|${l.emoji || l.d}`;
 const ready = new Map<string, string>();
@@ -12,7 +13,7 @@ export const crateIconSrc = (look: CrateLook) => ready.get(key(look));
 export function loadCrateIcon(look: CrateLook): Promise<string | null> {
   const k = key(look);
   if (ready.has(k)) return Promise.resolve(ready.get(k)!);
-  if (failed) return Promise.resolve(null);
+  if (failed || !use3D()) return Promise.resolve(null);
   return import('../../three/crateIcons').then(m => {
     const url = m.renderCrateIcon(look);
     ready.set(k, url);

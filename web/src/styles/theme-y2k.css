@@ -1,0 +1,171 @@
+/* Motyw Y2K (eksperymentalny, Ustawienia): róż, chrom, brokat i ostre rogi. Włącza go data-theme="y2k" na <html>
+   (styles/theme.ts, localStorage `theme`). Wszystkie reguły siedzą pod :root[data-theme="y2k"], więc bez motywu nic się nie zmienia.
+   Karty kolekcji (.card, .cback, .sc) zostają bez zmian, tak samo koło ruletki i monety. */
+
+:root[data-theme="y2k"] {
+  color-scheme: dark;
+  --ground: #2b0a33;
+  --surface: #431150;
+  --raised: #5b1869;
+  --rule: #8a2f94;
+  --control: #ff9be0;
+  --text: #fff;
+  --muted: #ffd6f3;
+  --faint: #f5aee0;
+  --hue: #ff3db4 !important;        /* nadpisuje kolor skrzynki ustawiany w stylu <html> */
+  --on-hue: #fff !important;
+  --good: #7dffc4;
+  --bad: #ff5a7a;
+  --warn: #ffe066;
+  --radius: 0px;
+  --radius-m: 0px;
+  --radius-s: 0px;
+  --display: "Orbitron", "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+  /* chrom i brokat do wielokrotnego użycia */
+  --y2k-chrome: linear-gradient(180deg, #ffffff 0%, #e4d9ee 38%, #9d8fb0 50%, #e9dff2 62%, #ffffff 100%);
+  --y2k-gloss: linear-gradient(180deg, #ffffff66 0%, #ffffff1a 48%, #0000001f 52%, #ffffff22 100%);
+  --y2k-bling: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cdefs%3E%3Cpath id='s' d='M10 0L12 8L20 10L12 12L10 20L8 12L0 10L8 8Z'/%3E%3C/defs%3E%3Cuse href='%23s' transform='translate(18 14) scale(.5)' fill='%23ffffff' fill-opacity='.55'/%3E%3Cuse href='%23s' transform='translate(84 40) scale(.35)' fill='%23ffd1f1' fill-opacity='.6'/%3E%3Cuse href='%23s' transform='translate(46 86) scale(.42)' fill='%23dfe6ff' fill-opacity='.5'/%3E%3Ccircle cx='100' cy='100' r='1.2' fill='%23ffffff' fill-opacity='.5'/%3E%3Ccircle cx='8' cy='70' r='1' fill='%23ff9be0' fill-opacity='.6'/%3E%3C/svg%3E");
+  scrollbar-color: #ff3db4 #2b0a33;
+}
+
+:root[data-theme="y2k"] body {
+  background-color: var(--ground);
+  background-image: linear-gradient(180deg, #3d0e4c 0%, #2b0a33 45%, #1f0627 100%);
+  background-attachment: fixed;
+}
+:root[data-theme="y2k"] ::selection { background: #ff3db4; color: #fff; }
+
+/* ---------- ostre rogi wszędzie poza kartami kolekcji, kołem ruletki i monetami ---------- */
+:root[data-theme="y2k"] *:not(.card):not(.card *):not(.cback):not(.cback *):not(.sc):not(.sc *):not([class*="coin"]):not(.rl-wheel-wrap *):not(.rl-ball-rot *),
+:root[data-theme="y2k"] *:not(.card):not(.card *):not(.cback):not(.cback *):not(.sc):not(.sc *):not([class*="coin"]):not(.rl-wheel-wrap *):not(.rl-ball-rot *)::before,
+:root[data-theme="y2k"] *:not(.card):not(.card *):not(.cback):not(.cback *):not(.sc):not(.sc *):not([class*="coin"]):not(.rl-wheel-wrap *):not(.rl-ball-rot *)::after {
+  border-radius: 0 !important;
+}
+
+/* ---------- brokat na tle: trzy warstwy gwiazdek mrugają na przemian (tylko opacity, bez przesuwania tła) ---------- */
+:root[data-theme="y2k"]::before,
+:root[data-theme="y2k"] body::before,
+:root[data-theme="y2k"] #root::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: var(--y2k-bling);
+  will-change: opacity;
+}
+:root[data-theme="y2k"]::before { background-size: 190px 190px; opacity: .9; animation: y2kTwinkle 3.4s ease-in-out infinite; }
+:root[data-theme="y2k"] body::before { background-size: 130px 130px; background-position: 47px 31px; opacity: .6; animation: y2kTwinkle 5.1s ease-in-out -1.7s infinite; }
+:root[data-theme="y2k"] #root::before { background-size: 260px 260px; background-position: 90px 120px; opacity: .8; animation: y2kTwinkle 4.3s ease-in-out -2.6s infinite; }
+@keyframes y2kTwinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+
+/* tło Ambient (poświaty, kropki, kurz) jest przezroczyste, żeby brokat było widać; poświaty różowieją razem z --hue */
+:root[data-theme="y2k"] [class*="_ambient_"] { background: transparent; }
+:root[data-theme="y2k"] [class*="_glowA_"] { opacity: .38; }
+:root[data-theme="y2k"] [class*="_glowB_"] { opacity: .3; background: radial-gradient(circle, #c63dff, transparent 65%); }
+:root[data-theme="y2k"] [class*="_glowC_"] { opacity: .22; background: radial-gradient(circle, #9fe8ff, transparent 65%); }
+:root[data-theme="y2k"] [class*="_grid_"] { opacity: .7; background-image: radial-gradient(circle, #ffb3ec33 1px, transparent 1.4px); }
+
+/* ---------- panele, okna, kafelki: różowe szkło z chromowaną krawędzią i drobnym brokatem ---------- */
+:root[data-theme="y2k"] .panel,
+:root[data-theme="y2k"] [class*="_box_"],
+:root[data-theme="y2k"] [class*="_pop_"],
+:root[data-theme="y2k"] [class*="_sheet_"] {
+  background-image: var(--y2k-bling);
+  background-size: 150px 150px;
+  box-shadow: inset 0 0 0 2px #ffb3ec55, inset 0 0 0 3px #ffffff1f, 0 6px 24px -10px #ff3db480;
+}
+:root[data-theme="y2k"] .cs-page .panel { background-image: var(--y2k-bling); background-size: 150px 150px; }
+
+/* ---------- pasek boczny i dolny ---------- */
+:root[data-theme="y2k"] [class*="_side_"] { background: linear-gradient(180deg, #5b1869cc, #2b0a33cc); box-shadow: inset -2px 0 0 #ff9be055; }
+:root[data-theme="y2k"] [class*="_tabbar_"] { background: linear-gradient(180deg, #5b1869, #3b0d49); box-shadow: 0 -2px 0 #ff9be0, 0 -8px 20px -8px #ff3db499; }
+:root[data-theme="y2k"] [class*="_link_"]:hover,
+:root[data-theme="y2k"] [class*="_tile_"]:hover { background: #ff3db433; color: #fff; }
+:root[data-theme="y2k"] [class*="_link_"][class*="_on_"],
+:root[data-theme="y2k"] [class*="_tile_"][class*="_on_"] {
+  background: linear-gradient(180deg, #ff7cd0, #ff3db4 55%, #c4107e); color: #fff;
+  box-shadow: inset 0 1px 0 #fff9, inset 0 -2px 0 #0004, 0 0 12px #ff3db477;
+}
+:root[data-theme="y2k"] [class*="_link_"][class*="_on_"] svg,
+:root[data-theme="y2k"] [class*="_tile_"][class*="_on_"] svg { color: #fff; }
+:root[data-theme="y2k"] [class*="_badge_"] { background: linear-gradient(180deg, #fff, #c9bcd8); color: #5b1869; font-weight: 800; }
+
+/* ---------- nagłówki: chromowane litery w kroju Orbitron ---------- */
+:root[data-theme="y2k"] h1 {
+  font-family: var(--display); letter-spacing: .02em; text-transform: uppercase;
+  background: var(--y2k-chrome); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 6px #ff3db4aa);
+}
+:root[data-theme="y2k"] .panel h3,
+:root[data-theme="y2k"] [class*="_box_"] h2,
+:root[data-theme="y2k"] [class*="_head_"] h2 { font-family: var(--display); letter-spacing: .03em; text-transform: uppercase; color: #fff; text-shadow: 0 0 8px #ff3db4, 0 1px 0 #0006; }
+
+/* ---------- przyciski: wypukły lakier, chromowana krawędź, błysk przesuwa się po najechaniu ---------- */
+:root[data-theme="y2k"] [class*="_btn_"],
+:root[data-theme="y2k"] [class*="_daily_"] {
+  position: relative; overflow: hidden;
+  border: 2px solid #ffd6f3; color: #fff; font-weight: 700;
+  background-color: #8a1f8f;
+  background-image: var(--y2k-gloss);
+  box-shadow: inset 0 0 0 1px #ffffff55, 0 2px 0 #3b0d49, 0 0 10px -2px #ff3db499;
+  text-shadow: 0 1px 0 #0006;
+}
+:root[data-theme="y2k"] [class*="_btn_"]:hover,
+:root[data-theme="y2k"] [class*="_daily_"]:hover { background-color: #b02aa8; filter: brightness(1.12); }
+:root[data-theme="y2k"] [class*="_hue_"][class*="_btn_"] { background-color: #ff3db4; border-color: #fff; box-shadow: inset 0 0 0 1px #ffffff77, 0 2px 0 #7a0a55, 0 0 16px -2px #ff3db4; }
+:root[data-theme="y2k"] [class*="_quiet_"][class*="_btn_"] { background-image: none; background-color: transparent; border-color: transparent; box-shadow: none; text-shadow: none; }
+:root[data-theme="y2k"] [class*="_btn_"]::after,
+:root[data-theme="y2k"] [class*="_daily_"]::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 60%; pointer-events: none;
+  background: linear-gradient(105deg, transparent 20%, #ffffffcc 50%, transparent 80%);
+  transform: translateX(-130%) skewX(-18deg); transition: transform .65s ease;
+}
+:root[data-theme="y2k"] [class*="_btn_"]:hover::after,
+:root[data-theme="y2k"] [class*="_daily_"]:hover::after { transform: translateX(260%) skewX(-18deg); }
+:root[data-theme="y2k"] [class*="_btn_"]:disabled::after { display: none; }
+
+/* ---------- pola, listy, zakładki ---------- */
+:root[data-theme="y2k"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="y2k"] select,
+:root[data-theme="y2k"] textarea,
+:root[data-theme="y2k"] [class*="_search_"],
+:root[data-theme="y2k"] [class*="_select_"] select {
+  border: 2px solid #ff9be0; background-color: #2b0a33; color: #fff;
+  box-shadow: inset 0 2px 4px #0006;
+}
+:root[data-theme="y2k"] [class*="_search_"] input { box-shadow: none; border: 0; background: none; }
+:root[data-theme="y2k"] [class*="_tabs_"] button[aria-selected="true"] { background: linear-gradient(180deg, #ff7cd0, #ff3db4 55%, #c4107e); color: #fff; box-shadow: inset 0 1px 0 #fff9, 0 0 10px #ff3db477; }
+:root[data-theme="y2k"] [class*="_tabs_"] button:hover { background: #ff3db433; }
+:root[data-theme="y2k"] input[type="range"], :root[data-theme="y2k"] input[type="checkbox"], :root[data-theme="y2k"] input[type="radio"] { accent-color: #ff3db4; }
+
+/* przełączniki widoku i język w ustawieniach */
+:root[data-theme="y2k"] .hr-view button.on,
+:root[data-theme="y2k"] [class*="_lang_"] button[aria-pressed="true"] { background: linear-gradient(180deg, #fff, #d9cbe8); color: #5b1869; }
+
+/* ---------- karuzela skrzynek, kafelki ekranów ---------- */
+:root[data-theme="y2k"] [class*="_crate_"],
+:root[data-theme="y2k"] [class*="_tile_"],
+:root[data-theme="y2k"] .cs-game { box-shadow: inset 0 0 0 2px #ffb3ec66; }
+:root[data-theme="y2k"] .cs-game.on::before { background: linear-gradient(135deg, #ff3db4, #fff 45%, #c9bcd8); }
+
+/* ---------- kasyno: sukno w magencie, złoto jako chrom ---------- */
+:root[data-theme="y2k"] .cs-page {
+  --cs-gold: #e9e0f4;
+  --cs-gold-dk: #8f84a6;
+  --cs-felt: #a3157f;
+  --cs-felt-dk: #52063f;
+  --cs-glow: #ff7cd0;
+}
+
+/* ---------- panel admina (osobny arkusz admin.css, własne zmienne) ---------- */
+:root[data-theme="y2k"] .a-page { --hue: #ff3db4; }
+
+/* ---------- spokojniej przy ograniczonym ruchu: brokat stoi, błysk na przyciskach bez przejścia ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="y2k"]::before,
+  :root[data-theme="y2k"] body::before,
+  :root[data-theme="y2k"] #root::before { animation: none; opacity: .55; }
+  :root[data-theme="y2k"] [class*="_btn_"]::after,
+  :root[data-theme="y2k"] [class*="_daily_"]::after { transition: none; }
+}
+/* słabsze telefony: dwie warstwy brokatu zamiast trzech */
+@media (max-width: 820px) {
+  :root[data-theme="y2k"] #root::before { display: none; }
+}

@@ -28,3 +28,7 @@ dist/
 # frontend (web/)
 web/node_modules/
 web/dist/
+
+# dane uruchomieniowe: zdjęcia, klucz, kopie (domyślny DATA_DIR) i dane testu lokalnego w Dockerze
+/data/
+/data-lokalne/

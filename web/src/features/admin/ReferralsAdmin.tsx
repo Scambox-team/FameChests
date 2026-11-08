@@ -61,12 +61,12 @@ export default function ReferralsAdmin() {
           <span className={`${r.badge}${data.config.enabled ? ` ${r.on}` : ''}`}>{data.config.enabled ? 'Włączone' : 'Wyłączone'}</span>
         </div>
         <p className="muted small">Każdy gracz ma w zakładce Znajomi swój link <code>/r/KOD</code>. Kto wejdzie z linku (ciasteczko na 30 dni, liczy się pierwszy link)
-          i założy konto, jest przypisany do polecającego. Nagrody dostają obaj, gdy nowy gracz spełni warunek aktywacji poniżej — dzięki temu puste konta zakładane dla nagrody się nie opłacają.</p>
+          i założy konto, jest przypisany do polecającego. Nagrody dostają obaj, ale dopiero gdy nowy gracz najpierw potwierdzi email (konto bez emaila nie dostaje nagrody), a potem spełni warunki aktywacji poniżej — dzięki temu puste konta zakładane dla nagrody się nie opłacają.</p>
         <div className={r.rewards}>
           <RewardFields who="referrer" cfg={cfg} set={set} crates={data.crates} />
           <RewardFields who="referred" cfg={cfg} set={set} crates={data.crates} />
         </div>
-        <h4 className={r.sub}>Aktywacja i ochrona</h4>
+        <h4 className={r.sub}>Aktywacja i ochrona (liczą się dopiero po potwierdzeniu emaila)</h4>
         <div className={s.reward}>
           <label>Otwartych skrzynek (nowy gracz)<input type="number" min={0} value={cfg.minOpened} onChange={e => set({ minOpened: +e.target.value })} /></label>
           <label>Godzin od założenia konta<input type="number" min={0} step={1} value={cfg.minHours} onChange={e => set({ minHours: +e.target.value })} /></label>
@@ -110,6 +110,7 @@ export default function ReferralsAdmin() {
                 <td className="muted small">od</td>
                 <td>{x.referrer ? <UserLink user={x.referrer} /> : <span className="muted">usunięty</span>}</td>
                 <td><span className={r.status}>{STATUS[x.status] ?? x.status}</span>{x.reason && <div className="small muted">{x.reason}</div>}</td>
+                <td className="small">{x.emailVerified ? 'email potwierdzony: tak' : <span className="muted">email potwierdzony: nie</span>}</td>
                 <td className="muted small">{timeAgo(x.created)}</td>
                 <td className={r.actions}>
                   {(x.status === 'flagged' || x.status === 'pending') && <>

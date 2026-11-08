@@ -146,6 +146,12 @@ impl GoTrue {
         Ok(())
     }
 
+    /// Zmiana emaila konta przez serwer (po kliknięciu w link z naszego maila albo z panelu admina): od razu potwierdzony
+    pub async fn admin_set_email(&self, id: &str, email: &str) -> Result<(), Failure> {
+        send(self.admin(Method::PUT, &format!("/admin/users/{id}")).json(&json!({"email": email, "email_confirm": true}))).await?;
+        Ok(())
+    }
+
     /// Konto z emailem założone przez admina (gracz sprzed emaili, który zgubił hasło): email od razu potwierdzony,
     /// hasło losowe i nieznane nikomu - gracz ustawia własne z linku "nowe hasło". Zwraca id konta w GoTrue.
     pub async fn admin_create(&self, email: &str, password: &str, username: &str) -> Result<String, Failure> {

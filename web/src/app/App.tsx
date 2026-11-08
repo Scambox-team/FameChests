@@ -8,6 +8,7 @@ import { Toaster } from '../ui/Toaster';
 import { FriendsPage } from '../features/social/FriendsPage';
 import { LinkClaim } from '../features/social/LinkClaim';
 import { ProfilePage } from '../features/social/ProfilePage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { RankingPage } from '../features/social/RankingPage';
 import { ShareDialog } from '../features/social/ShareDialog';
 import { installViewerActions } from '../features/social/showcase';
@@ -28,6 +29,8 @@ import { noteMarketBonus } from '../features/market/bonus';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
+import { EmailChangePage } from '../features/auth/EmailChangePage';
+import { VerifyEmailPage } from '../features/auth/VerifyEmailPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { Stage } from '../features/crates/Stage';
 import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
@@ -98,6 +101,7 @@ function Game() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
+          <Route path="/ustawienia" element={<SettingsPage />} />
           <Route path="/link/:token" element={<LinkClaim />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -118,7 +122,7 @@ export function App() {
   return (
     <>
       <div className="svg-defs" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svgDefs }} />
-      {pathname === '/login' ? <LoginPage /> : LEGAL_PATHS.includes(pathname.replace(/\/$/, '')) ? <LegalPage /> : <Game />}
+      {pathname === '/login' ? <LoginPage /> : pathname.replace(/\/$/, '') === '/konto/email' ? <EmailChangePage /> : pathname.replace(/\/$/, '') === '/konto/potwierdz' ? <VerifyEmailPage /> : LEGAL_PATHS.includes(pathname.replace(/\/$/, '')) ? <LegalPage /> : <Game />}
       <Toaster />
       <canvas id="confetti" />
       <canvas id="fxCanvas" />

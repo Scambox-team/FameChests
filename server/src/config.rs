@@ -5,7 +5,7 @@
 //!   DB_SCHEMA      famechests                 tabele gry w osobnym schemacie zamiast "public" (opcjonalnie)
 //!   DB_POOL_SIZE   10
 //!   SECRET_KEY     długi losowy tekst         klucz ciasteczek logowania (bez niego: DATA_DIR/secret_key.txt)
-//!   DATA_DIR       /home/data                 zdjęcia i klucz poza folderem gry (domyślnie folder gry)
+//!   DATA_DIR       /home/data                 zdjęcia, klucz, kopie (domyślnie <folder gry>/data; na Azure %HOME%\data)
 //!   GAME_DIR       folder z static/ i web/ (domyślnie wykrywany)
 //!   PORT, BIND     port i adres (domyślnie 5000 / 5001 z --test, 127.0.0.1 / 0.0.0.0 z --lan)
 //!   COOKIE_SECURE  1 = ciasteczko tylko po HTTPS (hosting)
@@ -15,7 +15,10 @@
 //!   CONTACT_EMAIL  kontakt@example.pl          adres do kontaktu (regulamin, zgłoszenia, RODO); trzymaj w zmiennych, nie w repozytorium
 //!   OWNER_IDS      1,5                        id kont właścicieli (kopie bazy, ochrona ich kont przed innymi adminami);
 //!                                             tylko tutaj - nie da się ich nadać z panelu ani z bazy
-//!   BACKUP_DIR     /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
+//!   SMTP_URL       smtp://mailpit:1025 | smtps://user:pass@host:465   własna wysyłka maili (reset hasła, zmiana emaila); bez niej: tylko log
+//!   MAIL_FROM      ScamBox <no-reply@example.pl>   nadawca maili gry (domyślnie "ScamBox <no-reply@localhost>")
+//!   PUBLIC_URL     https://scambox.pl         adres gry w linkach z maili (wymagany z GOTRUE_URL; bez niego: adres z nagłówka Host)
+//!   BACKUP_DIR    /backups                   kopie bazy (pg_dump); domyślnie DATA_DIR/backups
 //!   BACKUP_EVERY_HOURS 24                     co ile godzin automatyczna kopia (0 = wyłączone)
 //!   BACKUP_KEEP    14                         ile kopii każdego rodzaju (automatyczne / ręczne) trzymać
 //!
@@ -48,7 +51,7 @@ pub struct Cli {
 pub enum Command {
     /// uruchom grę (domyślnie)
     Serve,
-    /// eksport zmian z panelu admina do catalog_export.json + custom_images/
+    /// eksport zmian z panelu admina do seed/catalog_export.json + seed/custom_images/
     ExportCatalog,
     /// pobierz brakujące zdjęcia kart (główne i alternatywne)
     FetchImages {
@@ -74,6 +77,10 @@ pub struct Config {
     pub owner_ids: Vec<i64>,
     /// Supabase Auth (GOTRUE_URL): konta z emailem i odzyskiwaniem hasła; None = same nazwy i hasła
     pub gotrue: Option<crate::gotrue::GoTrue>,
+    /// własna wysyłka maili (SMTP_URL, MAIL_FROM); bez SMTP_URL maile trafiają tylko do logu
+    pub mailer: crate::mailer::Mailer,
+    /// adres gry w linkach z maili (PUBLIC_URL); brak = adres z nagłówka Host
+    pub public_url: Option<String>,
     pub backup_dir: PathBuf,
     pub backup_every_hours: f64,
     pub backup_keep: usize,
@@ -112,7 +119,7 @@ fn on_azure() -> bool {
     env("WEBSITE_SITE_NAME").is_some() || env("HTTP_PLATFORM_PORT").is_some()
 }
 
-/// Folder gry (static/, web/, catalog_export.json, custom_images/)
+/// Folder gry (static/, web/, seed/; dane w DATA_DIR)
 fn detect_base_dir() -> PathBuf {
     if let Some(dir) = env("GAME_DIR") {
         return PathBuf::from(dir);
@@ -124,6 +131,44 @@ fn detect_base_dir() -> PathBuf {
         }
     }
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
+}
+
+/// Jednorazowo: dawniej bez DATA_DIR dane (image_cache/, secret_key.txt) leżały w folderze gry; przenosimy je do data/, jeśli
+/// tam jeszcze ich nie ma. Przy błędzie rename (np. inny dysk) - kopia i usunięcie oryginału.
+fn migrate_old_data(base: &Path, data: &Path) {
+    for name in ["image_cache", "secret_key.txt"] {
+        let (from, to) = (base.join(name), data.join(name));
+        if !from.exists() || to.exists() {
+            continue;
+        }
+        let moved = std::fs::rename(&from, &to).or_else(|_| {
+            if from.is_dir() {
+                copy_dir(&from, &to)?;
+                std::fs::remove_dir_all(&from)
+            } else {
+                std::fs::copy(&from, &to)?;
+                std::fs::remove_file(&from)
+            }
+        });
+        match moved {
+            Ok(()) => tracing::info!("Przeniesiono {} do {}", from.display(), to.display()),
+            Err(e) => tracing::warn!("Nie udało się przenieść {} do {}: {e}", from.display(), to.display()),
+        }
+    }
+}
+
+fn copy_dir(from: &Path, to: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(to)?;
+    for entry in std::fs::read_dir(from)? {
+        let entry = entry?;
+        let target = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir(&entry.path(), &target)?;
+        } else {
+            std::fs::copy(entry.path(), target)?;
+        }
+    }
+    Ok(())
 }
 
 fn test_url(url: &str) -> String {
@@ -144,7 +189,13 @@ impl Config {
             (Some(dir), _) => PathBuf::from(dir),
             // Azure: %HOME% (D:\home) jest trwały - site\wwwroot podmienia każde wdrożenie
             (None, Some(home)) if azure => Path::new(&home).join("data"),
-            _ => base_dir.clone(),
+            // domyślnie <folder gry>/data (w .gitignore); dane ze starego układu (w samym folderze gry) przenosi migrate_old_data
+            _ => {
+                let dir = base_dir.join("data");
+                std::fs::create_dir_all(&dir)?;
+                migrate_old_data(&base_dir, &dir);
+                dir
+            }
         };
         std::fs::create_dir_all(&data_dir)?;
         let main_url = env("DATABASE_URL").ok_or_else(|| {
@@ -205,6 +256,8 @@ impl Config {
             contact_email: env("CONTACT_EMAIL"),
             owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
             gotrue,
+            mailer: crate::mailer::Mailer::new(env("SMTP_URL").as_deref(), env("MAIL_FROM").as_deref())?,
+            public_url: env("PUBLIC_URL").map(|u| u.trim_end_matches('/').to_owned()),
             backup_dir,
             backup_every_hours: env("BACKUP_EVERY_HOURS").map(|h| h.parse()).transpose()?.unwrap_or(24.0),
             backup_keep: env("BACKUP_KEEP").map(|k| k.parse()).transpose()?.unwrap_or(14).max(1),

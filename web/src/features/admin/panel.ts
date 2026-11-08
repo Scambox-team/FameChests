@@ -3,9 +3,10 @@
 import { crateIconPath } from '../../icons/crateIcons';
 import { TABLOID_DEF, TABLOID_LABEL, tabloidMarks } from '../../cards/cardHtml';
 import { toast } from '../../ui/Toaster';
+import { openCropper } from './cropper';
 import { SK_PIECES, skPreview } from '../chess/skins';
 import { createCardsTool } from './cardsTool';
-import { initSections } from './sections';
+import { initMailTemplates } from './mailTemplates';
 
 const crateIconSvg = emoji => emoji ? String(emoji).replace(/[<>&"]/g, "") : `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${crateIconPath(emoji)}"/></svg>`;
 
@@ -297,8 +298,10 @@ export function startPanel() {
           <div class="a-grid">
             <label>Wikipedia<select name="wiki_lang">${opt({ pl: "pl.wikipedia", en: "en.wikipedia", de: "de.wikipedia", fr: "fr.wikipedia" }, c.wiki?.[0] || "pl")}</select></label>
             <label class="wide">Tytuł artykułu<input type="text" name="wiki_title" value="${esc(c.wiki?.[1] || "")}" placeholder="np. Robert Lewandowski"></label>
-            <label class="wide">…albo adres obrazka (URL)<input type="text" name="image_url" placeholder="https://…"></label>
+            <label class="wide">Link do zdjęcia (bezpośredni adres obrazka)<input type="text" name="image_url" placeholder="https://…"></label>
             <label class="wide">…albo plik z dysku<input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" data-prev="prevMain"></label>
+            <input type="hidden" name="crop">
+            <div class="wide"><button class="btn tiny" type="button" data-recrop="" hidden>Kadruj ponownie</button> <small class="muted">Po wybraniu pliku lub wpisaniu linku otworzy się okno kadrowania. Zdjęcie jest zapisywane jako WebP.</small></div>
           </div>
         </fieldset>
   
@@ -307,8 +310,10 @@ export function startPanel() {
           <div class="a-vphoto-row">
             <div class="a-img-box"><img src="${(c.variantPhotos || {})[v] != null ? `/img/${esc(c.id)}/${v}?admin=1&v=${c.variantPhotos[v]}` : ""}" alt="" id="prevV_${v}" ${(c.variantPhotos || {})[v] != null ? "" : "hidden"}><span>${esc(A.cat.variants[v].name)}</span></div>
             <div class="a-grid">
-              <label class="wide">Adres obrazka (URL)<input type="text" name="image_url_v_${v}" placeholder="https://…"></label>
+              <label class="wide">Link do zdjęcia (bezpośredni adres obrazka)<input type="text" name="image_url_v_${v}" placeholder="https://…"></label>
               <label class="wide">…albo plik z dysku<input type="file" name="image_v_${v}" accept="image/jpeg,image/png,image/webp,image/gif" data-prev="prevV_${v}"></label>
+              <input type="hidden" name="crop_v_${v}">
+              <div class="wide"><button class="btn tiny" type="button" data-recrop="_v_${v}" hidden>Kadruj ponownie</button></div>
               ${(c.variantPhotos || {})[v] != null ? `<label class="chk"><input type="checkbox" name="remove_v_${v}" value="1"> usuń to zdjęcie</label>` : ""}
             </div>
           </div>
@@ -339,6 +344,21 @@ export function startPanel() {
     arenaRefresh();
     A.tb = null; A.tbTouched = false;
     tabloidBind(c);
+  }
+
+  // okno kadrowania po wybraniu pliku / wpisaniu linku; kadr (ułamki oryginału) idzie do serwera w polu crop<suffix>
+  async function askCrop(suffix, src, keepOnCancel = false) {
+    const res = await openCropper(src);
+    const crop = $(`#cardForm [name="crop${suffix}"]`);
+    if (!res) {
+      if (keepOnCancel) return;
+      crop.value = ""; $(`#cardForm [name="image${suffix}"]`).value = ""; $(`#cardForm [name="image_url${suffix}"]`).value = "";
+      return;
+    }
+    crop.value = res.crop ? JSON.stringify(res.crop) : "";
+    const again = $(`#cardForm [data-recrop="${suffix}"]`); if (again) again.hidden = false;
+    const prev = $(`#cardForm [data-prev][name="image${suffix}"]`)?.dataset.prev;
+    if (prev && !src.startsWith("blob:")) { const img = $("#" + prev); img.src = src; img.hidden = false; }
   }
 
   // napisy wariantów z polem "texts" (np. dane na Wizytówce) tylko dla tej karty - pole karty vx.<wariant>; puste = domyślne z /variants
@@ -578,6 +598,7 @@ export function startPanel() {
           <button class="btn tiny" data-uact="access">Dostęp</button>
           <button class="btn tiny" data-uact="money">Pieniądze</button>
           <button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
+          <button class="btn tiny" data-uact="setEmail" title="Zmień adres email gracza (albo dopisz, gdy go nie ma)">Zmień email</button>
           <button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>
           ${u.id !== me ? `<button class="btn tiny" data-uact="admin">${u.isAdmin ? "Odbierz admina" : "Daj admina"}</button>
           <button class="btn tiny ${u.banned ? "" : "danger"}" data-uact="ban">${u.banned ? "Odblokuj" : "Zablokuj"}</button>
@@ -732,7 +753,7 @@ export function startPanel() {
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
     ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina",
-    password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
+    password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", email_change: "Zmiana emaila gracza", email_template_save: "Zapis szablonu maila", email_template_reset: "Przywrócenie szablonu maila",user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",
     link_create: "Nowy link do karty", link_on: "Włączył link", link_off: "Wyłączył link",
@@ -799,6 +820,14 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);
         await api(`/api/admin/users/${id}/reset-link`, { method: "POST", json: { email } });
         toast(email ? `Jeśli ${email} ma konto, dostanie link do resetu hasła` : `Wysłano link do resetu hasła na e-mail gracza ${name}`);
+      }
+      if (act === "setEmail") {
+        const v = prompt(`Nowy adres email gracza ${name}.\nGracz dostanie powiadomienie na stary adres (jeśli go miał). Dopisany adres nie jest potwierdzany linkiem.`, "");
+        if (v === null) return;
+        const email = v.trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Podaj poprawny adres email", true);
+        await api(`/api/admin/users/${id}/email`, { method: "POST", json: { email } });
+        toast(`Zmieniono email gracza ${name}`);
       }
       if (act === "ranking") {
         const u = A.users.find(x => String(x.id) === String(id));
@@ -1126,9 +1155,23 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       }
       if (inp.matches("[name=ae_id]")) arenaRefresh();
       if (inp.type === "file" && inp.files[0]) {
-        const img = $("#" + inp.dataset.prev);
+        const img = $("#" + inp.dataset.prev), suffix = inp.name.slice(5);   // image -> "", image_v_x -> "_v_x"
         img.src = URL.createObjectURL(inp.files[0]); img.hidden = false;
+        $(`#cardForm [name="image_url${suffix}"]`).value = "";
+        askCrop(suffix, img.src);
       }
+      if (/^image_url/.test(inp.name || "") && inp.value.trim()) {
+        const suffix = inp.name.slice(9), file = $(`#cardForm [name="image${suffix}"]`);
+        if (!/^https?:\/\//i.test(inp.value.trim())) { toast("Link musi zaczynać się od http:// lub https://", true); inp.value = ""; return; }
+        file.value = "";
+        askCrop(suffix, inp.value.trim());
+      }
+    });
+    $("#cardForm").addEventListener("click", e => {
+      const b = e.target.closest("[data-recrop]"); if (!b) return;
+      const suffix = b.dataset.recrop, f = $(`#cardForm [name="image${suffix}"]`).files[0], u = $(`#cardForm [name="image_url${suffix}"]`).value.trim();
+      const src = f ? URL.createObjectURL(f) : u;
+      if (src) askCrop(suffix, src, true);
     });
     $("#cardForm").addEventListener("submit", async e => {
       e.preventDefault();
@@ -1209,7 +1252,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
   bind();
   Object.assign(tools, createCardsTool({ A, $, $$, esc, api, toast, cardTile, openCardForm, load, hiddenSecret }));
   tools.bind();
-  initSections();
+  initMailTemplates();
   load();
   
   // Panel admina: osiągnięcia (lista + edytor w panelu "Osiągnięcia" w admin.html). Zapis: /api/admin/achievements.

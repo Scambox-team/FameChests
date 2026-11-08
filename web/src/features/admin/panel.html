@@ -1,6 +1,6 @@
-<label class="chk a-secrets" title="Tajne karty są domyślnie ukryte, żeby nie zepsuć niespodzianki"><input type="checkbox" id="showSecrets"> Pokaż tajne karty</label>
+<label class="chk a-secrets" data-sec="skrzynki karty" title="Tajne karty są domyślnie ukryte, żeby nie zepsuć niespodzianki"><input type="checkbox" id="showSecrets"> Pokaż tajne karty</label>
 <main class="admin">
-    <aside class="panel a-side" data-sec="crates">
+    <aside class="panel a-side" data-sec="skrzynki">
       <h3>Skrzynki</h3>
       <form id="shopSizeForm" class="a-shopsize a-both" autocomplete="off">
         <label>Skrzynek w sklepie <input type="number" name="size" min="1" max="50" required></label>
@@ -12,9 +12,9 @@
     </aside>
 
     <section class="a-main">
-      <form class="panel a-crate-form a-both" id="crateForm" data-sec="crates" autocomplete="off"></form>
+      <form class="panel a-crate-form a-both" id="crateForm" data-sec="skrzynki" autocomplete="off"></form>
 
-      <div class="panel a-both" data-sec="crates">
+      <div class="panel a-both" data-sec="skrzynki">
         <div class="a-cards-head">
           <button class="a-collapse" type="button" id="cardsToggle" aria-expanded="true" title="Zwiń / rozwiń listę kart">▾</button>
           <h3 id="cardsTitle">Karty</h3>
@@ -25,7 +25,7 @@
         <div id="cardList" class="a-card-grid"></div>
       </div>
 
-      <div class="panel" id="gcPanel" data-sec="cards">
+      <div class="panel" id="gcPanel" data-sec="karty">
         <div class="a-cards-head">
           <h3>Wyszukiwarka kart <small class="muted" id="gcCount"></small></h3>
           <button class="btn primary" id="gcNew" type="button">+ Nowa karta</button>
@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <div class="panel" id="impPanel" data-sec="cards">
+      <div class="panel" id="impPanel" data-sec="import">
         <h3>Import kart z pliku</h3>
         <p class="muted small">Dodawanie i zmiana wielu kart naraz. <b>JSON</b> przenosi całe karty (też Arena, napisy na karcie i karty specjalne) —
           to najlepszy format do przenoszenia kart między grami; plik z eksportu wraca bez zmian. <b>CSV</b> (separator , albo ;) to płaska tabela do
@@ -75,10 +75,11 @@
           <button class="btn" type="button" data-tpl="json">Pobierz wzór JSON</button>
           <button class="btn" type="button" data-tpl="csv">Pobierz wzór CSV</button>
         </div>
+        <p class="muted small">Wzór (JSON lub CSV) zawiera listy dozwolonych wartości: rzadkości, typy, skrzynki, rodzaje zdolności i inne pola z wyborem. Możesz dać go modelowi AI, żeby wygenerował karty w poprawnym formacie.</p>
         <div id="impReport"></div>
       </div>
 
-      <div class="panel" data-sec="content">
+      <div class="panel" data-sec="linki">
         <div class="a-cards-head">
           <h3>Linki do kart specjalnych</h3>
           <a class="btn" href="/mockups" target="_blank" title="Wszystkie karty specjalne z gry i wszystkie wyglądy - podgląd jak w skrzynce">Podgląd kart specjalnych</a>
@@ -90,7 +91,7 @@
         <div id="linkList" class="a-links"></div>
       </div>
 
-      <div class="panel" data-sec="content">
+      <div class="panel" data-sec="easter">
         <h3>Easter egg w skrzynkach</h3>
         <p class="muted small">Przy otwieraniu skrzynki jest bardzo mała szansa (<b id="eggChance"></b> na skrzynkę), że jeden z obrazków
           przelatujących w bębnie będzie tym obrazkiem. Widać go tylko w trakcie losowania — po zatrzymaniu bębna jest zawsze poza ekranem.</p>
@@ -102,7 +103,7 @@
         </form>
       </div>
 
-      <div class="panel" data-sec="content">
+      <div class="panel" data-sec="wiadomosci">
         <h3>Wiadomości do graczy</h3>
         <p class="muted small">Jak lista zmian po aktualizacji: każdy gracz, który wejdzie do gry w wybranym czasie, zobaczy wiadomość
           raz — przy pierwszym wejściu w tym czasie (także, gdy już jest w grze, gdy ten czas się zacznie). Godziny według Twojego zegara.</p>
@@ -116,7 +117,7 @@
         <div id="msgList" class="a-links"></div>
       </div>
 
-      <div class="panel" id="achPanel" data-sec="content">
+      <div class="panel" id="achPanel" data-sec="osiagniecia">
         <div class="a-cards-head">
           <h3>Osiągnięcia</h3>
           <button class="btn primary" type="button" id="achNew">+ Nowe osiągnięcie</button>
@@ -129,7 +130,15 @@
         <form id="achForm" class="ach-form" autocomplete="off" hidden></form>
       </div>
 
-      <div class="panel" data-sec="content">
+      <div class="panel" data-sec="maile" id="mailPanel">
+        <h3>Maile</h3>
+        <p class="muted small">Treść maili wysyłanych graczom: reset hasła, zmiana emaila i maile Supabase Auth (potwierdzenie konta). Zmiana działa od razu,
+          „Przywróć domyślny” wraca do pliku z kodu. Pola w podwójnych klamrach (np. <code>{{ .Link }}</code>) podmienia serwer; wartości są escapowane.
+          Maile mają tabele i style w atrybutach (klienty poczty nie czytają zewnętrznych arkuszy) - zmieniaj ostrożnie. Podgląd to przykładowe wartości.</p>
+        <div id="mailBody"></div>
+      </div>
+
+      <div class="panel" data-sec="questy">
         <h3>Questy</h3>
         <p class="muted small">Wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Quest trwa 24 h, potem losuje się nowy; gdy ktoś go wypełni, nowy pojawia się 6 h później. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).
           Kto pierwszy, dostaje tę kartę w wariancie Wanted i jej wartość w groszach. Liczą się karty ze skrzynek, kuźni, ulepszacza i kasyna, nie z rynku ani wymian.</p>
@@ -139,7 +148,7 @@
         <p class="muted small">Nagrodą jest wariant Wanted: wypada stąd, nawet gdy jest wyłączony na <a href="/variants">/variants</a> (dzięki temu nie wypada ze skrzynek ani gier).</p>
       </div>
 
-      <div class="panel" data-sec="games">
+      <div class="panel" data-sec="konie">
         <h3>Wyścigi konne</h3>
         <p class="muted small">Nazwy koni i mnożniki wygranej (wygrana = stawka × mnożnik). Puste pole albo wartość domyślna przywraca ustawienie z kodu.
           Zakład, który już postawiono, zachowuje mnożnik z chwili zakładu. Domyślne mnożniki dają graczom ok. 91% zwrotu
@@ -150,7 +159,7 @@
         </form>
       </div>
 
-      <div class="panel a-chess-only" data-sec="games">
+      <div class="panel a-both" data-sec="skiny">
         <h3>Skiny figur</h3>
         <p class="muted small">Wszystkie skiny do szachów. Wyłączony skin nie wypada ze skrzynek, nie da się go założyć, a założony znika z planszy (zostaje zwykła figura).
           Gracze go nie tracą: widzą go w ekwipunku i mogą sprzedać, a po włączeniu wraca na figurę. Zmiana rzadkości zmienia też cenę sprzedaży.
@@ -161,12 +170,12 @@
         </form>
       </div>
 
-      <div class="panel" data-sec="players">
+      <div class="panel" data-sec="gracze">
         <h3>Gracze</h3>
         <div id="userList" class="a-users"></div>
       </div>
 
-      <div class="panel" data-sec="players">
+      <div class="panel" data-sec="dziennik">
         <div class="a-cards-head">
           <h3>Dziennik adminów</h3>
           <select id="logFilter"></select>
