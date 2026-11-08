@@ -2040,6 +2040,7 @@ export const EN: Record<string, string> = {
   "Na święta: przez kartę pada gęsty śnieg, przy dole zimowa mgła, zdjęcie lekko przyprószone szronem. Wypada w czasie eventu Święta ze wszystkich skrzynek.": "For Christmas: thick snow falls across the card, winter mist at the bottom and a photo lightly dusted with frost. Drops from every crate during the Christmas event.",
   "Menu": "Menu",
   "Ustawienia": "Settings",
+  "Hasło i email zmienisz w swoim profilu": "Change your password and email in your profile",
   "Ustawienia: dźwięk, język, grafika": "Settings: sound, language, graphics",
   "Eksperymentalne": "Experimental",
   "Motyw Y2K": "Y2K theme",

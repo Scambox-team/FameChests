@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
         <nav className={styles.nav} aria-label="Główna">
           {items.map(i => <NavEntry key={i.id} item={i} />)}
-          {account.filter(i => i.href).map(i => <NavEntry key={i.id} item={i} />)}
+          {account.filter(i => i.href || i.id === 'settings').map(i => <NavEntry key={i.id} item={i} />)}
         </nav>
         <div className={styles.foot}>
           <Link className={styles.user} to={`/player/${encodeURIComponent(game.me?.username ?? '')}`}><MyAvatar /><span>{game.me?.username}</span></Link>

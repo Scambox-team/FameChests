@@ -8,6 +8,7 @@ import { Toaster } from '../ui/Toaster';
 import { FriendsPage } from '../features/social/FriendsPage';
 import { LinkClaim } from '../features/social/LinkClaim';
 import { ProfilePage } from '../features/social/ProfilePage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { RankingPage } from '../features/social/RankingPage';
 import { ShareDialog } from '../features/social/ShareDialog';
 import { installViewerActions } from '../features/social/showcase';
@@ -100,6 +101,7 @@ function Game() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
+          <Route path="/ustawienia" element={<SettingsPage />} />
           <Route path="/link/:token" element={<LinkClaim />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -19,7 +19,7 @@ use crate::state::AppState;
 use crate::web::{send_file, svg_response};
 
 /// Widoki gry pod własnym adresem (ta sama strona index.html, widok wybiera JS)
-pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer"];
+pub const VIEWS: &[&str] = &["crates", "binder", "inventory", "forge", "market", "casino", "friends", "ranking", "games", "arena", "stickers", "variants", "designer", "ustawienia"];
 
 /// Strona gry: jedna aplikacja z web/dist, adres wybiera ekran po stronie przeglądarki
 fn app_page() -> Response {

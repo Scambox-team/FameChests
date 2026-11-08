@@ -1,4 +1,4 @@
-import { Backpack, BookOpen, Database, Dices, Gamepad2, Hammer, House, LogOut, Package, Settings, Store, Swords, Trophy, User, Users, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Database, Dices, Gamepad2, Hammer, House, LogOut, Package, Settings, ShieldCheck, Store, Swords, Trophy, User, Users, type LucideIcon } from 'lucide-react';
 
 /** Co widać w nawigacji: wszystkie pozycje (pasek boczny na komputerze, arkusz „Więcej” na telefonie)
  *  pochodzą z jednej listy, żeby komputer i telefon miały te same funkcje. */
@@ -36,7 +36,8 @@ export const GAME_NAV: NavItem[] = [
 /** Konto i administracja; profil gracza dostaje adres dopiero z nazwy użytkownika */
 export const ACCOUNT_NAV: NavItem[] = [
   { id: 'profile', path: '/player/', label: 'Mój profil', icon: User },
-  { id: 'admin', href: '/admin', label: 'Panel admina', icon: Settings, only: 'admin' },
+  { id: 'settings', path: '/ustawienia', label: 'Ustawienia', icon: Settings },
+  { id: 'admin', href: '/admin', label: 'Panel admina', icon: ShieldCheck, only: 'admin' },
   { id: 'backups', href: '/admin/backups', label: 'Kopie zapasowe', icon: Database, only: 'owner' },
   { id: 'logout', action: 'logout', label: 'Wyloguj', icon: LogOut }
 ];
@@ -63,5 +64,6 @@ export function navFor(c: NavContext) {
 /** Tytuł ekranu dla adresu */
 export function titleFor(pathname: string) {
   if (pathname.startsWith('/player/')) return 'Profil';
+  if (pathname.startsWith('/ustawienia')) return 'Ustawienia';
   return GAME_NAV.find(i => i.path === '/' ? pathname === '/' : pathname.startsWith(i.path!))?.label ?? 'ScamBox';
 }
