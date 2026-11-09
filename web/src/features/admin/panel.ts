@@ -116,7 +116,7 @@ export function startPanel() {
               style="--c1:${esc(c.color1)}; --c2:${esc(c.color2)}">
         <span class="a-crate-ico">${crateIconSvg(c.emoji)}</span>
         <span class="a-crate-txt"><b>${esc(c.name)}</b>
-          <small>${c.hidden ? "ukryta" : `${counts[c.id] || 0} kart · ${fmt(c.price)}`}${c.builtin ? " · wbudowana" : " · własna"}${c.modified ? " · zmieniona" : ""}</small>
+          <small>${c.hidden ? "ukryta" : `${counts[c.id] || 0} kart · ${fmt(c.price)}${c.rtp != null ? ` · zwrot ${+(c.rtp * 100).toFixed(0)}%` : ""}`}${c.builtin ? " · wbudowana" : " · własna"}${c.modified ? " · zmieniona" : ""}</small>
           <span class="a-badges">${!c.hidden && !c.special ? crateModeBadge(c) : ""}${c.restricted ? `<i class="mod">dla wybranych (${(c.allowed || []).length})</i>` : ""}</span></span>
       </button>`).join("");
   }
@@ -172,10 +172,9 @@ export function startPanel() {
           Przy wariancie Flagowym ustaw każdej karcie tej skrzynki kraj (np. PL) w jej edycji.</p>
       </fieldset>
       <fieldset ${c.special ? "hidden" : ""}>
-        <legend>Szanse rzadkości (puste = domyślne)</legend>
-        <div class="a-grid a-weights">${A.cat.rarityOrder.filter(r => r !== "special").map(r => `<label style="--rc:${A.cat.rarities[r].color}"><span class="a-wname">${A.cat.rarities[r].name}</span>
-          <input type="number" name="w_${r}" min="0" max="1000" step="any" value="${(c.customWeights || {})[r] ?? ""}" placeholder="${+A.cat.rarities[r].weight.toFixed(4)}"></label>`).join("")}</div>
-        <p class="muted small">To wagi, nie procenty, liczy się ich stosunek. Rzadkość bez kart w tej skrzynce jest pomijana.</p>
+        <legend>Zwrot skrzynki (tylko dla adminów)</legend>
+        <p>${c.rtp == null ? '<span class="muted">Brak danych (skrzynka bez kart albo nowa, zapisz ją i otwórz ponownie).</span>' : `<b style="font-size:1.4em">${+(c.rtp * 100).toFixed(1)}%</b> <span class="muted">średnio oddaje tyle wartości, ile kosztuje (cena ${c.price} gr)</span>`}</p>
+        <p class="muted small">Oczekiwana wartość jednej karty ze skrzynki: szansa rzadkości × średnia z kart tej rzadkości × szanse wariantów × wartość karty w wariancie, podzielona przez cenę. Szanse rzadkości są stałe dla wszystkich skrzynek, więc zwrot zależy od ceny, kart i przypiętych wariantów. Liczone na dziś (trwające wydarzenia wariantów wliczone).</p>
       </fieldset>
       <div class="a-actions">
         <button class="btn primary" type="submit">${isNew ? "Utwórz skrzynkę" : "Zapisz"}</button>

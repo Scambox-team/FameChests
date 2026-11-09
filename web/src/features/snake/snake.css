@@ -1,35 +1,21 @@
-/* SNAKE (zakładka Gry): kwadratowa plansza na płótnie + panel z wynikiem jak przy pinballu. Kolor węża (--sn-color) z panelu admina. */
-/* kolumna planszy ma jawny rozmiar (przy `auto` płótno ściskało ją do 300 px): tyle, ile pozwala wysokość okna */
-.sn-page { --sn-color: #4ade80; --sn-size: min(calc(100dvh - 180px), 920px); display: grid; grid-template-columns: minmax(0, var(--sn-size)) 300px; gap: 24px; justify-content: center; align-items: start; }
+/* SNAKE (zakładka Gry): arena 3D w kontenerze (three/snakeScene.ts, styl HUD w snake3d.css) + panel z nagrodą i pomocą. */
+.sn-page { --sn-size: min(calc(100dvh - 180px), 920px); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; justify-content: center; align-items: start; }
 .sn-board {
-  position: relative; width: 100%; aspect-ratio: 1; border-radius: var(--radius-m); overflow: hidden;
-  box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px color-mix(in srgb, var(--sn-color) 18%, transparent);
+  position: relative; width: 100%; height: max(420px, var(--sn-size)); border-radius: var(--radius-m); overflow: hidden;
+  box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px #7b5cff2e;
 }
-.sn-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
-.sn-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--sn-color); }
-.sn-over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #0007; text-align: center; }
-.sn-over b { font: 700 clamp(28px, 6vw, 44px) / 1 var(--display); color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--sn-color) 60%, transparent); }
-.sn-over span { color: var(--muted); }
+.sn-root { position: absolute; inset: 0; }
+.sn-board:fullscreen, .sn-root:fullscreen { border-radius: 0; }
 .sn-side { display: flex; flex-direction: column; gap: 14px; }
-.sn-score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.sn-score div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; }
-.sn-score span { color: var(--muted); font-size: 12px; }
-.sn-score b { font: 700 26px / 1 var(--display); font-variant-numeric: tabular-nums; color: #fff; }
-.sn-score div:first-child b { color: var(--sn-color); }
 .sn-won { font: 700 22px / 1 var(--display); color: #facc15 !important; }
 .sn-reward { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; font-size: 14px; }
 .sn-reward svg { flex: none; margin-top: 2px; color: #facc15; }
-.sn-pad { display: none; grid-template-areas: ". u ." "l . r" ". d ."; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; justify-content: center; }
-.sn-pad button { display: grid; place-items: center; border: 0; border-radius: var(--radius-s); background: var(--raised); color: #fff; box-shadow: inset 0 0 0 1px #ffffff14; cursor: pointer; touch-action: manipulation; }
-.sn-pad button:active { background: color-mix(in srgb, var(--sn-color) 35%, var(--raised)); }
-.sn-pad .u { grid-area: u; } .sn-pad .l { grid-area: l; } .sn-pad .r { grid-area: r; } .sn-pad .d { grid-area: d; }
 .sn-help h3 { margin: 6px 0; font-size: 15px; }
 .sn-help p, .sn-help ul { margin: 0 0 8px; }
 .sn-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
 .sn-help kbd { padding: 1px 6px; border-radius: 4px; background: #ffffff12; font: 600 12px var(--body); }
 @media (max-width: 900px) {
   .sn-page { grid-template-columns: 1fr; justify-items: center; }
-  .sn-board { width: min(100%, calc(100dvh - 330px), 640px); min-width: min(100%, 300px); }
+  .sn-board { height: max(420px, calc(100dvh - 330px)); }
   .sn-side { width: min(100%, 560px); }
 }
-@media (pointer: coarse), (max-width: 900px) { .sn-pad { display: grid; } }

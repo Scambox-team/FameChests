@@ -821,14 +821,13 @@ fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<St
     } else if !c.variants_all {
         chosen.extend(g.crate_variants.iter().filter(|v| !g.variants[*v].exclusive && vs.enabled(v)).cloned());
     }
-    let mut weights: IndexMap<String, f64> = c.weights.into_iter().filter(|(r, _)| g.rarities.contains_key(r)).collect();
-    // tajna karta: zawsze 1 na SECRET_ODDS otwartych skrzynek (chyba że admin ustawi inaczej)
-    let auto_secret = !weights.contains_key("secret");
-    if auto_secret {
-        let others: f64 =
-            present.iter().filter(|r| *r != "secret").map(|r| weights.get(r).copied().unwrap_or_else(|| default_weight(r))).sum();
-        weights.insert("secret".into(), if others != 0.0 { others / (g.secret_odds - 1) as f64 } else { 0.0 });
-    }
+    // STAŁE szanse rzadkości, takie same we wszystkich skrzynkach (domyślne wagi z game.json); własne wagi skrzynki są
+    // ignorowane. Brakująca rzadkość nie zmienia proporcji pozostałych (losowanie liczy tylko obecne rzadkości).
+    // Tajna: zawsze 1 na SECRET_ODDS otwartych skrzynek, liczona z obecnych rzadkości.
+    let mut weights: IndexMap<String, f64> = g.rarity_order.iter().map(|r| (r.clone(), default_weight(r))).collect();
+    let auto_secret = true;
+    let others: f64 = present.iter().filter(|r| *r != "secret").map(|r| default_weight(r)).sum();
+    weights.insert("secret".into(), if others != 0.0 { others / (g.secret_odds - 1) as f64 } else { 0.0 });
     Crate {
         id: cid.to_owned(),
         name: c.name,
@@ -1188,7 +1187,7 @@ mod tests {
             &[("nowa_testowa".into(), card_data, false), ("pl_zenek".into(), hide, true)],
         );
         let cr = &cat.crates["nowa"];
-        assert_eq!((cr.price, cr.weights["green"], cr.weights["blue"]), (300, 40.0, 10.0));
+        assert_eq!((cr.price, cr.weights["green"], cr.weights["blue"]), (300, default_weight("green"), default_weight("blue")));
         assert!(cr.auto_secret && cr.weights["secret"] > 0.0);
         let p = cat.person("nowa_testowa").unwrap();
         assert_eq!((p.hp, p.value_mult, p.country.as_str()), (80, 3.0, "pl"));

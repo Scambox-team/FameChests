@@ -48,8 +48,8 @@ const REWARD: &[(&str, &str, i64, i64)] = &[
 ];
 /// Najszybciej, jak da się zjeść jabłko (krok węża trwa co najmniej 65 ms, jabłko jest zwykle kilka kratek dalej)
 const MIN_MS_PER_APPLE: u128 = 300;
-/// Plansza 20 x 20, wąż startuje z 3 kratek
-const MAX_SCORE: i64 = 397;
+/// Plansza 22 x 22 (Snake 3D), wąż startuje z 4 kratek; złota kula daje +3 długości, więc zapas
+const MAX_SCORE: i64 = 600;
 
 /// Bilety gier: gracz -> chwila startu (jedna gra naraz; nowy start zastępuje poprzedni)
 static TICKETS: LazyLock<Mutex<HashMap<i64, Instant>>> = LazyLock::new(Default::default);

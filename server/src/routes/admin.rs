@@ -193,6 +193,9 @@ struct AdminCrate {
     custom_weights: IndexMap<String, f64>,
     /// gracze z dostępem do skrzynki z ograniczeniem
     allowed: Vec<i64>,
+    /// współczynnik zwrotu (oczekiwana wartość karty / cena; 0,9 = 90%)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rtp: Option<f64>,
 }
 
 /// Zdjęcia karty w panelu admina
@@ -304,6 +307,7 @@ pub async fn admin_catalog(State(st): State<AppState>, Admin(_): Admin) -> Res {
                 .map(|(r, w)| (r.clone(), *w))
                 .collect(),
             allowed: allowed(&cr.id),
+            rtp: crate::game::roll::crate_return(&cat, cr),
         })
         .collect();
     crates.extend(cat.hidden_crates.iter().map(|(cid, cr)| AdminCrate {
@@ -313,6 +317,7 @@ pub async fn admin_catalog(State(st): State<AppState>, Admin(_): Admin) -> Res {
         hidden: true,
         custom_weights: cr.weights.clone(),
         allowed: allowed(cid),
+        rtp: None,
     }));
     let owned = |pid: &str| counts.get(pid).copied().unwrap_or(0);
     let mut cards: Vec<AdminCard> = cat

@@ -88,6 +88,94 @@ pub fn roll(cat: &Catalog, cr: &Crate) -> Option<(Arc<Person>, String)> {
     Some((person, variant))
 }
 
+/// Rozkład prawdopodobieństwa wariantów - dokładnie to, co losuje `roll_variant` (te same reguły), do wyliczeń (zwrot skrzynki).
+pub fn variant_dist(avail: &[String], boost: &HashMap<String, f64>, factor: f64) -> Vec<(String, f64)> {
+    let g = g();
+    let b = |v: &str| boost.get(v).copied().unwrap_or(1.0);
+    let always: Vec<&String> = avail.iter().filter(|v| g.variant(v).always).collect();
+    if !always.is_empty() {
+        let weights: Vec<f64> = always.iter().map(|v| g.variant(v).weight.unwrap_or(1.0) * b(v)).collect();
+        let total: f64 = weights.iter().sum();
+        let rest: Vec<String> = avail.iter().filter(|v| !g.variant(v).layer).cloned().collect();
+        let sub = variant_dist(&rest, boost, factor);
+        let mut out = Vec::new();
+        for (i, layer) in always.iter().enumerate() {
+            let pl = if total > 0.0 { weights[i] / total } else if i == 0 { 1.0 } else { 0.0 };
+            if pl == 0.0 {
+                continue;
+            }
+            if g.variant(layer).no_combo {
+                out.push(((*layer).clone(), pl));
+            } else {
+                out.extend(sub.iter().map(|(v, q)| (combine_variant(layer, v), pl * q)));
+            }
+        }
+        return out;
+    }
+    let chance = |v: &str| g.variant(v).chance * b(v);
+    let specials: Vec<&String> = g.variant_order.iter().rev().filter(|v| avail.contains(v)).collect();
+    let total: f64 = specials.iter().map(|v| chance(v)).sum();
+    let factor = if total != 0.0 { factor.min(0.9 / total) } else { factor };
+    let mut out = Vec::new();
+    let mut taken = 0.0;
+    for v in &specials {
+        let x = g.variant(v);
+        let pv = (chance(v) * factor).min(1.0 - taken).max(0.0);
+        taken += pv;
+        if pv <= 0.0 {
+            continue;
+        }
+        if x.layer && x.extra_chance > 0.0 {
+            let bases: Vec<&&String> = specials.iter().filter(|b| !g.variant(b).layer).collect();
+            let weights: Vec<f64> = bases.iter().map(|b| chance(b)).collect();
+            let wt: f64 = weights.iter().sum();
+            if wt > 0.0 {
+                out.push(((*v).clone(), pv * (1.0 - x.extra_chance)));
+                for (i, bs) in bases.iter().enumerate() {
+                    out.push((combine_variant(v, bs), pv * x.extra_chance * weights[i] / wt));
+                }
+                continue;
+            }
+        }
+        out.push(((*v).clone(), pv));
+    }
+    if taken < 1.0 {
+        out.push(("normal".into(), 1.0 - taken));
+    }
+    out
+}
+
+/// Współczynnik zwrotu skrzynki: oczekiwana wartość jednej wylosowanej karty (z wariantami) / cena skrzynki.
+/// 1.0 = 100% (średnio oddaje tyle, ile kosztuje). None, gdy skrzynka nic nie losuje.
+pub fn crate_return(cat: &Catalog, cr: &Crate) -> Option<f64> {
+    let g = g();
+    let people: Vec<&Arc<Person>> = cat.crate_people(cr).filter(|p| !p.is_special()).collect();
+    let weights: Vec<f64> = g
+        .rarity_order
+        .iter()
+        .map(|r| if people.iter().any(|p| &p.rarity == r) { cr.weight(r) } else { 0.0 })
+        .collect();
+    let total: f64 = weights.iter().sum();
+    if total <= 0.0 || cr.price <= 0 {
+        return None;
+    }
+    let mut ev = 0.0;
+    for (i, r) in g.rarity_order.iter().enumerate() {
+        if weights[i] <= 0.0 {
+            continue;
+        }
+        let pool: Vec<&&Arc<Person>> = people.iter().filter(|p| &p.rarity == r).collect();
+        let mut mean = 0.0;
+        for p in &pool {
+            let (avail, boost) = cat.drop_variants(cr, Some(p));
+            let e: f64 = variant_dist(&avail, &boost, 1.0).iter().map(|(v, q)| q * p.value(v) as f64).sum();
+            mean += e / pool.len() as f64;
+        }
+        ev += weights[i] / total * mean;
+    }
+    Some(ev / cr.price as f64)
+}
+
 /// Pieniądze ze skrzynki z pieniędzmi: min + (max - min) * los^curve, zaokrąglone do 100 gr
 pub fn roll_money(kind: &str) -> i64 {
     let c = &g().money_chests[kind];
