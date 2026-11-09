@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 880" width="630" height="880">
+  <title>ScamBox: szablon zwykłej karty 630 x 880 (63:88)</title>
+  <!-- Wymiary zmierzone na działającej grze (karta z jedną zdolnością), przeliczone na 630 x 880 px.
+       Eksportuj grafiki w tej siatce (albo w 2x: 1260 x 1760). Warstwy ukryj / usuń przed eksportem. -->
+  <defs><clipPath id="card"><rect width="630" height="880" rx="28.35" ry="28.16"/></clipPath></defs>
+  <g clip-path="url(#card)" font-family="Arial, sans-serif" font-size="14">
+    <!-- cała karta = ramka (--frame) -->
+    <rect width="630" height="880" fill="#d9d4c7"/>
+    <text x="315" y="15" text-anchor="middle" fill="#555">RAMKA (--frame): 22,7 px z każdej strony</text>
+    <!-- wnętrze (--inner) -->
+    <rect x="22.6" y="22.6" width="584.7" height="834.7" rx="17.5" ry="18.4" fill="#f4f1ea" stroke="#7a7466"/>
+    <text x="40" y="40" fill="#555">WNĘTRZE (.card-inner) 584,7 x 834,7 · tło wariantu rysuje się tu (warstwa vx-bg)</text>
+    <!-- pole treści (padding 4% 5% 3%) -->
+    <rect x="51.9" y="46" width="526.3" height="794" fill="none" stroke="#c0392b" stroke-dasharray="6 4"/>
+    <text x="58" y="58" fill="#c0392b" font-size="11">pole treści 526,3 px (od x 51,9)</text>
+    <!-- nagłówek -->
+    <rect x="51.9" y="46" width="526.3" height="40.6" fill="#cfe3ff" stroke="#2453c7"/>
+    <text x="60" y="72" fill="#123">NAZWA (x 51,9 · w 392)</text>
+    <text x="456" y="72" fill="#123">HP</text>
+    <circle cx="558.8" cy="66.3" r="19.3" fill="#fff" stroke="#2453c7"/>
+    <text x="545" y="71" fill="#123" font-size="11">typ</text>
+    <!-- zdjęcie -->
+    <rect x="51.9" y="102.4" width="526.3" height="505.2" fill="#f7d9d6" stroke="#b3121f"/>
+    <rect x="60.6" y="111.1" width="508.9" height="487.8" fill="#fbe9e7" stroke="#b3121f" stroke-dasharray="4 3"/>
+    <text x="315" y="350" text-anchor="middle" fill="#8a1f1f" font-size="18">ZDJĘCIE: 526,3 x 505,2 (obwódka 8,7 px)</text>
+    <text x="315" y="374" text-anchor="middle" fill="#8a1f1f">widoczny obraz 508,9 x 487,8 od (60,6; 111,1)</text>
+    <text x="315" y="398" text-anchor="middle" fill="#8a1f1f">warstwy na zdjęcie (vx-photo) leżą dokładnie tu</text>
+    <!-- plakietka wariantu -->
+    <rect x="470" y="299" width="116" height="26" rx="6" fill="#2d2d2d" opacity=".75"/>
+    <text x="528" y="317" text-anchor="middle" fill="#fff" font-size="12">plakietka (top 34%, prawa 7%)</text>
+    <!-- podpis -->
+    <rect x="41.4" y="620.7" width="547.3" height="22.4" fill="#e6f2d0" stroke="#4a7c1f"/>
+    <text x="315" y="636" text-anchor="middle" fill="#234">PODPIS (.card-sub) typ · skrzynka / tekst wariantu</text>
+    <!-- zdolność -->
+    <rect x="51.9" y="662.5" width="526.3" height="76.4" fill="#fff0c8" stroke="#a97c00"/>
+    <text x="315" y="705" text-anchor="middle" fill="#432">ZDOLNOŚĆ (.card-attack): koszt · nazwa · obrażenia (przy 2-3 zdolnościach blok rośnie w górę)</text>
+    <!-- statystyki -->
+    <rect x="51.9" y="754.6" width="526.3" height="46.2" fill="#e5dcf7" stroke="#6a20c9"/>
+    <text x="315" y="782" text-anchor="middle" fill="#324">słabość · odporność · wycofanie</text>
+    <!-- stopka -->
+    <rect x="51.9" y="816.6" width="526.3" height="23.2" fill="#d9f2f2" stroke="#1f7c7c"/>
+    <text x="315" y="832" text-anchor="middle" fill="#133">rzadkość · numer · wartość</text>
+  </g>
+  <rect width="630" height="880" rx="28.35" ry="28.16" fill="none" stroke="#000" stroke-width="2"/>
+  <text x="315" y="870" text-anchor="middle" fill="#000" font-size="12">karta 630 x 880, zaokrąglenie rogu 4,5% x 3,2% (28,4 x 28,2 px)</text>
+</svg>
