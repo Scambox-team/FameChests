@@ -45,7 +45,8 @@ pub fn roll_variant(avail: &[String], boost: &HashMap<String, f64>, factor: f64)
         if g.variant(layer).no_combo {
             return layer.clone();
         }
-        let rest: Vec<String> = avail.iter().filter(|v| !g.variant(v).layer).cloned().collect();
+        // bez warstw i bez "always" (inaczej rekurencja bez końca, gdy "always" nie jest warstwą - np. chesswhite)
+        let rest: Vec<String> = avail.iter().filter(|v| !g.variant(v).layer && !g.variant(v).always).cloned().collect();
         return combine_variant(layer, &roll_variant(&rest, boost, factor));
     }
     let chance = |v: &str| g.variant(v).chance * b(v);
@@ -96,8 +97,10 @@ pub fn variant_dist(avail: &[String], boost: &HashMap<String, f64>, factor: f64)
     if !always.is_empty() {
         let weights: Vec<f64> = always.iter().map(|v| g.variant(v).weight.unwrap_or(1.0) * b(v)).collect();
         let total: f64 = weights.iter().sum();
-        let rest: Vec<String> = avail.iter().filter(|v| !g.variant(v).layer).cloned().collect();
-        let sub = variant_dist(&rest, boost, factor);
+        // jak w roll_variant: bez warstw i bez "always" (inaczej rekurencja bez końca)
+        let rest: Vec<String> = avail.iter().filter(|v| !g.variant(v).layer && !g.variant(v).always).cloned().collect();
+        // rozkład zwykłych wariantów liczymy tylko, gdy któryś "always" go potrzebuje (nie ma "noCombo")
+        let sub = if always.iter().any(|v| !g.variant(v).no_combo) { variant_dist(&rest, boost, factor) } else { Vec::new() };
         let mut out = Vec::new();
         for (i, layer) in always.iter().enumerate() {
             let pl = if total > 0.0 { weights[i] / total } else if i == 0 { 1.0 } else { 0.0 };
@@ -256,5 +259,27 @@ mod tests {
             let m = roll_money("daily");
             assert!((5_000..=20_000).contains(&m) && m % 100 == 0);
         }
+    }
+
+    /// "always" bez warstwy (chesswhite/chessblack) nie może zapętlać rozkładu ani losowania; rozkład sumuje się do 1
+    #[test]
+    fn always_non_layer_variants_terminate() {
+        let none = HashMap::new();
+        for chess in ["chesswhite", "chessblack"] {
+            let avail: Vec<String> = ["bw", "gold", "holo", "silver", chess, "blank"].iter().map(|s| s.to_string()).collect();
+            let dist = variant_dist(&avail, &none, 1.0);
+            let sum: f64 = dist.iter().map(|(_, q)| q).sum();
+            assert!((sum - 1.0).abs() < 1e-9, "{chess}: suma {sum}");
+            assert!(dist.iter().all(|(v, _)| v == chess), "{chess}: {dist:?}");
+            for _ in 0..200 {
+                assert_eq!(roll_variant(&avail, &none, 1.0), chess);
+            }
+        }
+        // warstwa "always" (halloween) nadal łączy się ze zwykłym wariantem, rozkład sumuje się do 1
+        let cat = crate::catalog::build(&[], &[]);
+        let mut hw = vec!["halloween".to_string()];
+        hw.extend(cat.base_variants());
+        let sum: f64 = variant_dist(&hw, &none, 1.0).iter().map(|(_, q)| q).sum();
+        assert!((sum - 1.0).abs() < 1e-9, "halloween: suma {sum}");
     }
 }
