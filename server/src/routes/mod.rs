@@ -21,6 +21,7 @@ pub mod pages;
 pub mod aim;
 pub mod game_rankings;
 pub mod quests;
+pub mod ctf;
 pub mod referral;
 pub mod reports;
 pub mod shop;
@@ -107,6 +108,10 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/referrals", get(admin_page))
         // polecenia: link /r/<kod> działa bez logowania
         .route("/r/{code}", get(referral::ref_landing))
+        // quest CTF: strony zadań bez logowania
+        .route("/ctf/{token}", get(ctf::ctf_root))
+        .route("/ctf/{token}/", get(ctf::ctf_index))
+        .route("/ctf/{token}/{*rest}", get(ctf::ctf_page))
         .route("/admin/mockups", get(admin_mockups))
         .route("/flag/{code}", get(flag_image))
         .route("/img/{person_id}", get(image_main))
@@ -235,6 +240,8 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/horses", get(horses::admin_horses).post(horses::admin_horses_save))
         .route("/api/admin/chess-skins", get(chess::admin_skins).post(chess::admin_skins_save))
         .route("/api/admin/quests", get(quests::admin_quests).post(quests::admin_quests_save))
+        .route("/api/admin/ctf", get(ctf::admin_ctf).post(ctf::admin_ctf_save))
+        .route("/api/quests/ctf", get(ctf::ctf_detail).post(ctf::ctf_submit))
         .route("/api/games/ranking", get(game_rankings::game_ranking))
         .route("/api/aim/start", post(aim::aim_start))
         .route("/api/aim/finish", post(aim::aim_finish))

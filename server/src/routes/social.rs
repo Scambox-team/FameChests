@@ -871,6 +871,8 @@ struct AdminMessage {
 struct MeResponse {
     /// dzisiejszy quest (None = questy wyłączone)
     quest: Option<super::quests::QuestView>,
+    /// quest CTF (None = wyłączony)
+    ctf: Option<super::ctf::CtfView>,
     /// karta, którą przy wejściu do ekwipunku zabierze UFO (easter egg, bez powiadomień)
     ufo: Option<String>,
     /// premie z rynku do pokazania (każda raz)
@@ -960,6 +962,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     let seen = state["patch_seen"];
     let body = MeResponse {
         quest: super::quests::quest_view(&mut c, &cx.cat, uid).await?,
+        ctf: super::ctf::ctf_view(&mut c, &cx.cat, uid).await?,
         market_bonus: crate::game::market::take_bonus_notes(&mut c, &cx.cat, uid).await?,
         ufo: super::variants::ufo_visit(&mut c, &cx.cat, uid, state["ufo_visit"]).await?,
         user: cx.me.view(&cx.cat),

@@ -310,6 +310,7 @@
    "desc": "Przypalony list gończy z dziurami po kulach: WANTED, DEAD OR ALIVE i nagroda w wysokości wartości karty."
   },
   "digital": {
+   "extraSource": "quest",
    "name": "Cyfrowa",
    "chance": 0.004,
    "mult": 13.5,

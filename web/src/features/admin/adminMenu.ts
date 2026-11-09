@@ -28,7 +28,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     P('wiadomosci', 'Wiadomości do graczy', 'Okienka z komunikatem, planowane na wybrany czas'),
     P('maile', 'Maile', 'Edytor szablonów maili z podglądem na żywo: reset hasła, zmiana emaila, potwierdzenie konta'),
     P('osiagniecia', 'Osiągnięcia', 'Warunki i nagrody osiągnięć'),
-    P('questy', 'Questy', 'Codzienny cel: karta do zdobycia'),
+    P('questy', 'Questy', 'Codzienny cel: karta do zdobycia i zadanie CTF'),
     G('eventy', 'Eventy', 'Wydarzenia w grze', '/admin/events'),
     P('easter', 'Easter egg', 'Obrazek przelatujący w bębnie skrzynki'),
   ] },

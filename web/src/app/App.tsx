@@ -32,6 +32,7 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { EmailChangePage } from '../features/auth/EmailChangePage';
 import { VerifyEmailPage } from '../features/auth/VerifyEmailPage';
 import { noteQuest } from '../features/crates/QuestBox';
+import { noteCtf } from '../features/home/CtfQuest';
 import { Stage } from '../features/crates/Stage';
 import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
@@ -45,6 +46,7 @@ import styles from './App.module.css';
 // odpowiedź /api/me co 30 s: to, co mogło się zmienić bez udziału gracza
 function onMe(me: any) {
   noteQuest(me.quest);
+  noteCtf(me.ctf);
   noteUfo(me);
   noteMarketBonus(me.marketBonus);
   if (me.horseNews?.length) hrNews(me.horseNews);
@@ -69,6 +71,7 @@ function Game() {
     boot().then(me => {
       if (!alive) return;
       noteQuest(me.quest);
+      noteCtf(me.ctf);
       noteUfo(me);
       noteMarketBonus(me.marketBonus);
       startNotices(me);

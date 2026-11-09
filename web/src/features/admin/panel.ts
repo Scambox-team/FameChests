@@ -72,6 +72,7 @@ export function startPanel() {
     loadHorses();
     loadSkins();
     loadQuests();
+    loadCtf();
     renderEgg();
     if (!A.crate || !tabCrates().some(c => c.id === A.crate)) A.crate = tabCrates().find(c => !c.hidden)?.id || null;
     render();
@@ -716,6 +717,35 @@ export function startPanel() {
       `<li><b>${q.startsAt ? msgWhen(q.startsAt) : esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr${q.wonAt ? `, wykonał(a) ${msgWhen(q.wonAt)}` : ""})` : "nikt"}</li>`).join("")}</ul>` : "");
   }
   
+  // ================================================================ QUEST CTF
+
+  async function loadCtf() {
+    let d;
+    try { d = await api("/api/admin/ctf"); } catch (e) { return toast(e.message, true); }
+    $("#ctfOn").checked = d.enabled;
+    const pick = $("#ctfPick");
+    if (pick.options.length <= 1) pick.insertAdjacentHTML("beforeend", d.challenges.map(c =>
+      `<option value="${esc(c.id)}">${esc(c.title)} (${esc(c.category)}, poziom ${c.level})</option>`).join(""));
+    $("#ctfReroll").disabled = !d.enabled || !!d.current?.done;
+    pick.disabled = !d.enabled;
+    const cur = d.current;
+    $("#ctfInfo").innerHTML = !cur ? (d.enabled ? "Brak zadania (nie ma kart do nagrody)." : "Quest CTF jest wyłączony.")
+      : `Teraz: <b>${esc(cur.title)}</b>${cur.url ? ` · <a href="${esc(cur.url)}" target="_blank" rel="noopener">strona zadania</a>` : ""} · prób: ${cur.attempts} · `
+        + `${cur.done ? "wypełniony, następny" : "następny"} ${msgWhen(cur.nextAt)}.`;
+    $("#ctfFlag").textContent = cur?.flag || "";
+    $("#ctfFlagShow").hidden = !cur;
+    $("#ctfHistory").innerHTML = d.history.length ? `<ul>${d.history.map(q =>
+      `<li><b>${msgWhen(q.startsAt)}</b>: ${esc(q.title)} · nagroda ${esc(q.person || "?")} · prób ${q.attempts} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr${q.wonAt ? `, ${msgWhen(q.wonAt)}` : ""})` : "nikt"}</li>`).join("")}</ul>` : "";
+  }
+
+  async function saveCtf(body, msg) {
+    try {
+      await api("/api/admin/ctf", { method: "POST", json: body });
+      toast(msg);
+      loadCtf(); loadLog();
+    } catch (err) { toast(err.message, true); loadCtf(); }
+  }
+
   async function saveQuests(body, msg) {
     try {
       await api("/api/admin/quests", { method: "POST", json: body });
@@ -977,6 +1007,9 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     });
     $("#questOn").addEventListener("change", e => saveQuests({ enabled: e.target.checked }, e.target.checked ? "Questy włączone" : "Questy wyłączone"));
     $("#questReroll").addEventListener("click", () => saveQuests({ reroll: true }, "Nowy cel questa"));
+    $("#ctfOn").addEventListener("change", e => saveCtf({ enabled: e.target.checked }, e.target.checked ? "Quest CTF włączony" : "Quest CTF wyłączony"));
+    $("#ctfReroll").addEventListener("click", () => saveCtf({ reroll: true, challenge: $("#ctfPick").value }, "Nowe zadanie CTF"));
+    $("#ctfFlagShow").addEventListener("click", () => { const f = $("#ctfFlag"); f.hidden = !f.hidden; });
     $("#horseRows").addEventListener("click", e => {
       const b = e.target.closest("[data-hreset]"); if (!b) return;
       const row = b.closest("[data-horse]"), def = A.horses.defaults[+row.dataset.horse];

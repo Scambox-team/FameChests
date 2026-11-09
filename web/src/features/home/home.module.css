@@ -132,3 +132,23 @@ a.casino:hover .wheel i { animation-duration: 4s; }
 .where { margin: 0; color: var(--faint); font-size: 13px; }
 .timer { white-space: nowrap; flex-wrap: wrap; }
 .empty { justify-self: stretch; padding: 0 24px; text-align: center; text-wrap: balance; }
+
+/* Questy: karuzela Wanted / CTF (strzałki, kropki, przesunięcie palcem) */
+.tile.quest { padding: 0; --pad: 22px; transition: background .45s; }
+.qTrack { display: flex; flex: 1; min-height: 0; transition: transform .45s cubic-bezier(.2, .8, .3, 1); }
+.qSlide { flex: 0 0 100%; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 0 var(--pad) var(--pad); }
+.qSlide .plank { margin: 0 calc(-1 * var(--pad)); }
+.qNav { position: absolute; top: 211px; z-index: 5; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%;
+  border: 1px solid #ffffff26; background: #000a; color: #fff; cursor: pointer; transition: background .2s, transform .2s; }
+.qNav:hover { background: #000d; transform: scale(1.08); }
+.qNav:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
+.qPrev { left: 10px; } .qNext { right: 10px; }
+.qDots { position: absolute; top: 218px; left: 50%; translate: -50% 0; z-index: 5; display: flex; gap: 4px; }
+.qDots button { width: 20px; height: 20px; padding: 6px; border: 0; background: none; cursor: pointer; }
+.qDots button::before { content: ""; display: block; width: 8px; height: 8px; border-radius: 4px; background: #ffffff55; transition: width .25s, background .25s; }
+.qDots .qDotOn { width: 34px; }
+.qDots .qDotOn::before { width: 22px; background: #fff; }
+.qDots button:focus-visible { outline: 2px solid var(--hue); border-radius: 6px; }
+.questCtf { background: #070b08; }
+@media (max-width: 600px) { .tile.quest { --pad: 18px; } }
+@media (prefers-reduced-motion: reduce) { .qTrack { transition: none; } }
