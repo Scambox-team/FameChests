@@ -70,6 +70,10 @@ export function SettingsPanel({ className }: { className?: string }) {
               <small>{aeroOpen ? 'Błękit nieba, szkło i bąbelki.' : 'Odblokujesz po wylosowaniu karty w wariancie Frutiger Aero'}</small>
             </span>
           </label>
+          <label className={styles.check}>
+            <input type="radio" name="theme" checked={current === 'warm'} onChange={() => pickTheme('warm')} />
+            <span><b>Warm Editorial</b><small>Kremowy papier, tusz, terakota i szeryfowe nagłówki.</small></span>
+          </label>
         </fieldset>
         <label className={styles.check}>
           <input type="checkbox" checked={birds} onChange={e => { setBirds(e.target.checked); setCasinoIntroOff(!e.target.checked); }} />
