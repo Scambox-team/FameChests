@@ -1,72 +1,52 @@
 # ScamBox
 
-A web game about opening crates with cards of famous people (Polish crate, World crate, PRL crate and more).
-The server is written in Rust (`server/`: axum + tokio + sqlx, PostgreSQL); the browser part (`static/`,
-`templates/`) is plain HTML/CSS/JS and is embedded into the server executable.
+Web game about opening crates with cards of famous people.
 
-## Running it
-You need [Rust (rustup)](https://rustup.rs) and a PostgreSQL database (easiest: `docker compose -f docker-compose.local.yml up -d db`, it listens on localhost:5433).
+- Server: Rust (axum, tokio, sqlx) with PostgreSQL, in `server/`
+- Frontend: React, TypeScript, Vite, Three.js, in `web/`; the built app is embedded into the server executable
 
-1. `copy server\.env.example server\.env` and set `DATABASE_URL`.
-2. Double-click `scripts/windows/start.bat` (or `cd server && cargo run --release`).
-3. Open http://127.0.0.1:5000
+## Run locally with Docker
 
-Details (Linux, NixOS, Docker, options `--lan` / `--test` / `--dev`): [docs/uruchamianie.md](docs/uruchamianie.md).
+Requires only Docker.
 
-## Local test in Docker (Test lokalny w Dockerze)
-Only Docker is needed (no Rust, no Node). From the repository root run `./lokalnie.sh` (Windows PowerShell: `.\lokalnie.ps1`), which
-starts the game (http://localhost:8000), a throw-away PostgreSQL and Mailpit (http://localhost:8025, catches every e-mail
-the game sends). Test account: login `admin`, password `admin`. Rust has no live reload: after changing code run the
-script again (dependencies are cached). Data lives in `data-lokalne/`; start from scratch with
-`docker compose -f docker-compose.local.yml down -v` and by deleting that folder. Optional ports: `.env.example`.
+```
+./lokalnie.sh          # Windows PowerShell: .\lokalnie.ps1
+```
 
-### Playing with friends (same network / Wi-Fi)
-Double-click `scripts/windows/start_lan.bat`. The console shows an address like `http://192.168.1.23:5000`; your friends open it in
-their browser. (Windows may ask to allow access through the firewall; choose "Allow".)
-If a friend can't connect, the network probably blocks traffic between devices (common in dorms) — use Tailscale.
+- Game: http://localhost:8000 (test account `admin` / `admin`)
+- Mailpit (catches outgoing e-mail): http://localhost:8025
+- Ports can be changed in `.env` (see `.env.example`)
+- Reset: `docker compose -f docker-compose.local.yml down -v` and delete `data-lokalne/`
 
-### Playing with friends over Tailscale (recommended)
-Double-click `scripts/windows/start_tailscale.bat`. It runs `tailscale serve`, which makes the game available **only within your
-Tailscale network**, over HTTPS, at `https://<computer-name>.<tailnet>.ts.net`.
-To stop sharing: `tailscale serve --https=443 off`.
+## Run from source
 
-### Hosting (Azure App Service, Windows)
-`scripts/windows/build_azure.bat` builds `dist\scambox-azure.zip` = `scambox.exe` (everything is inside it) + `web.config`.
-Deploy the zip and set `DATABASE_URL` / `SECRET_KEY` in the app settings: [docs/hosting.md](docs/hosting.md).
+Requires Rust, Node.js and a PostgreSQL database
+(`docker compose -f docker-compose.local.yml up -d db` starts one on localhost:5433).
 
-## Accounts
-- Each player has their own account (username + password), balance, cards, binder and discovered secret cards.
-- **No account is admin automatically.** Accounts listed in `OWNER_IDS` (server setting) become admins at startup; an admin can then grant admin rights to others in the panel.
-- Admin: ⚙️ admin panel — crates (shop, access, custom odds), cards (several crates per card), players (ban, browse/delete cards, crate access, money, chests, passwords, admin rights), variants, achievements, horse races and the 💸 bank.
-- Odds, prices, variants and built-in cards are in `server/data/game.json`.
+```
+cp server/.env.example server/.env      # set DATABASE_URL
+cd web && npm install && npm run build
+cd ../server && cargo run --release
+```
 
-## What's in it
-- Crates with rarities: green → blue → purple → red → gold (1%) → ULTRA (0.2%) → ★ SECRET (1 in 2137); cards can belong to several crates
-- 🛒 Shop carousel; crates can be off sale or available only to selected players; 📦 chests in your inventory
-- Secret cards stay hidden ("???") until you obtain them, with their own design and reveal
-- Variants (Holo, Golden, Diamond, Flag, Halloween, MLG...) with their own odds and value multipliers; admins manage them on /variants, design new ones on /designer and place stickers on /stickers
-- 🔍 Card viewer, epic full-screen reveal, 🏆 Hall of Fame, 🏅 achievements
-- 🎁 Daily chest; 👥 friends, activity feed, profiles with a showcase, ranking; 🔄 trading
-- ⚒️ Forge (contract), 🏪 market (buy, offers, auctions, "wanted"), 🎰 casino (roulette, blackjack, slots, jackpot, upgrader, horse races)
-- ⚔️ Arena (admins only, test version)
+Frontend development: `npx vite` in `web/` (proxies API calls to the server).
+More options and platforms: [docs/uruchamianie.md](docs/uruchamianie.md).
 
-## Saving admin-panel changes to GitHub
-Cards and crates added in the admin panel live in the database (which also holds player accounts). Before pushing:
+## Tests
 
-    cd server
-    cargo run --release -- export-catalog
+```
+cd server && cargo test
+cd web && npx tsc --noEmit
+```
 
-It writes `seed/catalog_export.json` + `seed/custom_images/` (cards and crates only, no player data). A new installation
-(empty database) loads them automatically on first start (they are also embedded in the executable).
+## Layout
 
-## Files
-- `server/` – the game server (see [server/README.md](server/README.md)); `server/data/game.json` – game settings and built-in cards.
-- `static/`, `templates/` – the browser part (embedded into the executable at build time).
-- `catalog_export.json`, `custom_images/` – admin-panel changes for new installations.
-- `deploy/azure/web.config`, `build_azure.bat` – Azure App Service package.
-- `docs/` – running, hosting and development notes (Polish).
+- `server/` – game server, `server/data/game.json` holds game settings and built-in cards
+- `web/` – frontend
+- `static/` – images, sounds and other static files
+- `seed/` – initial catalog for new databases
+- `deploy/`, `docs/` – hosting and development notes (Polish)
 
-## Keyboard shortcuts
-- Space / Enter – open crates; during spinning: skip; on the results screen: open again
-- Esc – skip / close
-- ← → – flip pages in the binder
+## Hosting
+
+See [docs/hosting.md](docs/hosting.md).
