@@ -2,6 +2,7 @@
 // Skrzynka 3D: scena na przezroczystym tle, kolory biorą się z danych skrzynki
 import * as THREE from 'three';
 import { crateEnvironment, crateKit, LID_OPEN, softDot } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -41,7 +42,8 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  const th = sceneTheme();
+  renderer.toneMappingExposure = th.exposure;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 80);
@@ -50,20 +52,20 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
 
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
-  scene.environmentIntensity = .55;
+  scene.environmentIntensity = th.envIntensity;
 
-  const key = new THREE.DirectionalLight('#ffffff', 2.4); key.position.set(-3, 5, 5); scene.add(key);
-  const rim = new THREE.DirectionalLight('#ffffff', 3); rim.position.set(3, 3, -4); scene.add(rim);
+  const key = new THREE.DirectionalLight(th.key.color, th.key.intensity); key.position.set(-3, 5, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight('#ffffff', th.rim.intensity); rim.position.set(3, 3, -4); scene.add(rim);
 
   const kit = crateKit(), mat = kit.mat, inner = mat.inner;
   const dot = softDot();
   const flareMat = new THREE.SpriteMaterial({ map: dot, color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-  const shadowMat = new THREE.MeshBasicMaterial({ map: dot, color: '#000000', transparent: true, opacity: .6, depthWrite: false });
+  const shadowMat = new THREE.MeshBasicMaterial({ map: dot, color: th.shadow.color, transparent: true, opacity: th.shadow.opacity, depthWrite: false });
   const shadowGeo = new THREE.PlaneGeometry(5, 3);
   // stopnie piramidy: kamienny blok pod każdą skrzynką z dalszego rzędu
   const stepGeo = new THREE.BoxGeometry(STEP_X - .06, 1, TIER_Z - .04);
   stepGeo.translate(0, .5, 0);
-  const stepMat = new THREE.MeshStandardMaterial({ color: '#1b1b20', roughness: .85, metalness: .1 });
+  const stepMat = new THREE.MeshStandardMaterial(th.step);
 
   function buildCrate() {
     const { g, lid } = kit.build();
@@ -128,6 +130,15 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
   const pMat = new THREE.PointsMaterial({ map: dot, size: .075, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, color: '#ffffff' });
   const points = new THREE.Points(pGeo, pMat);
   scene.add(points);
+
+  // Frutiger Aero: szklane bańki unoszą się wokół skrzynek (jedna siatka instancji, tylko pozycje i skala)
+  const NB = th.bubbles ? 26 : 0;
+  const bubbleGeo = NB ? new THREE.SphereGeometry(1, 20, 14) : null;
+  const bubbleMat = NB ? new THREE.MeshPhysicalMaterial({ color: '#c8efff', transparent: true, opacity: .3, roughness: 0, metalness: 0, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false }) : null;
+  const bubbles = NB ? new THREE.InstancedMesh(bubbleGeo, bubbleMat, NB) : null;
+  const bub = Array.from({ length: NB }, () => ({ x: (Math.random() - .5) * 11, y: Math.random() * 6, z: (Math.random() - .5) * 5 - 1, v: .25 + Math.random() * .45, r: .08 + Math.random() * .24, p: Math.random() * 6 }));
+  const bubM = new THREE.Matrix4();
+  if (bubbles) scene.add(bubbles);
 
   // cele, do których wartości płynnie dochodzą
   const color = { body: new THREE.Color(), lid: new THREE.Color(), hue: new THREE.Color(), raysNow: new THREE.Color(), raysTo: new THREE.Color() };
@@ -249,6 +260,14 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
       }
     }
     pGeo.attributes.position.needsUpdate = true;
+    if (bubbles) {
+      bub.forEach((b, i) => {
+        if (!reduced) { b.y += b.v * dt; if (b.y > 6.5) { b.y = -.5; b.x = (Math.random() - .5) * 11; } }
+        bubM.makeScale(b.r, b.r, b.r).setPosition(b.x + Math.sin(t * .7 + b.p) * .25, b.y, b.z);
+        bubbles.setMatrixAt(i, bubM);
+      });
+      bubbles.instanceMatrix.needsUpdate = true;
+    }
     renderer.render(scene, camera);
   }
   requestAnimationFrame(frame);
@@ -261,7 +280,7 @@ export function createCrateScene(canvas, { sideShift = .29 } = {}) {
     setCrate, setCount, dropIn, open, close, pointer,
     destroy() {
       running = false; ro.disconnect(); document.removeEventListener('visibilitychange', vis);
-      kit.dispose(); env.dispose(); dot.dispose(); shadowGeo.dispose(); stepGeo.dispose(); stepMat.dispose(); pGeo.dispose();
+      kit.dispose(); env.dispose(); dot.dispose(); shadowGeo.dispose(); stepGeo.dispose(); stepMat.dispose(); pGeo.dispose(); bubbleGeo?.dispose(); bubbleMat?.dispose();
       renderer.dispose();
     }
   };

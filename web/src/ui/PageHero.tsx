@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import styles from './PageHero.module.css';
+import { LastEm } from './Em';
 
 interface Props {
   icon: LucideIcon;
@@ -15,7 +16,7 @@ export function PageHero({ icon: Icon, title, lead, stats, children }: Props) {
   return (
     <section className={styles.hero}>
       <div className={styles.text}>
-        <h2>{title}</h2>
+        <h2><LastEm>{title}</LastEm></h2>
         {lead && <p>{lead}</p>}
         {stats && stats.length > 0 && <dl className={styles.stats}>{stats.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
         {children}

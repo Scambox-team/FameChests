@@ -1,4 +1,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <!-- płaskie skrzynki w motywie Frutiger Aero: połysk szklanej ikony (CrateArt.tsx, .fc-gloss) -->
+    <linearGradient id="fcGloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>
+    <linearGradient id="fcGloss2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
     <!-- wariant Pikselowy na małych kafelkach i ikonach: bloki 5 x 5 px (na kartach piksele liczy pxPhoto w app.js) -->
     <filter id="pxTile" x="0" y="0" width="100%" height="100%"><feFlood x="2" y="2" height="1" width="1"/><feComposite width="5" height="5"/>
       <feTile result="a"/><feComposite in="SourceGraphic" in2="a" operator="in"/><feMorphology operator="dilate" radius="2"/></filter>

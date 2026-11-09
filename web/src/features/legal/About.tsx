@@ -30,6 +30,7 @@ export function About({ info }: { info: LegalInfo | null }) {
         <li>Zdjęcia kart pochodzą głównie z Wikipedii i Wikimedia Commons (wolne licencje). Autora i licencję każdego zdjęcia wskazuje jego strona w Wikimedia Commons. Jeśli jesteś autorem i chcesz poprawić podpis, <ReportLink>napisz</ReportLink>.</li>
         <li>Dźwięki: nagrania na licencji CC0 (freesound.org oraz pakiety Kenney).</li>
         <li>Postacie historyczne i karty własne: grafiki w domenie publicznej lub nasze rysunki.</li>
+        <li>Grafiki w motywie Frutiger Aero: dwa zdjęcia z Wikimedia Commons, przycięte i zmniejszone (Olivier Dugornay / Ifremer, CC BY 4.0; José Lodos Benavente, CC0), oraz tapety dostarczone przez twórcę gry, o nieustalonym autorstwie. Pełna lista: plik CREDITS-photos.txt w repozytorium.</li>
       </ul>
 
       <h2>Zasady i dane</h2>

@@ -3,6 +3,7 @@
 // więc jeden ukryty renderer rysuje każdą skrzynkę raz i oddaje obrazek (WebP z przezroczystością).
 import * as THREE from 'three';
 import { crateEnvironment, crateKit, softDot, type CrateLook } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 const W = 480, H = 400;   // proporcje płaskiego rysunku (120 x 100), w podwójnej rozdzielczości
 let rig = null;
@@ -13,12 +14,13 @@ function setup() {
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  const th = sceneTheme();
+  renderer.toneMappingExposure = th.exposure + .05;
   const scene = new THREE.Scene();
   scene.environment = crateEnvironment(renderer).texture;
-  scene.environmentIntensity = .6;
-  const key = new THREE.DirectionalLight('#ffffff', 2.6); key.position.set(-3, 5, 5); scene.add(key);
-  const rim = new THREE.DirectionalLight('#ffffff', 3.2); rim.position.set(3, 3, -4); scene.add(rim);
+  scene.environmentIntensity = th.envIntensity + .05;
+  const key = new THREE.DirectionalLight(th.key.color, th.key.intensity + .2); key.position.set(-3, 5, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight('#ffffff', th.rim.intensity + .2); rim.position.set(3, 3, -4); scene.add(rim);
   const camera = new THREE.PerspectiveCamera(24, W / H, .1, 50);
   camera.position.set(0, 2.9, 7.6);
   camera.lookAt(0, .88, 0);
@@ -26,7 +28,7 @@ function setup() {
   const { g } = kit.build();
   g.rotation.y = -.52;
   scene.add(g);
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.6), new THREE.MeshBasicMaterial({ map: softDot(), color: '#000', transparent: true, opacity: .7, depthWrite: false }));
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.6), new THREE.MeshBasicMaterial({ map: softDot(), color: th.shadow.color, transparent: true, opacity: Math.min(.8, th.shadow.opacity + .1), depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = -.01;
   scene.add(shadow);
   rig = { renderer, scene, camera, kit, rim, canvas };

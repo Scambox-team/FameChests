@@ -3,6 +3,7 @@
 // zawsze z przodu, przy widzu (kąt 0 = oś +z). Kieszeń i to koło: kąt i * step w układzie koła.
 import * as THREE from 'three';
 import { crateEnvironment, softDot } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = Math.PI * 2;
@@ -104,18 +105,19 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
+  const th = sceneTheme();
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, .1, 60);
   const env = crateEnvironment(renderer);
   scene.environment = env.texture;
   scene.environmentIntensity = .7;
-  scene.add(new THREE.HemisphereLight('#fff4e0', '#140a06', .6));
-  const key = new THREE.DirectionalLight('#fff1d6', 2.6); key.position.set(-2.5, 7, 3.5); scene.add(key);
+  scene.add(new THREE.HemisphereLight('#fff4e0', th.id === 'aero' ? '#4a90b8' : '#140a06', .6));
+  const key = new THREE.DirectionalLight(th.id === 'aero' ? '#ffffff' : '#fff1d6', 2.6); key.position.set(-2.5, 7, 3.5); scene.add(key);
   const rim = new THREE.DirectionalLight('#9fb6ff', 1.2); rim.position.set(4, 3, -5); scene.add(rim);
   const glow = new THREE.PointLight('#ffcf5a', 0, 3, 1.6); scene.add(glow);
 
   const step = TAU / wheel.length;
-  const wood = woodTexture('#3b1a0d', '#120602'), woodLight = woodTexture('#6b3a1e', '#2a1206');
+  const wood = woodTexture(...th.wood[0]), woodLight = woodTexture(...th.wood[1]);
   const face = faceTexture(wheel, red);
   const disposables: { dispose(): void }[] = [wood, woodLight, face];
   const keep = <T extends { dispose(): void }>(o: T) => { disposables.push(o); return o; };
@@ -125,7 +127,7 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     const c = document.createElement('canvas'); c.width = c.height = 1024;
     const x = c.getContext('2d')!;
     const g = x.createRadialGradient(512, 512, 0, 512, 512, 512);
-    g.addColorStop(0, '#163a29'); g.addColorStop(.3, '#0d2219'); g.addColorStop(.62, '#060f0b'); g.addColorStop(1, '#060f0b00');
+    g.addColorStop(0, th.felt[0]); g.addColorStop(.3, th.felt[1]); g.addColorStop(.62, th.felt[2]); g.addColorStop(1, th.felt[2] + '00');
     x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
     for (let i = 0; i < 9000; i++) { x.fillStyle = Math.random() < .5 ? '#ffffff06' : '#00000010'; x.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2); }
     // złota linia pola do gry na suknie
@@ -139,7 +141,7 @@ export function createRouletteScene(canvas: HTMLCanvasElement, wheel: number[], 
     scene.add(table);
   }
 
-  const gold = keep(new THREE.MeshStandardMaterial({ color: '#d8b15a', metalness: 1, roughness: .22 }));
+  const gold = keep(new THREE.MeshStandardMaterial({ color: th.metal, metalness: 1, roughness: .22 }));
   const lacquer = keep(new THREE.MeshPhysicalMaterial({ map: wood, roughness: .35, clearcoat: 1, clearcoatRoughness: .08 }));
   const satin = keep(new THREE.MeshPhysicalMaterial({ map: wood, roughness: .55, clearcoat: .35, clearcoatRoughness: .45 }));
   const track = keep(new THREE.MeshPhysicalMaterial({ map: woodLight, color: '#d9b08a', roughness: .4, clearcoat: .8, clearcoatRoughness: .15 }));

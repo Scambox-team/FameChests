@@ -3,6 +3,7 @@
 // Kąt bębna a: pole i jest z przodu, gdy a = kąt środka pola; rosnące a przesuwa symbole w dół.
 import * as THREE from 'three';
 import { crateEnvironment, softDot } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU = Math.PI * 2;
@@ -149,6 +150,7 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  const th = sceneTheme();
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 60);
   const env = crateEnvironment(renderer);
@@ -168,7 +170,7 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
 
   // ---------------------------------------------------------------- szafa
   const paint = keep(new THREE.MeshPhysicalMaterial({ color: hue, metalness: .55, roughness: .32, clearcoat: 1, clearcoatRoughness: .06 }));
-  const chrome = keep(new THREE.MeshStandardMaterial({ color: '#e8ecf2', metalness: 1, roughness: .12 }));
+  const chrome = keep(new THREE.MeshStandardMaterial({ color: th.chrome, metalness: 1, roughness: .12 }));
   const dark = keep(new THREE.MeshStandardMaterial({ color: '#0b0b0e', metalness: .3, roughness: .6 }));
   const bodyShape = rounded(BODY_W, BODY_H, .32, new THREE.Shape());
   bodyShape.holes.push(rounded(WIN_W, WIN_H, .14, new THREE.Path()));
@@ -249,7 +251,7 @@ export async function createSlotsScene(canvas: HTMLCanvasElement, symbols: SlotS
   base.position.set(0, REEL_Y - BODY_H / 2 - .3, -BODY_D / 2 + .05); scene.add(base);
   const kick = new THREE.Mesh(keep(new THREE.BoxGeometry(BODY_W + .32, .12, .04)), chrome);
   kick.position.set(0, base.position.y + .1, .27); scene.add(kick);
-  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(30, 20)), keep(new THREE.MeshStandardMaterial({ color: '#0c0b0e', roughness: .22, metalness: .7 })));
+  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(30, 20)), keep(new THREE.MeshStandardMaterial({ color: th.floor, roughness: .22, metalness: .7 })));
   floor.rotation.x = -Math.PI / 2; floor.position.y = base.position.y - .25; scene.add(floor);
   const poolMat = keep(new THREE.MeshBasicMaterial({ map: dotTex, color: hue, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false }));
   const pool = new THREE.Mesh(keep(new THREE.PlaneGeometry(7, 4)), poolMat);

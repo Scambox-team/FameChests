@@ -2092,6 +2092,8 @@ export const EN: Record<string, string> = {
   "Coś leci, zanim usiądziesz do stołu.": "Something flies by before you sit at the table.",
   "Róż, brokat i kanciaste krawędzie.": "Pink, glitter and sharp corners.",
   "Kremowy papier, tusz, terakota i szeryfowe nagłówki.": "Cream paper, ink, terracotta and serif headings.",
+  "Neonowy zachód słońca, siatka, róż i błękit.": "Neon sunset, grid, pink and cyan.",
+  "W tym motywie domyślnie wyłączona: gra pokazuje jego własne ilustracje 2D. Włącz, jeśli wolisz modele 3D.": "Off by default in this theme: the game shows its own 2D illustrations. Turn it on if you prefer 3D models.",
   "Grafika 3D": "3D graphics",
   "Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.": "Turn off if the game runs slowly. Flat versions will be used.",
   "Twoja przeglądarka nie obsługuje WebGL.": "Your browser does not support WebGL.",

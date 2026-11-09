@@ -4,6 +4,8 @@
 // Warstwy: tło (niebo, słońce, góry) i stół (ściany, prowadnice) rysujemy raz do osobnych płócien,
 // co klatkę dochodzą siatka, lampki, bumpery, łapy, kulki i iskry.
 import { Sound } from '../../sound/sound';
+import { getTheme } from '../../styles/theme';
+import { SKINS, type PinSkin } from './skins';
 import { ARC, AXIS, BALLS, DIVIDERS, FR0, FR1, GATE, INPUT_CODES, LANE_X, R, Sim, TICK, W, geoOf, mirror, type Ball, type Flip, type Fx, type Input } from './core';
 
 export { W };
@@ -40,7 +42,9 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   const HORIZON = 520;
   const GUIDE_L = geo.guideL, GUIDE_R = geo.guideR, SLING_L = geo.slingL, SLING_R = geo.slingR, POSTS = geo.posts;
   const SAUCER = geo.saucer;
-  const C: Record<string, string> = { ...LV.palette };
+  const th = getTheme();
+  const SK: PinSkin | null = th === 'warm' || th === 'aero' || th === 'vapor' ? SKINS[th] : null;   // motyw inny niż domyślny: własny wygląd (skins.ts)
+  const C: Record<string, string> = { ...LV.palette, ...(SK?.pal ?? {}) };
   const ctx = canvas.getContext('2d')!;
   const bestKey = level === 1 ? 'pinballBest' : `pinballBest${level}`;
   let k = 1;                                  // piksele urządzenia na jednostkę stołu
@@ -147,6 +151,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.lineTo(450, H); c.closePath();
   }
   function stroke(c: CanvasRenderingContext2D, color: string, width: number, blur: number, core = 0.35) {
+    if (SK?.stroke) return SK.stroke(c, color, width, blur, core, k);
     c.save();
     c.lineCap = c.lineJoin = 'round';
     c.strokeStyle = color; c.lineWidth = width; c.shadowColor = color; c.shadowBlur = blur * k;
@@ -232,6 +237,10 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
 
   function drawBg() {
     const [cv, c] = layer();
+    if (SK) {
+      SK.bg(c, { W, H, AXIS, HORIZON, k, saucer: { x: SAUCER.x, y: SAUCER.y }, tablePath, rng, levelId: LV.id }, () => drawBg());
+      bg = cv; return;
+    }
     if (LV.theme !== 'neon') { bgOther(c); bg = cv; return; }
     c.fillStyle = '#05010c'; c.fillRect(0, 0, W, H);
     c.save(); tablePath(c); c.clip();
@@ -296,6 +305,8 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     // przegródki torów
     DIVIDERS.forEach(d => { line(c, [[d.a.x, d.a.y], [d.b.x, d.b.y]]); stroke(c, C.purple, 7, 10, 0.25); });
     // napis i strzałki
+    if (SK?.title) SK.title(c, LV.title, LV.tagline, AXIS, 596 + DY, C, k);
+    else {
     c.save();
     c.font = `italic 800 38px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
     const tg = c.createLinearGradient(0, 578 + DY, 0, 612 + DY);
@@ -305,6 +316,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.shadowBlur = 0; c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.7)'; c.strokeText(LV.title, AXIS, 596 + DY);
     c.font = `600 9px ${FONT}`; c.fillStyle = C.cyan; c.fillText(LV.tagline, AXIS, 620 + DY);
     c.restore();
+    }
     // zgaszone lampki
     allLamps().forEach(l => lamp(c, l, false));
     fg = cv;
@@ -325,6 +337,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     return L;
   }
   function lamp(c: CanvasRenderingContext2D, l: Lamp, on: boolean) {
+    if (SK?.lamp) return SK.lamp(c, { ...l, on }, k);
     c.save();
     c.textAlign = 'center'; c.textBaseline = 'middle';
     const col = on ? l.color : 'rgba(255,255,255,.14)';
@@ -363,6 +376,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
   }
   function drawFlipper(c: CanvasRenderingContext2D, f: Flip) {
+    if (SK?.flipper) return SK.flipper(c, f.x, f.y, f.ang, f.len, FR0, FR1, f.on, k, C);
     const ca = Math.cos(f.ang), sa = Math.sin(f.ang), nx = -sa, ny = ca;
     const tx = f.x + ca * f.len, ty = f.y + sa * f.len;
     c.save();
@@ -379,6 +393,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
   }
   function drawBall(c: CanvasRenderingContext2D, b: Ball) {
+    if (SK?.ball) return SK.ball(c, b.x, b.y, R, b.trail, k);
     c.save();
     c.globalCompositeOperation = 'lighter';
     b.trail.forEach((p, i) => {
@@ -399,6 +414,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
   }
   function neonText(c: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, alpha = 1) {
+    if (SK?.text) return SK.text(c, text, x, y, size, color, alpha, k);
     c.save();
     c.globalAlpha = alpha;
     c.font = `italic 900 ${size}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -501,7 +517,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     const sx = shake ? (Math.random() - 0.5) * shake : 0, sy = shake ? (Math.random() - 0.5) * shake : 0;
     c.setTransform(k * zm, 0, 0, k * zm, (sx + W / 2 - camCX * zm) * k, (sy + VH / 2 - camCY * zm) * k);
     c.drawImage(bg, 0, 0, W, H);
-    if (LV.theme === 'neon') drawGrid(c);
+    if (LV.theme === 'neon' && (!SK || SK.grid)) drawGrid(c);
     c.drawImage(fg, 0, 0, W, H);
 
     // procy błyskają przy kopnięciu
@@ -513,7 +529,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     const sunLit = multiball || (vhsDone && radDone);
     c.save();
     c.beginPath(); c.arc(SAUCER.x, SAUCER.y, 16, 0, Math.PI * 2);
-    c.fillStyle = '#12001c'; c.fill();
+    c.fillStyle = SK?.dark ?? '#12001c'; c.fill();
     c.lineWidth = 3; c.strokeStyle = sunLit || saucerFlash > 0 ? '#fff' : C.yellow;
     c.shadowColor = C.yellow; c.shadowBlur = (12 + (sunLit ? 10 + Math.sin(time * 8) * 8 : 0) + saucerFlash * 30) * k; c.stroke();
     c.restore();
@@ -545,6 +561,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     // bumpery
     bumpers.forEach((u, i) => {
       const col = u.alt ? C.cyan : C.pink;
+      if (SK?.bumper) return SK.bumper(c, u.x, u.y, u.r, u.flash, col, k);
       c.save();
       c.beginPath(); c.arc(u.x, u.y + 3, u.r + 2, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,.5)'; c.fill();
       c.beginPath(); c.arc(u.x, u.y, u.r, 0, Math.PI * 2);
@@ -563,7 +580,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     // fartuch na dole (kulka znika pod nim) i tłok
     c.save();
     c.beginPath(); c.moveTo(10, H - 32); c.lineTo(160, H - 32); c.lineTo(176, H); c.lineTo(252, H); c.lineTo(268, H - 32); c.lineTo(LANE_X, H - 32); c.lineTo(LANE_X, H); c.lineTo(10, H); c.closePath();
-    const ag = c.createLinearGradient(0, H - 32, 0, H); ag.addColorStop(0, '#2a0b3e'); ag.addColorStop(1, '#0c0216');
+    const ag = c.createLinearGradient(0, H - 32, 0, H); ag.addColorStop(0, SK?.apronA ?? '#2a0b3e'); ag.addColorStop(1, SK?.apronB ?? '#0c0216');
     c.fillStyle = ag; c.fill();
     line(c, [[10, H - 32], [160, H - 32]]); stroke(c, C.purple, 2, 8, 0); line(c, [[268, H - 32], [LANE_X, H - 32]]); stroke(c, C.purple, 2, 8, 0);
     c.restore();
@@ -578,7 +595,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     c.restore();
 
     // iskry i liczby
-    c.save(); c.globalCompositeOperation = 'lighter';
+    c.save(); c.globalCompositeOperation = SK?.sparkComp ?? 'lighter';
     for (const p of sparks) {
       const a = 1 - p.life / p.max;
       c.globalAlpha = a; c.fillStyle = p.color;
@@ -592,7 +609,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
       const m = msg, a = Math.min(1, m.t * 6, (m.dur - m.t) * 3);
       const z = 1 + Math.max(0, 0.25 - m.t) * 1.5;
       c.save(); c.translate(AXIS, 215); c.scale(z, z);
-      c.fillStyle = `rgba(8,0,20,${0.55 * a})`; c.beginPath(); c.roundRect(-150, -36, 300, m.sub ? 82 : 64, 12); c.fill();
+      c.globalAlpha = a; c.fillStyle = SK?.msgBg ?? 'rgba(8,0,20,.55)'; c.beginPath(); c.roundRect(-150, -36, 300, m.sub ? 82 : 64, 12); c.fill();
       neonText(c, m.text, 0, -4, m.text.length > 12 ? 26 : 38, m.color, a);
       if (m.sub) { c.globalAlpha = a; c.font = `700 13px ${FONT}`; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText(m.sub, 0, 30); }
       c.restore();

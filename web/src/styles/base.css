@@ -12,6 +12,8 @@ a { color: inherit; text-decoration: none; }
 img { max-width: 100%; }
 :focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
 .muted { color: var(--muted); }
+/* dodatkowe warstwy płaskiej skrzynki rysują tylko motywy z własnymi ilustracjami (theme-warm.css, theme-aero.css) */
+svg .fc-x { display: none; }
 .small { font-size: 13px; line-height: 18px; }
 
 /* karta jest pisana własnym fontem i nie dziedziczy wysokości wiersza strony */

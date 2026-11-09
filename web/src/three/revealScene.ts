@@ -4,6 +4,7 @@
 // mouth() mówi, w którym miejscu ekranu jest otwór skrzynki, żeby karta mogła z niego wylecieć.
 import * as THREE from 'three';
 import { crateEnvironment, crateKit, LID_OPEN, softDot, type CrateLook } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 export interface RevealTier {
   /** kolor przewodni (dla ULTRA tęcza, dla Specjalnej neon migający między dwoma kolorami) */
@@ -75,6 +76,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
+  const th = sceneTheme();
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, .1, 150);
   const env = crateEnvironment(renderer);
@@ -106,7 +108,7 @@ export function createRevealScene(canvas: HTMLCanvasElement, look: CrateLook, ti
   const blaze = new THREE.Sprite(blazeMat); blaze.position.y = .9; blaze.renderOrder = 10; crate.add(blaze);
 
   // podłoga, plama światła i cień
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: .92, metalness: .05 }));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: th.id === 'default' ? '#0c0c10' : th.floor, roughness: .92, metalness: .05 }));
   floor.rotation.x = -Math.PI / 2; scene.add(floor);
   const poolMat = new THREE.MeshBasicMaterial({ map: dot, color: main, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
   const pool = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), poolMat);
