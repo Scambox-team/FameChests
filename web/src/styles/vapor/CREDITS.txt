@@ -1,0 +1,6 @@
+Grafiki motywu Vaporwave (web/src/styles/vapor/).
+
+david.webp i helios.webp: wycięte zdjęcia rzeźb (głowa Dawida Michała Anioła z balonem z gumy, głowa Heliosa na białym postumencie).
+Dostarczył je twórca gry, autorzy zdjęć i licencje nie są ustalone (głowa Heliosa na białym bloku to motyw znany z okładek muzyki
+vaporwave). Jeśli gra ma być publicznie hostowana, a prawa autorskie wzbudzą wątpliwości, pliki trzeba wymienić na zdjęcia rzeźb
+z domeny publicznej (np. z Wikimedia Commons).

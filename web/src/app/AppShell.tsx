@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { LastEm } from '../ui/Em';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Gift, MoreHorizontal, X } from 'lucide-react';
 
@@ -185,7 +186,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className={styles.main}>
         <div className={styles.top}>
-          <h1 className={styles.title}>{title}</h1>
+          <h1 className={styles.title}><LastEm>{title}</LastEm></h1>
           <div className={styles.topRight}>
             <span className={styles.money}><Money value={game.state.balance} /></span>
             <button className={styles.daily} type="button" onClick={() => S.openDaily?.()}>

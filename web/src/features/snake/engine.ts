@@ -2,6 +2,8 @@
 // Wygląd od admina (/api/games/snake): kolor węża i tła, obrazki PNG głowy, ciała, jabłka i tła (głowa i ciało patrzą w prawo,
 // gra je obraca w stronę ruchu). Bez obrazków wszystko rysuje się samo.
 
+import { drawSkin, type Skin } from './skins';
+
 export const COLS = 20, ROWS = 20;
 type P = { x: number; y: number };
 export type Dir = 'up' | 'down' | 'left' | 'right';
@@ -31,6 +33,8 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   const ctx = canvas.getContext('2d')!;
   let look: SnakeLook = { color: '#4ade80', background: '#0d130f', images: {} };
   const imgs: Partial<Record<string, HTMLImageElement>> = {};
+  let skin: Skin | null = null;   // motyw inny niż domyślny: własny wygląd rysuje skins.ts (look od admina nie obowiązuje)
+  let prev: P[] = [], eatAt: P = { x: 0, y: 0 };
   let snake: P[] = [], dir: Dir = 'right', queue: Dir[] = [], apple: P = { x: 0, y: 0 };
   let phase: SnakeHud['phase'] = 'idle', score = 0, best = readBest(), record = false;
   let stepMs = START_MS, acc = 0, last = 0, raf = 0, eatFx = 0, size = 0;
@@ -41,6 +45,7 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
     const y = Math.floor(ROWS / 2);
     snake = [{ x: 6, y }, { x: 5, y }, { x: 4, y }];
     dir = 'right'; queue = []; score = 0; record = false; stepMs = START_MS; acc = 0;
+    prev = snake;
     placeApple();
   }
   function placeApple() {
@@ -55,9 +60,11 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
     const eats = next.x === apple.x && next.y === apple.y;
     const body = eats ? snake : snake.slice(0, -1);   // ogon ucieka w tym samym kroku, więc można w niego wjechać, gdy nie jemy
     if (next.x < 0 || next.y < 0 || next.x >= COLS || next.y >= ROWS || body.some(s => s.x === next.x && s.y === next.y)) return gameOver();
+    prev = snake;
+    snake = snake.slice();
     snake.unshift(next);
     if (eats) {
-      score++; eatFx = 1;
+      score++; eatFx = 1; eatAt = apple;
       stepMs = Math.max(MIN_MS, stepMs - FASTER);
       if (score > best) { best = score; record = true; try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* bez zapisu */ } }
       placeApple();
@@ -92,6 +99,10 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   const dirOf = (a: P, b: P): Dir => b.x > a.x ? 'left' : b.x < a.x ? 'right' : b.y > a.y ? 'up' : 'down';   // kierunek ruchu od b do a
 
   function draw(t: number) {
+    if (skin) {
+      drawSkin(skin, ctx, canvas, { size, cols: COLS, rows: ROWS, snake, prev, dir, apple, phase, prog: phase === 'play' ? Math.min(1, acc / stepMs) : 1, eatFx, eatAt, t });
+      return;
+    }
     const c = cell();
     ctx.fillStyle = look.background;
     ctx.fillRect(0, 0, size, size);
@@ -196,6 +207,7 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
       queue.push(d);
       ev.turn?.();
     },
+    setSkin(k: Skin | null) { skin = k; },
     setLook(l: SnakeLook) {
       look = l;
       for (const k of ['head', 'body', 'apple', 'bg']) {

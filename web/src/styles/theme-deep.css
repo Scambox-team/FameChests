@@ -1,0 +1,191 @@
+/* Wspólna konstrukcja „głębokich” motywów (Warm Editorial i Frutiger Aero): jasne motywy, w których ciemne sceny gry
+   (kasyno, otwieranie skrzynek, quest, sklep) są „wyspami” z własną paletą, a kafelki, panele i przyciski mają jasne wersje.
+   Kolory daje motyw przez zmienne (patrz theme-warm.css i theme-aero.css):
+     --deep-hover  tło elementu pod kursorem        --deep-shadow  trójka rgb cienia (np. 43 26 13)
+     --deep-top    tło paska górnego                --deep-gold    złoty akcent jasnego tła
+     --isl-*       paleta wyspy (ground, surface, raised, rule, control, text, muted, faint) oraz --isl-stage (tło scen pełnoekranowych),
+                   --isl-hero, --isl-car-a / --isl-car-b (sklep: panel skrzynki i karuzela)
+   Ładowany przed theme-warm.css i theme-aero.css: motyw może coś nadpisać własną regułą o tej samej wadze. */
+
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) { --deep-on: 1; }
+
+/* ---------- wyspy: ciemne sceny z własną paletą i jasnym tekstem ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) :is(.cs-page, .stage, .rv, .rcp, [class*="_quest_"], [class*="_questCtf_"], [class*="_hero_"]:has(> [class*="_scene_"]), [class*="_wrap_"]:has(> [class*="_track_"])) {
+  color-scheme: dark;
+  --ground: var(--isl-ground);
+  --surface: var(--isl-surface);
+  --raised: var(--isl-raised);
+  --rule: var(--isl-rule);
+  --control: var(--isl-control);
+  --text: var(--isl-text);
+  --muted: var(--isl-muted);
+  --faint: var(--isl-faint);
+  color: var(--text);
+}
+
+/* ---------- tło Ambient: tylko jego własne elementy (siatka kart ekwipunku też ma w nazwie „grid”) ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_ambient_"] { background: transparent; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_ambient_"] > [class*="_glowC_"] { opacity: 0; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_ambient_"] > [class*="_motes_"] { display: none; }
+
+/* ---------- pasek boczny, górny i dolny ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_link_"] { color: var(--muted); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_link_"]:hover,
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_nav_"] button[class*="_link_"]:hover { background-color: var(--deep-hover); color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_link_"][class*="_on_"] svg { color: var(--hue); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_daily_"]:hover { background-color: var(--deep-hover); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_sheetBack_"] { background: rgb(var(--deep-shadow) / .45); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_sheet_"] { box-shadow: 18px 0 50px rgb(var(--deep-shadow) / .2), inset -1px 0 0 var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"] { color: var(--muted); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"]:hover { color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"]:active { background-color: var(--deep-hover); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"][class*="_on_"] { color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_icon_"]:hover { background-color: var(--deep-hover); color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_legal_"] a:hover { color: var(--text); }
+
+/* ---------- panele, okna, ustawienia ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_sep_"] { border-top-color: var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_lang_"] { background: rgb(var(--deep-shadow) / .08); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_lang_"] button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_toast_"] { background: var(--raised); box-shadow: inset 0 0 0 1px var(--rule), 0 10px 24px -10px rgb(var(--deep-shadow) / .4); }
+
+/* ---------- przyciski, pola, zakładki ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_btn_"]:hover { background-color: var(--deep-hover); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_quiet_"][class*="_btn_"]:hover { color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) select,
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) textarea { background-color: var(--raised); color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_search_"],
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_select_"] select { background-color: var(--raised); border-color: var(--control); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_search_"] input { background: none; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tabs_"] button:hover { background-color: var(--deep-hover); color: var(--text); }
+
+/* ---------- strona startowa: jasne kafelki ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"]:hover { background-color: var(--raised); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"][class*="_crates_"],
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"][class*="_crates_"]:hover {
+  background: radial-gradient(70% 60% at 62% 30%, color-mix(in srgb, var(--hue) 24%, transparent), transparent 70%), var(--surface);
+  box-shadow: inset 0 0 0 1px var(--rule), var(--deep-lift);
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"][class*="_crates_"]:hover { background: radial-gradient(70% 60% at 62% 30%, color-mix(in srgb, var(--hue) 32%, transparent), transparent 70%), var(--raised); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_shelf_"]::after { background: radial-gradient(50% 50% at 50% 50%, rgb(var(--deep-shadow) / .27), transparent 70%); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_crate_"][class*="_main_"] { filter: drop-shadow(0 22px 20px rgb(var(--deep-shadow) / .33)); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"][class*="_arena_"] { background: radial-gradient(80% 60% at 50% 25%, color-mix(in srgb, var(--bad) 14%, transparent), transparent 70%), var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_swords_"] { color: var(--bad); opacity: .5; filter: none; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) a[class*="_tile_"] [class*="_board_"] { background: repeating-conic-gradient(rgb(var(--deep-shadow) / .05) 0 25%, transparent 0 50%) 50% 50% / 56px 56px; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_knight_"] { color: var(--text); filter: drop-shadow(0 14px 14px rgb(var(--deep-shadow) / .27)); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_dice_"] { color: var(--deep-gold); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"][class*="_casino_"],
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"][class*="_games_"] { box-shadow: inset 0 0 0 1px var(--rule); }
+/* wydarzenia: zwykły kafelek jasny, motywy świąteczne zostają ciemną wyspą */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tile_"]:has(> [class*="_deco_"]):not([class*="_ev_"]) { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_ev_"]:not([class*="_ev_niepodleglosc"]) {
+  --text: var(--isl-text); --muted: var(--isl-muted); --faint: var(--isl-faint); color: var(--text);
+}
+
+/* ---------- sklep: karuzela i panel skrzynki to ciemne sceny 3D, nagłówek ekranu jest jasny ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_hero_"]:has(> [class*="_scene_"]) { background: color-mix(in srgb, var(--hue) 22%, var(--isl-hero)); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) { background: color-mix(in srgb, var(--hue) 12%, var(--surface)); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_hero_"]:not(:has(> [class*="_scene_"]))::before { opacity: .22; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_stats_"] div { background: color-mix(in srgb, var(--raised) 70%, transparent); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_icon_"] { color: var(--hue); opacity: .35; filter: none; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_wrap_"]:has(> [class*="_track_"]) { background: radial-gradient(46% 70% at 50% 42%, color-mix(in srgb, var(--hue) 36%, transparent), transparent 72%), linear-gradient(var(--isl-car-a), var(--isl-car-b)); }
+
+/* ---------- Snake: panel z wynikiem jasny, plansza ciemna ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-score div,
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-reward { background: var(--raised); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-score b { color: var(--text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-score div:first-child b { color: var(--deep-gold); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-won { color: var(--deep-gold) !important; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-reward svg { color: var(--deep-gold); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-pad button { background: var(--raised); color: var(--text); box-shadow: inset 0 0 0 1px var(--rule); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-help kbd { background: rgb(var(--deep-shadow) / .1); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .sn-board { box-shadow: 0 0 0 1px var(--rule), 0 18px 40px -18px rgb(var(--deep-shadow) / .4); }
+
+/* ---------- sceny pełnoekranowe (otwieranie skrzynki, odsłonięcie, paragon, podgląd karty): tło w palecie motywu ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .viewer { background: radial-gradient(ellipse 70% 60% at 35% 50%, var(--isl-surface), var(--isl-stage) 75%); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .stage-bg { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--hue) 22%, var(--isl-surface)), var(--isl-stage)); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .rv,
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .crate-overlay { background: var(--isl-stage); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .rcp { background: radial-gradient(circle at 50% 40%, var(--isl-surface), var(--isl-stage) 75%); }
+
+/* ---------- kasyno: sukno i złoto z palety motywu ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page {
+  --cs-gold: var(--deep-casino-gold);
+  --cs-gold-dk: var(--deep-casino-gold-dk);
+  --cs-felt: var(--deep-felt);
+  --cs-felt-dk: var(--deep-felt-dk);
+}
+
+/* ---------- szachy: szachownica w palecie motywu ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) #view-games { --sq-lt: var(--deep-sq-lt); --sq-dk: var(--deep-sq-dk); --sq-lt-c: var(--deep-sq-dk); --sq-dk-c: var(--deep-sq-lt); }
+
+/* ---------- telefon: aktywna pozycja dolnego paska to sam kolor, bez tabliczki ---------- */
+@media (max-width: 820px) {
+  :root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) [class*="_tabbar_"] [class*="_link_"][class*="_on_"] { background: none; box-shadow: none; color: var(--hue); text-shadow: none; }
+}
+
+/* ---------- nagłówek ekranu w kasynie: kasyno to wyspa, więc jego nagłówek ma ciemne tło i jasny tekst ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page [class*="_hero_"]:not(:has(> [class*="_scene_"])) {
+  padding: 24px 28px; border-radius: var(--radius); min-height: 168px;
+  background: color-mix(in srgb, var(--hue) 20%, var(--isl-hero)); box-shadow: none;
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page [class*="_hero_"]:not(:has(> [class*="_scene_"])) h2 { color: var(--text); text-shadow: none; }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_stats_"] div { background: rgb(0 0 0 / .3); box-shadow: none; }
+
+/* karta ze światłem pod kursorem (React Bits SpotlightCard w sklepie) ma w kodzie ciemne tło: bierze kolor z palety (w wyspie ciemny) */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .spotlight-card { background-color: color-mix(in srgb, var(--surface) 92%, transparent) !important; }
+
+/* ---------- kasyno i gry: stoły, kafelki, scena w palecie motywu (zmienne --deep-rl-* / --deep-tile-* ustawia motyw) ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page {
+  --deep-rl-red: #c62828; --deep-rl-black: #16181d; --deep-rl-green: #0f9d58;
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-red { background: var(--deep-rl-red); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-black { background: var(--deep-rl-black); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-green { background: var(--deep-rl-green); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-out { background: color-mix(in srgb, var(--cs-felt) 70%, #000); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-redbet { background: var(--deep-rl-red); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .rl-cell.c-blackbet { background: var(--deep-rl-black); }
+/* blackjack: środek sukna z palety (w casino-fx.css było na sztywno #13874c) */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .bj-felt {
+  background:
+    radial-gradient(70% 55% at 50% 40%, #ffffff18, transparent 70%),
+    repeating-linear-gradient(45deg, #ffffff05 0 2px, transparent 2px 5px),
+    radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--cs-felt) 72%, #fff), var(--cs-felt) 55%, var(--cs-felt-dk));
+  box-shadow: 0 0 0 3px var(--cs-gold), 0 0 0 12px var(--deep-rail, #3b1a0d), 0 0 0 14px var(--deep-rail-dk, #1a0b05), inset 0 0 50px #000a, 0 20px 40px #0009;
+}
+/* poker: stół */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .pk-table { --felt: var(--deep-felt); --felt-2: var(--deep-felt-dk); --gold: var(--deep-casino-gold); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .pk-felt {
+  background: radial-gradient(60% 70% at 50% 45%, color-mix(in srgb, var(--deep-felt) 72%, #fff) 0%, var(--deep-felt) 45%, var(--deep-felt-dk) 100%);
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .pk-rim {
+  background:
+    radial-gradient(120% 140% at 50% -20%, #ffffff22, transparent 50%),
+    var(--deep-rim, repeating-linear-gradient(100deg, #5a2f17 0 7px, #4a2512 7px 13px, #62351b 13px 19px));
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .pk-felt::after { border-color: color-mix(in srgb, var(--deep-casino-gold) 30%, transparent); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .pk-logo { color: color-mix(in srgb, var(--deep-casino-gold) 38%, transparent); }
+/* scena 3D (ruletka, automat): tło z palety wyspy zamiast czerni */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-stage {
+  background:
+    radial-gradient(60% 55% at 50% 42%, color-mix(in srgb, var(--hue) 28%, transparent), transparent 75%),
+    radial-gradient(90% 70% at 50% 110%, color-mix(in srgb, var(--isl-stage) 60%, #000), transparent 70%),
+    var(--isl-stage);
+}
+/* automat 2D */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .sl-top { background: var(--deep-slot-top, linear-gradient(180deg, #e8202f, #9a0d18)); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .cs-page .sl-window { background: var(--deep-slot-window, linear-gradient(180deg, #d9dde4, #8c939e 50%, #c4c9d1)); }
+
+/* ---------- zakładka Gry: kolumna boczna pinballa i Snake'a to wyspa (na zdjęciu / piasku nie ma własnego tła) ---------- */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) :is(.pb-side, .sn-side) {
+  --ground: var(--isl-ground); --surface: var(--isl-surface); --raised: var(--isl-raised); --rule: var(--isl-rule);
+  --control: var(--isl-control); --text: var(--isl-text); --muted: var(--isl-muted); --faint: var(--isl-faint);
+  color: var(--text); padding: 14px; border-radius: var(--radius-m); background: var(--isl-ground);
+  box-shadow: var(--deep-gry-edge, none);
+}
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) :is(.pb-help, .sn-help) { background: var(--isl-surface); border-color: var(--isl-rule); color: var(--isl-text); }
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) :is(.pb-level, .sn-score div, .sn-reward) { background: var(--isl-raised); color: var(--isl-text); }
+
+/* ruletka 3D jest tłem całej strony: żaden przodek płótna .rl-bg nie może mieć backdrop-filter (płótno fixed przestaje wtedy być na cały ekran) */
+:root:is([data-theme="warm"], [data-theme="aero"], [data-theme="vapor"]) .panel:has(.rl-bg) { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }

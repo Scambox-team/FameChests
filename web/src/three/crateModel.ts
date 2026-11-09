@@ -2,6 +2,7 @@
 // Model skrzynki wspólny dla sceny w sklepie, ikon skrzynek i wielkiego odsłonięcia karty.
 // Geometrie i materiały tworzy się raz na renderer, kolejne skrzynki są tylko kopiami siatek.
 import * as THREE from 'three';
+import { sceneTheme } from './sceneTheme';
 
 export const LID_OPEN = -1.95;
 
@@ -59,9 +60,10 @@ export function emblemTexture(d, c1, c2, emoji = '') {
 
 /** Proste otoczenie, żeby metal miał w czym się odbijać */
 export function crateEnvironment(renderer) {
+  const th = sceneTheme();
   const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color('#15161a');
-  for (const [x, y, z, s, c] of [[0, 6, 2, 8, '#ffffff'], [-6, 1, 3, 3, '#ffffff'], [6, 2, -2, 4, '#8fa3c8']]) {
+  envScene.background = new THREE.Color(th.envBg);
+  for (const [x, y, z, s, c] of th.envPanels) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, .2), new THREE.MeshBasicMaterial({ color: c }));
     m.position.set(x, y, z); m.lookAt(0, 0, 0); envScene.add(m);
   }
@@ -72,10 +74,13 @@ export function crateEnvironment(renderer) {
 
 /** Zestaw do budowania skrzynek: wspólne geometrie i materiały, kolory zmienia setLook */
 export function crateKit() {
+  const th = sceneTheme(), tm = th.mats;
+  // motyw ze szklanym lakierem (Frutiger Aero) używa materiału fizycznego z warstwą lakieru
+  const paint = (p) => p.clearcoat ? new THREE.MeshPhysicalMaterial(p) : new THREE.MeshStandardMaterial(p);
   const mat = {
-    body: new THREE.MeshStandardMaterial({ roughness: .62, metalness: .05 }),
-    lid: new THREE.MeshStandardMaterial({ roughness: .5, metalness: .05 }),
-    trim: new THREE.MeshStandardMaterial({ color: '#3a3c43', roughness: .3, metalness: .92 }),
+    body: paint(tm.body),
+    lid: paint(tm.lid),
+    trim: new THREE.MeshStandardMaterial(tm.trim),
     emblem: new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1 }),
     // światło ze środka widać dopiero po uchyleniu wieka
     inner: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0 })

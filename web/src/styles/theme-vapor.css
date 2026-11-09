@@ -1,0 +1,264 @@
+/* Motyw Vaporwave (eksperymentalny, Ustawienia): neonowy zachód słońca z pasiastym słońcem i siatką na horyzoncie, róż, fiolet
+   i błękit, szeroki krój Michroma, okna jak z Windows 95 z kolorowym paskiem tytułu, japońskie napisy jak z kaset z lat 90.
+   Włącza go data-theme="vapor" na <html> (styles/theme.ts, localStorage `theme`). Wszystkie reguły siedzą pod
+   :root[data-theme="vapor"]. Wspólną konstrukcję (wyspy, kafelki, sceny pełnoekranowe) ma theme-deep.css, sceny 3D barwi
+   `three/sceneTheme.ts` (VAPOR). W odróżnieniu od Warm i Aero ma domyślnie włączone 3D, więc płaskie skrzynki (.fc-x) są tu tylko zapasowe. */
+
+:root[data-theme="vapor"] {
+  color-scheme: dark;
+  --ground: #1b0b33;
+  --surface: #2c1257d6;           /* szkło: półprzezroczysty fiolet, pod nim widać zachód słońca */
+  --raised: #3d1d7aeb;
+  --rule: #8a4fe0;
+  --control: #c28bff;
+  --text: #fff5fe;                /* na --surface około 15:1 */
+  --muted: #ecd2ff;               /* około 11:1 */
+  --faint: #c4a3ee;               /* około 6:1 */
+  --hue: #ff71ce !important;      /* gorący róż; nadpisuje kolor skrzynki ustawiany w stylu <html> */
+  --on-hue: #1b0b33 !important;   /* ciemny tekst na różu: około 8:1 */
+  --good: #05ffa1;
+  --bad: #ff5c8a;
+  --warn: #fffb96;
+  --radius: 6px;
+  --radius-m: 4px;
+  --radius-s: 3px;
+  --display: "Michroma", "Orbitron", "Hanken Grotesk", system-ui, sans-serif;
+  --body: "Hanken Grotesk", system-ui, sans-serif;
+  scrollbar-color: #ff71ce #1b0b33;
+
+  /* zmienne wspólnej konstrukcji (theme-deep.css) */
+  --deep-hover: #ffffff1f;
+  --deep-shadow: 18 6 44;
+  --deep-lift: 0 0 26px #ff71ce55;
+  --deep-gold: #fffb96;
+  --deep-casino-gold: #fffb96; --deep-casino-gold-dk: #ff9ee6; --deep-felt: #8a1fb0; --deep-felt-dk: #3a0a66;
+  --deep-sq-lt: #f3d6ff; --deep-sq-dk: #8a4fe0;
+  --isl-ground: #0e0522; --isl-surface: #220d48; --isl-raised: #321468; --isl-rule: #6a2fc0; --isl-control: #9d5fe8;
+  --isl-text: #fff5fe; --isl-muted: #ecd2ff; --isl-faint: #c4a3ee;
+  --isl-stage: #0b0319; --isl-hero: #2a0a4e; --isl-car-a: #321468; --isl-car-b: #14062e;
+}
+:root[data-theme="vapor"] ::selection { background: #ff71ce; color: #1b0b33; }
+:root[data-theme="vapor"] :focus-visible { outline-color: #01cdfe; }
+
+/* ---------- tło: zachód słońca, pasiaste słońce i siatka uciekająca do horyzontu (gradienty i jedna animowana transformacja) ---------- */
+:root[data-theme="vapor"] body {
+  background-color: #12062a;
+  background-image: linear-gradient(180deg, #1b0b3a 0%, #4a1590 20%, #9b2fc9 38%, #ff4fa3 52%, #ff8f6b 59%, #ffd36e 62%, #2a0d55 62.1%, #12062a 100%);
+  background-attachment: fixed;
+}
+/* słońce: koło z poziomymi pasami wycinającymi dolną połowę */
+:root[data-theme="vapor"]::before {
+  content: ""; position: fixed; left: calc(50% - 18vmin); top: calc(62vh - 36vmin); width: 36vmin; height: 36vmin; z-index: -2; pointer-events: none; border-radius: 50%;
+  background: linear-gradient(180deg, #fff27a 0%, #ffb35e 38%, #ff4fa3 100%);
+  -webkit-mask-image: linear-gradient(#000 0 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88% 95%, #000 95%);
+  mask-image: linear-gradient(#000 0 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88% 95%, #000 95%);
+  box-shadow: 0 0 80px 10px #ff71ce66;
+}
+/* siatka podłogi w perspektywie, przesuwa się w stronę widza */
+:root[data-theme="vapor"] #root::before {
+  content: ""; position: fixed; left: -70vw; right: -70vw; top: 62vh; height: 130vh; z-index: -1; pointer-events: none; will-change: transform;
+  transform-origin: 50% 0; transform: perspective(420px) rotateX(64deg);
+  background: linear-gradient(#ff71ce 2px, transparent 2px) 0 0 / 90px 90px, linear-gradient(90deg, #01cdfe 2px, transparent 2px) 0 0 / 90px 90px;
+  -webkit-mask-image: linear-gradient(transparent 0%, #000 22%, #000 100%); mask-image: linear-gradient(transparent 0%, #000 22%, #000 100%);
+  opacity: .7; animation: vpGrid 3.2s linear infinite;
+}
+@keyframes vpGrid { from { transform: perspective(420px) rotateX(64deg) translateY(0); } to { transform: perspective(420px) rotateX(64deg) translateY(90px); } }
+/* pionowy napis katakana z boku */
+:root[data-theme="vapor"] body::after {
+  content: "ヴェイパーウェイヴ　ＡＥＳＴＨＥＴＩＣ"; position: fixed; right: 8px; top: 90px; z-index: 0; pointer-events: none; writing-mode: vertical-rl;
+  font: 600 15px/1 "Hanken Grotesk", sans-serif; letter-spacing: .5em; color: #ff71ce; opacity: .35; text-shadow: 0 0 10px #ff71ce;
+}
+:root[data-theme="vapor"] [class*="_ambient_"] > [class*="_glowA_"] { opacity: .2; background: radial-gradient(circle, #ff71ce, transparent 65%); }
+:root[data-theme="vapor"] [class*="_ambient_"] > [class*="_glowB_"] { opacity: .16; background: radial-gradient(circle, #01cdfe, transparent 65%); }
+:root[data-theme="vapor"] [class*="_ambient_"] > [class*="_grid_"],
+:root[data-theme="vapor"] [class*="_ambient_"] > [class*="_grain_"] { display: none; }
+@media (max-width: 820px) { :root[data-theme="vapor"] body::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="vapor"] #root::before { animation: none; } }
+
+/* ---------- krój: szeroki, wersaliki z rozstrzelonymi literami i rozbieżnym różowo-błękitnym cieniem ---------- */
+:root[data-theme="vapor"] h1,
+:root[data-theme="vapor"] [class*="_title_"],
+:root[data-theme="vapor"] [class*="_brand_"],
+:root[data-theme="vapor"] [class*="_head_"] h2,
+:root[data-theme="vapor"] .panel h3 { font-weight: 400; letter-spacing: .08em; text-transform: uppercase; text-shadow: 2px 0 #01cdfe, -2px 0 #ff71ce; }
+:root[data-theme="vapor"] [class*="_money_"] { font-weight: 400; letter-spacing: .04em; text-shadow: 0 0 10px #05ffa1; color: #05ffa1; }
+
+/* ---------- szyba: półprzezroczyste, rozmyte panele z różowo-błękitną neonową ramką (tylko komputer) ---------- */
+:root[data-theme="vapor"] .panel,
+:root[data-theme="vapor"] [class*="_box_"]:not([class*="_toast"]),
+:root[data-theme="vapor"] [class*="_pop_"] { background: var(--surface); box-shadow: inset 0 0 0 1px #01cdfe55, 0 0 0 1px #ff71ce88, 0 0 26px -6px #ff71ce88; }
+@media (min-width: 821px) {
+  :root[data-theme="vapor"] :is(.panel, [class*="_box_"], [class*="_pop_"], [class*="_sheet_"], [class*="_side_"], [class*="_search_"],
+      [class*="_hero_"]:not(:has(> [class*="_scene_"])), [class*="_home_"] [class*="_tile_"]:not([class*="_quest_"])) {
+    -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3);
+  }
+}
+
+/* ---------- pasek boczny, górny, nawigacja ---------- */
+:root[data-theme="vapor"] [class*="_side_"] { background: #1a0b33dd; box-shadow: inset -2px 0 0 #ff71ce, 6px 0 40px -10px #ff71ce88; }
+:root[data-theme="vapor"] [class*="_link_"][class*="_on_"] { background: linear-gradient(90deg, #ff71ce, #b967ff); color: #1b0b33; box-shadow: 0 0 18px #ff71ce99; font-weight: 700; }
+:root[data-theme="vapor"] [class*="_link_"][class*="_on_"] svg { color: #1b0b33; }
+:root[data-theme="vapor"] [class*="_tabbar_"] { background: #1a0b33f0; box-shadow: 0 -2px 0 #ff71ce, 0 -10px 30px -10px #ff71ce88; }
+:root[data-theme="vapor"] [class*="_tabbar_"] [class*="_link_"][class*="_on_"] { background: none; box-shadow: none; color: #ff71ce; text-shadow: 0 0 10px #ff71ce; }
+:root[data-theme="vapor"] [class*="_tabbar_"] [class*="_link_"][class*="_on_"] svg { color: #ff71ce; }
+@media (min-width: 821px) {
+  /* pasek górny jak pasek tytułu okna z Windows 95: kolorowy gradient i neonowa ramka */
+  :root[data-theme="vapor"] [class*="_app_"] > main > [class*="_top_"] {
+    top: 12px; margin-inline: 0; padding: 8px 12px 8px 22px; border-radius: 4px;
+    background: linear-gradient(90deg, #5a1fa8f0, #2c1257f0 60%, #1b0b33f0); box-shadow: 0 0 0 2px #ff71ce, 0 0 0 4px #01cdfe55, 0 0 34px -4px #ff71ce99;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  :root[data-theme="vapor"] [class*="_app_"] > main > [class*="_top_"] [class*="_title_"] { font-size: 24px; line-height: 32px; }
+  :root[data-theme="vapor"] [class*="_app_"] > main > [class*="_top_"] [class*="_money_"] { font-size: 20px; }
+}
+
+/* ---------- przyciski, pola, zakładki ---------- */
+:root[data-theme="vapor"] [class*="_btn_"],
+:root[data-theme="vapor"] [class*="_daily_"] { border: 2px solid #01cdfe; border-radius: 3px; background-color: #2c1257; color: var(--text); font-weight: 600; letter-spacing: .03em; transition: box-shadow .15s, transform .12s; }
+:root[data-theme="vapor"] [class*="_btn_"]:not(:disabled):hover,
+:root[data-theme="vapor"] [class*="_daily_"]:hover { background-color: #3d1d7a; box-shadow: 0 0 16px #01cdfe, inset 0 0 12px #01cdfe44; transform: translateY(-1px); }
+:root[data-theme="vapor"] [class*="_quiet_"][class*="_btn_"] { border-color: transparent; background: none; }
+:root[data-theme="vapor"] [class*="_hue_"][class*="_btn_"] { background: linear-gradient(90deg, #ff71ce, #b967ff); border-color: #fff; color: #1b0b33; font-weight: 700; box-shadow: 3px 3px 0 #01cdfe, 0 0 18px #ff71ce99; }
+:root[data-theme="vapor"] [class*="_hue_"][class*="_btn_"]:not(:disabled):hover { box-shadow: 4px 4px 0 #01cdfe, 0 0 26px #ff71ce; background: linear-gradient(90deg, #ff9ee6, #c98cff); }
+:root[data-theme="vapor"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="vapor"] select,
+:root[data-theme="vapor"] textarea { border: 2px solid #8a4fe0; background-color: #1a0b33; color: var(--text); }
+:root[data-theme="vapor"] input:focus,
+:root[data-theme="vapor"] select:focus,
+:root[data-theme="vapor"] textarea:focus { border-color: #01cdfe; box-shadow: 0 0 14px #01cdfe88; outline: none; }
+:root[data-theme="vapor"] input[type="range"],
+:root[data-theme="vapor"] input[type="checkbox"],
+:root[data-theme="vapor"] input[type="radio"] { accent-color: #ff71ce; }
+:root[data-theme="vapor"] ::placeholder { color: #b894e8; opacity: 1; }
+:root[data-theme="vapor"] [class*="_tabs_"] button { border-radius: 3px; border: 1px solid #8a4fe0; }
+:root[data-theme="vapor"] [class*="_tabs_"] button[aria-selected="true"] { background: #ff71ce; color: #1b0b33; border-color: #fff; font-weight: 700; box-shadow: 0 0 16px #ff71ce99; }
+:root[data-theme="vapor"] .a-page { --hue: #ff71ce; }
+
+/* ---------- okna dialogowe jak okna Windows 95: fazowana ramka i kolorowy pasek tytułu ---------- */
+:root[data-theme="vapor"] [class*="_back_"] { background: rgb(14 5 34 / .62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+:root[data-theme="vapor"] [class*="_back_"] > [class*="_box_"] { border: 3px outset #c28bff; border-radius: 2px; background: #2c1257f5; padding: 22px; box-shadow: 8px 8px 0 #12062a, 0 0 40px -6px #ff71ce99; }
+:root[data-theme="vapor"] [class*="_back_"] > [class*="_box_"] > [class*="_head_"] { margin: -22px -22px 6px; padding: 8px 12px 8px 18px; background: linear-gradient(90deg, #ff71ce, #b967ff 55%, #01cdfe); }
+:root[data-theme="vapor"] [class*="_back_"] > [class*="_box_"] > [class*="_head_"] h2 { color: #1b0b33; text-shadow: none; font-size: 16px; line-height: 22px; }
+:root[data-theme="vapor"] [class*="_back_"] > [class*="_box_"] > [class*="_head_"] button { color: #1b0b33; }
+
+/* ---------- nagłówek ekranu: pasiasty zachód słońca za tekstem ---------- */
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) {
+  background: linear-gradient(90deg, #1b0b33f2 0%, #1b0b33aa 55%, #1b0b3322 100%), linear-gradient(135deg, #ff71ce, #b967ff 50%, #01cdfe);
+  box-shadow: 0 0 0 2px #ff71ce, 0 0 34px -6px #ff71ce99;
+}
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) h2 { font-size: clamp(24px, 2.6vw, 38px); }
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_icon_"] { color: #fff; opacity: .55; filter: drop-shadow(0 0 14px #ff71ce); }
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_stats_"] div { background: #12062a99; box-shadow: inset 0 0 0 1px #01cdfe88; }
+:root[data-theme="vapor"] [class*="_hero_"]:has(> [class*="_scene_"]) { background: linear-gradient(135deg, #3d1d7a, #1b0b33); box-shadow: 0 0 0 2px #ff71ce, 0 0 34px -6px #ff71ce99; }
+:root[data-theme="vapor"] [class*="_wrap_"]:has(> [class*="_track_"]) { background: radial-gradient(46% 70% at 50% 46%, color-mix(in srgb, var(--hue) 40%, transparent), transparent 72%), linear-gradient(#3d1d7a, #1b0b33); box-shadow: 0 0 0 2px #01cdfe, 0 0 30px -6px #01cdfe; }
+:root[data-theme="vapor"] .cs-page [class*="_hero_"]:not(:has(> [class*="_scene_"])) { background: linear-gradient(90deg, #12062af2, #12062a99), linear-gradient(135deg, #ff71ce, #b967ff 50%, #01cdfe); }
+
+/* ---------- strona startowa: kafelki w kolorach zachodu słońca, na dole ciemna warstwa pod tekstem ---------- */
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"][class*="_crates_"],
+:root[data-theme="vapor"] [class*="_home_"] a[class*="_tile_"][class*="_crates_"]:hover { background: linear-gradient(0deg, #12062af0 0%, #12062a99 40%, transparent 70%), linear-gradient(160deg, #ff71ce, #b967ff 55%, #05c3ff); box-shadow: 0 0 0 2px #fff, 0 0 30px -4px #ff71ce; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"][class*="_arena_"] { background: linear-gradient(0deg, #12062af0 0%, #12062a99 40%, transparent 70%), linear-gradient(160deg, #5a1fa8, #ff4fa3); box-shadow: 0 0 0 2px #ff71ce, 0 0 30px -4px #ff71ce; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"][class*="_games_"] { background: linear-gradient(0deg, #12062af0 0%, #12062a99 40%, transparent 70%), linear-gradient(160deg, #01cdfe, #05ffa1); box-shadow: 0 0 0 2px #01cdfe, 0 0 30px -4px #01cdfe; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"][class*="_casino_"] { background: linear-gradient(0deg, #12062af0 0%, #12062a99 40%, transparent 70%), linear-gradient(160deg, #fffb96, #ff71ce); box-shadow: 0 0 0 2px #fffb96, 0 0 30px -4px #fffb96; }
+:root[data-theme="vapor"] [class*="_home_"] a[class*="_tile_"]:hover { filter: saturate(1.2) brightness(1.06); }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"] [class*="_name_"] { letter-spacing: .06em; text-transform: uppercase; text-shadow: 2px 0 #01cdfe, -2px 0 #ff71ce; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"] [class*="_board_"] { opacity: .5; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_cta_"] { background: linear-gradient(90deg, #ff71ce, #b967ff); color: #1b0b33; border: 2px solid #fff; border-radius: 3px; box-shadow: 3px 3px 0 #01cdfe; }
+
+/* ikony kafelków: neonowe rurki z poświatą */
+:root[data-theme="vapor"] [class*="_home_"] :is([class*="_swords_"], [class*="_knight_"]) { color: #fff; opacity: 1; stroke-width: 1.9px; filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 16px #ff71ce) drop-shadow(0 0 34px #ff71ce); }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_knight_"] { filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 16px #01cdfe) drop-shadow(0 0 34px #01cdfe); }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_wheel_"] > i { border: 6px solid #fff; background: repeating-conic-gradient(#ff71ce 0 10deg, #1b0b33 10deg 20deg); box-shadow: 0 0 0 3px #01cdfe, 0 0 34px #01cdfe, inset 0 0 22px #01cdfe55; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_dice_"] { color: #fffb96; stroke-width: 1.8px; filter: drop-shadow(0 0 8px #fffb96) drop-shadow(0 0 20px #ff71ce); }
+
+/* płaskie skrzynki (gdy gracz wyłączy 3D): neonowa obwódka i poświata */
+:root[data-theme="vapor"] svg:has(.fc-body) { overflow: visible; filter: drop-shadow(0 0 5px #ff71ce) drop-shadow(0 0 14px #b967ff99); }
+:root[data-theme="vapor"] .fc-body, :root[data-theme="vapor"] .fc-lid, :root[data-theme="vapor"] .fc-seal { stroke: #fff; stroke-width: 1.7; stroke-linejoin: round; }
+:root[data-theme="vapor"] svg .fc-band { display: inline; fill: #01cdfe; opacity: .6; }
+:root[data-theme="vapor"] svg .fc-shadow { display: inline; fill: #ff71ce; opacity: .28; filter: blur(3px); }
+:root[data-theme="vapor"] svg .fc-gloss { display: inline; fill: url(#fcGloss2); }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"] [class*="_name_"][class*="_big_"] { font-size: clamp(26px, 3.2vw, 46px); line-height: 1.05; letter-spacing: .03em; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_tile_"] [class*="_name_"] { font-size: clamp(18px, 1.8vw, 24px); overflow-wrap: break-word; }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_quest_"] [class*="_name_"] { font-size: 16px; letter-spacing: .02em; text-shadow: 1px 0 #01cdfe, -1px 0 #ff71ce; }
+
+/* =====================================================================================================
+   POSĄGI: marmurowe głowy z okładek vaporwave (vapor/CREDITS.txt) z efektem glitch: większość czasu stoją spokojnie, co kilka sekund
+   na ułamek sekundy przeskakują, zmieniają kolor i rozbijają się na różowy i błękitny obraz. Animacja rusza tylko transform i filtr.
+   ===================================================================================================== */
+:root[data-theme="vapor"] {
+  --vp-david: url("./vapor/david.webp");
+  --vp-helios: url("./vapor/helios.webp");
+}
+/* tło całej gry: dwie głowy przed zachodem słońca (stoją pod interfejsem, przebijają przez szkło) */
+:root[data-theme="vapor"] #root::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; will-change: transform, filter;
+  background: var(--vp-helios) no-repeat right 5vw bottom 0 / auto 66vh, var(--vp-david) no-repeat left 24vw bottom 0 / auto 46vh;
+  filter: drop-shadow(0 0 0 #ff71ce) drop-shadow(0 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88); animation: vpGlitch 7s infinite;
+}
+@keyframes vpGlitch {
+  0%, 91%, 100% { transform: none; filter: drop-shadow(0 0 0 #ff71ce) drop-shadow(0 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88) hue-rotate(0deg); }
+  92% { transform: translate(-6px, 1px) skewX(2deg); filter: drop-shadow(7px 0 0 #ff71ce) drop-shadow(-7px 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88) hue-rotate(40deg); }
+  93% { transform: translate(8px, -2px); filter: drop-shadow(-9px 0 0 #ff71ce) drop-shadow(9px 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88) hue-rotate(-60deg); }
+  94% { transform: translate(-3px, 3px) skewX(-3deg); filter: drop-shadow(5px 0 0 #ff71ce) drop-shadow(-5px 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88) hue-rotate(90deg) saturate(2); }
+  95% { transform: none; filter: drop-shadow(0 0 0 #ff71ce) drop-shadow(0 0 0 #01cdfe) drop-shadow(0 0 22px #ff71ce88) hue-rotate(0deg); }
+}
+/* Arena: zamiast mieczy Dawid z gumą balonową */
+:root[data-theme="vapor"] [class*="_home_"] [class*="_arenaArt_"] { background: var(--vp-david) no-repeat center bottom / auto 96%; animation: vpGlitch 7s 1.2s infinite; filter: drop-shadow(0 0 18px #ff71ce99); }
+:root[data-theme="vapor"] [class*="_home_"] [class*="_arenaArt_"] > svg { display: none; }
+/* nagłówek ekranu: głowa Heliosa po prawej */
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) { overflow: hidden; }
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"]))::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 1;
+  background: var(--vp-helios) no-repeat right 5% bottom -12% / auto 125%; animation: vpGlitch 9s 2s infinite; filter: drop-shadow(0 0 16px #ff71ce99);
+}
+:root[data-theme="vapor"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_icon_"] { display: none; }
+@media (max-width: 820px) { :root[data-theme="vapor"] #root::after { background-size: auto 40vh, auto 28vh; background-position: right -4vw bottom 64px, left 2vw bottom 64px; opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="vapor"] #root::after, :root[data-theme="vapor"] [class*="_arenaArt_"], :root[data-theme="vapor"] [class*="_hero_"]::after { animation: none; } }
+
+/* ======================= kasyno i gry: automat neonowy z salonu gier ======================= */
+:root[data-theme="vapor"] .cs-page {
+  --deep-rl-red: #ff2fa8; --deep-rl-black: #1a0b44; --deep-rl-green: #00c2a8;
+  --deep-rail: #5b1aa6; --deep-rail-dk: #1b0b33;
+  --deep-rim: linear-gradient(135deg, #ff71ce, #7b2fe0 45%, #01cdfe);
+  --deep-slot-top: linear-gradient(180deg, #ff71ce, #8a1fb0);
+  --deep-slot-window: linear-gradient(180deg, #5dd8ff, #3a6ee0 50%, #7b2fe0);
+}
+/* sukno: siatka neonowa na granacie */
+:root[data-theme="vapor"] .cs-page :is(.rl-board, .bj-felt, .pk-felt) {
+  background-image:
+    linear-gradient(#01cdfe22 1px, transparent 1px), linear-gradient(90deg, #01cdfe22 1px, transparent 1px),
+    radial-gradient(ellipse at 50% 45%, #5b1aa6, #2a0f66 60%, #12063a);
+  background-size: 26px 26px, 26px 26px, 100% 100%;
+}
+:root[data-theme="vapor"] .cs-page .rl-board { box-shadow: 0 0 0 2px #ff71ce, 0 0 0 4px #1b0b33, 0 0 0 6px #01cdfe, 0 0 30px #ff71ce88, inset 0 0 30px #000a; }
+:root[data-theme="vapor"] .cs-page .bj-felt { box-shadow: 0 0 0 3px #ff71ce, 0 0 0 12px #3a0f8a, 0 0 0 14px #01cdfe, 0 0 36px #ff71ce77, inset 0 0 50px #000a; }
+:root[data-theme="vapor"] .cs-page .bj-rules { color: #fffb96; text-shadow: 0 0 8px #ff71ce; }
+:root[data-theme="vapor"] .pk-felt { box-shadow: inset 0 0 0 3px #ff71ce, inset 0 0 0 5px #01cdfe, inset 0 0 60px #000a, 0 0 40px #ff71ce66; }
+:root[data-theme="vapor"] .pk-table .pk-rim { box-shadow: 0 40px 80px -30px #000, 0 0 30px #01cdfe77, inset 0 2px 0 #ffffff55, inset 0 -6px 14px #0009; }
+/* kafelki gier: neonowe pigułki */
+:root[data-theme="vapor"] .cs-game { background: linear-gradient(160deg, #3d1d7aeb, #1b0b33ee); box-shadow: inset 0 0 0 1px #8a4fe0; }
+:root[data-theme="vapor"] .cs-game::before { display: none; }
+:root[data-theme="vapor"] .cs-game b { font-family: var(--display); letter-spacing: .04em; text-transform: uppercase; font-size: 12px; text-shadow: 0 0 8px #ff71ce88; }
+:root[data-theme="vapor"] .cs-game:hover:not(:disabled) { box-shadow: inset 0 0 0 1px #01cdfe, 0 0 18px #01cdfe66; }
+:root[data-theme="vapor"] .cs-game.on { background: linear-gradient(160deg, #ff71ce, #7b2fe0 70%, #01cdfe); box-shadow: 0 0 22px #ff71ce99, inset 0 0 0 1px #fffb96; }
+:root[data-theme="vapor"] .cs-game.on :is(b, small, svg) { color: #1b0b33; text-shadow: none; }
+/* scena 3D: delikatna siatka i poświata, żeby koło nie ginęło */
+:root[data-theme="vapor"] .cs-stage {
+  background:
+    radial-gradient(60% 55% at 50% 45%, #ff71ce55, transparent 72%),
+    linear-gradient(#01cdfe18 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, #01cdfe18 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(180deg, #2a0f66, #12063a);
+}
+:root[data-theme="vapor"] .cs-stage::after { box-shadow: inset 0 0 50px 6px #12063acc; }
+:root[data-theme="vapor"] .cs-page .rl-big { box-shadow: 0 0 0 3px #01cdfe, 0 0 0 6px #1b0b33, 0 0 22px #ff71ce; }
+:root[data-theme="vapor"] .cs-page .rl-res.win { background: linear-gradient(90deg, #05ffa122, #ff71ce33, #05ffa122); box-shadow: inset 0 0 0 1px #ff71ce, 0 0 30px #ff71ce55; }
+:root[data-theme="vapor"] .cs-page .sl-sym.sl-seven { color: #ff71ce; text-shadow: 0 0 10px #ff71ce; }
+
+/* Gry: szafa pinballa już jest neonowa - dodajemy poświatę w kolorach motywu; Snake w neonowej ramie */
+:root[data-theme="vapor"] { --deep-gry-edge: 0 0 0 1px #8a4fe0, 0 0 22px #ff71ce55; }
+:root[data-theme="vapor"] .pb-cabinet { box-shadow: 0 0 36px #ff71cebb, 0 0 90px #01cdfe55, inset 0 0 30px rgba(157, 78, 221, .35); }
+:root[data-theme="vapor"] .sn-board { box-shadow: 0 0 0 2px #ff71ce, 0 0 0 5px #1b0b33, 0 0 0 7px #01cdfe, 0 0 40px #ff71ce88; }
+:root[data-theme="vapor"] .pb-dmd-score, :root[data-theme="vapor"] .sn-score b { text-shadow: 0 0 10px #ff71ce; }
+
+/* ruletka 3D jest tłem strony: rzeźby w tle nie mogą jej zasłaniać */
+:root[data-theme="vapor"]:has(.rl-bg) #root::after { display: none; }

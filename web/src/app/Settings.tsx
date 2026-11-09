@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { FlaskConical, Lock, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { lang, setLang } from '../i18n/i18n';
 import { Sound } from '../sound/sound';
-import { getTheme, setTheme, type Theme } from '../styles/theme';
+import { getTheme, isDeepTheme, setTheme, type Theme } from '../styles/theme';
 import { useGame } from '../game/store';
-import { hasWebGL, setUser3DOff, user3DOff } from '../three/support';
+import { deepDefault2D, hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
 import styles from './Settings.module.css';
 
@@ -30,7 +30,11 @@ export function SettingsPanel({ className }: { className?: string }) {
     setUser3DOff(!want);
     location.reload();
   };
-  const pickTheme = (t: Theme) => { setThemeState(t); setTheme(t); };
+  const pickTheme = (t: Theme) => {
+    const prev = getTheme();
+    setThemeState(t); setTheme(t);
+    if (isDeepTheme(prev) || isDeepTheme(t)) location.reload();   // sceny 3D i układ czytają motyw przy starcie
+  };
   const current: Theme = theme === 'aero' && !aeroOpen ? 'default' : theme;
 
   return (
@@ -48,7 +52,7 @@ export function SettingsPanel({ className }: { className?: string }) {
       <div className={styles.sep}>
         <label className={styles.check}>
           <input type="checkbox" checked={!user3DOff() && webgl} disabled={!webgl} onChange={e => toggle3d(e.target.checked)} />
-          <span><b>Grafika 3D</b><small>{webgl ? 'Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.' : 'Twoja przeglądarka nie obsługuje WebGL.'}</small></span>
+          <span><b>Grafika 3D</b><small>{!webgl ? 'Twoja przeglądarka nie obsługuje WebGL.' : deepDefault2D() ? 'W tym motywie domyślnie wyłączona: gra pokazuje jego własne ilustracje 2D. Włącz, jeśli wolisz modele 3D.' : 'Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.'}</small></span>
         </label>
       </div>
       <div className={styles.sep}>
@@ -73,6 +77,10 @@ export function SettingsPanel({ className }: { className?: string }) {
           <label className={styles.check}>
             <input type="radio" name="theme" checked={current === 'warm'} onChange={() => pickTheme('warm')} />
             <span><b>Warm Editorial</b><small>Kremowy papier, tusz, terakota i szeryfowe nagłówki.</small></span>
+          </label>
+          <label className={styles.check}>
+            <input type="radio" name="theme" checked={current === 'vapor'} onChange={() => pickTheme('vapor')} />
+            <span><b>Vaporwave</b><small>Neonowy zachód słońca, siatka, róż i błękit.</small></span>
           </label>
         </fieldset>
         <label className={styles.check}>

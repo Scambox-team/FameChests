@@ -4,6 +4,7 @@
 // z pierwszej osoby (oczami konia) i z góry. Przebieg liczy serwer; scena tylko odtwarza race.x i race.events w chwili T.
 import * as THREE from 'three';
 import { softDot } from './crateModel';
+import { sceneTheme } from './sceneTheme';
 
 const TAU = Math.PI * 2;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -146,7 +147,8 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
   const scene = new THREE.Scene();
-  const SKY = new THREE.Color('#05060c');
+  const th = sceneTheme();
+  const SKY = new THREE.Color(th.sky);
   scene.background = SKY;
   scene.fog = new THREE.FogExp2(SKY, .0075);
   const camera = new THREE.PerspectiveCamera(42, 1, .05, 400);
@@ -160,7 +162,7 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
   const dot = keep(softDot());
 
   // ---------------------------------------------------------------- stadion
-  const ground = new THREE.Mesh(keep(new THREE.CircleGeometry(160, 64)), keep(new THREE.MeshStandardMaterial({ color: '#08130b', roughness: 1 })));
+  const ground = new THREE.Mesh(keep(new THREE.CircleGeometry(160, 64)), keep(new THREE.MeshStandardMaterial({ color: th.turf, roughness: 1 })));
   ground.rotation.x = -Math.PI / 2; ground.position.y = -.02; scene.add(ground);
   const outerGrass = new THREE.Mesh(keep(new THREE.RingGeometry(R_OUT, 33, 128)), keep(new THREE.MeshStandardMaterial({ map: keep(grassTexture()), roughness: 1 })));
   outerGrass.rotation.x = -Math.PI / 2; outerGrass.position.y = -.01; scene.add(outerGrass);
@@ -253,6 +255,7 @@ export function createHorsesScene(canvas: HTMLCanvasElement, o: {
   for (let i = 0; i < 1400; i++) { const a = Math.random() * TAU, e = Math.random() * .9 + .08, r = 190; starPos.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
   const stars = new THREE.Points(keep(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3))), keep(new THREE.PointsMaterial({ color: '#cfd8ff', size: .8, sizeAttenuation: false, fog: false })));
   scene.add(stars);
+  if (th.id === 'aero') stars.visible = false;   // w dzień nie ma gwiazd
   // flesze aparatów na trybunie
   const FL = 40, flashGeo = keep(new THREE.BufferGeometry()), flashPos = new Float32Array(FL * 3), flashCol = new Float32Array(FL * 3);
   flashGeo.setAttribute('position', new THREE.BufferAttribute(flashPos, 3)); flashGeo.setAttribute('color', new THREE.BufferAttribute(flashCol, 3));

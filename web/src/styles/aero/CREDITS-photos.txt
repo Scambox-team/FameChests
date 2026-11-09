@@ -1,0 +1,19 @@
+Grafiki motywu Frutiger Aero (web/src/styles/aero/).
+
+Pięć tapet (bg, bubble, fish, ladybug, blades) dostarczył twórca gry; pochodzą z ogólnodostępnych serwisów z tapetami
+i ich autorzy oraz licencje nie są ustalone. Plik bubble.webp został przycięty, żeby usunąć napis serwisu w rogu. Jeśli gra ma być
+publicznie hostowana, a któryś z autorów zgłosi sprzeciw, plik trzeba wymienić na zdjęcie z jasną licencją (patrz niżej).
+
+Zdjęcia z Wikimedia Commons (przycięte, zmniejszone, zapisane jako WebP):
+
+sky.webp
+  Sea sky and clouds, Ibiza, Spain.jpg
+  autor: José Lodos Benavente (Joselodos)
+  licencja: CC0
+  źródło: https://commons.wikimedia.org/wiki/File:Sea_sky_and_clouds,_Ibiza,_Spain.jpg
+
+rays.webp
+  Soleil à travers un paysage sous-marin de Bretagne (Ifremer 00378-48922 - 902).jpg
+  autor: Olivier Dugornay / Ifremer
+  licencja: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0)
+  źródło: https://commons.wikimedia.org/wiki/File:Soleil_%C3%A0_travers_un_paysage_sous-marin_de_Bretagne_(Ifremer_00378-48922_-_902).jpg

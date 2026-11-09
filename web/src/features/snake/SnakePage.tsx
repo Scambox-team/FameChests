@@ -5,12 +5,16 @@ import { api } from '../../api/client';
 import { applyState } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
+import { getTheme } from '../../styles/theme';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import { createSnake, type Dir, type SnakeGame, type SnakeHud, type SnakeLook } from './engine';
 import './snake.css';
 
 // Zakładka Gry -> Snake: plansza na płótnie (engine.ts), wygląd z panelu admina (/api/games/snake), rekord w przeglądarce.
+// Motywy Warm / Aero / Vapor mają własny wygląd planszy i węża (skins.ts), więc kolory, obrazki i dźwięki z panelu admina dotyczą tylko motywu domyślnego (i Y2K).
+const THEME = getTheme();
+const SKIN = THEME === 'warm' || THEME === 'aero' || THEME === 'vapor' ? THEME : null;
 const KEYS: Record<string, Dir> = {
   ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right',
   W: 'up', S: 'down', A: 'left', D: 'right',
@@ -26,7 +30,7 @@ export function SnakePage() {
   const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
 
   useEffect(() => {
-    sounds.current = (look?.sounds ?? []).map(s => { const a = new Audio(s.url); a.preload = 'auto'; return a; });
+    sounds.current = SKIN ? [] : (look?.sounds ?? []).map(s => { const a = new Audio(s.url); a.preload = 'auto'; return a; });
   }, [look?.sounds]);
 
   useEffect(() => {
@@ -52,6 +56,7 @@ export function SnakePage() {
     };
     const g = createSnake(canvas.current!, setHud, { eat, over, turn: () => Sound.snake('turn') });
     game.current = g;
+    g.setSkin(SKIN);
     const modal = () => document.querySelector('[aria-modal="true"]');
     const key = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
@@ -94,7 +99,7 @@ export function SnakePage() {
       document.removeEventListener('visibilitychange', hide);
     };
   }, []);
-  useEffect(() => { if (look) game.current?.setLook(look); }, [look]);
+  useEffect(() => { if (look && !SKIN) game.current?.setLook(look); }, [look]);
 
   const start = () => {
     Sound.unlock(); Sound.snake('start');
@@ -108,7 +113,7 @@ export function SnakePage() {
   const turn = (d: Dir) => game.current?.turn(d);
 
   return (
-    <div className="sn-page" style={look ? { ['--sn-color' as any]: look.color } : undefined}>
+    <div className={`sn-page${SKIN ? ` sn-${SKIN}` : ''}`} style={look && !SKIN ? { ['--sn-color' as any]: look.color } : undefined}>
       <div className="sn-board">
         <canvas ref={canvas} className="sn-canvas" tabIndex={0} aria-label="Plansza gry Snake. Sterowanie strzałkami albo WASD, pauza: spacja." />
         {phase !== 'play' && (
