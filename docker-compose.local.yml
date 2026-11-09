@@ -37,7 +37,7 @@ services:
       mailpit:
         condition: service_started
     ports:
-      - "${SCAMBOX_PORT:-8000}:8000"
+      - "127.0.0.1:${SCAMBOX_PORT:-8000}:8000"
     environment:
       DATABASE_URL: "postgres://postgres:postgres@db:5432/scambox"
       SECRET_KEY: "dev-local-only"

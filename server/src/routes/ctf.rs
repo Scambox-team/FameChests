@@ -58,7 +58,7 @@ pub struct Challenge {
     pub hints: [&'static str; 3],
 }
 
-pub const CHALLENGES: [Challenge; 9] = [
+pub const CHALLENGES: [Challenge; 25] = [
     Challenge {
         id: "source",
         title: "Zapomniany komentarz",
@@ -176,6 +176,214 @@ pub const CHALLENGES: [Challenge; 9] = [
             "Wklej skrót admina na crackstation.net. Flaga to SB{znalezione hasło}.",
         ],
     },
+    Challenge {
+        id: "hidden",
+        title: "Biały na białym",
+        category: "Web",
+        level: 1,
+        brief: "Kebab-Soft zapowiada nowy cennik, ale na stronie nie ma nic poza krótkim komunikatem. Na pewno?",
+        page: true,
+        hints: [
+            "Nie wszystko, co jest na stronie, widać gołym okiem.",
+            "Zaznacz całą stronę (Ctrl+A) albo zajrzyj do źródła (Ctrl+U).",
+            "Napis ma ten sam kolor co tło. Zaznaczony albo wyczytany ze źródła od razu się ujawni.",
+        ],
+    },
+    Challenge {
+        id: "console",
+        title: "Gadatliwy skrypt",
+        category: "Web",
+        level: 1,
+        brief: "Strona Kebab-Soft wygląda na zupełnie pustą, ale jej skrypt chyba coś sobie po cichu mruczy pod nosem.",
+        page: true,
+        hints: [
+            "Skrypty strony mogą zapisywać komunikaty w miejscu, którego zwykły użytkownik nie widzi.",
+            "Otwórz narzędzia deweloperskie (F12) i przejdź do zakładki Konsola (Console).",
+            "Jeśli konsola jest pusta, odśwież stronę przy otwartej konsoli.",
+        ],
+    },
+    Challenge {
+        id: "storage",
+        title: "Pamięć przeglądarki",
+        category: "Web",
+        level: 2,
+        brief: "Intranet Kebab-Soft zapamiętuje ustawienia, ale chyba przy okazji zapamiętał też coś, czego nie powinien.",
+        page: true,
+        hints: [
+            "Strony mogą trzymać dane w twojej przeglądarce, i to nie tylko w ciasteczkach.",
+            "F12 -> Aplikacja (Application) / Storage -> Local Storage -> adres tej strony.",
+            "Szukaj klucza o nazwie klucz_serwisowy. Jego wartość to flaga.",
+        ],
+    },
+    Challenge {
+        id: "debug",
+        title: "Tryb debug",
+        category: "Web",
+        level: 1,
+        brief: "Programiści Kebab-Soft zostawili na stronie ustawienie, które nigdy nie powinno trafić do wersji dla klientów.",
+        page: true,
+        hints: [
+            "Poszukaj na stronie czegoś, co mówi o ustawieniach technicznych.",
+            "Na dole strony jest wzmianka o trybie debug i link z parametrem w adresie.",
+            "Parametr debug ma wartość 0. Zmień ją w pasku adresu na 1.",
+        ],
+    },
+    Challenge {
+        id: "backup",
+        title: "Zapomniana kopia",
+        category: "Web",
+        level: 2,
+        brief: "Kebab-Soft wystawił na stronie swój cennik w pliku tekstowym. Edytor, którego używają, lubi zostawiać po sobie śmieci.",
+        page: true,
+        hints: [
+            "Otwórz plik cennika i przyjrzyj się jego adresowi.",
+            "Edytory tekstu często zostawiają kopie zapasowe z dopiskiem na końcu nazwy, na przykład .bak.",
+            "Dopisz .bak do adresu pliku cennik.txt.",
+        ],
+    },
+    Challenge {
+        id: "api",
+        title: "Za dużo w odpowiedzi",
+        category: "Web",
+        level: 2,
+        brief: "Strona Kebab-Soft pokazuje tylko jedno słowo: stan serwera. Ale serwer, jak to serwer, odpowiada zwykle o wiele dłużej.",
+        page: true,
+        hints: [
+            "Strona pobiera stan serwera z osobnego adresu. Zobaczysz go w zakładce Sieć (F12).",
+            "Adres kończy się na api/status. Otwórz go bezpośrednio w przeglądarce.",
+            "Odpowiedź to JSON z kilkoma polami, a nie tylko tym jednym, które pokazuje strona.",
+        ],
+    },
+    Challenge {
+        id: "files",
+        title: "Czytnik dokumentów",
+        category: "Web",
+        level: 2,
+        brief: "Kebab-Soft udostępnia online kilka publicznych dokumentów. Poufne trzymają gdzie indziej, ale czytnik chyba nie pilnuje, dokąd pozwala zajrzeć.",
+        page: true,
+        hints: [
+            "Adres czytnika zawiera nazwę pliku. Co będzie, jeśli ją zmienisz?",
+            "W regulaminie jest wzmianka o folderze z poufnymi dokumentami. Czytnik działa w folderze publicznym, obok niego.",
+            "Wyjdź piętro wyżej: ../ a potem nazwa folderu i pliku, czyli ../tajne/flaga.txt",
+        ],
+    },
+    Challenge {
+        id: "price",
+        title: "Promocja życia",
+        category: "Web",
+        level: 2,
+        brief: "Sklep Kebab-Soft sprzedaje kebab XXL za 49,99 zł. Zapłacić za niego mógłby każdy, ale może da się taniej?",
+        page: true,
+        hints: [
+            "Cenę sklep przekazuje w formularzu, nawet jeśli nie widzisz jej w żadnym polu.",
+            "Zbadaj formularz (F12 -> prawy klik na przycisk -> Zbadaj element) i poszukaj ukrytego pola.",
+            "Ukryte pole cena ma wartość 4999 (grosze). Zmień ją na 0 i kliknij Kup.",
+        ],
+    },
+    Challenge {
+        id: "sqli",
+        title: "Klasyczne wejście",
+        category: "Web",
+        level: 3,
+        brief: "Ekran logowania Kebab-Soft składa zapytanie do bazy z tego, co wpiszesz. Wprost. Bez żadnych zabezpieczeń. Wejdź jako admin, nie znając hasła.",
+        page: true,
+        hints: [
+            "Strona pokazuje zapytanie, jakie wysyła do bazy. Przyjrzyj się, jak wstawia twój tekst.",
+            "Apostrof zamyka tekst w zapytaniu. To, co wpiszesz po nim, staje się już częścią zapytania.",
+            "Spróbuj w polu hasła wpisać: ' OR '1'='1  (albo w loginie: admin'--  ).",
+        ],
+    },
+    Challenge {
+        id: "ticket",
+        title: "Bilet wstępu",
+        category: "Web",
+        level: 3,
+        brief: "Strefa VIP Kebab-Soft wpuszcza po okazaniu biletu. Dostajesz zwykły bilet gościa, ale kto powiedział, że nie można go trochę poprawić?",
+        page: true,
+        hints: [
+            "Bilet to ciasteczko. Zajrzyj do ciasteczek strony (F12 -> Aplikacja -> Cookies).",
+            "Wartość ciasteczka bilet to Base64. Zdekoduj ją, np. w CyberChef (From Base64), a zobaczysz tekst z rolą.",
+            "Zmień rolę z user na admin, zakoduj całość z powrotem (To Base64) i wklej jako nową wartość ciasteczka.",
+        ],
+    },
+    Challenge {
+        id: "binary",
+        title: "Zera i jedynki",
+        category: "Krypto",
+        level: 1,
+        brief: "Z rozmów rywali przechwyciliśmy ciąg zer i jedynek. To tylko tekst zapisany tak, jak widzi go komputer.",
+        page: false,
+        hints: [
+            "Komputer zapisuje każdy znak jako 8 zer i jedynek (bitów).",
+            "Każda ósemka to jeden znak w kodzie ASCII. Dekoder zrobi to za ciebie.",
+            "W CyberChef użyj przepisu From Binary.",
+        ],
+    },
+    Challenge {
+        id: "morse",
+        title: "Telegraf Kebab-Softu",
+        category: "Krypto",
+        level: 1,
+        brief: "Ktoś stuka alfabetem Morse'a w ścianę serwerowni. Zapisaliśmy to jako kropki i kreski. Flaga ma postać SB{slowo_slowo_cyfry}, więc spacje między słowami zamień na podkreślenia.",
+        page: false,
+        hints: [
+            "Kropki i kreski to alfabet Morse'a. Znaki oddziela spacja, a słowa ukośnik.",
+            "Rozszyfrujesz go w dowolnym tłumaczu Morse'a w internecie albo w CyberChef (From Morse Code).",
+            "Całość to SB i trzy słowa. Zapisz je jako SB{pierwsze_drugie_trzecie}, małymi literami.",
+        ],
+    },
+    Challenge {
+        id: "atbash",
+        title: "Lustrzane litery",
+        category: "Krypto",
+        level: 2,
+        brief: "Notatka została zapisana alfabetem odbitym w lustrze: A zamienione na Z, B na Y i tak dalej. Cyfry i nawiasy zostały bez zmian.",
+        page: false,
+        hints: [
+            "Alfabet zapisano od tyłu: pierwsza litera zamienia się z ostatnią, druga z przedostatnią.",
+            "To szyfr o nazwie Atbash. Jest swoją własną odwrotnością: zaszyfrowanie i odszyfrowanie to ta sama operacja.",
+            "W CyberChef użyj przepisu Atbash Cipher Decode.",
+        ],
+    },
+    Challenge {
+        id: "urlenc",
+        title: "Dziwny adres",
+        category: "Krypto",
+        level: 1,
+        brief: "W logach serwera znaleźliśmy adres, w którym parametr flaga wygląda jak ciąg znaków procent i cyfr. Co one znaczą?",
+        page: false,
+        hints: [
+            "Znak % i dwie cyfry szesnastkowe to sposób zapisu znaku w adresach internetowych.",
+            "Przeglądarki i adresy tak kodują spacje, polskie litery i znaki specjalne. Nazywa się to kodowaniem procentowym (URL encoding).",
+            "W CyberChef użyj przepisu URL Decode na samym parametrze flaga.",
+        ],
+    },
+    Challenge {
+        id: "hexrev",
+        title: "Odbity zapis",
+        category: "Krypto",
+        level: 2,
+        brief: "Wiadomość przechwycono w dwóch warstwach: ktoś przepisał ją od tyłu, a potem zamienił każdy znak na liczbę szesnastkową.",
+        page: false,
+        hints: [
+            "Pary znaków 0-9 i a-f to bajty zapisane szesnastkowo. Każda para to jeden znak.",
+            "Najpierw zamień szesnastkowe pary na tekst (From Hex). Wynik będzie napisany od tyłu.",
+            "Odwróć kolejność znaków (w CyberChef: Reverse, tryb Character) i flaga będzie czytelna.",
+        ],
+    },
+    Challenge {
+        id: "vigenere",
+        title: "Szyfr z kluczem",
+        category: "Krypto",
+        level: 3,
+        brief: "Tym razem szyfr ma klucz, a my go znamy. Podajemy go razem z wiadomością. Każda litera klucza przesuwa kolejną literę tekstu inaczej niż w szyfrze Cezara.",
+        page: false,
+        hints: [
+            "To szyfr Vigenère'a: jak Cezar, ale przesunięcie zmienia się po kolei wg liter klucza.",
+            "Klucz jest podany nad szyfrogramem. Znaki spoza alfabetu (cyfry, nawiasy, spacje) nie zużywają liter klucza.",
+            "W CyberChef użyj Vigenère Decode, wpisz klucz i wklej szyfrogram. Dla szybszej pracy dcode.fr też zadziała.",
+        ],
+    },
 ];
 
 pub fn challenge(id: &str) -> Option<&'static Challenge> {
@@ -232,7 +440,11 @@ struct Secrets {
     shift: u8,
     leaked: &'static str,
     flag: String,
+    /// klucz szyfru Vigenère'a (losowany na końcu, żeby starsze losowania się nie zmieniły)
+    key: &'static str,
 }
+
+const KEYS: [&str; 8] = ["KEBAB", "SEJF", "HAKER", "KLUCZ", "PIRAT", "SMOK", "TOKEN", "BAJT"];
 
 fn secrets(seed: i64) -> Secrets {
     let mut r = ChaCha8Rng::seed_from_u64(seed as u64);
@@ -243,7 +455,127 @@ fn secrets(seed: i64) -> Secrets {
     let leaked = *LEAKED.choose(&mut r).unwrap();
     let (a, b) = (WORDS.choose(&mut r).unwrap(), WORDS.choose(&mut r).unwrap());
     let flag = format!("SB{{{a}_{b}_{:04x}}}", r.gen_range(0..0x1_0000u32));
-    Secrets { code, note, password, shift, leaked, flag }
+    let key = *KEYS.choose(&mut r).unwrap();
+    Secrets { code, note, password, shift, leaked, flag, key }
+}
+
+/// Środek flagi bez `SB{` i `}`
+fn inner(flag: &str) -> &str {
+    flag.strip_prefix("SB{").and_then(|x| x.strip_suffix('}')).unwrap_or(flag)
+}
+
+fn morse_code(c: char) -> Option<&'static str> {
+    Some(match c {
+        'A' => ".-",
+        'B' => "-...",
+        'C' => "-.-.",
+        'D' => "-..",
+        'E' => ".",
+        'F' => "..-.",
+        'G' => "--.",
+        'H' => "....",
+        'I' => "..",
+        'J' => ".---",
+        'K' => "-.-",
+        'L' => ".-..",
+        'M' => "--",
+        'N' => "-.",
+        'O' => "---",
+        'P' => ".--.",
+        'Q' => "--.-",
+        'R' => ".-.",
+        'S' => "...",
+        'T' => "-",
+        'U' => "..-",
+        'V' => "...-",
+        'W' => ".--",
+        'X' => "-..-",
+        'Y' => "-.--",
+        'Z' => "--..",
+        '0' => "-----",
+        '1' => ".----",
+        '2' => "..---",
+        '3' => "...--",
+        '4' => "....-",
+        '5' => ".....",
+        '6' => "-....",
+        '7' => "--...",
+        '8' => "---..",
+        '9' => "----.",
+        _ => return None,
+    })
+}
+
+fn morse(s: &str) -> String {
+    s.to_uppercase()
+        .split(' ')
+        .map(|w| w.chars().filter_map(morse_code).collect::<Vec<_>>().join(" "))
+        .collect::<Vec<_>>()
+        .join(" / ")
+}
+
+fn atbash(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            'a'..='z' => (b'z' - (c as u8 - b'a')) as char,
+            'A'..='Z' => (b'Z' - (c as u8 - b'A')) as char,
+            _ => c,
+        })
+        .collect()
+}
+
+/// Vigenère: klucz przesuwa tylko litery (reszta znaków bez zmian i bez zużywania klucza)
+fn vigenere(s: &str, key: &str, decrypt: bool) -> String {
+    let k: Vec<u8> = key.bytes().map(|b| b.to_ascii_uppercase() - b'A').collect();
+    let mut i = 0;
+    s.chars()
+        .map(|c| {
+            if !c.is_ascii_alphabetic() {
+                return c;
+            }
+            let base = if c.is_ascii_lowercase() { b'a' } else { b'A' };
+            let shift = k[i % k.len()];
+            i += 1;
+            let off = c as u8 - base;
+            let n = if decrypt { (off + 26 - shift) % 26 } else { (off + shift) % 26 };
+            (base + n) as char
+        })
+        .collect()
+}
+
+fn hex_bytes(s: &str) -> String {
+    s.bytes().map(|b| format!("{b:02x}")).collect::<Vec<_>>().join(" ")
+}
+
+/// Wartość parametru z adresu (po zdekodowaniu %XX i +)
+fn query_param(q: Option<&str>, key: &str) -> Option<String> {
+    q?.split('&').filter_map(|kv| kv.split_once('=')).find(|(k, _)| *k == key).map(|(_, v)| pct_decode(v))
+}
+
+fn pct_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        match b[i] {
+            b'+' => out.push(b' '),
+            b'%' if i + 2 < b.len() && b[i + 1].is_ascii_hexdigit() && b[i + 2].is_ascii_hexdigit() => {
+                out.push(u8::from_str_radix(&s[i + 1..i + 3], 16).unwrap_or(b'?'));
+                i += 2;
+            }
+            c => out.push(c),
+        }
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// Czy wpis wygląda jak wstrzyknięcie SQL (zamknięcie tekstu i warunek zawsze prawdziwy albo komentarz)
+fn sql_injected(s: &str) -> bool {
+    let t: String = s.to_lowercase().chars().filter(|c| !c.is_whitespace()).collect();
+    ["'--", "'#", "'/*", "'or'1'='1", "'or1=1", "'or'a'='a", "'or''='", "'or'x'='x", "'ortrue"]
+        .iter()
+        .any(|p| t.contains(p))
 }
 
 fn flag_for(challenge: &str, seed: i64) -> String {
@@ -302,6 +634,21 @@ fn task_data(challenge: &str, seed: i64, flag: &str) -> Option<String> {
                 noise(&mut r)
             ))
         }
+        "binary" => {
+            Some(format!("Flaga: {flag}").bytes().map(|b| format!("{b:08b}")).collect::<Vec<_>>().join(" "))
+        }
+        "morse" => Some(morse(&format!("SB {}", inner(flag).replace('_', " ")))),
+        "atbash" => Some(atbash(&format!("Tajna wiadomosc: {flag}"))),
+        "urlenc" => Some(format!(
+            "https://kebab-soft.example/odbierz?flaga={}",
+            flag.bytes().map(|b| format!("%{b:02X}")).collect::<String>()
+        )),
+        "hexrev" => Some(hex_bytes(&format!("Flaga: {flag}").chars().rev().collect::<String>())),
+        "vigenere" => Some(format!(
+            "Klucz: {}\n\n{}",
+            s.key,
+            vigenere(&format!("Wiadomosc przechwycona, flaga to {flag}"), s.key, false)
+        )),
         _ => None,
     }
 }
@@ -776,6 +1123,167 @@ document.getElementById("f").onsubmit = e => {{
                 "",
             ))
         }
+        ("hidden", "") => html_resp(page_html(
+            "Cennik",
+            &format!(
+                r#"<h1>Nowy cennik</h1><p>Cennik Kebab-Soft jest w przygotowaniu. Wróć za kilka dni.</p>
+<p style="color:#fff;background:#fff">{}</p><p class="muted">Dziękujemy za cierpliwość.</p>"#,
+                esc(flag)
+            ),
+            "",
+        )),
+        ("console", "") => html_resp(page_html(
+            "Kebab-Soft",
+            &format!(
+                r#"<h1>Wszystko działa</h1><p>Ta strona nie ma nic do pokazania. Jej skrypt też niczego nie zdradzi. Prawie.</p>
+<script>
+console.info("[intranet] start serwisu v2.0");
+console.info("[intranet] token serwisowy:", "{flag}");
+console.info("[intranet] TODO: usunac logowanie tokenu przed wdrozeniem");
+</script>"#
+            ),
+            "",
+        )),
+        ("storage", "") => html_resp(page_html(
+            "Ustawienia",
+            &format!(
+                r#"<h1>Twoje ustawienia</h1><p>Zapamiętaliśmy w przeglądarce twoje preferencje. Nie musisz nic robić.</p>
+<script>
+try {{
+  localStorage.setItem("motyw", "ciemny");
+  localStorage.setItem("klucz_serwisowy", "{flag}");
+  localStorage.setItem("jezyk", "pl");
+}} catch (e) {{}}
+</script>"#
+            ),
+            "",
+        )),
+        ("debug", "") => {
+            if query_param(query, "debug").as_deref() == Some("1") {
+                html_resp(page_html(
+                    "Dziennik debug",
+                    &format!(
+                        "<h1>Dziennik debug</h1><pre>[ok] baza połączona\n[ok] cache pusty\n[!!] token serwisowy poniżej</pre>{}",
+                        flag_box(flag)
+                    ),
+                    "",
+                ))
+            } else {
+                html_resp(page_html(
+                    "Intranet",
+                    "<h1>Intranet Kebab-Soft</h1><p>Witamy w intranecie. Nic tu nie ma do zobaczenia.</p>\
+<p class=\"muted\">Tryb debug: wyłączony (<a href=\"?debug=0\">debug=0</a>)</p>",
+                    "",
+                ))
+            }
+        }
+        ("backup", "") => html_resp(page_html(
+            "Cennik",
+            "<h1>Cennik</h1><p>Aktualny cennik Kebab-Soft: <a href=\"cennik.txt\">cennik.txt</a></p>",
+            "",
+        )),
+        ("backup", "cennik.txt") => text_resp("Kebab maly ......... 18 zl\nKebab duzy ......... 26 zl\nKebab XXL .......... 49,99 zl\n".to_owned()),
+        ("backup", "cennik.txt.bak") => text_resp(format!("# kopia zapasowa edytora\n# haslo do panelu: {flag}\nKebab maly ......... 16 zl\n")),
+        ("api", "") => html_resp(page_html(
+            "Status",
+            r#"<h1>Status serwera</h1><p id="s">Sprawdzam...</p>
+<script>
+fetch("api/status").then(r => r.json()).then(d => {
+  document.getElementById("s").textContent = "Status: " + d.status;
+});
+</script>"#,
+            "",
+        )),
+        ("api", "api/status") => {
+            let mut res = axum::Json(json!({
+                "status": "ok",
+                "wersja": "2.0.1",
+                "uptime": 86412,
+                "debug_token": flag,
+            }))
+            .into_response();
+            res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+            res
+        }
+        ("files", "") => {
+            let name = query_param(query, "plik");
+            let list = "<p>Dokumenty: <a href=\"?plik=regulamin.txt\">regulamin.txt</a> | <a href=\"?plik=cennik.txt\">cennik.txt</a></p>";
+            let Some(name) = name else {
+                return html_resp(page_html("Czytnik", &format!("<h1>Czytnik dokumentów</h1>{list}"), ""));
+            };
+            let norm = name.replace('\\', "/");
+            let content = if norm == "regulamin.txt" {
+                Some("Regulamin Kebab-Soft\n1. Kebab ma byc cieply.\n2. Dokumenty poufne trzymamy w folderze tajne/ obok folderu publicznego.\n".to_owned())
+            } else if norm == "cennik.txt" {
+                Some("Kebab maly 18 zl\nKebab duzy 26 zl\n".to_owned())
+            } else if norm.contains("../") && norm.ends_with("tajne/flaga.txt") {
+                Some(format!("POUFNE: {flag}\n"))
+            } else {
+                None
+            };
+            let body = match content {
+                Some(c) => format!("<h1>Czytnik dokumentów</h1>{list}<p>Plik: <code>publiczne/{}</code></p><pre>{}</pre>", esc(&norm), esc(&c)),
+                None => format!("<h1>Czytnik dokumentów</h1>{list}<p>Nie ma takiego pliku: <code>{}</code></p>", esc(&norm)),
+            };
+            html_resp(page_html("Czytnik", &body, ""))
+        }
+        ("price", "") => {
+            let body = match query_param(query, "cena").map(|c| c.trim().parse::<i64>()) {
+                None => r#"<h1>Sklep Kebab-Soft</h1><p>Kebab XXL - tylko <b>49,99 zł</b>!</p>
+<form method="get"><input type="hidden" name="cena" value="4999"><button>Kup teraz</button></form>"#
+                    .to_owned(),
+                Some(Ok(c)) if c <= 0 => format!("<h1>Gratis!</h1><p>Serwer uwierzył, że kebab kosztuje {c} gr. Smacznego.</p>{}", flag_box(flag)),
+                Some(Ok(4999)) => "<h1>Dziękujemy</h1><p>Zapłacono 49,99 zł. Kebab już jedzie.</p>".to_owned(),
+                Some(Ok(c)) if c > 4999 => format!("<h1>Zapłacono za dużo</h1><p>Zwrócimy różnicę. Kiedyś. ({c} gr)</p>"),
+                Some(Ok(c)) => format!("<h1>Hm...</h1><p>Za {c} gr? Spróbuj jeszcze niżej, jak już negocjujesz.</p>"),
+                Some(Err(_)) => "<h1>Błąd</h1><p>Cena musi być liczbą.</p>".to_owned(),
+            };
+            html_resp(page_html("Sklep", &body, ""))
+        }
+        ("sqli", "") => {
+            let (login, pass) = (query_param(query, "login"), query_param(query, "haslo"));
+            let form = r#"<form method="get"><p><input name="login" placeholder="login"> <input name="haslo" type="password" placeholder="hasło"> <button>Zaloguj</button></p></form>"#;
+            let body = match (login, pass) {
+                (Some(l), Some(p)) => {
+                    let sql = format!("SELECT * FROM uzytkownicy WHERE login = '{}' AND haslo = '{}'", esc(&l), esc(&p));
+                    if sql_injected(&l) || sql_injected(&p) {
+                        format!("<h1>Panel logowania</h1>{form}<pre>{sql}</pre><p>Zalogowano jako <b>admin</b>.</p>{}", flag_box(flag))
+                    } else {
+                        format!("<h1>Panel logowania</h1>{form}<pre>{sql}</pre><p>Zły login lub hasło.</p>")
+                    }
+                }
+                _ => format!("<h1>Panel logowania</h1><p>Tylko dla administratora. Zapytanie do bazy składamy z tego, co wpiszesz.</p>{form}"),
+            };
+            html_resp(page_html("Panel", &body, ""))
+        }
+        ("ticket", "") => {
+            let role = cookie(headers, "bilet")
+                .and_then(|v| {
+                    base64::engine::general_purpose::STANDARD
+                        .decode(&v)
+                        .or_else(|_| base64::engine::general_purpose::STANDARD_NO_PAD.decode(v.trim_end_matches('=')))
+                        .ok()
+                })
+                .and_then(|raw| serde_json::from_slice::<serde_json::Value>(&raw).ok())
+                .and_then(|j| j["rola"].as_str().map(str::to_owned));
+            if role.as_deref() == Some("admin") {
+                return html_resp(page_html(
+                    "Strefa VIP",
+                    &format!("<h1>Strefa VIP</h1><p>Witaj, administratorze. Oto tajne dane:</p>{}", flag_box(flag)),
+                    "",
+                ));
+            }
+            let mut res = html_resp(page_html(
+                "Strefa VIP",
+                "<h1>Strefa VIP</h1><p>Twoja rola: <b>user</b>. Do strefy VIP wpuszczamy tylko administratorów.</p><p class=\"muted\">Twój bilet został zapisany w przeglądarce.</p>",
+                "",
+            ));
+            let ticket = base64::engine::general_purpose::STANDARD.encode(r#"{"uzytkownik":"gosc","rola":"user"}"#);
+            if let Ok(v) = HeaderValue::from_str(&format!("bilet={ticket}; Path={base}/; SameSite=Lax")) {
+                res.headers_mut().insert(header::SET_COOKIE, v);
+            }
+            res
+        }
         _ => not_found(),
     }
 }
@@ -931,6 +1439,62 @@ mod tests {
         let data = task_data("hash", seed, &flag).unwrap();
         let word = flag.trim_start_matches("SB{").trim_end_matches('}');
         assert!(data.contains(&sha256_hex(word)));
+    }
+
+    #[test]
+    fn new_crypto_tasks_decode_back_to_the_flag() {
+        let seed = 777;
+        let flag = flag_for("binary", seed);
+        // binary
+        let bits = task_data("binary", seed, &flag).unwrap();
+        let text: String = bits.split(' ').map(|b| u8::from_str_radix(b, 2).unwrap() as char).collect();
+        assert_eq!(text, format!("Flaga: {flag}"));
+        // morse: litery i cyfry z flagi bez SB{ } i _
+        let m = task_data("morse", seed, &flag).unwrap();
+        let rev = |code: &str| ('A'..='Z').chain('0'..='9').find(|&c| morse_code(c) == Some(code)).unwrap();
+        let decoded: String = m.split(" / ").map(|w| w.split(' ').map(rev).collect::<String>()).collect::<Vec<_>>().join(" ");
+        assert_eq!(decoded, format!("SB {}", inner(&flag).replace('_', " ")).to_uppercase());
+        // atbash jest własną odwrotnością
+        let a = task_data("atbash", seed, &flag).unwrap();
+        assert_eq!(atbash(&a), format!("Tajna wiadomosc: {flag}"));
+        // url
+        let u = task_data("urlenc", seed, &flag).unwrap();
+        assert_eq!(pct_decode(u.split("flaga=").nth(1).unwrap()), flag);
+        // hex + odwrócenie
+        let h = task_data("hexrev", seed, &flag).unwrap();
+        let bytes: Vec<u8> = h.split(' ').map(|x| u8::from_str_radix(x, 16).unwrap()).collect();
+        let back: String = String::from_utf8(bytes).unwrap().chars().rev().collect();
+        assert_eq!(back, format!("Flaga: {flag}"));
+        // vigenere
+        let v = task_data("vigenere", seed, &flag).unwrap();
+        let (head, cipher) = v.split_once("\n\n").unwrap();
+        assert_eq!(head, format!("Klucz: {}", secrets(seed).key));
+        assert!(vigenere(cipher, secrets(seed).key, true).ends_with(&flag));
+    }
+
+    #[test]
+    fn sql_injection_is_detected_but_normal_logins_are_not() {
+        assert!(sql_injected("' OR '1'='1"));
+        assert!(sql_injected("admin'-- "));
+        assert!(sql_injected("x' or 1=1 --"));
+        assert!(!sql_injected("admin"));
+        assert!(!sql_injected("moje hasło 123"));
+    }
+
+    #[test]
+    fn query_values_are_decoded() {
+        assert_eq!(query_param(Some("a=1&plik=..%2Ftajne%2Fflaga.txt"), "plik").as_deref(), Some("../tajne/flaga.txt"));
+        assert_eq!(query_param(Some("haslo=%27+OR+%271%27%3D%271"), "haslo").as_deref(), Some("' OR '1'='1"));
+        assert_eq!(query_param(Some("a=1"), "b"), None);
+        assert_eq!(pct_decode("100%"), "100%");
+    }
+
+    #[test]
+    fn tasks_without_a_page_have_data_and_tasks_with_one_do_not() {
+        for ch in CHALLENGES.iter() {
+            let flag = flag_for(ch.id, 31);
+            assert_eq!(task_data(ch.id, 31, &flag).is_some(), !ch.page, "{}", ch.id);
+        }
     }
 
     #[test]
