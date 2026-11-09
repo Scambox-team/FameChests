@@ -23,6 +23,11 @@
           <button class="btn primary" id="newCard">+ Nowa karta</button>
         </div>
         <div id="cardList" class="a-card-grid"></div>
+        <div class="a-actions a-gc-export" id="cardListExport" hidden>
+          <span class="muted small" id="cardListExportLabel">Pobierz:</span>
+          <button class="btn" type="button" data-exp="json">JSON</button>
+          <button class="btn" type="button" data-exp="csv">CSV</button>
+        </div>
       </div>
 
       <div class="panel" id="gcPanel" data-sec="karty">
@@ -41,10 +46,10 @@
         <div id="gcList" class="a-card-grid"></div>
         <div class="a-gc-more"><button class="btn" id="gcMore" type="button" hidden>Pokaż więcej</button></div>
         <div class="a-actions a-gc-export" id="gcExport">
-          <span class="muted small">Eksport wyników wyszukiwania:</span>
+          <span class="muted small" id="gcExpLabel">Pobierz wyniki:</span>
           <button class="btn" type="button" data-exp="json">JSON</button>
           <button class="btn" type="button" data-exp="csv">CSV</button>
-          <span class="muted small a-gc-sep">Wszystkie karty z gry:</span>
+          <span class="muted small a-gc-sep">Cała biblioteka (wszystkie karty z gry, bez filtrów):</span>
           <button class="btn" type="button" data-exp="json" data-scope="all">JSON</button>
           <button class="btn" type="button" data-exp="csv" data-scope="all">CSV</button>
         </div>

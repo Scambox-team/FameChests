@@ -48,3 +48,5 @@
   .formCard { max-width: 200px; }
   .card { width: 104px; }
 }
+
+@media (max-width: 600px) { .picks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } }

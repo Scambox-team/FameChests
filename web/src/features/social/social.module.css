@@ -115,3 +115,8 @@
   .rankRow { grid-template-columns: 34px minmax(0, 1fr) auto auto auto; gap: 6px; padding: 8px 10px; }
   .rankValue { grid-column: auto; font-size: 13px; white-space: nowrap; }
 }
+
+/* telefon: gablota po 3 karty w rzędzie */
+@media (max-width: 600px) {
+  .showcase { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+}

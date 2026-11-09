@@ -82,3 +82,8 @@
 .drop figcaption > a { min-width: 0; overflow: hidden; }
 .drop figcaption > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .drop figcaption b { color: var(--good); font-weight: 700; }
+
+/* telefon: 3 karty w rzędzie */
+@media (max-width: 600px) {
+  .rarityCards, .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+}

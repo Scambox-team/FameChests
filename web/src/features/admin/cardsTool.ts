@@ -80,9 +80,16 @@ export function createCardsTool({ A, $, $$, esc, api, toast, cardTile, openCardF
     const more = $('#gcMore');
     more.hidden = shown.length <= S.limit;
     more.textContent = `Pokaż więcej (jeszcze ${shown.length - S.limit})`;
+    const n = exportable().length;   // karty ukryte serwer pomija w eksporcie, więc ich nie liczymy
+    for (const b of $$('#gcExport [data-exp]:not([data-scope])')) b.disabled = !n;
+    const lab = $('#gcExpLabel');
+    if (lab) lab.textContent = `Pobierz wyniki (${n}):`;
   }
 
   // ---------------------------------------------------------------- eksport
+
+  // wszystkie pasujące karty (nie tylko pierwsza strona), w kolejności wyświetlania
+  const exportable = () => shown.filter(c => !c.hidden);
 
   async function download(body, name) {
     const res = await fetch('/api/admin/cards/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -163,10 +170,11 @@ export function createCardsTool({ A, $, $$, esc, api, toast, cardTile, openCardF
     on('#gcNew', 'click', () => openCardForm(null, S.crate !== 'all' ? S.crate : A.cat.crates.find(c => !c.hidden && !c.special && !CHESS.includes(c.id))?.id));
     on('#gcExport', 'click', async e => {
       const b = e.target.closest('[data-exp]'); if (!b) return;
-      const all = b.dataset.scope === 'all', ext = b.dataset.exp;
+      const all = b.dataset.scope === 'all', ext = b.dataset.exp, ids = all ? [] : exportable().map(c => c.id);
+      if (!all && !ids.length) return toast('Brak kart do pobrania', true);
       try {
-        await download({ format: ext, ids: all ? [] : shown.filter(c => !c.hidden).map(c => c.id) }, `scambox-karty.${ext}`);
-        toast(all ? 'Pobrano wszystkie karty' : `Pobrano karty z wyszukiwania (${shown.filter(c => !c.hidden).length})`);
+        await download({ format: ext, ids }, all ? `scambox-karty-wszystkie.${ext}` : `scambox-karty-wyniki-${ids.length}.${ext}`);
+        toast(all ? 'Pobrano wszystkie karty' : `Pobrano karty z wyszukiwania (${ids.length})`);
       } catch (err) { toast(err.message, true); }
     });
 

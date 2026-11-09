@@ -58,8 +58,8 @@
 .a-crate-preview .crate-emblem { font-size: 30px; }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); gap: 12px; }
 .a-grid label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
-.a-grid label.wide { grid-column: 1 / -1; }
-.a-grid label.chk { flex-direction: row; }
+.a-grid .wide { grid-column: 1 / -1; }
+.a-grid label.chk { flex-direction: row; align-items: flex-start; }
 .a-grid input, .a-grid select { width: 100%; }
 .a-grid input[type=checkbox] { width: auto; }
 .a-grid input[type=color] { height: 38px; padding: 2px; background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; }
@@ -125,7 +125,10 @@ legend { padding: 0 6px; color: var(--text); font-weight: 700; font-size: 14px; 
 .chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 fieldset .chk { display: flex; margin: 4px 0; color: var(--text); font-size: 14px; }
 .a-user-checks, .a-crate-checks { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
-.a-crate-checks { flex-direction: column; gap: 4px; }
+.a-crate-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 4px 18px; }
+.a-crate-checks > :not(.a-crate-row) { grid-column: 1 / -1; }
+.a-crate-row .chk { min-width: 0; }
+.a-crate-row .a-excl { white-space: nowrap; flex: none; }
 .a-crate-checks .chk { color: var(--text); font-size: 14px; }
 .a-crate-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .a-crate-row .a-excl { font-size: 13px; gap: 3px; filter: grayscale(1); opacity: .6; }
@@ -627,6 +630,23 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
 .a-imp-row-r small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 900px) { .a-gc-filters { grid-template-columns: 1fr 1fr; } .a-gc-filters input { grid-column: 1 / -1; } }
 
+
+/* formularz karty: zwijane sekcje, dolny pasek z akcjami, błędy przy polach */
+details.a-fold { border: 1px solid var(--rule); border-radius: 12px; padding: 0 14px; margin: 14px 0 0; }
+details.a-fold > summary { padding: 11px 0; color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer; list-style: none; }
+details.a-fold > summary::-webkit-details-marker { display: none; }
+details.a-fold > summary::before { content: "\25B8"; display: inline-block; width: 1.1em; color: var(--muted); }
+details.a-fold[open] > summary::before { content: "\25BE"; }
+details.a-fold[open] { padding-bottom: 10px; }
+.a-card-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px -24px -24px; padding: 12px 24px; border-top: 1px solid var(--rule); background: var(--surface); }
+.a-bar-more { display: contents; }
+.a-bar-toggle { display: none; }
+.a-bar-del { margin-left: auto; }
+.a-bar-msg { flex: 1 0 100%; color: #ffb3bf; font-size: 13px; font-weight: 600; }
+.a-err { display: block; margin-top: 3px; color: #ff8a9b; font-size: 12px; font-weight: 600; }
+.a-err[hidden] { display: none; }
+.a-invalid { outline: 2px solid #ff5a73; outline-offset: 2px; border-radius: 8px; }
+
 /* telefon (menu: AdminApp.tsx): zero przewijania w bok - tabele jako karty, formularze jedną kolumną, okna na cały ekran */
 @media (max-width: 820px) {
   .a-page { overflow-x: clip; }
@@ -652,6 +672,17 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
   .a-user { grid-template-columns: minmax(0, 1fr); }
   .a-user-actions { justify-content: flex-start; }
   .a-card-form, .a-card-fields { min-width: 0; max-width: 100%; }
+  .a-card-bar { margin: 16px -14px -14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .a-card-bar { flex-wrap: wrap; gap: 8px; }
+  .a-card-bar > .btn { flex: 1 1 auto; min-height: 40px; }
+  .a-card-bar > .btn.primary { flex: 2 1 auto; }
+  .a-bar-toggle { display: inline-flex; flex: 0 0 48px !important; justify-content: center; }
+  .a-bar-more { display: none; flex: 1 0 100%; flex-wrap: wrap; gap: 8px; }
+  .a-card-bar.more .a-bar-more { display: flex; }
+  .a-bar-more .btn { flex: 1 1 auto; }
+  .a-bar-del { margin-left: 0; }
+  .modal-box { scroll-padding-bottom: 96px; }
+  .a-card-fields { padding-bottom: 24px; }
   .a-mail-cols { grid-template-columns: minmax(0, 1fr); }
   .a-mail-preview { height: 70vh; }
   .crp-dialog { width: 100%; box-sizing: border-box; }
@@ -724,3 +755,9 @@ img.vm-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50
 .a-testopen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 12px 0; padding: 10px 14px; border-radius: 14px; background: color-mix(in srgb, #ffd23f 14%, transparent); border: 1px solid color-mix(in srgb, #ffd23f 45%, transparent); }
 .a-testopen > span:not(.a-testopen-btns) { flex: 1 1 220px; min-width: 0; font-size: 13px; opacity: .85; }
 .a-testopen-btns { display: flex; gap: 6px; }
+
+/* formularz karty: zwinięte sekcje - treść w <details>, siatka w środku */
+details.a-fold > .a-grid, details.a-fold > .a-crate-checks { margin-bottom: 4px; }
+details.a-fold > summary small { font-weight: 400; margin-left: 6px; }
+.a-sum-warn { color: #ffb3bf; }
+.a-card-fields > .a-grid { margin-bottom: 4px; }

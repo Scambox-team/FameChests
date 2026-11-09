@@ -662,17 +662,23 @@ pub struct ExportBody {
     ids: Vec<String>,
 }
 
+/// Id bez powtórzeń, w kolejności pierwszego wystąpienia.
+fn unique_in_order(ids: &[String]) -> Vec<&str> {
+    let mut seen = HashSet::new();
+    ids.iter().map(String::as_str).filter(|id| seen.insert(*id)).collect()
+}
+
 /// Karty z gry do pliku. POST, bo lista wybranych kart bywa długa.
 pub async fn admin_export_cards(State(st): State<AppState>, Admin(_): Admin, JsonBody(q): JsonBody<ExportBody>) -> Res {
     let cat = st.cat();
-    let ids: HashSet<&str> = q.ids.iter().map(String::as_str).collect();
     let format = if q.format == "csv" { "csv" } else { "json" };
-    let cards: Vec<Value> = cat
-        .people
-        .values()
-        .filter(|p| (q.crate_.is_empty() || p.crates.contains(&q.crate_)) && (ids.is_empty() || ids.contains(p.id.as_str())))
-        .map(|p| card_value(p, format == "json"))
-        .collect();
+    let in_crate = |p: &Person| q.crate_.is_empty() || p.crates.contains(&q.crate_);
+    let cards: Vec<Value> = if q.ids.is_empty() {
+        cat.people.values().filter(|p| in_crate(p)).map(|p| card_value(p, format == "json")).collect()
+    } else {
+        // kolejność jak w `ids` (tak, jak admin posortował wyniki); nieznane id pomijamy, karty ukryte też
+        unique_in_order(&q.ids).into_iter().filter_map(|id| cat.people.get(id)).filter(|p| in_crate(p)).map(|p| card_value(p, format == "json")).collect()
+    };
     Ok(file_response(cards, format, if q.crate_.is_empty() { "scambox-karty" } else { &q.crate_ }))
 }
 
@@ -903,6 +909,12 @@ pub async fn admin_cards_template(State(st): State<AppState>, Admin(_): Admin, Q
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn export_ids_keep_requested_order_without_duplicates() {
+        let ids: Vec<String> = ["c", "a", "c", "b", "a"].map(String::from).to_vec();
+        assert_eq!(unique_in_order(&ids), vec!["c", "a", "b"]);
+    }
 
     #[test]
     fn csv_roundtrip_with_quotes_and_newlines() {

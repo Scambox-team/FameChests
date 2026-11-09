@@ -201,13 +201,20 @@ export function startPanel() {
     $("#rarityFilter").innerHTML = [["all", "Wszystkie rzadkości"], ...A.cat.rarityOrder.map(r => [r, A.cat.rarities[r].name])]
       .map(([v, n]) => `<option value="${v}"${A.rarity === v ? " selected" : ""}>${n}</option>`).join("");
     const crate = A.cat.crates.find(c => c.id === A.crate);
-    if (!crate || A.crate === "__new") { $("#cardList").innerHTML = ""; $("#cardsTitle").textContent = "Karty"; return; }
+    if (!crate || A.crate === "__new") { $("#cardList").innerHTML = ""; $("#cardsTitle").textContent = "Karty"; A.listedIds = []; if ($("#cardListExport")) $("#cardListExport").hidden = true; return; }
     const q = A.search.toLowerCase();
     const order = A.cat.rarityOrder;
     const cards = A.cat.cards.filter(c => (c.crates || [c.crate]).includes(A.crate) && (A.rarity === "all" || c.rarity === A.rarity) &&
       (!q || (!hiddenSecret(c) && c.name.toLowerCase().includes(q))))
       .sort((a, b) => a.hidden - b.hidden || order.indexOf(b.rarity) - order.indexOf(a.rarity) || a.name.localeCompare(b.name, "pl"));
-    $("#cardsTitle").textContent = `Karty, ${crate.name} (${cards.filter(c => !c.hidden).length})`;
+    A.listedIds = cards.filter(c => !c.hidden).map(c => c.id);   // do eksportu: to, co widać na liście, w tej kolejności
+    $("#cardsTitle").textContent = `Karty, ${crate.name} (${A.listedIds.length})`;
+    const ex = $("#cardListExport");
+    if (ex) {
+      ex.hidden = false;
+      $("#cardListExportLabel").textContent = `Pobierz (${A.listedIds.length}):`;
+      ex.querySelectorAll("[data-exp]").forEach(b => { b.disabled = !A.listedIds.length; });
+    }
     $("#cardList").innerHTML = cards.map(c => cardTile(c, A.crate)).join("") || '<div class="empty">Brak kart. Dodaj pierwszą!</div>';
   }
 
@@ -260,46 +267,63 @@ export function startPanel() {
         <h3>${isNew ? "Nowa karta" : `Edytuj: ${esc(c.name)}`}</h3>
         <input type="hidden" name="id" value="${esc(c.id)}">
         <div class="a-grid">
-          <label class="wide">Imię i nazwisko / nazwa<input type="text" name="name" value="${esc(c.name)}" required maxlength="60"></label>
-          <label class="wide">Podtytuł <small class="muted">(krótki tekst na karcie pod zdjęciem, max 40 znaków, pusty: typ i skrzynka)</small>
-            <input type="text" name="subtitle" value="${esc(c.subtitle || "")}" maxlength="40" placeholder="np. Mistrz świata 2026"></label>
-          <label class="wide"><input type="checkbox" name="bibi" ${c.bibi ? "checked" : ""}> 🇮🇱 Easter egg „Tel Aviv impressed”: gdy ta karta wypadnie (z dowolnego źródła), obrazek wjeżdża z boku i lecą gwiazdy</label>
-          <label class="wide">Opis <small class="muted">(dłuższy tekst obok karty w podglądzie, max 1000 znaków)</small>
-            <textarea name="desc" rows="3" maxlength="1000" placeholder="Kim jest ta osoba, ciekawostki…">${esc(c.desc || "")}</textarea></label>
-          <div class="wide a-crate-checks" ${c.rarity === "special" ? "hidden" : ""}><span class="muted small">Skrzynki (karta może być w kilku; pierwsza zaznaczona to skrzynka główna, jej kod jest na karcie):</span>
+          <label class="wide">Imię i nazwisko / nazwa<input type="text" name="name" value="${esc(c.name)}" maxlength="60"><small class="a-err" data-err="name" hidden></small></label>
+          <label>Rzadkość<select name="rarity">${opt(Object.fromEntries(A.cat.rarityOrder.map(r => [r, A.cat.rarities[r].name])), c.rarity)}</select></label>
+          <label>Typ<select name="type">${opt(Object.fromEntries(Object.entries(A.cat.types).map(([k, t]) => [k, `${t.icon} ${t.name}`])), c.type)}</select></label>
+          ${specialFieldsHTML(c)}
+        </div>
+
+        <details class="a-fold a-crates-fold"${isNew ? " open" : ""} ${c.rarity === "special" ? "hidden" : ""}>
+          <summary data-sum="crates">Skrzynki</summary>
+          <div class="a-crate-checks"><span class="muted small">Karta może być w kilku skrzynkach; pierwsza zaznaczona to skrzynka główna, jej kod jest na karcie.</span>
+            <small class="a-err" data-err="crates" hidden></small>
             ${A.cat.crates.filter(x => !x.hidden && !x.special).map(x => `<span class="a-crate-row"><label class="chk"><input type="checkbox" name="crates" value="${esc(x.id)}" ${(c.crates || [c.crate]).includes(x.id) ? "checked" : ""}> ${esc(x.emoji)} ${esc(x.name)}${(x.variants || []).includes("flag") ? ' <small title="Skrzynka z wariantem Flagowym"></small>' : ""}</label>
               <label class="chk a-excl" title="Ekskluzywna w tej skrzynce: karta nie wypada z kasyna, ulepszacza, kuźni ani wyścigów (tylko ze skrzynki)" ${c.rarity === "secret" ? "hidden" : ""}><input type="checkbox" name="exclusive" value="${esc(x.id)}" ${(c.exclusive || []).includes(x.id) ? "checked" : ""} ${(c.crates || [c.crate]).includes(x.id) ? "" : "disabled"}>Zablokuj</label></span>`).join("")}
-            <span class="muted small a-excl" ${c.rarity === "secret" ? "hidden" : ""}>= ekskluzywna w tej skrzynce: karta nie wypada z kasyna, ulepszacza, kuźni ani wyścigów (tajna karta ma to zawsze).</span></div>
-          <label class="wide a-country" ${countryNeeded(c.crates || [c.crate]) || c.country ? "" : "hidden"}>Kraj <small class="muted">(kod ISO, np. PL, DE, US, GB-ENG, flaga do wariantu Flagowego)</small>
+            <span class="muted small a-excl" ${c.rarity === "secret" ? "hidden" : ""}>Zablokuj = ekskluzywna w tej skrzynce: karta nie wypada z kasyna, ulepszacza, kuźni ani wyścigów (tajna karta ma to zawsze).</span></div>
+          <div class="a-grid"><label class="wide a-country" ${countryNeeded(c.crates || [c.crate]) || c.country ? "" : "hidden"}>Kraj <small class="muted">(kod ISO, np. PL, DE, US, GB-ENG, flaga do wariantu Flagowego)</small>
             <span class="a-country-row"><input type="text" name="country" value="${esc((c.country || "").toUpperCase())}" maxlength="6" placeholder="PL">
-            <img class="a-flag" src="${c.country ? `/flag/${esc(c.country)}.svg` : ""}" alt="" ${c.country ? "" : "hidden"}></span></label>
-          <label>Rzadkość<select name="rarity">${opt(Object.fromEntries(A.cat.rarityOrder.map(r => [r, A.cat.rarities[r].name])), c.rarity)}</select></label>
-          ${specialFieldsHTML(c)}
-          <label>Typ<select name="type">${opt(Object.fromEntries(Object.entries(A.cat.types).map(([k, t]) => [k, `${t.icon} ${t.name}`])), c.type)}</select></label>
-          <label>HP<input type="number" name="hp" value="${c.hp}" min="0" max="9999"></label>
-          <label>Nazwa ataku<input type="text" name="attack" value="${esc(c.attack)}" maxlength="40"></label>
-          <label>Wartość<input type="number" name="dmg" value="${c.dmg}" min="0" max="9999"></label>
-          <label>Rodzaj<select name="kind1">${kindOpts(c.kind1)}</select></label>
-          <label>Druga zdolność <small class="muted">(opcjonalna)</small><input type="text" name="attack2" value="${esc(c.attack2 || "")}" maxlength="40" placeholder="np. dla legendarnych"></label>
-          <label>Wartość 2<input type="number" name="dmg2" value="${c.dmg2 || ""}" min="0" max="9999"></label>
-          <label>Rodzaj 2<select name="kind2">${kindOpts(c.kind2)}</select></label>
-        </div>
+            <img class="a-flag" src="${c.country ? `/flag/${esc(c.country)}.svg` : ""}" alt="" ${c.country ? "" : "hidden"}></span></label></div>
+        </details>
+
+        <details class="a-fold a-text-fold">
+          <summary data-sum="text">Opis i podtytuł</summary>
+          <div class="a-grid">
+            <label class="wide">Podtytuł <small class="muted">(krótki tekst na karcie pod zdjęciem, max 40 znaków, pusty: typ i skrzynka)</small>
+              <input type="text" name="subtitle" value="${esc(c.subtitle || "")}" maxlength="40" placeholder="np. Mistrz świata 2026"></label>
+            <label class="wide">Opis <small class="muted">(dłuższy tekst obok karty w podglądzie, max 1000 znaków)</small>
+              <textarea name="desc" rows="3" maxlength="1000" placeholder="Kim jest ta osoba, ciekawostki…">${esc(c.desc || "")}</textarea></label>
+            <label class="wide chk"><input type="checkbox" name="bibi" ${c.bibi ? "checked" : ""}> 🇮🇱 Easter egg „Tel Aviv impressed”: gdy ta karta wypadnie (z dowolnego źródła), obrazek wjeżdża z boku i lecą gwiazdy</label>
+          </div>
+        </details>
+
+        <details class="a-fold a-stats-fold"${isNew ? " open" : ""}>
+          <summary data-sum="stats">Statystyki i ataki</summary>
+          <div class="a-grid">
+            <label>HP<input type="number" name="hp" value="${c.hp}" min="0" max="9999"></label>
+            <label>Nazwa ataku<input type="text" name="attack" value="${esc(c.attack)}" maxlength="40"></label>
+            <label>Wartość<input type="number" name="dmg" value="${c.dmg}" min="0" max="9999"></label>
+            <label>Rodzaj<select name="kind1">${kindOpts(c.kind1)}</select></label>
+            <label>Druga zdolność <small class="muted">(opcjonalna)</small><input type="text" name="attack2" value="${esc(c.attack2 || "")}" maxlength="40" placeholder="np. dla legendarnych"></label>
+            <label>Wartość 2<input type="number" name="dmg2" value="${c.dmg2 || ""}" min="0" max="9999"></label>
+            <label>Rodzaj 2<select name="kind2">${kindOpts(c.kind2)}</select></label>
+          </div>
+        </details>
   
-        <fieldset>
-          <legend>Dodatkowe zdolności <small class="muted">(max ${A.cat.maxExtraAbilities})</small></legend>
+        <details class="a-fold a-abil-fold">
+          <summary data-sum="abil">Dodatkowe zdolności</summary>
           <div id="abilityRows">${(c.abilities || []).map(abilityRowHTML).join("")}</div>
           <button class="btn tiny" type="button" data-act="add-ability">Dodaj zdolność</button>
-          <p class="muted small">Wartość zdolności zależy od rodzaju, ofensywna: obrażenia, defensywna: osłona (), lecząca: leczone HP (), ekonomiczna: monety w Arenie.</p>
-        </fieldset>
+          <p class="muted small">Wartość zdolności zależy od rodzaju, ofensywna: obrażenia, defensywna: osłona (), lecząca: leczone HP (), ekonomiczna: monety w Arenie. Maksymalnie ${A.cat.maxExtraAbilities}.</p>
+        </details>
   
-        <fieldset class="a-arena">
-          <legend>Arena <small class="muted">(wersja testowa, tylko dla adminów, animacja, koszt i efekty zdolności)</small></legend>
+        <details class="a-fold">
+          <summary data-sum="arena">Arena <small class="muted">(wersja testowa, tylko dla adminów, animacja, koszt i efekty zdolności)</small></summary>
           <input type="hidden" name="arena_json">
-          ${[0, 1, 2, 3].map(i => arenaSlotHTML(i, (c.arena || [])[i])).join("")}
-        </fieldset>
+          <div class="a-arena">${[0, 1, 2, 3].map(i => arenaSlotHTML(i, (c.arena || [])[i])).join("")}</div>
+        </details>
   
-        <fieldset>
-          <legend>Zdjęcie główne</legend>
+        <details class="a-fold a-photo-fold">
+          <summary>Zdjęcie główne: źródło i kadrowanie</summary>
           <div class="a-grid">
             <label>Wikipedia<select name="wiki_lang">${opt({ pl: "pl.wikipedia", en: "en.wikipedia", de: "de.wikipedia", fr: "fr.wikipedia" }, c.wiki?.[0] || "pl")}</select></label>
             <label class="wide">Tytuł artykułu<input type="text" name="wiki_title" value="${esc(c.wiki?.[1] || "")}" placeholder="np. Robert Lewandowski"></label>
@@ -308,10 +332,10 @@ export function startPanel() {
             <input type="hidden" name="crop">
             <div class="wide"><button class="btn tiny" type="button" data-recrop="" hidden>Kadruj ponownie</button> <small class="muted">Po wybraniu pliku lub wpisaniu linku otworzy się okno kadrowania. Zdjęcie jest zapisywane jako WebP.</small></div>
           </div>
-        </fieldset>
+        </details>
   
-        ${(c.cardVariants || []).map(v => `<fieldset class="a-vphoto">
-          <legend>Zdjęcie wariantu ${esc(A.cat.variants[v].name)} <small class="muted">(użyte zamiast zwykłego zdjęcia w tym wariancie, gdy brak, ${A.cat.variants[v].photoFallback ? `zdjęcie wariantu ${esc(A.cat.variants[A.cat.variants[v].photoFallback].name)}, a gdy i tego brak - ` : ""}zwykłe zdjęcie)</small></legend>
+        ${(c.cardVariants || []).map(v => `<details class="a-fold a-vphoto">
+          <summary>Zdjęcie wariantu ${esc(A.cat.variants[v].name)} <small class="muted">(użyte zamiast zwykłego zdjęcia w tym wariancie, gdy brak, ${A.cat.variants[v].photoFallback ? `zdjęcie wariantu ${esc(A.cat.variants[A.cat.variants[v].photoFallback].name)}, a gdy i tego brak - ` : ""}zwykłe zdjęcie)</small></summary>
           <div class="a-vphoto-row">
             <div class="a-img-box"><img src="${(c.variantPhotos || {})[v] != null ? `/img/${esc(c.id)}/${v}?admin=1&v=${c.variantPhotos[v]}` : ""}" alt="" id="prevV_${v}" ${(c.variantPhotos || {})[v] != null ? "" : "hidden"}><span>${esc(A.cat.variants[v].name)}</span></div>
             <div class="a-grid">
@@ -322,33 +346,84 @@ export function startPanel() {
               ${(c.variantPhotos || {})[v] != null ? `<label class="chk"><input type="checkbox" name="remove_v_${v}" value="1"> usuń to zdjęcie</label>` : ""}
             </div>
           </div>
-        </fieldset>`).join("")}
+        </details>`).join("")}
 
         <input type="hidden" name="vx_json">
         ${tabloidEditorHTML(c)}
         ${variantTextsHTML(c)}
 
-        <fieldset class="a-preview">
-          <legend>Podgląd we wszystkich wariantach</legend>
+        <details class="a-fold a-preview">
+          <summary>Podgląd we wszystkich wariantach</summary>
           ${isNew ? '<p class="muted small">Podgląd będzie dostępny po dodaniu karty.</p>'
             : `<p class="muted small">Karta tak jak w grze, w każdym wariancie, który może mieć${c.rarity === "secret" ? " (także tajna)" : ""}. Pokazuje zapisaną wersję, po zapisaniu odśwież podgląd.</p>
           <button class="btn" type="button" data-act="preview-variants">Pokaż podgląd</button>
           <div class="a-preview-box" hidden></div>`}
-        </fieldset>
+        </details>
   
-        <div class="a-actions">
-          <button class="btn primary" type="submit">${isNew ? "Dodaj kartę" : "Zapisz"}</button>
+        ${c.owned ? `<p class="muted small">Masz ${c.owned} ${c.owned === 1 ? "egzemplarz" : "egzemplarzy"} tej karty. Usunięta karta zniknie z ekwipunku (ukrytą można przywrócić).</p>` : ""}
+        <div class="a-card-bar">
+          <span class="a-bar-msg" id="cardBarMsg" role="alert" hidden></span>
+          <button class="btn primary" type="submit" title="Ctrl+S">${isNew ? "Dodaj kartę" : "Zapisz"}</button>
+          <button class="btn" type="button" data-act="close-card">Anuluj</button>
+          ${isNew ? "" : '<button class="btn a-bar-toggle" type="button" data-act="bar-more" aria-expanded="false" aria-label="Więcej akcji">\u22EF</button>'}
+          <span class="a-bar-more">
           ${!isNew && !c.hidden ? '<button class="btn" type="button" data-act="refetch">Pobierz zdjęcie ponownie</button>' : ""}
           ${!isNew && c.builtin && (c.modified || c.hidden) ? `<button class="btn" type="button" data-act="restore-card">${c.hidden ? "Przywróć kartę" : "Przywróć domyślne"}</button>` : ""}
-          ${!isNew && !c.hidden ? `<button class="btn danger" type="button" data-act="delete-card">${c.builtin ? "Ukryj kartę" : "Usuń kartę"}</button>` : ""}
-          <button class="btn" type="button" data-act="close-card">Anuluj</button>
+          ${!isNew && !c.hidden ? `<button class="btn danger a-bar-del" type="button" data-act="delete-card">${c.builtin ? "Ukryj kartę" : "Usuń kartę"}</button>` : ""}
+          </span>
         </div>
-        ${c.owned ? `<p class="muted small">Masz ${c.owned} ${c.owned === 1 ? "egzemplarz" : "egzemplarzy"} tej karty. Usunięta karta zniknie z ekwipunku (ukrytą można przywrócić).</p>` : ""}
       </div>`;
     $("#cardModal").hidden = false;
     arenaRefresh();
     A.tb = null; A.tbTouched = false;
     tabloidBind(c);
+    cardSummaries();
+    A.cardSig = cardSig();   // stan wyjściowy do wykrywania niezapisanych zmian
+  }
+
+  // odcisk stanu formularza karty (pola, Arena, Tabloid, napisy wariantów); różny od A.cardSig = są niezapisane zmiany
+  function cardSig() {
+    const f = $("#cardForm");
+    const fields = [...new FormData(f)].filter(([k]) => k !== "arena_json" && k !== "vx_json")
+      .map(([k, v]) => [k, v instanceof File ? (v.name ? `${v.name}:${v.size}` : "") : v]);
+    return JSON.stringify([fields, arenaCollect(), A.tb, $$("#cardForm [data-vxt]").map(i => i.value)]);
+  }
+  const cardDirty = () => !$("#cardModal").hidden && A.cardSig != null && cardSig() !== A.cardSig;
+  // zamknięcie z pytaniem, gdy są niezapisane zmiany (Esc, tło okna, Anuluj)
+  // podpisy zwiniętych sekcji formularza karty (żeby bez rozwijania było widać, co w nich jest)
+  function cardSummaries() {
+    const f = $("#cardForm"); if (!f) return;
+    const set = (k, html) => { const el = $(`[data-sum="${k}"]`, f); if (el) el.innerHTML = html; };
+    const v = n => (f.elements[n]?.value || "").trim();
+    const picked = $$("[name=crates]:checked", f).map(x => A.cat.crates.find(c => c.id === x.value)).filter(Boolean);
+    const short = c => c.name.replace(/^Skrzynk[aię]\s+/, "");
+    set("crates", picked.length ? `Skrzynki: ${esc(picked[0].emoji)} ${esc(short(picked[0]))} (główna)${picked.slice(1).map(c => ", " + esc(short(c))).join("")}` : `Skrzynki: <span class="a-sum-warn">brak - wybierz</span>`);
+    const t = [v("subtitle") && `Podtytuł: ${esc(v("subtitle"))}`, v("desc") && "opis", f.elements.bibi?.checked && "easter egg"].filter(Boolean);
+    set("text", `Opis i podtytuł${t.length ? ` <small class="muted">${t.join(" · ")}</small>` : ""}`);
+    set("stats", `Statystyki i ataki <small class="muted">HP ${esc(v("hp"))}${v("attack") ? ` · ${esc(v("attack"))} ${esc(v("dmg"))}` : ""}${v("attack2") ? ` · ${esc(v("attack2"))} ${esc(v("dmg2"))}` : ""}</small>`);
+    const na = $$("#abilityRows > *", f).length;
+    set("abil", `Dodatkowe zdolności${na ? ` <small class="muted">(${na})</small>` : ""}`);
+    const nar = $$(".a-arena [name=ae_id]", f).filter(x => x.value).length;
+    set("arena", `Arena <small class="muted">(wersja testowa, tylko dla adminów${nar ? `, ${nar} ${nar === 1 ? "efekt" : "efekty"}` : ""})</small>`);
+  }
+
+  function tryCloseCardForm() {
+    if (cardDirty() && !confirm("Masz niezapisane zmiany w karcie. Zamknąć bez zapisywania?")) return;
+    closeCardForm();
+  }
+
+  // błędy przy polach (nazwa, skrzynka) + komunikat przy pasku; zwraca pierwsze błędne pole
+  function validateCardForm() {
+    const f = $("#cardForm"), fd = new FormData(f), errs = [];
+    if (!String(fd.get("name") || "").trim()) errs.push(["name", "Podaj imię i nazwisko / nazwę karty", $("[name=name]", f)]);
+    if (fd.get("rarity") !== "special" && !fd.getAll("crates").length) errs.push(["crates", "Zaznacz co najmniej jedną skrzynkę", $(".a-crate-checks", f)]);
+    $$("[data-err]", f).forEach(el => { const e = errs.find(x => x[0] === el.dataset.err); el.hidden = !e; el.textContent = e ? e[1] : ""; });
+    $$(".a-invalid", f).forEach(el => el.classList.remove("a-invalid"));
+    errs.forEach(e => { e[2].classList.add("a-invalid"); e[2].closest("details")?.setAttribute("open", ""); });
+    const bar = $("#cardBarMsg");
+    bar.hidden = !errs.length;
+    bar.textContent = errs.length ? (errs.length > 1 ? `Popraw ${errs.length} pola w formularzu` : errs[0][1]) : "";
+    return errs.length ? errs[0][2] : null;
   }
 
   // okno kadrowania po wybraniu pliku / wpisaniu linku; kadr (ułamki oryginału) idzie do serwera w polu crop<suffix>
@@ -371,11 +446,11 @@ export function startPanel() {
   function variantTextsHTML(c) {
     const list = textVariants();
     if (!list.length || c.rarity === "special") return "";
-    return list.map(([v, x]) => `<fieldset class="a-vtexts">
-      <legend>Napisy wariantu ${esc(x.name)} <small class="muted">(tylko ta karta; puste pole = domyślne, ustawiasz je na <a href="/variants" target="_blank">/variants</a>)</small></legend>
+    return list.map(([v, x]) => `<details class="a-fold a-vtexts">
+      <summary>Napisy wariantu ${esc(x.name)} <small class="muted">(tylko ta karta; puste pole = domyślne, ustawiasz je na <a href="/variants" target="_blank">/variants</a>)</small></summary>
       <div class="a-grid">${Object.entries(x.texts).map(([k, f]) => `<label>${esc(f.label)}<input type="text" data-vxt="${v}.${k}" maxlength="${f.max || 60}"
         value="${esc(c.vx?.[v]?.[k] || "")}" placeholder="${esc(f.default || "")}"></label>`).join("")}</div>
-    </fieldset>`).join("");
+    </details>`).join("");
   }
 
   // ---------------------------------------------------------------- Tabloid: kółko, strzałka i napis na zdjęciu tej karty
@@ -384,8 +459,8 @@ export function startPanel() {
   const TB_PARTS = [["circle", "Kółko"], ["arrow", "Strzałka"], ["text", "Napis"]];
   function tabloidEditorHTML(c) {
     if (!A.cat.variants.tabloid || c.rarity === "special") return "";
-    return `<fieldset class="a-tabloid">
-      <legend>Wariant Tabloid <small class="muted">(żółte kółko, strzałka i napis na zdjęciu tej karty; przeciągnij element myszą)</small></legend>
+    return `<details class="a-fold a-tabloid">
+      <summary>Wariant Tabloid <small class="muted">(żółte kółko, strzałka i napis na zdjęciu tej karty; przeciągnij element myszą)</small></summary>
       <div class="a-tb-row">
         <div class="a-tb-photo"><img alt="" id="tbPhoto"><div class="a-tb-marks"></div></div>
         <div class="a-tb-ctl">
@@ -397,7 +472,7 @@ export function startPanel() {
           <p class="muted small">Bez zmian karta używa położenia domyślnego. Zdjęcie: własne zdjęcie wariantu Tabloid (wyżej), a gdy go nie ma - zwykłe.</p>
         </div>
       </div>
-    </fieldset>`;
+    </details>`;
   }
   function tabloidBind(c) {
     const box = $("#cardForm .a-tabloid");
@@ -486,7 +561,7 @@ export function startPanel() {
       `<label>${esc(A.cat.cardTextSlots[k])}<input type="text" name="t_${k}" value="${esc(t[k] || "")}" maxlength="60" placeholder="zwykły"></label>`).join("")}</div></div>`;
     const atk = slots.filter(([k]) => k.startsWith("atk")).map(([k]) => k);
     const rest = slots.filter(([k]) => !k.startsWith("atk")).map(([k]) => k);
-    return `<details class="wide a-texts"${Object.keys(t).length ? " open" : ""}>
+    return `<details class="wide a-texts">
       <summary>Teksty na karcie <small class="muted">(każdy napis osobno, niezależnie od statystyk, puste pole = zwykły tekst)</small></summary>
       ${group("Napisy", rest)}${group("Zdolności (po kolei, tak jak na karcie)", atk)}
       <p class="muted small">Np. „Cena” zmienia tylko napis, prawdziwa wartość karty zostaje taka, jak wynika z rzadkości. Napisy ozdobne pojawiają się w niektórych wyglądach.</p>
@@ -1105,6 +1180,19 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     $("#cardList").addEventListener("click", e => {
       const b = e.target.closest("[data-card]"); if (b) openCardForm(b.dataset.card);
     });
+    $("#cardListExport").addEventListener("click", async e => {
+      const b = e.target.closest("[data-exp]"); if (!b) return;
+      const ids = A.listedIds || [], ext = b.dataset.exp;
+      if (!ids.length) return toast("Brak kart do pobrania", true);
+      try {
+        const res = await fetch("/api/admin/cards/export", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ format: ext, ids }) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Błąd serwera");
+        const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: `scambox-karty-${A.crate}-${ids.length}.${ext}` });
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast(`Pobrano karty z listy (${ids.length})`);
+      } catch (err) { toast(err.message, true); }
+    });
   
     // podgląd skrzynki na żywo
     $("#crateForm").addEventListener("change", e => {
@@ -1163,8 +1251,9 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     });
   
     // formularz karty
-    $("#cardModal").addEventListener("click", e => { if (e.target.id === "cardModal") closeCardForm(); });
+    $("#cardModal").addEventListener("click", e => { if (e.target.id === "cardModal") tryCloseCardForm(); });
     $("#cardForm").addEventListener("input", e => {
+      if (!$("#cardBarMsg").hidden) validateCardForm();   // błędy znikają na bieżąco po poprawieniu
       if (e.target.matches("[name=attack], [name=attack2], [name=ab_name]")) arenaRefresh();
       if (e.target.name === "country") {  // podgląd flagi
         const code = e.target.value.trim().toLowerCase(), img = $("#cardForm .a-flag");
@@ -1173,12 +1262,15 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
         if (ok) img.src = `/flag/${code}.svg`;
       }
     });
+    $("#cardForm").addEventListener("input", () => cardSummaries());
     $("#cardForm").addEventListener("change", e => {
+      cardSummaries();
       const inp = e.target;
+      if (!$("#cardBarMsg").hidden) validateCardForm();
       if (inp.name === "rarity") {   // karta specjalna: własne pola zamiast skrzynek
         const sp = inp.value === "special";
         $("#cardForm .a-special").hidden = !sp;
-        $("#cardForm .a-crate-checks").hidden = sp;
+        $("#cardForm .a-crates-fold").hidden = sp;
         $$("#cardForm .a-excl").forEach(x => { x.hidden = inp.value === "secret"; });   // tajna i tak nie wypada poza skrzynkami
       }
       if (inp.name === "source") $("#cardForm [data-act=ufo-test]").hidden = inp.value !== "ufo";
@@ -1214,8 +1306,8 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     });
     $("#cardForm").addEventListener("submit", async e => {
       e.preventDefault();
-      const fdata = new FormData(e.target);
-      if (fdata.get("rarity") !== "special" && !fdata.getAll("crates").length) return toast("Zaznacz co najmniej jedną skrzynkę", true);
+      const bad = validateCardForm();
+      if (bad) { bad.scrollIntoView({ behavior: "smooth", block: "center" }); bad.focus?.({ preventScroll: true }); return; }
       const btn = $("button[type=submit]", e.target);
       $("#cardForm [name=arena_json]").value = JSON.stringify(arenaCollect());
       if ($("#cardForm [name=vx_json]")) $("#cardForm [name=vx_json]").value = vxCollect();
@@ -1229,11 +1321,13 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       } catch (err) { toast(err.message, true); btn.disabled = false; btn.textContent = "Zapisz"; }
     });
     $("#cardForm").addEventListener("click", async e => {
+      setTimeout(cardSummaries, 0);   // dodanie/usunięcie zdolności zmienia podpisy sekcji
       const act = e.target.closest("[data-act]")?.dataset.act; if (!act) return;
       const id = $("#cardForm [name=id]").value;
       const c = A.cat.cards.find(x => x.id === id);
       try {
-        if (act === "close-card") return closeCardForm();
+        if (act === "close-card") return tryCloseCardForm();
+        if (act === "bar-more") { const t = e.target.closest("[data-act]"), on = t.closest(".a-card-bar").classList.toggle("more"); t.setAttribute("aria-expanded", String(on)); return; }
         if (act === "preview-special") {   // podgląd karty specjalnej w grze (makiety), z wyborem z formularza
           const f = new FormData($("#cardForm"));
           const q = new URLSearchParams({ card: id, variant: f.get("fixed_variant") || "", style: f.get("style") || "" });
@@ -1282,9 +1376,16 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       } catch (err) { toast(err.message, true); }
     });
     document.addEventListener("keydown", e => {
+      if (e.key === "s" && (e.ctrlKey || e.metaKey) && !$("#cardModal").hidden) {   // Ctrl/Cmd+S zapisuje otwartą kartę
+        e.preventDefault();
+        const btn = $("#cardForm button[type=submit]");
+        if (btn && !btn.disabled && !$("body > .modal:not(#cardModal)")) $("#cardForm").requestSubmit();
+        return;
+      }
       if (e.key !== "Escape") return;
-      closeCardForm();
-      $$("body > .modal:not(#cardModal)").forEach(d => d.remove());
+      const others = $$("body > .modal:not(#cardModal)");
+      if (others.length) return others.forEach(d => d.remove());   // najpierw okna nad formularzem (np. kadrowanie)
+      if (!$("#cardModal").hidden) tryCloseCardForm();
     });
   }
   

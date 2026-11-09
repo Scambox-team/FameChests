@@ -29,3 +29,5 @@
 .ways span { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); }
 .ways img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 18%; border-radius: 6px; }
 @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } .picks { max-height: 380px; } }
+
+@media (max-width: 600px) { .picks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } }
