@@ -2007,6 +2007,7 @@ export const EN: Record<string, string> = {
   "Kolejne kule zjedzone szybko po sobie nabijają combo, a turbo podwaja punkty.": "Orbs eaten in quick succession build a combo, and turbo doubles the points.",
   "Rekord (w punktach) zapisuje się tylko w tej przeglądarce.": "Your record (in points) is saved only in this browser.",
   "Snake": "Snake",
+  "Snake 3D": "Snake 3D",
   "Wąż": "Snake",
   "Długość": "Length",
   "Jabłka": "Apples",

@@ -87,6 +87,7 @@ pub fn router(st: AppState) -> Router {
         .route("/games/figures", get(index))
         .route("/games/pinball", get(index))
         .route("/games/snake", get(index))
+        .route("/games/snake3d", get(index))
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))

@@ -1,5 +1,5 @@
 /* SNAKE 3D (Super Turbo Snake, neon): kontener .sn3 z płótnem three.js i HUD-em budowanym w three/snakeScene.ts. Wszystko pod .sn3, żeby nie dotykać reszty gry. */
-.sn3{position:relative;isolation:isolate;overflow:hidden;width:100%;height:100%;background:var(--bg);color:#fff;font-family:var(--body),system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;border-radius:var(--radius-m)}
+.sn3{container-type:size;position:relative;isolation:isolate;overflow:hidden;width:100%;height:100%;background:var(--bg);color:#fff;font-family:var(--body),system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;border-radius:var(--radius-m)}
 .sn3 #fsBtn{position:absolute;right:20px;bottom:44px;z-index:6;font:600 11px var(--display),system-ui;letter-spacing:.15em;color:rgba(255,255,255,.55);background:none;border:0;cursor:pointer;pointer-events:auto}
 .sn3 #fsBtn:hover{color:#fff}
 .sn3{--cyan:#00f0ff;--pink:#ff2bd6;--gold:#ffd23f;--violet:#7b5cff;--bg:#05030d}
@@ -67,3 +67,26 @@
 .sn3 .keys{font-size:15px}
 }
 
+
+/* mały kontener (okno, telefon): mniejszy tytuł i menu, bez podpowiedzi nachodzącej na pasek turbo */
+@container (max-height: 560px) {
+  .sn3 #hint{display:none}
+  .sn3 #minimap{width:110px;height:110px}
+  .sn3 #score{font-size:36px}
+  .sn3 .stat .v{font-size:18px}
+  .sn3 .title{font-size:clamp(26px,9cqh,60px)}
+  .sn3 .title.small{font-size:clamp(24px,7cqh,44px)}
+  .sn3 .sub{margin-top:6px}
+  .sn3 .keys{margin:14px 0 14px;gap:5px 14px;font-size:14px}
+  .sn3 .cta{padding:10px 22px}
+  .sn3 #finalScore{font-size:clamp(40px,14cqh,90px)}
+  .sn3 .stats{margin:8px 0 14px;font-size:15px}
+  .sn3 #turbo{bottom:14px}
+  .sn3 #mute,.sn3 #fsBtn{display:none}
+}
+@container (max-width: 640px) {
+  .sn3 #minimap{width:96px;height:96px}
+  .sn3 #scoreBox{left:14px}
+  .sn3 #right{right:12px}
+  .sn3 .keys{display:none}
+}

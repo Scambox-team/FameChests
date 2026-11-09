@@ -30,6 +30,7 @@ const FLAPPY_ON = false;   // Flappy jest gotowy, ale na razie wyłączony (zak�
 const FlappyPage = lazy(() => import('../flappy/FlappyPage').then(m => ({ default: m.FlappyPage })));
 const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
 const SnakePage = lazy(() => import('../snake/SnakePage').then(m => ({ default: m.SnakePage })));
+const Snake3DPage = lazy(() => import('../snake/Snake3DPage').then(m => ({ default: m.Snake3DPage })));
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
 const rewarded = new Set<number>();   // nagrodę ogłaszamy raz
@@ -336,16 +337,16 @@ export function ChessPage() {
   const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  // gry: Szachy (podzakładki Partie / Figury), Pinball, Strzelnica, Snake (i wyłączony Flappy); adresy /games, /games/figures, /games/pinball, /games/aim, /games/snake
-  const view = tab === 'figures' || tab === 'pinball' || tab === 'snake' || (AIM_ON && tab === 'aim') || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
+  // gry: Szachy (podzakładki Partie / Figury), Pinball, Strzelnica, Snake (i wyłączony Flappy); adresy /games, /games/figures, /games/pinball, /games/aim, /games/snake, /games/snake3d
+  const view = tab === 'figures' || tab === 'pinball' || tab === 'snake' || tab === 'snake3d' || (AIM_ON && tab === 'aim') || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
   const game = view === 'figures' ? 'games' : view;
   const go = (v: string) => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); };
   if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
-  const PAGES: Record<string, ReactNode> = { pinball: <PinballPage />, aim: <AimPage />, snake: <SnakePage />, flappy: <FlappyPage /> };
+  const PAGES: Record<string, ReactNode> = { pinball: <PinballPage />, aim: <AimPage />, snake: <SnakePage />, snake3d: <Snake3DPage />, flappy: <FlappyPage /> };
   return (
     <div id="view-games">
       <Tabs label="Gry" value={game} onChange={go}
-        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, ...(AIM_ON ? [{ id: 'aim', label: 'Strzelnica' }] : []), { id: 'snake', label: 'Snake' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, ...(AIM_ON ? [{ id: 'aim', label: 'Strzelnica' }] : []), { id: 'snake', label: 'Snake' }, { id: 'snake3d', label: 'Snake 3D' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
       {game === 'games' && (
         <div className="ch-subtabs">
           <Tabs label="Szachy" value={view} onChange={go} items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />

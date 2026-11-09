@@ -361,7 +361,7 @@ function ripple(x, z, strength = 1) {
 const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.26, metalness: 0.18 });
 bodyMat.onBeforeCompile = sh => {
   sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>',
-    '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor * 0.22;\n#endif');
+    '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.22;\n#endif');
 };
 const body = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), bodyMat, MAX_SPHERES);
 body.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

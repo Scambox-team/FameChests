@@ -1,0 +1,21 @@
+/* SNAKE (zakładka Gry): arena 3D w kontenerze (three/snakeScene.ts, styl HUD w snake3d.css) + panel z nagrodą i pomocą. */
+.s3-page { --sn-size: min(calc(100dvh - 180px), 920px); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; justify-content: center; align-items: start; }
+.s3-board {
+  position: relative; width: 100%; height: max(420px, var(--sn-size)); border-radius: var(--radius-m); overflow: hidden;
+  box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px #7b5cff2e;
+}
+.s3-root { position: absolute; inset: 0; }
+.s3-board:fullscreen, .s3-root:fullscreen { border-radius: 0; }
+.s3-side { display: flex; flex-direction: column; gap: 14px; }
+.s3-won { font: 700 22px / 1 var(--display); color: #facc15 !important; }
+.s3-reward { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; font-size: 14px; }
+.s3-reward svg { flex: none; margin-top: 2px; color: #facc15; }
+.s3-help h3 { margin: 6px 0; font-size: 15px; }
+.s3-help p, .s3-help ul { margin: 0 0 8px; }
+.s3-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
+.s3-help kbd { padding: 1px 6px; border-radius: 4px; background: #ffffff12; font: 600 12px var(--body); }
+@media (max-width: 900px) {
+  .s3-page { grid-template-columns: 1fr; justify-items: center; }
+  .s3-board { height: max(420px, calc(100dvh - 330px)); }
+  .s3-side { width: min(100%, 560px); }
+}
