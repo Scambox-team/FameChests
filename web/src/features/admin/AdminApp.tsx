@@ -17,6 +17,7 @@ import { api } from '../../api/client';
 
 const ReportsAdmin = lazy(() => import('./ReportsAdmin'));
 const BackupsAdmin = lazy(() => import('./BackupsAdmin'));
+const RolesAdmin = lazy(() => import('./RolesAdmin'));
 const GamesAdmin = lazy(() => import('./GamesAdmin'));
 const EventsAdmin = lazy(() => import('./EventsAdmin'));
 const ReferralsAdmin = lazy(() => import('./ReferralsAdmin'));
@@ -57,6 +58,7 @@ function page(path: string): ReactNode {
   if (path === '/admin/games') return <Suspense fallback={null}><GamesAdmin /></Suspense>;
   if (path === '/admin/referrals') return <Suspense fallback={null}><ReferralsAdmin /></Suspense>;
   if (path === '/admin/backups') return <Suspense fallback={null}><BackupsAdmin /></Suspense>;
+  if (path === '/admin/roles') return <Suspense fallback={null}><RolesAdmin /></Suspense>;
   return <Panel />;
 }
 
@@ -129,6 +131,7 @@ export default function AdminApp() {
   const { pathname, search } = useLocation();
   const path = pathname.replace(/\/$/, '') === '/admin/mockups' ? '/mockups' : pathname.replace(/\/$/, '');
   const [owner, setOwner] = useState(false);
+  const [perms, setPerms] = useState<string[] | null>(null);
   const [hash, setHash] = useState(hashId);
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
@@ -138,7 +141,7 @@ export default function AdminApp() {
   const root = useRef<HTMLDivElement>(null);
   const embed = new URLSearchParams(search).has('embed');
 
-  const entries = allItems(owner) as Entry[];
+  const entries = allItems(owner, perms) as Entry[];
   const needle = norm(q.trim());
   const shown = needle ? entries.filter(i => norm(`${i.label} ${i.desc} ${i.group}`).includes(needle)) : entries;
 
@@ -154,7 +157,7 @@ export default function AdminApp() {
   const title = item?.label ?? 'Panel admina';
 
   useEffect(() => { document.title = `${title} · ScamBox`; }, [title]);
-  useEffect(() => { api<{ owner: boolean }>('/api/admin/role').then(r => setOwner(r.owner)).catch(() => {}); }, []);
+  useEffect(() => { api<{ owner: boolean; perms: string[] }>('/api/admin/role').then(r => { setOwner(r.owner); setPerms(r.perms); }).catch(() => {}); }, []);
   useEffect(() => {
     const on = () => setHash(hashId());
     window.addEventListener('popstate', on); window.addEventListener('hashchange', on);

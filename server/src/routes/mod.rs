@@ -24,6 +24,7 @@ pub mod quests;
 pub mod ctf;
 pub mod referral;
 pub mod reports;
+pub mod roles;
 pub mod shop;
 pub mod events;
 pub mod snake;
@@ -104,6 +105,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/chess", get(admin_page))
         .route("/admin/reports", get(admin_page))
         .route("/admin/backups", get(admin_page))
+        .route("/admin/roles", get(admin_page))
         .route("/admin/games", get(admin_page))
         .route("/admin/events", get(admin_page))
         .route("/admin/referrals", get(admin_page))
@@ -160,7 +162,10 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/reports", get(reports::admin_reports))
         .route("/api/admin/reports/{id}", post(reports::admin_report_update).delete(reports::admin_report_delete))
         // kopie zapasowe bazy: tylko właściciel (OWNER_IDS)
-        .route("/api/admin/role", get(backups::admin_role))
+        .route("/api/admin/role", get(roles::admin_role))
+        .route("/api/admin/roles", get(roles::roles_list).post(roles::role_save))
+        .route("/api/admin/roles/assign", post(roles::role_assign))
+        .route("/api/admin/roles/{id}/delete", post(roles::role_delete))
         .route("/api/admin/backups", get(backups::backups_list).post(backups::backup_create))
         .route("/api/admin/backups/{name}", get(backups::backup_download))
         // skrzynki, kuźnia, codzienna nagroda
@@ -338,5 +343,6 @@ pub fn router(st: AppState) -> Router {
     for view in pages::VIEWS {
         r = r.route(&format!("/{view}"), get(index));
     }
-    r.with_state(st)
+    // uprawnienia rang adminów sprawdza jedna warstwa (roles::need), nie każdy handler z osobna
+    r.with_state(st.clone()).layer(axum::middleware::from_fn_with_state(st, roles::gate))
 }

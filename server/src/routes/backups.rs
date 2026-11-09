@@ -8,16 +8,11 @@ use serde::Serialize;
 use serde_json::json;
 
 use super::ok;
-use crate::auth::{Admin, Owner};
+use crate::auth::Owner;
 use crate::backup::{BackupFile, Kind};
 use crate::error::{fail, AppError, Res};
 use crate::game::log_admin;
 use crate::state::AppState;
-
-/// Rola zalogowanego admina - panel pokazuje zakładkę kopii tylko właścicielowi
-pub async fn admin_role(State(st): State<AppState>, Admin(me): Admin) -> Res {
-    ok(json!({"id": me.id, "owner": st.cfg.is_owner(me.id)}))
-}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

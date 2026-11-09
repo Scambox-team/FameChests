@@ -64,15 +64,17 @@ export function startPanel() {
   }
   
   async function load() {
-    loadUsers();
-    loadLog();
+    // ranga bez uprawnienia do danego działu dostaje 403 - ten dział jest wtedy schowany w menu, więc błąd pomijamy
+    const quiet = f => Promise.resolve(f()).catch(() => {});
+    quiet(loadUsers);
+    quiet(loadLog);
     A.cat = await api("/api/admin/catalog");
-    loadLinks();
-    loadMessages();
-    loadHorses();
-    loadSkins();
-    loadQuests();
-    loadCtf();
+    quiet(loadLinks);
+    quiet(loadMessages);
+    quiet(loadHorses);
+    quiet(loadSkins);
+    quiet(loadQuests);
+    quiet(loadCtf);
     renderEgg();
     if (!A.crate || !tabCrates().some(c => c.id === A.crate)) A.crate = tabCrates().find(c => !c.hidden)?.id || null;
     render();
@@ -576,7 +578,8 @@ export function startPanel() {
   // ================================================================ GRACZE
   
   async function loadUsers() {
-    const { users, me, chestKinds, restrictedCrates } = await api("/api/admin/users");
+    const [{ users, me, chestKinds, restrictedCrates }, role] = await Promise.all([api("/api/admin/users"), api("/api/admin/role")]);
+    const can = p => role.perms.includes(p);   // przyciski tylko dla tego, na co pozwala ranga (serwer i tak sprawdza)
     A.users = users; A.chestKinds = chestKinds; A.restrictedCrates = restrictedCrates;
     const chestTxt = u => Object.entries(u.chests || {}).map(([k, n]) => {
       const ck = chestKinds.find(c => c.kind === k);
@@ -596,16 +599,16 @@ export function startPanel() {
         <span>${u.unique} / ${u.total}</span>
         <span class="a-chests">${chestTxt(u)}</span>
         <span class="a-user-actions">
-          <button class="btn tiny" data-uact="cards">Karty</button>
-          <button class="btn tiny" data-uact="chests">Skrzynki</button>
-          <button class="btn tiny" data-uact="access">Dostęp</button>
-          <button class="btn tiny" data-uact="money">Pieniądze</button>
-          <button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
-          <button class="btn tiny" data-uact="setEmail" title="Zmień adres email gracza (albo dopisz, gdy go nie ma)">Zmień email</button>
-          <button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>
-          ${u.id !== me ? `<button class="btn tiny" data-uact="admin">${u.isAdmin ? "Odbierz admina" : "Daj admina"}</button>
-          <button class="btn tiny ${u.banned ? "" : "danger"}" data-uact="ban">${u.banned ? "Odblokuj" : "Zablokuj"}</button>
-          <button class="btn tiny danger" data-uact="delete">Usuń</button>` : ""}
+          ${can("users") ? '<button class="btn tiny" data-uact="cards">Karty</button>' : ""}
+          ${can("economy") ? '<button class="btn tiny" data-uact="chests">Skrzynki</button>' : ""}
+          ${can("users") ? '<button class="btn tiny" data-uact="access">Dostęp</button>' : ""}
+          ${can("economy") ? '<button class="btn tiny" data-uact="money">Pieniądze</button>' : ""}
+          ${can("accounts") ? `<button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
+          <button class="btn tiny" data-uact="setEmail" title="Zmień adres email gracza (albo dopisz, gdy go nie ma)">Zmień email</button>` : ""}
+          ${can("users") ? `<button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>` : ""}
+          ${u.id !== me ? `${role.owner ? `<button class="btn tiny" data-uact="admin">${u.isAdmin ? "Odbierz admina" : "Daj admina"}</button>` : ""}
+          ${can("users") ? `<button class="btn tiny ${u.banned ? "" : "danger"}" data-uact="ban">${u.banned ? "Odblokuj" : "Zablokuj"}</button>` : ""}
+          ${can("accounts") ? '<button class="btn tiny danger" data-uact="delete">Usuń</button>' : ""}` : ""}
         </span>
       </div>`).join("")}`;
     loadLog();
@@ -784,7 +787,7 @@ export function startPanel() {
   
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
-    ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina",
+    ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina", role_save: "Zapisał rangę", role_delete: "Usunął rangę", role_assign: "Nadał rangę",
     password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", email_change: "Zmiana emaila gracza", email_template_save: "Zapis szablonu maila", email_template_reset: "Przywrócenie szablonu maila",user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",

@@ -1353,6 +1353,10 @@ pub async fn admin_toggle(State(st): State<AppState>, Admin(me): Admin, Path(uid
     let now_admin = sqlx::query_scalar!("UPDATE users SET is_admin = 1 - is_admin WHERE id = $1 RETURNING is_admin", uid)
         .fetch_optional(&mut *tx)
         .await?;
+    if now_admin.is_some_and(|a| a == 0) {
+        // odebrany admin traci też rangę (inaczej po ponownym nadaniu admina wróciłaby ta sama)
+        sqlx::query("DELETE FROM admin_staff WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
+    }
     log_admin(&mut tx, &me, if now_admin.is_some_and(|a| a != 0) { "admin_grant" } else { "admin_revoke" }, Some(uid), "")
         .await?;
     tx.commit().await?;
