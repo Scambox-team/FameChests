@@ -17,6 +17,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/theme-y2k.css';
 import './styles/theme-aero.css';
+import './styles/theme-warm.css';
 
 import { App } from './app/App';
 import { startI18n } from './i18n/i18n';

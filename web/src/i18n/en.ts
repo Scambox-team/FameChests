@@ -2083,6 +2083,7 @@ export const EN: Record<string, string> = {
   "Ptasia wróżba": "Bird omen",
   "Coś leci, zanim usiądziesz do stołu.": "Something flies by before you sit at the table.",
   "Róż, brokat i kanciaste krawędzie.": "Pink, glitter and sharp corners.",
+  "Kremowy papier, tusz, terakota i szeryfowe nagłówki.": "Cream paper, ink, terracotta and serif headings.",
   "Grafika 3D": "3D graphics",
   "Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.": "Turn off if the game runs slowly. Flat versions will be used.",
   "Twoja przeglądarka nie obsługuje WebGL.": "Your browser does not support WebGL.",
