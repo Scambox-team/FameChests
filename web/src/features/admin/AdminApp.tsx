@@ -18,6 +18,8 @@ import { api } from '../../api/client';
 const ReportsAdmin = lazy(() => import('./ReportsAdmin'));
 const BackupsAdmin = lazy(() => import('./BackupsAdmin'));
 const RolesAdmin = lazy(() => import('./RolesAdmin'));
+const RadioAdmin = lazy(() => import('./RadioAdmin'));
+const ThemesAdmin = lazy(() => import('./ThemesAdmin'));
 const GamesAdmin = lazy(() => import('./GamesAdmin'));
 const EventsAdmin = lazy(() => import('./EventsAdmin'));
 const ReferralsAdmin = lazy(() => import('./ReferralsAdmin'));
@@ -59,6 +61,8 @@ function page(path: string): ReactNode {
   if (path === '/admin/referrals') return <Suspense fallback={null}><ReferralsAdmin /></Suspense>;
   if (path === '/admin/backups') return <Suspense fallback={null}><BackupsAdmin /></Suspense>;
   if (path === '/admin/roles') return <Suspense fallback={null}><RolesAdmin /></Suspense>;
+  if (path === '/admin/radio') return <Suspense fallback={null}><RadioAdmin /></Suspense>;
+  if (path === '/admin/themes') return <Suspense fallback={null}><ThemesAdmin /></Suspense>;
   return <Panel />;
 }
 

@@ -24,10 +24,12 @@ pub mod quests;
 pub mod ctf;
 pub mod referral;
 pub mod reports;
+pub mod radio;
 pub mod roles;
 pub mod shop;
 pub mod events;
 pub mod snake;
+pub mod themes;
 pub mod social;
 pub mod variants;
 
@@ -106,6 +108,8 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/reports", get(admin_page))
         .route("/admin/backups", get(admin_page))
         .route("/admin/roles", get(admin_page))
+        .route("/admin/radio", get(admin_page))
+        .route("/admin/themes", get(admin_page))
         .route("/admin/games", get(admin_page))
         .route("/admin/events", get(admin_page))
         .route("/admin/referrals", get(admin_page))
@@ -166,6 +170,20 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/roles", get(roles::roles_list).post(roles::role_save))
         .route("/api/admin/roles/assign", post(roles::role_assign))
         .route("/api/admin/roles/{id}/delete", post(roles::role_delete))
+        // motywy czasowe (Niepodległość): terminy, na stałe, wyłączony
+        .route("/api/admin/themes", get(themes::admin_themes).post(themes::admin_themes_save))
+        // radio (funkcje eksperymentalne): albumy i utwory dodaje admin, gracz tylko słucha
+        .route("/api/radio", get(radio::radio_list))
+        .route("/radio/file/{id}", get(radio::radio_file))
+        .route("/api/admin/radio", get(radio::admin_radio))
+        .route("/api/admin/radio/file/{id}", get(radio::admin_radio_file))
+        .route("/api/admin/radio/album", post(radio::admin_album_save))
+        .route("/api/admin/radio/album/{id}/delete", post(radio::admin_album_delete))
+        .route("/api/admin/radio/albums/order", post(radio::admin_albums_order))
+        .route("/api/admin/radio/album/{id}/order", post(radio::admin_tracks_order))
+        .route("/api/admin/radio/upload", post(radio::admin_track_upload))
+        .route("/api/admin/radio/track/{id}", post(radio::admin_track_save))
+        .route("/api/admin/radio/track/{id}/delete", post(radio::admin_track_delete))
         .route("/api/admin/backups", get(backups::backups_list).post(backups::backup_create))
         .route("/api/admin/backups/{name}", get(backups::backup_download))
         // skrzynki, kuźnia, codzienna nagroda

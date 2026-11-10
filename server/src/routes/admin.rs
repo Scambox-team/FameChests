@@ -191,6 +191,8 @@ struct AdminCrate {
     hidden: bool,
     /// szanse ustawione przez admina (bez wyliczonej szansy tajnej karty)
     custom_weights: IndexMap<String, f64>,
+    /// szanse rzadkości tej skrzynki są niestandardowe (zaznaczone przez admina)
+    custom_odds: bool,
     /// gracze z dostępem do skrzynki z ograniczeniem
     allowed: Vec<i64>,
     /// współczynnik zwrotu (oczekiwana wartość karty / cena; 0,9 = 90%)
@@ -306,6 +308,7 @@ pub async fn admin_catalog(State(st): State<AppState>, Admin(_): Admin) -> Res {
                 .filter(|(r, _)| !(*r == "secret" && cr.auto_secret))
                 .map(|(r, w)| (r.clone(), *w))
                 .collect(),
+            custom_odds: cr.custom_odds,
             allowed: allowed(&cr.id),
             rtp: crate::game::roll::crate_return(&cat, cr),
         })
@@ -316,6 +319,7 @@ pub async fn admin_catalog(State(st): State<AppState>, Admin(_): Admin) -> Res {
         modified: false,
         hidden: true,
         custom_weights: cr.weights.clone(),
+        custom_odds: cr.custom_odds,
         allowed: allowed(cid),
         rtp: None,
     }));
@@ -397,6 +401,9 @@ pub struct CrateRequest {
     restricted: bool,
     variants: Vec<String>,
     weights: IndexMap<String, NumOrText>,
+    /// niestandardowe szanse rzadkości (wagi z `weights` zamiast stałych domyślnych)
+    #[serde(rename = "customOdds")]
+    custom_odds: bool,
     /// lista graczy z dostępem (brak = bez zmian)
     allowed: Option<Vec<i64>>,
 }
@@ -486,6 +493,7 @@ pub async fn admin_save_crate(State(st): State<AppState>, Admin(me): Admin, Json
     fields.insert("variants".into(), json!(g.crate_variants.iter().filter(|v| req.variants.contains(v)).collect::<Vec<_>>()));
     fields.insert("variantsAll".into(), json!(true));
     fields.insert("weights".into(), Value::Object(weights));
+    fields.insert("customOdds".into(), json!(req.custom_odds));
     let given = req.id.filter(|id| !id.is_empty());
     let cid = given.clone().unwrap_or_else(|| unique_id(&slug(&name), cat.crates.keys().chain(cat.hidden_crates.keys())));
     let mut tx = st.db.begin().await?;

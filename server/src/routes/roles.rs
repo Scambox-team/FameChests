@@ -22,7 +22,7 @@ use crate::state::AppState;
 /// (klucz, opis w panelu)
 pub const PERMS: &[(&str, &str)] = &[
     ("catalog", "Katalog: skrzynki, karty, import i eksport, warianty, naklejki"),
-    ("content", "Treści: wiadomości, maile, osiągnięcia, questy, eventy, polecenia, linki, easter egg"),
+    ("content", "Treści: wiadomości, maile, osiągnięcia, questy, eventy, polecenia, linki, easter egg, radio"),
     ("games", "Gry: kasyno, szachy, wyścigi konne, CTF, snake"),
     ("reports", "Zgłoszenia od graczy"),
     ("log", "Dziennik adminów"),
@@ -48,7 +48,7 @@ pub fn need(path: &str) -> Need {
         "log" => Need::Perm("log"),
         "reports" => Need::Perm("reports"),
         "crates" | "shop-size" | "cards" | "variants" | "variant-designs" | "stickers" => Need::Perm("catalog"),
-        "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" => {
+        "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" | "radio" | "themes" => {
             Need::Perm("content")
         }
         "horses" | "chess-skins" | "ctf" | "snake" => Need::Perm("games"),
@@ -303,5 +303,8 @@ mod tests {
         assert_eq!(perm("/api/admin/users/5/reset-link"), Some("accounts"));
         assert_eq!(perm("/api/admin/referrals/mine"), Some("content"));
         assert_eq!(perm("/api/admin/ctf"), Some("games"));
+        assert_eq!(perm("/api/admin/radio/upload"), Some("content"));
+        assert_eq!(perm("/api/admin/themes"), Some("content"));
+        assert_eq!(perm("/api/admin/radio/file/3"), Some("content"));
     }
 }

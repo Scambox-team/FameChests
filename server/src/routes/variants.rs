@@ -34,12 +34,17 @@ fn random_id() -> String {
 
 // ---------------------------------------------------------------- dla przeglądarki (/api/config)
 
+/// Plik grafiki z biblioteki naklejek (static/img/mlg): naklejki wariantu Niepodległość (ind_*) to WebP, reszta SVG
+pub fn library_file(key: &str) -> String {
+    format!("img/mlg/{key}.{}", if key.starts_with("ind_") { "webp" } else { "svg" })
+}
+
 /// Naklejka z adresem obrazka (wgrany plik albo wbudowana grafika ze static/img/mlg)
 pub fn sticker_json(variant: &str, s: &Sticker) -> Value {
     let url = if s.src == "upload" {
         format!("/sticker/{variant}/{}?v={}", s.id, s.v)
     } else {
-        asset(&format!("img/mlg/{}.svg", s.src))
+        asset(&library_file(&s.src))
     };
     let mut v = json!(s);
     v["url"] = json!(url);
@@ -80,7 +85,7 @@ pub fn config_extras(st: &AppState, cat: &Catalog, admin: bool) -> Map<String, V
     let library: Map<String, Value> = g
         .sticker_library
         .iter()
-        .map(|(k, n)| (k.clone(), json!({"name": n, "url": asset(&format!("img/mlg/{k}.svg"))})))
+        .map(|(k, n)| (k.clone(), json!({"name": n, "url": asset(&library_file(k))})))
         .collect();
     m.insert("stickerLibrary".into(), Value::Object(library));
     m.insert("stickerAnims".into(), json!(g.sticker_anims));
@@ -156,6 +161,11 @@ impl Form {
             }
         }
         Ok(Form { fields, files })
+    }
+
+    /// Nazwa wgranego pliku (puste pole pliku = None)
+    pub fn upload_name(&self, key: &str) -> Option<&str> {
+        self.files.get(key).map(|(name, _)| name.as_str()).filter(|n| !n.is_empty())
     }
 
     pub fn upload(&self, key: &str) -> Option<&[u8]> {

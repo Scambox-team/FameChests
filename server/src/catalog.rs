@@ -157,6 +157,8 @@ pub struct Crate {
     pub special: bool,
     pub variants: Vec<String>,
     pub weights: IndexMap<String, f64>,
+    /// admin zaznaczył „niestandardowe szanse rzadkości”: obowiązują `weights` tej skrzynki (inaczej stałe domyślne)
+    pub custom_odds: bool,
     pub auto_secret: bool,
     pub builtin: bool,
     pub modified: bool,
@@ -342,6 +344,10 @@ pub struct RawCrate {
     pub variants_all: bool,
     #[serde_as(as = "DefaultOnError<IndexMap<_, DefaultOnError<Num>>>")]
     pub weights: IndexMap<String, f64>,
+    /// niestandardowe szanse rzadkości (wagi skrzynki zamiast stałych domyślnych)
+    #[serde(rename = "customOdds")]
+    #[serde_as(as = "DefaultOnError")]
+    pub custom_odds: bool,
     pub builtin: bool,
     pub modified: bool,
 }
@@ -821,13 +827,21 @@ fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<St
     } else if !c.variants_all {
         chosen.extend(g.crate_variants.iter().filter(|v| !g.variants[*v].exclusive && vs.enabled(v)).cloned());
     }
-    // STAŁE szanse rzadkości, takie same we wszystkich skrzynkach (domyślne wagi z game.json); własne wagi skrzynki są
-    // ignorowane. Brakująca rzadkość nie zmienia proporcji pozostałych (losowanie liczy tylko obecne rzadkości).
-    // Tajna: zawsze 1 na SECRET_ODDS otwartych skrzynek, liczona z obecnych rzadkości.
-    let mut weights: IndexMap<String, f64> = g.rarity_order.iter().map(|r| (r.clone(), default_weight(r))).collect();
-    let auto_secret = true;
-    let others: f64 = present.iter().filter(|r| *r != "secret").map(|r| default_weight(r)).sum();
-    weights.insert("secret".into(), if others != 0.0 { others / (g.secret_odds - 1) as f64 } else { 0.0 });
+    // Szanse rzadkości: domyślnie STAŁE, takie same we wszystkich skrzynkach (wagi z game.json, własne wagi skrzynki są
+    // wtedy ignorowane). Admin może zaznaczyć „niestandardowe szanse” (custom_odds) - wtedy obowiązują wagi skrzynki, a
+    // brakująca waga to domyślna. Brakująca rzadkość nie zmienia proporcji pozostałych (losowanie liczy tylko obecne).
+    // Tajna: zawsze 1 na SECRET_ODDS otwartych skrzynek, liczona z obecnych rzadkości (chyba że niestandardowa skrzynka
+    // ma własną wagę tajnej).
+    let custom_odds = c.custom_odds && !special;
+    let own = |r: &str| if custom_odds { c.weights.get(r).copied().unwrap_or_else(|| default_weight(r)) } else { default_weight(r) };
+    let mut weights: IndexMap<String, f64> = g.rarity_order.iter().filter(|r| *r != "secret").map(|r| (r.clone(), own(r))).collect();
+    let auto_secret = !(custom_odds && c.weights.contains_key("secret"));
+    if auto_secret {
+        let others: f64 = present.iter().filter(|r| *r != "secret").map(|r| own(r)).sum();
+        weights.insert("secret".into(), if others != 0.0 { others / (g.secret_odds - 1) as f64 } else { 0.0 });
+    } else {
+        weights.insert("secret".into(), c.weights["secret"]);
+    }
     Crate {
         id: cid.to_owned(),
         name: c.name,
@@ -846,6 +860,7 @@ fn check_crate(cid: &str, c: RawCrate, present: &HashSet<String>, people: Vec<St
         special,
         variants: g.crate_variants.iter().filter(|v| chosen.contains(v)).cloned().collect(),
         weights,
+        custom_odds,
         auto_secret,
         builtin: c.builtin,
         modified: c.modified,
@@ -1188,7 +1203,13 @@ mod tests {
         );
         let cr = &cat.crates["nowa"];
         assert_eq!((cr.price, cr.weights["green"], cr.weights["blue"]), (300, default_weight("green"), default_weight("blue")));
-        assert!(cr.auto_secret && cr.weights["secret"] > 0.0);
+        assert!(cr.auto_secret && cr.weights["secret"] > 0.0 && !cr.custom_odds);
+        let own: Map<String, Value> = serde_json::from_str(r#"{"name": "Własna", "customOdds": true, "weights": {"green": "40", "blue": 10}}"#).unwrap();
+        let cat2 = build(&[("wlasna".into(), own, false)], &[]);
+        let c2 = &cat2.crates["wlasna"];
+        assert!(c2.custom_odds && c2.auto_secret);
+        assert_eq!((c2.weights["green"], c2.weights["blue"]), (40.0, 10.0));
+        assert_eq!(c2.weights["red"], default_weight("red"), "brakująca waga = domyślna");
         let p = cat.person("nowa_testowa").unwrap();
         assert_eq!((p.hp, p.value_mult, p.country.as_str()), (80, 3.0, "pl"));
         assert_eq!(p.abilities, vec![Ability { name: "Cios".into(), kind: "def".into(), value: 50 }]);

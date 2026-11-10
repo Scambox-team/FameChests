@@ -30,6 +30,7 @@ export function About({ info }: { info: LegalInfo | null }) {
         <li>Zdjęcia kart pochodzą głównie z Wikipedii i Wikimedia Commons (wolne licencje). Autora i licencję każdego zdjęcia wskazuje jego strona w Wikimedia Commons. Jeśli jesteś autorem i chcesz poprawić podpis, <ReportLink>napisz</ReportLink>.</li>
         <li>Dźwięki: nagrania na licencji CC0 (freesound.org oraz pakiety Kenney).</li>
         <li>Postacie historyczne i karty własne: grafiki w domenie publicznej lub nasze rysunki.</li>
+        <li>Motyw Niepodległość: subtelne tekstury kafelków na stronie startowej to przedwojenne plakaty (podpisane m.in. Manon, Bogdan Nowakowski, H. Langer, Lit. Art. W. Głowczewski), dostarczone przez twórcę gry; kotylion i wstęgi są narysowane w CSS. Jeśli jesteś właścicielem praw do któregoś z nich, <a href="/zglos">napisz</a>, a usuniemy go.</li>
         <li>Grafiki w motywie Frutiger Aero: dwa zdjęcia z Wikimedia Commons, przycięte i zmniejszone (Olivier Dugornay / Ifremer, CC BY 4.0; José Lodos Benavente, CC0), oraz tapety dostarczone przez twórcę gry, o nieustalonym autorstwie. Pełna lista: plik CREDITS-photos.txt w repozytorium.</li>
       </ul>
 

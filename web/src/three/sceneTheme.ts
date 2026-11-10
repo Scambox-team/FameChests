@@ -1,7 +1,7 @@
 // Motyw interfejsu (Warm Editorial / Frutiger Aero) przebarwia też sceny 3D: światło, otoczenie, materiały skrzynek,
 // podłogę i tło. Motyw wybiera się w Ustawieniach, a zmiana któregokolwiek z tych dwóch motywów przeładowuje stronę,
 // więc sceny czytają go raz przy tworzeniu (ikony skrzynek są w pamięci tylko do przeładowania).
-import { getTheme } from '../styles/theme';
+import { baseTheme } from '../styles/theme';
 
 export interface CrateMats {
   body: { roughness: number; metalness: number; clearcoat?: number; clearcoatRoughness?: number };
@@ -108,6 +108,6 @@ const VAPOR: SceneTheme = {
 };
 
 export function sceneTheme(): SceneTheme {
-  const t = getTheme();
+  const t = baseTheme();
   return t === 'warm' ? WARM : t === 'aero' ? AERO : t === 'vapor' ? VAPOR : DEFAULT;
 }

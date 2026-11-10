@@ -6,6 +6,7 @@ import { getTheme, isDeepTheme, setTheme, type Theme } from '../styles/theme';
 import { useGame } from '../game/store';
 import { deepDefault2D, hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
+import { RadioSettings } from './RadioSettings';
 import styles from './Settings.module.css';
 
 /** Zawartość ustawień: dźwięk, język, grafika 3D i funkcje eksperymentalne (zapamiętane w przeglądarce).
@@ -16,6 +17,7 @@ export function SettingsPanel({ className }: { className?: string }) {
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const game = useGame();
   const aeroOpen = game.themes.includes('aero');
+  const indepOpen = game.themes.includes('independence');
   const [birds, setBirds] = useState(() => !casinoIntroOff());
   const webgl = hasWebGL();
 
@@ -35,7 +37,7 @@ export function SettingsPanel({ className }: { className?: string }) {
     setThemeState(t); setTheme(t);
     if (isDeepTheme(prev) || isDeepTheme(t)) location.reload();   // sceny 3D i układ czytają motyw przy starcie
   };
-  const current: Theme = theme === 'aero' && !aeroOpen ? 'default' : theme;
+  const current: Theme = (theme === 'aero' && !aeroOpen) || (theme === 'independence' && !indepOpen) ? 'default' : theme;
 
   return (
     <div className={`${styles.body} ${className ?? ''}`}>
@@ -82,11 +84,18 @@ export function SettingsPanel({ className }: { className?: string }) {
             <input type="radio" name="theme" checked={current === 'vapor'} onChange={() => pickTheme('vapor')} />
             <span><b>Vaporwave</b><small>Neonowy zachód słońca, siatka, róż i błękit.</small></span>
           </label>
+          {indepOpen && (
+            <label className={styles.check}>
+              <input type="radio" name="theme" checked={current === 'independence'} onChange={() => pickTheme('independence')} />
+              <span><b>Niepodległość</b><small>Kraftowy papier, biel i czerwień, kotyliony i plakaty z 1918 roku. Motyw na święto, nie zostaje na zawsze.</small></span>
+            </label>
+          )}
         </fieldset>
         <label className={styles.check}>
           <input type="checkbox" checked={birds} onChange={e => { setBirds(e.target.checked); setCasinoIntroOff(!e.target.checked); }} />
           <span><b>Ptasia wróżba</b><small>Coś leci, zanim usiądziesz do stołu.</small></span>
         </label>
+        <RadioSettings />
       </div>
     </div>
   );

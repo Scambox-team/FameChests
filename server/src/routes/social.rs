@@ -903,8 +903,10 @@ struct MeResponse {
     needs_terms: bool,
     /// nagrody za polecenia (reflinki), których gracz jeszcze nie widział
     referral: Vec<super::referral::RefNote>,
-    /// odblokowane motywy interfejsu (poza domyślnym i Y2K): "aero" - Frutiger Aero
+    /// dostępne motywy interfejsu (poza domyślnym, Y2K, Warm i Vaporwave): "aero" - Frutiger Aero (odblokowany kartą), "independence" - Niepodległość (czasowy)
     themes: Vec<&'static str>,
+    /// motyw, który dostają domyślnie gracze bez własnego wyboru (teraz: "independence" w trakcie eventu niepodległościowego)
+    theme_default: Option<&'static str>,
     /// motyw został właśnie odblokowany i gracz jeszcze o tym nie wie (powiadomienie raz)
     theme_new: bool,
 }
@@ -930,6 +932,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     if state["themeAero"] == 0 && !cx.me.admin() && backfill_theme_aero(&mut c, uid).await? {
         state.insert("themeAero".into(), 1);
     }
+    let indep_now = super::themes::independence_active(&mut c).await?;
     let incoming =
         sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM friendships WHERE addressee_id = $1 AND status = 'pending'"#, uid)
             .fetch_one(&mut *c)
@@ -982,7 +985,18 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         horse_news: super::horses::horse_news(&mut c, uid).await?,
         referral: super::referral::notes(&mut c, &cx.cat, uid).await?,
         needs_terms: !super::reports::terms_ok(&mut c, uid).await?,
-        themes: if cx.me.admin() || state["themeAero"] > 0 { vec!["aero"] } else { vec![] },
+        theme_default: if indep_now { Some("independence") } else { None },
+        themes: {
+            let mut t = vec![];
+            if cx.me.admin() || state["themeAero"] > 0 {
+                t.push("aero");
+            }
+            // motyw czasowy: dla wszystkich w terminie ustawionym w panelu, admini zawsze (do testów)
+            if cx.me.admin() || indep_now {
+                t.push("independence");
+            }
+            t
+        },
         theme_new: !cx.me.admin() && state["themeAero"] == 1,
     };
     let jar = jar.add(session_cookie(uid, st.cfg.cookie_secure));

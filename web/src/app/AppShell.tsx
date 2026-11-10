@@ -10,6 +10,7 @@ import { Money } from '../ui/Money';
 import { Ambient } from './Ambient';
 import { InstallButton } from './InstallButton';
 import { SettingsPanel, SoundControl } from './Settings';
+import { initRadio } from '../sound/radio';
 import { LEGAL_NAV, navFor, titleFor, type NavItem } from './nav';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
@@ -132,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const moreCount = items.filter(i => !i.primary).reduce((n, i) => n + (i.badge ? S.badges[i.badge] : 0), 0);
 
   useEffect(() => { setSheet(false); }, [pathname]);
+  useEffect(() => { void initRadio(); }, []);   // radio (Eksperymentalne): pobiera albumy i rusza, jeśli gracz je włączył
 
   // Pasek boczny się nie przewija: pokazuje tyle pozycji, ile mieści się w wysokości okna, a resztę
   // (od końca listy) zjada „Więcej” - arkusz ma zawsze pełną listę. Wysokość `.nav` nie zależy od liczby

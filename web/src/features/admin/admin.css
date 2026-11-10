@@ -761,3 +761,9 @@ details.a-fold > .a-grid, details.a-fold > .a-crate-checks { margin-bottom: 4px;
 details.a-fold > summary small { font-weight: 400; margin-left: 6px; }
 .a-sum-warn { color: #ffb3bf; }
 .a-card-fields > .a-grid { margin-bottom: 4px; }
+
+/* niestandardowe szanse rzadkości skrzynki */
+.a-odds { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 12px; margin-top: 8px; }
+.a-odds label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.a-odds input { width: 100%; }
+.a-odds input:disabled { opacity: .55; }

@@ -5,7 +5,7 @@ import { api } from '../../api/client';
 import { applyState } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
-import { getTheme } from '../../styles/theme';
+import { baseTheme } from '../../styles/theme';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import { createSnake, type Dir, type SnakeGame, type SnakeHud, type SnakeLook } from './engine';
@@ -13,7 +13,7 @@ import './snake.css';
 
 // Zakładka Gry -> Snake: plansza na płótnie (engine.ts), wygląd z panelu admina (/api/games/snake), rekord w przeglądarce.
 // Motywy Warm / Aero / Vapor mają własny wygląd planszy i węża (skins.ts), więc kolory, obrazki i dźwięki z panelu admina dotyczą tylko motywu domyślnego (i Y2K).
-const THEME = getTheme();
+const THEME = baseTheme();
 const SKIN = THEME === 'warm' || THEME === 'aero' || THEME === 'vapor' ? THEME : null;
 const KEYS: Record<string, Dir> = {
   ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right',

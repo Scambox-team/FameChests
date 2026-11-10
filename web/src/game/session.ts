@@ -5,7 +5,7 @@ import { applyCustomVariants } from '../cards/cardHtml';
 import { person } from './rules';
 import { S, touch } from './store';
 import type { Config, StateResponse } from './types';
-import { enforceThemes } from '../styles/theme';
+import { applyDefaultTheme, enforceThemes } from '../styles/theme';
 import { toast } from '../ui/Toaster';
 
 function applyStateResponse(st: StateResponse) {
@@ -25,6 +25,7 @@ export function applyMe(me: any) {
   S.jpLobby = me.jackpotLobby;
   S.themes = me.themes ?? [];
   enforceThemes(S.themes);
+  applyDefaultTheme(me.themeDefault);
   if (me.themeNew && !themeToastShown) {
     themeToastShown = true;
     toast('Odblokowano motyw Frutiger Aero — włączysz go w Ustawieniach');

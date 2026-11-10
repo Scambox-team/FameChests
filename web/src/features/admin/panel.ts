@@ -174,9 +174,16 @@ export function startPanel() {
           Przy wariancie Flagowym ustaw każdej karcie tej skrzynki kraj (np. PL) w jej edycji.</p>
       </fieldset>
       <fieldset ${c.special ? "hidden" : ""}>
+        <legend>Szanse rzadkości</legend>
+        <label class="chk"><input type="checkbox" name="customOdds" ${c.customOdds ? "checked" : ""}> <b>Niestandardowe szanse rzadkości w tej skrzynce</b></label>
+        <p class="muted small">Bez zaznaczenia obowiązują stałe szanse, takie same we wszystkich skrzynkach. Po zaznaczeniu wpisz własne wagi: szansa rzadkości to jej waga podzielona przez sumę wag rzadkości, które mają karty w tej skrzynce (waga nie jest procentem). Puste pole = waga domyślna (widoczna w szarym podpowiedzi); przy Tajnej puste = automatycznie 1 na ${A.cat.secretOdds || ""} otwarć.</p>
+        <div class="a-odds">${A.cat.rarityOrder.map(r => { const R = A.cat.rarities[r], w = (c.customWeights || {})[r];
+          return `<label>${esc(R.name)}<input type="number" min="0" max="1000" step="any" name="w_${r}" value="${w ?? ""}" placeholder="${r === "secret" ? "auto" : +(+R.weight).toFixed(3)}" ${c.customOdds ? "" : "disabled"}></label>`; }).join("")}</div>
+      </fieldset>
+      <fieldset ${c.special ? "hidden" : ""}>
         <legend>Zwrot skrzynki (tylko dla adminów)</legend>
         <p>${c.rtp == null ? '<span class="muted">Brak danych (skrzynka bez kart albo nowa, zapisz ją i otwórz ponownie).</span>' : `<b style="font-size:1.4em">${+(c.rtp * 100).toFixed(1)}%</b> <span class="muted">średnio oddaje tyle wartości, ile kosztuje (cena ${c.price} gr)</span>`}</p>
-        <p class="muted small">Oczekiwana wartość jednej karty ze skrzynki: szansa rzadkości × średnia z kart tej rzadkości × szanse wariantów × wartość karty w wariancie, podzielona przez cenę. Szanse rzadkości są stałe dla wszystkich skrzynek, więc zwrot zależy od ceny, kart i przypiętych wariantów. Liczone na dziś (trwające wydarzenia wariantów wliczone).</p>
+        <p class="muted small">Oczekiwana wartość jednej karty ze skrzynki: szansa rzadkości × średnia z kart tej rzadkości × szanse wariantów × wartość karty w wariancie, podzielona przez cenę. Szanse rzadkości są stałe dla wszystkich skrzynek (chyba że zaznaczysz niestandardowe wyżej), więc zwrot zależy od ceny, kart, przypiętych wariantów i ewentualnie własnych szans. Liczone na dziś (trwające wydarzenia wariantów wliczone).</p>
       </fieldset>
       <div class="a-actions">
         <button class="btn primary" type="submit">${isNew ? "Utwórz skrzynkę" : "Zapisz"}</button>
@@ -191,7 +198,7 @@ export function startPanel() {
   function renderCrateForm() {
     const c = A.crate === "__new"
       ? { name: "", short: "", code: "", emoji: "📦", color1: "#ffcf3f", color2: "#7a3b00", price: A.cat.defaultPrice, desc: "",
-          shop: true, mode: "rotation", restricted: false, customWeights: {}, allowed: [], variants: [] }
+          shop: true, mode: "rotation", restricted: false, customWeights: {}, customOdds: false, allowed: [], variants: [] }
       : A.cat.crates.find(x => x.id === A.crate);
     $("#crateForm").innerHTML = c ? crateFormHTML(c) : "<p class='muted'>Wybierz albo utwórz skrzynkę.</p>";
     $("#newCard").disabled = !c || A.crate === "__new" || c.hidden;
@@ -862,7 +869,7 @@ export function startPanel() {
   
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
-    ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina", role_save: "Zapisał rangę", role_delete: "Usunął rangę", role_assign: "Nadał rangę",
+    ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina", role_save: "Zapisał rangę", radio_album_save: "Zapis albumu radia", radio_album_delete: "Usunięcie albumu radia", radio_track_add: "Dodanie utworu radia", radio_track_save: "Zapis utworu radia", radio_track_delete: "Usunięcie utworu radia", radio_order: "Kolejność w radiu", theme_save: "Ustawienia motywu", role_delete: "Usunął rangę", role_assign: "Nadał rangę",
     password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", email_change: "Zmiana emaila gracza", email_template_save: "Zapis szablonu maila", email_template_reset: "Przywrócenie szablonu maila",user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",
@@ -1198,6 +1205,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     $("#crateForm").addEventListener("change", e => {
       if (e.target.name === "restricted") $(".a-allowed").hidden = !e.target.checked;
       if (e.target.name === "mode") $(".a-season").hidden = e.target.value !== "seasonal";
+      if (e.target.name === "customOdds") $(".a-odds input").forEach(i => { i.disabled = !e.target.checked; });
     });
     $("#crateForm").addEventListener("input", e => {
       if (!["color1", "color2", "emoji"].includes(e.target.name)) return;
@@ -1214,6 +1222,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       data.restricted = fd.has("restricted");
       data.allowed = fd.getAll("allowed").map(Number);
       data.variants = fd.getAll("variants");
+      data.customOdds = fd.has("customOdds");
       data.weights = Object.fromEntries(A.cat.rarityOrder.map(r => [r, fd.get("w_" + r)]).filter(([, v]) => v !== "" && v !== null));
       try {
         const res = await api("/api/admin/crates", { method: "POST", json: data });

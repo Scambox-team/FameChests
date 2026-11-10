@@ -21,3 +21,20 @@
 .locked { cursor: not-allowed; opacity: .6; }
 .locked b { display: inline-flex; align-items: center; gap: 6px; }
 .lock { flex: none; }
+
+/* radio (Eksperymentalne) */
+.radio { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.field select { width: 100%; min-width: 0; }
+.hint { font-size: 12px; line-height: 16px; color: var(--faint); }
+.transport { display: flex; gap: 6px; }
+.transport button { display: grid; place-items: center; flex: 1; height: 34px; border: 0; border-radius: var(--radius-s); background: var(--raised); color: var(--text); cursor: pointer; }
+.transport button:hover { background: var(--control); }
+.now { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--radius-s); background: var(--raised); font-size: 12px; color: var(--muted); }
+.now b { color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
+.now a, .credits a { color: var(--hue); display: inline-flex; align-items: center; gap: 3px; overflow-wrap: anywhere; }
+.credits { font-size: 12px; color: var(--muted); }
+.credits summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.credits ul { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
+.credits li { display: flex; flex-direction: column; gap: 1px; }
+.credits li b { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }

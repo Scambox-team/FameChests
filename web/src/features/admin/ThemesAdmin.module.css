@@ -1,0 +1,8 @@
+.box { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: var(--radius-m); background: var(--surface); }
+.card h3 { margin: 0; }
+.on { margin: 0; font-weight: 600; color: var(--good); }
+.off { margin: 0; font-weight: 600; color: var(--warn); }
+.radio { display: flex; align-items: center; gap: 8px; }
+.dates { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: 0 0 4px 26px; }
+.dates label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }

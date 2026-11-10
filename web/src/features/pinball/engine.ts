@@ -4,7 +4,7 @@
 // Warstwy: tło (niebo, słońce, góry) i stół (ściany, prowadnice) rysujemy raz do osobnych płócien,
 // co klatkę dochodzą siatka, lampki, bumpery, łapy, kulki i iskry.
 import { Sound } from '../../sound/sound';
-import { getTheme } from '../../styles/theme';
+import { baseTheme } from '../../styles/theme';
 import { SKINS, type PinSkin } from './skins';
 import { ARC, AXIS, BALLS, DIVIDERS, FR0, FR1, GATE, INPUT_CODES, LANE_X, R, Sim, TICK, W, geoOf, mirror, type Ball, type Flip, type Fx, type Input } from './core';
 
@@ -42,7 +42,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   const HORIZON = 520;
   const GUIDE_L = geo.guideL, GUIDE_R = geo.guideR, SLING_L = geo.slingL, SLING_R = geo.slingR, POSTS = geo.posts;
   const SAUCER = geo.saucer;
-  const th = getTheme();
+  const th = baseTheme();
   const SK: PinSkin | null = th === 'warm' || th === 'aero' || th === 'vapor' ? SKINS[th] : null;   // motyw inny niż domyślny: własny wygląd (skins.ts)
   const C: Record<string, string> = { ...LV.palette, ...(SK?.pal ?? {}) };
   const ctx = canvas.getContext('2d')!;

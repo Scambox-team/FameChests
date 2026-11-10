@@ -9,8 +9,9 @@ import {
 import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 import { use3D } from '../three/support';
+import { warmFont } from '../styles/theme';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -979,6 +980,7 @@ export const VX_BG = {
   snow: () => '<i class="snw-fog"></i>',
   anime: anSpeed,
   hawaii: () => '<i class="hi-dapple"></i>',
+  independence: () => { warmFont(); return '<i class="ind-pod"></i>'; },
   analog: () => `${ahSeal("ah-seal ah-spin")}<i class="ah-scan"></i>${ahNoise(.08)}`,
   chesswhite: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
   chessblack: () => `<i class="cs-gloss"></i>${CS_RELIEF}`,
@@ -1091,6 +1093,7 @@ export const VX_DECO = {
   // Śnieżny: dwie warstwy płatków (jeden obrazek w CSS na warstwę, przesuwany transformem)
   snow: () => '<div class="vx-deco vx-clip"><i class="snw-layer a"></i><i class="snw-layer b"></i></div>',
   hawaii: () => `<div class="vx-deco vx-clip">${hiDeco()}</div>`,
+  independence: () => '<div class="vx-deco vx-clip ind-na"></div>',
   claude: () => `<div class="vx-deco">${clFeed()}</div>`,
   scratch: () => `<div class="vx-deco">${zdBurst("DO<br>100 000<br>ZŁ", 16, 30, -12, 31, "#ffd21a", "#c81e1e")}${zdBurst("x20!", 86, 52, 10, 22, "#ff2f92", "#fff")}</div>`,
   muertos: () => `<div class="vx-deco vx-clip">${dmPetals(6)}${dmConfetti(8)}${dmButterfly(3, 30, 1, 0)}${dmButterfly(84, 46, .85, 3)}</div>
@@ -1280,6 +1283,7 @@ export function variantSub(variant, pid) {
   if (parts.includes("rgb")) return "RGB SYNC · TRYB: SPEKTRUM";
   if (parts.includes("barbie")) return "♡ GLITTER QUEEN ♡";
   if (parts.includes("polska")) return "NARODOWE ŚWIĘTO NIEPODLEGŁOŚCI";
+  if (parts.includes("independence")) return "11 LISTOPADA 1918 · NIEPODLEGŁA";
   if (parts.includes("polaroid")) return '<span class="pd-hand">potrząśnij mną!</span>';
   if (parts.includes("analog")) return esc(variantText(person(pid), "analog", "sub"));
   if (parts.includes("wizytowka")) return wzSub(person(pid));

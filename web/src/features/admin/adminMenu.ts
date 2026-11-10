@@ -32,6 +32,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     P('questy', 'Questy', 'Codzienny cel: karta do zdobycia i zadanie CTF', 'content'),
     G('eventy', 'Eventy', 'Wydarzenia w grze', '/admin/events', 'content'),
     P('easter', 'Easter egg', 'Obrazek przelatujący w bębnie skrzynki', 'content'),
+    G('motywy', 'Motywy', 'Dostępność motywu Niepodległość: terminy, na stałe, wyłączony', '/admin/themes', 'content'),
+    G('radio', 'Radio', 'Albumy i utwory do funkcji eksperymentalnej Radio: nazwy, źródła, kolejność', '/admin/radio', 'content'),
   ] },
   { id: 'gry', label: 'Gry', items: [
     G('gry', 'Gry', 'Ustawienia gier i kasyna', '/admin/games', 'games'),

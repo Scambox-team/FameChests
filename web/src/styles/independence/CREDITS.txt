@@ -1,0 +1,4 @@
+Plakaty w tym folderze (do-broni, jak-na-opoce, na-pomoc, pps) to przedwojenne plakaty dostarczone przez wlasciciela projektu;
+uzyte tylko jako subtelna tekstura pod kolorem kafelkow w motywie Niepodleglosc (skala 460 px, WebP).
+Podpisy na plakatach: Manon (1920), Bogdan Nowakowski, Lit. Art. W. Glowczewski (Warszawa), H. Langer.
+Zrodlo i status prawny nieustalone - w razie roszczen usunac pliki i reguly url() w theme-independence.css.

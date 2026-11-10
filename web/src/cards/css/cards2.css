@@ -3078,6 +3078,39 @@ canvas.ae3-live { position: absolute; inset: 0; width: 100%; height: 100%; displ
 .pick.v-polska { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #dc143c, inset 0 -26px 26px -18px var(--rc); }
 .avv-polska img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #dc143c !important; }
 
+/* Niepodległość (makieta od właściciela: kolaż z lat 1918-1926). Ramka biało-czerwona (górna połowa biała, dolna czerwona),
+   wnętrze w dwóch odcieniach beżu, a na nim kolaż plakatów i zdjęć (.ind-pod: obrazek przycięty dokładnie do wnętrza karty i rozciągnięty na cały
+   .vx-bg, więc nie zależy od rozmiaru ramki). Czapka i mapa u góry są w kolażu, a elementy wystające na zdjęcie
+   i na ramkę (flaga, pasek zdjęć z prawej, plakat z lewej, żołnierze nad dolną krawędzią zdjęcia) to osobna warstwa nad kartą
+   (.ind-na w .vx-deco). Zdjęcie jest niższe (1,25 : 1, jak w makiecie), panele pod nim stoją na dole, a między nimi widać kolaż.
+   Napisy krojem Newsreader jak w motywie Warm Editorial (krój wczytuje warmFont() z VX_BG). Naklejki: "both" (nad i pod zdjęciem). */
+.card.v-independence { --frame: linear-gradient(180deg, #fff 0 50%, #d91e3d 50% 100%); --spin: initial; box-shadow: 0 6px 18px #0009; }
+.card.v-independence .card-inner { background: linear-gradient(180deg, #e9dfd7 0 50%, #decfc2 50% 100%); color: #4a1a1f; font-family: Newsreader, Georgia, "Times New Roman", serif; }
+.ind-pod { inset: 0; background: url("./independence/pod.webp") 0 0 / 100% 100% no-repeat; }
+/* elementy wystające na zdjęcie nie wychodzą za ramkę: warstwa jest przycięta do wnętrza karty (margines ramki 3,6cqw, zaokrąglenie jak .card-inner) */
+.vx-deco.ind-na { background: url("./independence/na.webp") 0 0 / 100% 100% no-repeat; clip-path: inset(3.6cqw round 2.8cqw); }
+.card.v-independence .card-inner > :where(:not(.vx-bg, .v-stickers)) { position: relative; z-index: 1; }
+/* nagłówek: nazwa między czapką a mapą, HP i typ przed flagą */
+.card.v-independence .card-head { align-items: center; padding-right: 8.5cqw; gap: .2em; }
+.card.v-independence .card-name { margin-left: 24.5cqw; text-align: center; letter-spacing: -.015em; font: 600 .74em/1.1 Newsreader, Georgia, serif; color: #4a1a1f; text-shadow: 0 0 1.4cqw #fff, 0 0 .5cqw #fff, 0 0 .5cqw #fff; }
+.card.v-independence .card-hp { font: 600 1em/1 Newsreader, Georgia, serif; color: #8a1226; text-shadow: 0 0 1.2cqw #fff, 0 0 .4cqw #fff; }
+.card.v-independence .card-hp small { color: #8a1226; }
+.card.v-independence .card-type { filter: drop-shadow(0 0 .5cqw #fff); }
+.card.v-independence .card-photo { aspect-ratio: 1.25 / 1; border: .6cqw solid #fff; border-image: none; border-radius: .3cqw; box-shadow: 0 .5cqw 1.4cqw #0007; }
+.card.v-independence .card-photo > img, .r-secret.v-independence .sc-art img { filter: contrast(1.04) saturate(1.05); }
+.card.v-independence .card-sub { margin-top: auto; margin-inline: 0; font: italic 600 .5em/1.2 Newsreader, Georgia, serif; letter-spacing: .08em; }
+/* panele: czerwone kafelki w 30% krycia (kolaż przebija), jasny tekst z ciemnym cieniem */
+.card.v-independence :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: rgb(110 10 28 / .3); border: none; border-left: .8cqw solid #fff; border-radius: .25em; box-shadow: none; color: #fff6ea; font-weight: 600; text-shadow: 0 .15cqw .45cqw #000c, 0 0 1.1cqw rgb(60 0 10 / .75); }
+.card.v-independence .card-attack { padding-inline: .45em; margin-top: 1.5%; }
+.card.v-independence .card-foot { padding: .1em .45em; }
+.card.v-independence :is(.atk-name, .atk-dmg, .card-stats b, .card-value) { color: #fff6ea; font-family: Newsreader, Georgia, serif; font-weight: 600; text-shadow: 0 .15cqw .45cqw #000c, 0 0 1.1cqw rgb(60 0 10 / .75); }
+.card.v-independence .card-stats { color: #ffe6e0; }
+.card.v-independence :is(.card-stats, .card-foot) { font-family: Newsreader, Georgia, serif; }
+.r-secret.v-independence .vx-bg { display: none; }
+.r-secret.v-independence .sc-border { background: linear-gradient(180deg, #fff 0 50%, #d91e3d 50%); animation: none; }
+.pick.v-independence { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #d91e3d, inset 0 -26px 26px -18px var(--rc); }
+.avv-independence img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #d91e3d !important; }
+
 /* Sugar Cane (event Święta, makieta Candy Cane 1, bez animacji) - ramka w czerwono-białe ukośne paski laski cukrowej,
    biało-różowe wnętrze, miętowe cukierki-spirale w rogach (sgc-mint w VX_DECO), czerwona nazwa. Klasy sgc- (cd- to Cukierkowa). */
 .card.v-sugarcane { --frame: repeating-linear-gradient(135deg, #e8173f 0 6%, #fff 6% 12%); --spin: initial; box-shadow: 0 6px 18px #0009; }

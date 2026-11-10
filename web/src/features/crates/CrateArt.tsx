@@ -28,7 +28,13 @@ function FlatCrate({ c1, c2, d, emoji, className }: { c1: string; c2: string; d:
       <rect x="10" y="40" width="100" height="4" fill="#00000033" />
       <rect className="fc-x fc-band" x="24" y="12" width="9" height="80" />
       <rect className="fc-x fc-band" x="87" y="12" width="9" height="80" />
+      {/* art deco (Niepodległość): wachlarz z dołu, schodkowe narożniki, ramka i zygzak na wieku */}
+      <path className="fc-x fc-deco" d="M60 91 28 52M60 91 38 47M60 91 49 45M60 91 60 44M60 91 71 45M60 91 82 47M60 91 92 52" />
+      <path className="fc-x fc-deco" d="M14 89v-8h8v-8h8M106 89v-8h-8v-8h-8" />
+      <rect className="fc-x fc-deco" x="14" y="42" width="92" height="46" />
+      <path className="fc-x fc-deco" d="M16 30l7-7 7 7 7-7 7 7 7-7 7 7 7-7 7 7 7-7 7 7 7-7 7 7" />
       <circle className="fc-seal" cx="60" cy="63" r="17" fill={c1} />
+      <polygon className="fc-x fc-octa" fill={c1} points="78.5,70.7 67.7,81.5 52.3,81.5 41.5,70.7 41.5,55.3 52.3,44.5 67.7,44.5 78.5,55.3" />
       {emoji ? <text x="60" y="64" textAnchor="middle" dominantBaseline="central" fontSize="20">{emoji}</text> : (
         <g transform="translate(48 51)" fill="none" stroke={c2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d={d} />

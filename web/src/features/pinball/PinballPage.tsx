@@ -7,7 +7,7 @@ import { syncInventory } from '../../game/session';
 import { S, touch } from '../../game/store';
 import { fmt as fmtGr, fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
-import { getTheme } from '../../styles/theme';
+import { baseTheme } from '../../styles/theme';
 import { GameRanking } from '../chess/GameRanking';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
@@ -111,7 +111,7 @@ export function PinballPage() {
   };
 
   return (
-    <div className={`pb-page pb-sk-${getTheme()}`}>
+    <div className={`pb-page pb-sk-${baseTheme()}`}>
       <div className={`pb-stage${tilt3d ? ' is-3d' : ''}`}>
         <div className="pb-cabinet">
           <div className="pb-table">

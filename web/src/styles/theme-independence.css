@@ -1,0 +1,182 @@
+/* Motyw Niepodległość (eksperymentalny, Ustawienia; dostępny dla wszystkich w terminie ustawionym w panelu admina - domyślnie
+   10-13.11.2026, routes/themes.rs). Wygląd: kraftowy papier w odcieniach brązu, plakatowa biel i czerwień, kotyliony,
+   biało-czerwone wstęgi, ciemny mahoniowy pasek boczny z biało-czerwonym brzegiem, krój Playfair Display w kapitalikach.
+   <html> ma data-theme="warm" (cały układ, kasyno, gry, sceny 3D i skórki gier biorą się z theme-warm.css / theme-deep.css) i
+   dodatkowo data-skin="independence" (styles/theme.ts) - ten plik przestawia paletę, krój i dokłada motywy z 1918 roku.
+   Plakaty z epoki (independence/*.webp) leżą tylko jako subtelna faktura pod kolorem kafelków strony startowej.
+   Wszystko pod :root[data-theme="warm"][data-skin="independence"]. */
+
+:root[data-theme="warm"][data-skin="independence"] {
+  color-scheme: light;
+  --ground: #cdb18a;            /* kraftowy papier */
+  --surface: #dcc4a0;
+  --raised: #ebd9b9;
+  --rule: #a9835a;
+  --control: #8f6a45;
+  --text: #2a140b;              /* ciemny brąz, na --surface około 11:1 */
+  --muted: #4a2a18;             /* około 7:1 */
+  --faint: #5d3a24;             /* około 5,5:1 */
+  --hue: #b3122b !important;    /* cegła-czerwień; biały tekst około 6,6:1 */
+  --on-hue: #fff !important;
+  --good: #2f5d34;
+  --bad: #8f1020;
+  --warn: #7a4a00;
+  --display: "Playfair Display", "Bodoni Moda", "Iowan Old Style", Georgia, serif;
+  scrollbar-color: #8f6a45 #cdb18a;
+
+  --deep-hover: #c3a47a;
+  --deep-shadow: 42 20 11;
+  --deep-gold: #a9761b;
+  --deep-casino-gold: #e0a85c; --deep-casino-gold-dk: #8a5a22; --deep-felt: #7d1226; --deep-felt-dk: #38080f;
+  --deep-sq-lt: #e9d3ad; --deep-sq-dk: #9c4a3e;
+  --isl-ground: #2a150d; --isl-surface: #3a1d12; --isl-raised: #4c291a; --isl-rule: #67402f; --isl-control: #8c5c43;
+  --isl-text: #fbefdc; --isl-muted: #e6cfae; --isl-faint: #bfa07c;
+  --isl-stage: #1a0c07; --isl-hero: #2a150d; --isl-car-a: #3a1d12; --isl-car-b: #24110a;
+
+  /* kotylion jako obrazek CSS: plisowane czerwone płatki i biały środek */
+  --ind-rosette: radial-gradient(circle, #fffaf1 0 22%, #2a140b 22% 24%, transparent 25%), repeating-conic-gradient(#c8102e 0 7.5deg, #98101f 7.5deg 15deg);
+}
+
+:root[data-theme="warm"][data-skin="independence"] body { background: var(--ground); }   /* tło jednolite, motywy tylko w narożnikach okien */
+:root[data-theme="warm"][data-skin="independence"] ::selection { background: #e9a0a8; color: #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] :focus-visible { outline-color: #b3122b; }
+:root[data-theme="warm"][data-skin="independence"] input[type="range"],
+:root[data-theme="warm"][data-skin="independence"] input[type="checkbox"],
+:root[data-theme="warm"][data-skin="independence"] input[type="radio"] { accent-color: #b3122b; }
+:root[data-theme="warm"][data-skin="independence"] .a-page { --hue: #b3122b; }
+:root[data-theme="warm"][data-skin="independence"] ::placeholder { color: #6c4a30; }
+:root[data-theme="warm"][data-skin="independence"] [class*="_ambient_"] > [class*="_glowA_"] { background: radial-gradient(circle, #d98a6e, transparent 65%); opacity: .2; }
+:root[data-theme="warm"][data-skin="independence"] [class*="_ambient_"] > [class*="_glowB_"] { background: radial-gradient(circle, #fff3dd, transparent 65%); opacity: .45; }
+:root[data-theme="warm"][data-skin="independence"] [class*="_ambient_"] > [class*="_grid_"] { background-image: radial-gradient(circle, #2a140b1f 1px, transparent 1.4px); }
+
+/* ---------- krój: Playfair Display w kapitalikach jak w druku z epoki ---------- */
+:root[data-theme="warm"][data-skin="independence"] h1,
+:root[data-theme="warm"][data-skin="independence"] [class*="_head_"] h2,
+:root[data-theme="warm"][data-skin="independence"] [class*="_title_"],
+:root[data-theme="warm"][data-skin="independence"] [class*="_brand_"] { font-weight: 700; letter-spacing: .02em; }
+:root[data-theme="warm"][data-skin="independence"] .panel h3 {
+  font-variant-caps: small-caps; letter-spacing: .06em; font-weight: 700; border-bottom: 4px solid transparent;
+  border-image: repeating-linear-gradient(90deg, #b3122b 0 12px, #fffaf1 12px 24px) 1;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) h2 { font-weight: 700; letter-spacing: .005em; }
+
+/* ---------- panele i okna: papier z cienką ramką, czerwonym i białym paskiem z lewej ---------- */
+:root[data-theme="warm"][data-skin="independence"] .panel,
+:root[data-theme="warm"][data-skin="independence"] [class*="_box_"]:not([class*="_toast"]) { box-shadow: inset 0 0 0 1px var(--rule), inset 5px 0 0 #fffaf1, inset 9px 0 0 #b3122b; }
+:root[data-theme="warm"][data-skin="independence"] [class*="_badge_"] { background: #dc143c; }
+/* mały kotylion z biało-czerwonymi wstążkami w prawym górnym rogu paneli */
+:root[data-theme="warm"][data-skin="independence"] .panel {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 52'%3E%3Cpath d='M12 26 6 50l7-4 4 5 3-25Z' fill='%23fff' stroke='%232a140b' stroke-width='1.2'/%3E%3Cpath d='M28 26l6 24-7-4-4 5-3-25Z' fill='%23dc143c' stroke='%232a140b' stroke-width='1.2'/%3E%3Ccircle cx='20' cy='19' r='17' fill='%23dc143c' stroke='%232a140b' stroke-width='1.6'/%3E%3Ccircle cx='20' cy='19' r='11' fill='none' stroke='%23fff' stroke-width='1.4' stroke-dasharray='3 2'/%3E%3Ccircle cx='20' cy='19' r='5' fill='%23fff' stroke='%232a140b' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px top -7px; background-size: 24px 31px;
+}
+
+/* ---------- przyciski: czerwień z białą wewnętrzną ramką, zakładki jako czerwona pigułka ---------- */
+:root[data-theme="warm"][data-skin="independence"] [class*="_hue_"][class*="_btn_"] { box-shadow: 2px 2px 0 var(--text), inset 0 0 0 1.5px rgb(255 255 255 / .4); }
+:root[data-theme="warm"][data-skin="independence"] [class*="_hue_"][class*="_btn_"]:not(:disabled):hover { background: #960f23; box-shadow: 4px 4px 0 var(--text), inset 0 0 0 1.5px rgb(255 255 255 / .4); }
+:root[data-theme="warm"][data-skin="independence"] [class*="_tabs_"] { background: rgb(42 20 11 / .13); }
+:root[data-theme="warm"][data-skin="independence"] [class*="_tabs_"] button[aria-selected="true"] { background: var(--hue); color: #fff; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / .45); }
+
+/* ---------- nagłówek ekranu: kotylion jako znak wodny i czerwono-biała kreska ---------- */
+:root[data-theme="warm"][data-skin="independence"] [class*="_hero_"]:not(:has(> [class*="_scene_"])) {
+  position: relative; box-shadow: none;
+  background: linear-gradient(90deg, #b3122b 0 110px, #fffaf1 110px 122px, var(--rule) 122px) left bottom / 100% 4px no-repeat;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_hero_"]:not(:has(> [class*="_scene_"]))::after {
+  display: block !important; content: ""; position: absolute; z-index: 0; right: 0; top: -4px; width: 132px; height: 132px; border-radius: 50%;
+  background: var(--ind-rosette); opacity: .14; pointer-events: none;
+}
+
+/* ---------- pasek boczny (komputer): ciemny mahoń z biało-czerwonym brzegiem, ikony wracają jako pieczątki ---------- */
+@media (min-width: 821px) {
+  :root[data-theme="warm"][data-skin="independence"] [class*="_app_"] > [class*="_side_"] {
+    --text: #fbefdc; --muted: #e6cfae; --faint: #bfa07c; --deep-hover: #4c291a; --rule: #67402f;
+    background: linear-gradient(180deg, #3a1d12, #27120a); padding-right: 24px;
+    box-shadow: inset -5px 0 0 #fffaf1, inset -9px 0 0 #b3122b;
+  }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_app_"] > [class*="_side_"] [class*="_brand_"] {
+    display: flex; align-items: center; gap: 10px; font-size: 26px; border-bottom: 3px double #b3122b; color: #fbefdc;
+  }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_app_"] > [class*="_side_"] [class*="_brand_"]::before {
+    content: ""; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--ind-rosette); box-shadow: 0 0 0 1.5px #fffaf1;
+  }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_nav_"] [class*="_link_"] {
+    gap: 10px; border-radius: 4px; font-variant-caps: small-caps; letter-spacing: .05em; font-size: 17px; font-weight: 600;
+  }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_nav_"] [class*="_link_"] > svg { display: block; flex: none; width: 17px; height: 17px; stroke-width: 1.7px; }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_nav_"] [class*="_link_"]:hover { text-decoration: none; }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_nav_"] [class*="_link_"][class*="_on_"] {
+    background: #b3122b; color: #fff; box-shadow: inset 3px 0 0 #fffaf1;
+  }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_nav_"] [class*="_link_"][class*="_on_"] > svg { color: #fff; }
+  :root[data-theme="warm"][data-skin="independence"] [class*="_app_"] > main > [class*="_top_"] { box-shadow: 0 0 0 1.5px var(--text), inset 10px 0 0 #fffaf1, inset 15px 0 0 #b3122b, 4px 4px 0 rgb(42 20 11 / .2); }
+}
+
+/* wstążka flagowa (falująca biało-czerwona) w pustym miejscu paska górnego, między tytułem a saldem; tylko na szerokim ekranie */
+@media (min-width: 1150px) {
+  :root[data-theme="warm"][data-skin="independence"] [class*="_app_"] > main > [class*="_top_"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 34'%3E%3Cpath d='M2 4C22-2 42 12 62 6s40-8 60-1 26 7 36 1v9c-10 6-26-5-36-1S82 22 62 15 22 21 2 13Z' fill='%23fffaf1' stroke='%232a140b' stroke-width='1.3' stroke-linejoin='round'/%3E%3Cpath d='M2 13C22 7 42 21 62 15s40-8 60-1 26 7 36 1v9c-10 6-26-5-36-1S82 31 62 24 22 30 2 22Z' fill='%23dc143c' stroke='%232a140b' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 54% 50%; background-size: 118px auto;
+  }
+}
+
+/* ---------- strona startowa: kafelki w kolorze papieru z plakatem z epoki jako subtelną fakturą ---------- */
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_tile_"] { box-shadow: inset 0 0 0 1.5px var(--text), inset 0 0 0 6px rgb(255 250 241 / .5); }
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] a[class*="_tile_"][class*="_crates_"],
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] a[class*="_tile_"][class*="_crates_"]:hover {
+  background: linear-gradient(rgb(236 204 190 / .8), rgb(236 204 190 / .8)), url("./independence/do-broni.webp") center 30% / cover;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_tile_"][class*="_arena_"] {
+  background: linear-gradient(rgb(232 214 186 / .8), rgb(232 214 186 / .8)), url("./independence/na-pomoc.webp") center 20% / cover;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_tile_"][class*="_games_"],
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] a[class*="_tile_"][class*="_games_"]:hover {
+  background: linear-gradient(rgb(240 226 198 / .8), rgb(240 226 198 / .8)), url("./independence/jak-na-opoce.webp") center 35% / cover;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_tile_"][class*="_casino_"],
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] a[class*="_tile_"][class*="_casino_"]:hover {
+  background: linear-gradient(rgb(104 14 30 / .8), rgb(104 14 30 / .8)), url("./independence/pps.webp") center 30% / cover;
+  --text: #fbefdc; --muted: #e6cfae; --faint: #bfa07c; color: var(--text);   /* ciemny kafelek: jasny tekst */
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_cta_"] { box-shadow: 3px 3px 0 #b3122b; }
+
+/* ---------- ikony z końca lat dziesiątych XX wieku: czerwone pieczątki z podwójną obwódką ---------- */
+/* ikony strony startowej: czerwone pieczątki z podwójną obwódką (ruletka niżej) */
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] :is([class*="_swords_"], [class*="_knight_"], [class*="_dice_"]) {
+  border: 4px double #b3122b; border-radius: 50%; color: #b3122b; background: #fffaf1; box-shadow: 0 0 0 2px #fffaf1, 0 0 0 3px #b3122b, 5px 6px 0 rgb(42 20 11 / .85); stroke-width: 1.7px;
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_home_"] [class*="_wheel_"] > i {
+  border: 4px double #b3122b; background: var(--ind-rosette); box-shadow: 0 0 0 2px #fffaf1, 0 0 0 3px #b3122b, 5px 6px 0 rgb(42 20 11 / .85);
+}
+:root[data-theme="warm"][data-skin="independence"] [class*="_tabbar_"] [class*="_link_"] > svg,
+:root[data-theme="warm"][data-skin="independence"] [class*="_sheet_"] [class*="_link_"] > svg { stroke-width: 1.5px; }
+:root[data-theme="warm"][data-skin="independence"] [class*="_tabbar_"] [class*="_link_"][class*="_on_"] > svg { color: #b3122b; filter: drop-shadow(1px 1px 0 #2a140b); }
+:root[data-theme="warm"][data-skin="independence"] svg:has(.fc-body) { filter: drop-shadow(3px 4px 0 #2a140b); }
+:root[data-theme="warm"][data-skin="independence"] .fc-body, :root[data-theme="warm"][data-skin="independence"] .fc-lid, :root[data-theme="warm"][data-skin="independence"] .fc-seal { stroke: #2a140b; }
+
+/* ---------- kasyno i gry: sukno w kolorze burgundu, obrysy w odcieniu motywu ---------- */
+:root[data-theme="warm"][data-skin="independence"] .cs-page {
+  --deep-rl-red: #b3122b; --deep-rl-black: #24090d; --deep-rl-green: #4d6a32;
+  --deep-rail: #4a1019; --deep-rail-dk: #240609;
+  --deep-rim: repeating-linear-gradient(100deg, #7a1a28 0 7px, #5f1320 7px 13px, #8a2230 13px 19px);
+  --deep-slot-top: linear-gradient(180deg, #d9304a, #8a1126);
+  --deep-slot-window: linear-gradient(180deg, #fffaf1, #dcc4a0 50%, #fffaf1);
+}
+:root[data-theme="warm"][data-skin="independence"] .cs-game { background: #f0e2c6; box-shadow: 0 0 0 1.5px #2a140b, 2px 3px 0 #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game:hover:not(:disabled) { background: #f7ecd4; box-shadow: 0 0 0 1.5px #2a140b, 3px 4px 0 #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game.on { background: #e9b9b3; box-shadow: 0 0 0 1.5px #2a140b, 3px 4px 0 #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game b { color: #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game small { color: #5d3a24; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game svg { color: #b3122b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-game.on svg { color: #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] { --deep-gry-edge: 0 0 0 1.5px #2a140b, 3px 4px 0 #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .cs-stage { box-shadow: 0 0 0 1.5px #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .sn-board { box-shadow: 0 0 0 1.5px #2a140b, 0 0 0 7px #fffaf1, 0 0 0 8.5px #b3122b, 4px 8px 0 8px #2a140b; }
+:root[data-theme="warm"][data-skin="independence"] .pb-cabinet {
+  background: linear-gradient(#240609, #240609) padding-box, repeating-linear-gradient(100deg, #7a1a28 0 7px, #5f1320 7px 13px, #8a2230 13px 19px) border-box;
+  box-shadow: 0 0 0 1.5px #2a140b, 4px 6px 0 #2a140b, inset 0 0 24px #0008;
+}
+
+/* ---------- skrzynka (płaska, motyw bez 3D): międzywojenne art deco - wachlarz promieni, schodkowe narożniki, ramka, zygzak na wieku, ośmiokątna pieczęć ---------- */
+:root[data-theme="warm"][data-skin="independence"] svg .fc-deco { display: inline; fill: none; stroke: #fffaf1; stroke-width: 1.3; stroke-linecap: square; stroke-linejoin: miter; opacity: .9; }
+:root[data-theme="warm"][data-skin="independence"] svg .fc-octa { display: inline; stroke: #2a140b; stroke-width: 2.6; stroke-linejoin: miter; }
+:root[data-theme="warm"][data-skin="independence"] svg .fc-body, :root[data-theme="warm"][data-skin="independence"] svg .fc-lid { stroke-linejoin: miter; }

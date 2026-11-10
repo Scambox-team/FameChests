@@ -19,6 +19,7 @@ import './styles/theme-y2k.css';
 import './styles/theme-deep.css';
 import './styles/theme-aero.css';
 import './styles/theme-warm.css';
+import './styles/theme-independence.css';
 import './styles/theme-vapor.css';
 
 import { App } from './app/App';

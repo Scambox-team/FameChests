@@ -663,6 +663,14 @@
    "off": true,
    "desc": "Na Dzień Niepodległości: biało-czerwone szarfy w rogach karty, łowicka wycinanka w tle, kotylion i baner 11 listopada. Wypada w czasie eventu ze wszystkich skrzynek."
   },
+  "independence": {
+   "name": "Niepodległość",
+   "chance": 0.02,
+   "mult": 10.0,
+   "off": true,
+   "stickers": "both",
+   "desc": "Kolaż z lat 1918-1926 w biało-czerwonej oprawie: plakaty z epoki i zdjęcia działaczy w tle karty, czapka i mapa nad zdjęciem, krój szeryfowy jak w motywie Warm Editorial. Naklejki od admina nad i pod zdjęciem."
+  },
   "sugarcane": {
    "name": "Sugar Cane",
    "chance": 0.03,
@@ -3974,6 +3982,16 @@
  },
  "patchNotes": [
   {
+   "v": 27,
+   "date": "2026-11-10",
+   "title": "Motyw Niepodległość",
+   "items": [
+    "🇵🇱 W grze jest nowy, <b>tymczasowy motyw: Niepodległość</b>. Kraftowy papier, biel i czerwień, kotyliony i plakaty z epoki. Dostępny w czasie obchodów (do <b>13 listopada</b>, administracja może go przedłużyć).",
+    "✨ Jeśli nie wybierałeś(-aś) wcześniej żadnego motywu, <b>włączył się sam</b>. Możesz go zmienić w każdej chwili: <b>Ustawienia</b> (ikona dźwięku w pasku albo „Więcej” na telefonie) → <b>Eksperymentalne</b> → <b>Motyw</b>.",
+    "🔁 Po zakończeniu święta gra wróci do zwykłego motywu, a Twój własny wybór (np. Warm Editorial, Vaporwave) zawsze ma pierwszeństwo."
+   ]
+  },
+  {
    "v": 26,
    "date": "2026-11-08",
    "title": "Telefon, konto i maile",
@@ -4312,6 +4330,14 @@
   }
  ],
  "stickerLibrary": {
+  "ind_pilsudski": "Piłsudski (Niepodległość)",
+  "ind_dmowski": "Dmowski (Niepodległość)",
+  "ind_daszynski": "Daszyński (Niepodległość)",
+  "ind_witos": "Witos (Niepodległość)",
+  "ind_paderewski": "Paderewski (Niepodległość)",
+  "ind_korfanty": "Krzyż Korfantego (Niepodległość)",
+  "ind_korfanty2": "Chorągiew „Tobie Polsko” (Niepodległość)",
+  "ind_kokarda": "Kokarda (Niepodległość)",
   "glasses": "Okulary „deal with it”",
   "illuminati": "Oko Illuminati",
   "hitmarker": "Hitmarker",
