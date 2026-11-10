@@ -2296,4 +2296,13 @@ export const EN: Record<string, string> = {
   "To szyfr Vigenère'a: jak Cezar, ale przesunięcie zmienia się po kolei wg liter klucza.": "It's a Vigenère cipher: like Caesar, but the shift changes in turn according to the letters of the key.",
   "Klucz jest podany nad szyfrogramem. Znaki spoza alfabetu (cyfry, nawiasy, spacje) nie zużywają liter klucza.": "The key is given above the ciphertext. Characters outside the alphabet (digits, brackets, spaces) don't use up letters of the key.",
   "W CyberChef użyj Vigenère Decode, wpisz klucz i wklej szyfrogram. Dla szybszej pracy dcode.fr też zadziała.": "In CyberChef use Vigenère Decode, enter the key and paste the ciphertext. dcode.fr works too, if you prefer.",
+  "Discord połączony": "Discord linked",
+  "Discord odłączony": "Discord unlinked",
+  "Odłącz": "Unlink",
+  "Połącz": "Link",
+  "Kod z Discorda": "Code from Discord",
+  "Twoje konto jest połączone z Discordem. Bot nadaje role za miejsce w rankingu.": "Your account is linked to Discord. The bot gives roles for your ranking place.",
+  "To konto ma już połączony Discord. Najpierw je odłącz.": "This account already has Discord linked. Unlink it first.",
+  "Zły albo wygasły kod. Wpisz /polacz na Discordzie, żeby dostać nowy.": "Wrong or expired code. Type /polacz on Discord to get a new one.",
+  "To konto Discord jest już połączone z innym kontem w grze.": "This Discord account is already linked to another game account.",
 };

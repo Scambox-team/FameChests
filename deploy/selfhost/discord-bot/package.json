@@ -1,0 +1,19 @@
+{
+  "name": "scambox-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bot Discorda społeczności scambox.pl: statystyki, ranking, questy, eventy, rotacja skrzynek",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/format.js && node --check src/game.js && node --check src/features.js && node --check src/roles.js && node --check src/render.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "discord.js": "14.16.3",
+    "puppeteer-core": "23.11.1"
+  }
+}

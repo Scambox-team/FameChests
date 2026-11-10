@@ -57,9 +57,28 @@ services:
       TZ: Europe/Warsaw
       # metryki Prometheus wyłączone
       METRICS_ADDR: ""
+      # bot Discorda pyta o dane przez /api/bot/snapshot z tym hasłem (z .env)
+      BOT_TOKEN: "${DISCORD_BOT_GAME_TOKEN:-}"
     volumes:
       # zdjęcia kart, kopie bazy: w folderze data-lokalne obok projektu; usuń go, żeby zacząć od zera
       - ./data-lokalne:/data
 
+  # Bot Discorda (opcjonalny): docker compose -f docker-compose.local.yml --profile discord up --build
+  # Wymaga w .env: DISCORD_TOKEN, DISCORD_GUILD_ID, DISCORD_BOT_GAME_TOKEN. Opis: deploy/selfhost/discord-bot/README.md
+  discord-bot:
+    profiles: [discord]
+    build: ./deploy/selfhost/discord-bot
+    depends_on:
+      - app
+    environment:
+      DISCORD_TOKEN: "${DISCORD_TOKEN:-}"
+      DISCORD_GUILD_ID: "${DISCORD_GUILD_ID:-}"
+      BOT_TOKEN: "${DISCORD_BOT_GAME_TOKEN:-}"
+      GAME_URL: "http://app:8000"
+      GAME_PUBLIC_URL: "http://localhost:8000"
+    volumes:
+      - scambox-local-bot:/data
+
 volumes:
   scambox-local-db:
+  scambox-local-bot:

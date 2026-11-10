@@ -2,3 +2,11 @@
 .box { padding: 18px; border: 1px solid var(--rule); border-radius: var(--radius-m); background: var(--surface); }
 .account { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
 .account:hover { color: var(--text); }
+.discordTitle { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 15px; }
+.discordText { margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.discordText b { color: var(--text); }
+.discordForm { display: flex; gap: 8px; flex-wrap: wrap; }
+.discordInput { flex: 1 1 140px; min-width: 0; padding: 9px 12px; border: 1px solid var(--rule); border-radius: var(--radius-s, 8px); background: var(--raised); color: var(--text); font: inherit; letter-spacing: .12em; text-transform: uppercase; }
+.discordBtn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1px solid var(--rule); border-radius: var(--radius-s, 8px); background: var(--raised); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.discordBtn:hover:not(:disabled) { border-color: var(--hue); }
+.discordBtn:disabled { opacity: .5; cursor: default; }

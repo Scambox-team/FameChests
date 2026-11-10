@@ -248,6 +248,11 @@ pub async fn quest_view(c: &mut Conn, cat: &Catalog, uid: i64) -> sqlx::Result<O
     }
 }
 
+/// Aktualny quest dla bota Discorda (bez gracza: `mine` zawsze false)
+pub async fn bot_view(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<QuestView>> {
+    quest_view(c, cat, 0).await
+}
+
 /// Po każdej nowej karcie: czy to cel trwającego, jeszcze niewypełnionego questa. Pierwszy wygrywa - `UPDATE` z warunkiem
 /// `winner_id IS NULL` zadziała tylko dla jednego gracza, nawet gdy dwóch trafi kartę w tej samej chwili.
 pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source: &str) -> sqlx::Result<()> {

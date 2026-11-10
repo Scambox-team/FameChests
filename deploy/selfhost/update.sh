@@ -84,10 +84,20 @@ if [ -n "$CUR" ] && [ "$(docker inspect -f '{{.State.Running}}' scambox-game 2>/
         || { log "Kopia bazy nie powiodła się - nie aktualizuję"; exit 1; }
 fi
 
+# bot Discorda (profil "discord" w COMPOSE_PROFILES) jest budowany z repozytorium, więc po git pull trzeba go przebudować.
+# Błąd bota nie cofa aktualizacji gry.
+update_bot() {
+    grep -Eq '^COMPOSE_PROFILES=.*discord' .env || return 0
+    log "Aktualizuję bota Discorda"
+    docker compose build -q discord-bot && docker compose up -d --no-build discord-bot \
+        || log "UWAGA: bot Discorda się nie zaktualizował (gra działa): docker compose logs discord-bot"
+}
+
 # 4. start nowej wersji i czekanie, aż odpowiada (healthcheck z docker-compose.override.yml)
 log "Uruchamiam nową wersję i czekam, aż odpowie (do $WAIT s)"
 if docker compose up -d --no-build --wait --wait-timeout "$WAIT" game; then
     rm -f .update.failed
+    update_bot
     docker image prune -f >/dev/null 2>&1 || true   # stare, nieoznaczone obrazy
     log "Gotowe: gra działa na nowej wersji ($(docker image inspect -f '{{.Created}}' "$IMAGE" | cut -c1-19))"
     exit 0

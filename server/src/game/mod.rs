@@ -328,6 +328,17 @@ pub async fn insert_for(
     if source == "drop" && variant.split('+').any(|p| p == "aero") {
         unlock_theme_aero(c, uid).await?;
     }
+    // rzadki drop ze skrzynki: zapis dla bota Discorda (ogłoszenie na serwerze); gracze poza rankingiem (admin, testy) pomijani
+    if source == "drop" && !hidden && matches!(cat.people[pid].rarity.as_str(), "gold" | "ultra" | "secret") {
+        sqlx::query("INSERT INTO bot_events (user_id, person_id, variant, rarity, created_at) VALUES ($1, $2, $3, $4, $5)")
+            .bind(uid)
+            .bind(pid)
+            .bind(variant)
+            .bind(&cat.people[pid].rarity)
+            .bind(now)
+            .execute(&mut *c)
+            .await?;
+    }
     let first =
         if source != "casino" { note_hall_of_fame(c, uid, hidden, pid, variant, source, now, new_for_me).await? } else { false };
     Ok(NewItem {

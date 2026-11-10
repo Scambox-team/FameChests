@@ -240,6 +240,19 @@ docker compose exec -T db pg_restore -h localhost -U postgres -d postgres --clea
 docker compose up -d game
 ```
 
+## Bot Discorda (opcjonalnie)
+
+Bot publikuje na serwerze Discord ranking, questy, eventy, rotację skrzynek, aktualizacje i rzadkie dropy, liczy konta i graczy
+online w nazwach kanałów, odpowiada na komendy (`/profil`, `/karta`, `/ranking`...) i nadaje role graczom, którzy połączą
+konto z Discordem (w grze: Ustawienia → Discord). Włączasz go w `.env`: `COMPOSE_PROFILES=tunnel,discord` (albo `caddy,discord`),
+`DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_BOT_GAME_TOKEN` (losowy: `openssl rand -hex 24`) i ID kanałów `DISCORD_CH_*`
+(bot niczego sam nie zakłada). Pełna instrukcja, link zaproszenia i opis ról: [`discord-bot/README.md`](discord-bot/README.md).
+
+Bot nie otwiera żadnych portów (łączy się z grą w sieci Dockera i z Discordem wychodząco). `update.sh` przebudowuje go razem
+z grą, gdy `discord` jest w `COMPOSE_PROFILES`. Obraz bota waży około 600 MB (Chromium do rysowania kart), a pamięć jest
+ograniczona do 1 GB. `DISCORD_TOKEN` i `DISCORD_BOT_GAME_TOKEN` są tajne jak reszta `.env`; **nie uruchamiaj drugiego bota na tym
+samym tokenie** (np. lokalnego testu).
+
 ## Bezpieczeństwo
 
 - Przy tunelu z internetu nie widać żadnego portu serwera, przy Caddy tylko 80/443. Supabase, Postgres, pooler i port

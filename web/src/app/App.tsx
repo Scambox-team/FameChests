@@ -37,6 +37,7 @@ import { Stage } from '../features/crates/Stage';
 import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
+import { RenderCard } from '../features/render/RenderCard';
 import { achPoll } from '../features/achievements/popups';
 import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
@@ -85,6 +86,7 @@ function Game() {
 
   if (failed) return <div className={styles.splash}>Nie można połączyć się z serwerem. Odśwież stronę.</div>;
   if (!game.cfg || !game.state) return <div className={styles.splash} aria-busy="true">Wczytywanie gry</div>;
+  if (pathname === '/render/card') return <RenderCard />;   // zrzuty kart dla bota Discorda: bez paska i okien
   if (ADMIN_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) return <Suspense fallback={null}><AdminApp /></Suspense>;
   return (
     <AppShell>

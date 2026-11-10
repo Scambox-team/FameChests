@@ -48,7 +48,7 @@ fn date(s: &str) -> Option<NaiveDate> {
 }
 
 /// Początek dnia (czas lokalny serwera) jako sekundy unix
-fn day_start(d: NaiveDate) -> i64 {
+pub fn day_start(d: NaiveDate) -> i64 {
     Local.from_local_datetime(&d.and_hms_opt(0, 0, 0).unwrap_or_default()).earliest().map_or(0, |t| t.timestamp())
 }
 

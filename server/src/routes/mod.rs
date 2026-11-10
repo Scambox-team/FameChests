@@ -19,6 +19,7 @@ pub mod pinball;
 pub mod poker;
 pub mod pages;
 pub mod aim;
+pub mod bot;
 pub mod game_rankings;
 pub mod quests;
 pub mod ctf;
@@ -94,6 +95,7 @@ pub fn router(st: AppState) -> Router {
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))
+        .route("/render/card", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))
         // strony prawne i formularz zgłoszeń: dostępne bez logowania (osoba z karty nie musi mieć konta)
@@ -215,6 +217,16 @@ pub fn router(st: AppState) -> Router {
         .route("/api/profile", post(set_profile))
         .route("/api/users/{name}", get(profile))
         .route("/api/ranking", get(ranking))
+        .route("/api/bot/snapshot", get(bot::snapshot))
+        .route("/api/bot/player", get(bot::player))
+        .route("/api/bot/drops", get(bot::drops))
+        .route("/api/bot/cards", get(bot::cards))
+        .route("/api/bot/render-session", post(bot::render_session))
+        .route("/api/bot/links", get(bot::links))
+        .route("/api/bot/link-code", post(bot::link_code))
+        .route("/api/discord", get(bot::discord_status))
+        .route("/api/discord/link", post(bot::discord_link))
+        .route("/api/discord/unlink", post(bot::discord_unlink))
         .route("/api/me", get(me))
         .route("/api/themes/seen", post(social::themes_seen))
         .route("/api/messages/seen", post(messages_seen))

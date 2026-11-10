@@ -42,7 +42,7 @@ fn reward_view(cat: &Catalog, r: &Value) -> Value {
 }
 
 /// Event dla gracza: termin, opis, warianty z dropów, kalendarz (dni minione, dziś, przyszłe; nagrody tylko do dziś)
-fn event_view(cat: &Catalog, e: &GameEvent, claimed: &HashSet<(String, i32)>) -> Value {
+pub(super) fn event_view(cat: &Catalog, e: &GameEvent, claimed: &HashSet<(String, i32)>) -> Value {
     let t = now() as i64;
     let (start, end) = e.span();
     let advent = e.advent.as_ref().map(|days| {

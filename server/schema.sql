@@ -376,3 +376,30 @@ CREATE TABLE IF NOT EXISTS radio_tracks (
     created_at DOUBLE PRECISION NOT NULL
 );
 CREATE INDEX IF NOT EXISTS radio_tracks_album ON radio_tracks (album_id, position);
+
+-- bot Discorda: rzadkie dropy do ogłoszenia (Legendarna, ULTRA, Tajna z otwarcia skrzynki), bot czyta po rosnącym id
+CREATE TABLE IF NOT EXISTS bot_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    person_id TEXT NOT NULL,
+    variant TEXT NOT NULL,
+    rarity TEXT NOT NULL,
+    created_at DOUBLE PRECISION NOT NULL
+);
+
+-- powiązanie konta w grze z kontem Discord (bot nadaje role); kod z komendy /polacz ważny 10 minut
+CREATE TABLE IF NOT EXISTS discord_links (
+    user_id BIGINT PRIMARY KEY,
+    discord_id TEXT NOT NULL UNIQUE,
+    linked_at DOUBLE PRECISION NOT NULL
+);
+CREATE TABLE IF NOT EXISTS discord_link_codes (
+    code TEXT PRIMARY KEY,
+    discord_id TEXT NOT NULL,
+    expires_at DOUBLE PRECISION NOT NULL
+);
+-- nagroda za pierwsze powiązanie: raz na gracza, także gdy potem odłączy i połączy ponownie
+CREATE TABLE IF NOT EXISTS discord_rewards (
+    user_id BIGINT PRIMARY KEY,
+    at DOUBLE PRECISION NOT NULL
+);
