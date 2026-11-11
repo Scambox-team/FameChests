@@ -66,6 +66,7 @@ async fn ensure_dev_admin(pool: &PgPool) -> anyhow::Result<()> {
 
 pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Catalog> {
     db::init_schema(pool).await?;
+    tracing::info!("granice Paszportu: {} państw", crate::borders::load());
     drop_removed_variants(pool).await?;
     // pierwsze konto nie dostaje już admina samo: właściciele z OWNER_IDS są adminami (inaczej na świeżej bazie nie byłoby
     // kto ma nadać pierwszego admina), reszta - jak dotąd - z panelu

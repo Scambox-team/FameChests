@@ -1,0 +1,61 @@
+/* Paszport: jedna przewijana strona, sekcje kontynentów, stemple z pieczątek SVG (Stamp.tsx). Kolor stempla to kolor państwa
+   rozjaśniony (motywy ciemne) albo przyciemniony (jasne motywy Warm / Aero / Niepodległość), żeby był czytelny na każdym tle. */
+.page { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.ink { --stamp-mix: #fff; --stamp-pct: 26%; }
+:root:is([data-theme="warm"], [data-theme="aero"]) .ink { --stamp-mix: #000; --stamp-pct: 32%; }
+
+.gps { display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+.gpsText { display: flex; flex-direction: column; gap: 8px; flex: 1 1 420px; min-width: 0; }
+.gpsText h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font: 800 20px/26px var(--display); letter-spacing: -.02em; }
+.gpsText p { margin: 0; line-height: 1.5; max-width: 78ch; overflow-wrap: anywhere; }
+.opt { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); }
+.opt svg { flex: none; margin-top: 3px; color: var(--hue); }
+.badge { padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--hue) 22%, transparent); color: var(--text); font: 700 12px/18px var(--body); letter-spacing: .02em; }
+.gpsAct { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; flex: 0 1 320px; min-width: 0; }
+.note { margin: 0; padding: 10px 14px; border-radius: var(--radius-s); background: var(--raised); line-height: 1.45; overflow-wrap: anywhere; }
+.ok { box-shadow: inset 0 0 0 2px var(--good); }
+.err { box-shadow: inset 0 0 0 2px var(--bad); }
+.info { box-shadow: inset 0 0 0 1px var(--control); }
+
+.cont { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.contHead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.contHead h2 { margin: 0; font: 800 22px/28px var(--display); letter-spacing: -.02em; }
+.count { font: 700 15px/20px var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { flex: 1 1 120px; min-width: 80px; height: 6px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--hue); transition: width .4s; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 8px; border: 0; border-radius: var(--radius-m); background: var(--raised); color: var(--faint); font: inherit; cursor: pointer; min-width: 0; transition: background .15s, transform .12s; }
+.cell:hover { background: color-mix(in srgb, var(--raised) 80%, var(--hue)); }
+.cell:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
+.cell:active { transform: scale(.98); }
+.stamp { width: 100%; max-width: 116px; aspect-ratio: 1; display: block; overflow: visible; }
+.cell:not(.got) .stamp { color: var(--faint); opacity: .4; }
+.cell:not(.got):hover .stamp { opacity: .7; }
+.got { color: var(--muted); }
+.meta { max-width: 100%; font-size: 11.5px; line-height: 16px; text-align: center; overflow-wrap: anywhere; }
+.who { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.fresh .stamp { animation: pspThump .7s cubic-bezier(.2, .8, .3, 1.2) both; }
+@keyframes pspThump { 0% { opacity: 0; transform: scale(1.9) rotate(-14deg); } 55% { opacity: 1; transform: scale(.94); } 100% { transform: none; } }
+
+.dlgHead { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.dlgHead p { margin: 0; }
+.reward { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px var(--rule); line-height: 1.4; overflow-wrap: anywhere; }
+.reward svg { flex: none; margin-top: 2px; color: var(--hue); }
+.dlgStamp { flex: none; width: 92px; height: 92px; overflow: visible; }
+.holders { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: min(56vh, 480px); overflow-y: auto; }
+.holders li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-s); background: var(--raised); min-width: 0; }
+.holderMe { box-shadow: inset 0 0 0 2px var(--hue); }
+.pos { width: 26px; flex: none; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.when { margin-left: auto; color: var(--muted); font-size: 12.5px; text-align: right; }
+
+@media (max-width: 820px) {
+  .gps { padding: 14px; }
+  .gpsAct { flex-basis: 100%; }
+  .gpsAct :global(button) { width: 100%; }
+  .cont { padding: 12px; }
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .cell { padding: 8px 4px 6px; }
+  .holders li { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .fresh .stamp { animation: none; } .bar i { transition: none; } }

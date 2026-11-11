@@ -24,7 +24,7 @@ use crate::text::clean;
 
 /// Wersja regulaminu i polityki prywatności. Zmiana = wszyscy gracze akceptują ponownie przy następnym wejściu.
 /// Zmieniając teksty w `web/src/features/legal/`, podnieś też tę datę (RRRR-MM-DD).
-pub const TERMS_VERSION: &str = "2026-11-05";
+pub const TERMS_VERSION: &str = "2026-11-11";
 
 /// Najmniejszy wiek gracza (regulamin, formularz rejestracji)
 pub const MIN_AGE: u32 = 16;

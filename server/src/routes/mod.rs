@@ -15,6 +15,7 @@ pub mod scratch;
 pub mod gift;
 pub mod horses;
 pub mod market;
+pub mod passport;
 pub mod pinball;
 pub mod poker;
 pub mod pages;
@@ -114,6 +115,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/themes", get(admin_page))
         .route("/admin/games", get(admin_page))
         .route("/admin/events", get(admin_page))
+        .route("/admin/passport", get(admin_page))
         .route("/admin/referrals", get(admin_page))
         // polecenia: link /r/<kod> działa bez logowania
         .route("/r/{code}", get(referral::ref_landing))
@@ -279,6 +281,13 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/ctf", get(ctf::admin_ctf).post(ctf::admin_ctf_save))
         .route("/api/quests/ctf", get(ctf::ctf_detail).post(ctf::ctf_submit))
         .route("/api/games/ranking", get(game_rankings::game_ranking))
+        .route("/api/passport", get(passport::passport))
+        .route("/api/passport/locate", post(passport::locate))
+        .route("/api/passport/{code}", get(passport::stamp_holders))
+        .route("/passport/icon/{code}", get(passport::icon_image))
+        .route("/api/admin/passport", get(passport::admin_passport))
+        .route("/api/admin/passport/{code}", post(passport::admin_passport_save))
+        .route("/api/admin/passport/{code}/icon", post(passport::admin_passport_icon))
         .route("/api/aim/start", post(aim::aim_start))
         .route("/api/aim/finish", post(aim::aim_finish))
         .route("/api/games/snake", get(snake::snake_config))

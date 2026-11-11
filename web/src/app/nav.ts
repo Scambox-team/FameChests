@@ -1,4 +1,4 @@
-import { Backpack, BookOpen, Database, Dices, Gamepad2, Hammer, House, LogOut, Package, Settings, ShieldCheck, Store, Swords, Trophy, User, Users, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Database, Dices, Gamepad2, Hammer, House, LogOut, Package, Settings, ShieldCheck, Stamp, Store, Swords, Trophy, User, Users, type LucideIcon } from 'lucide-react';
 
 /** Co widać w nawigacji: wszystkie pozycje (pasek boczny na komputerze, arkusz „Więcej” na telefonie)
  *  pochodzą z jednej listy, żeby komputer i telefon miały te same funkcje. */
@@ -30,6 +30,7 @@ export const GAME_NAV: NavItem[] = [
   { id: 'friends', path: '/friends', label: 'Znajomi', icon: Users, badge: 'friends' },
   { id: 'ranking', path: '/ranking', label: 'Ranking', icon: Trophy },
   { id: 'games', path: '/games', label: 'Gry', icon: Gamepad2 },
+  { id: 'passport', path: '/passport', label: 'Paszport', icon: Stamp },
   { id: 'arena', path: '/arena', label: 'Arena', icon: Swords, only: 'arena' }
 ];
 

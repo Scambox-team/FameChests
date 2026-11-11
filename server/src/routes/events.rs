@@ -18,7 +18,7 @@ use crate::game::{get_chests, get_state, log_admin, valid_chest_kind, Ctx};
 use crate::state::AppState;
 
 /// Opis nagrody dla gracza: „Karta: Maria Skłodowska (Złota)”, „Skrzynka: Polska ×2”, „1 000 gr”
-fn reward_view(cat: &Catalog, r: &Value) -> Value {
+pub(super) fn reward_view(cat: &Catalog, r: &Value) -> Value {
     let s = |k: &str| r.get(k).and_then(Value::as_str).unwrap_or("");
     let n = r.get("count").and_then(Value::as_i64).unwrap_or(1);
     let times = if n > 1 { format!(" ×{n}") } else { String::new() };
@@ -133,9 +133,8 @@ pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path
 
 // ---------------------------------------------------------------- panel admina (zakładka Eventy)
 
-/// Eventy (pełne) i listy do formularza: warianty, karty, skrzynki
-pub async fn admin_events(State(st): State<AppState>, Admin(_): Admin) -> Res {
-    let cat = st.cat();
+/// Listy do formularzy nagród w panelu (Eventy, Paszport): warianty (do wyboru przy karcie), karty i skrzynki
+pub(super) fn reward_options(cat: &Catalog) -> (Vec<Value>, Vec<Value>, Vec<Value>) {
     let g = g();
     let variants: Vec<Value> = g
         .variant_order
@@ -148,6 +147,14 @@ pub async fn admin_events(State(st): State<AppState>, Admin(_): Admin) -> Res {
     cards.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     let mut chests: Vec<Value> = g.money_chests.iter().map(|(k, c)| json!({"kind": format!("money_{k}"), "name": c.name})).collect();
     chests.extend(cat.crates.values().filter(|c| !c.special).map(|c| json!({"kind": c.id, "name": c.name})));
+    (variants, cards, chests)
+}
+
+
+/// Eventy (pełne) i listy do formularza: warianty, karty, skrzynki
+pub async fn admin_events(State(st): State<AppState>, Admin(_): Admin) -> Res {
+    let cat = st.cat();
+    let (variants, cards, chests) = reward_options(&cat);
     let mut c = st.db.acquire().await?;
     let claims: Vec<(String, i64)> =
         sqlx::query_as("SELECT event_id, COUNT(*) FROM advent_claims GROUP BY event_id").fetch_all(&mut *c).await?;

@@ -1,0 +1,8 @@
+Granice państw w borders.bin (Paszport, server/src/borders.rs) - źródła i licencje
+
+- Natural Earth, ne_10m_admin_0_countries (https://www.naturalearthdata.com/): domena publiczna. Granice uproszczone
+  (Douglas-Peucker, ok. 500 m) i zapisane w zwartym formacie przez scripts/passport/build-borders.mjs.
+- Watykan: obrys z geoBoundaries (VAT ADM0, https://www.geoboundaries.org/): domena publiczna, źródło Wikimedia Commons
+  ("Flag map of Vatican City.svg"). Zapisany w scripts/passport/vatican.geojson, bo obrys Natural Earth jest zbyt zgrubny
+  (nie obejmuje placu św. Piotra).
+- Symbole na pieczątkach: ikony Lucide (licencja ISC), rysowane z tabeli web/src/features/passport/countries.json.

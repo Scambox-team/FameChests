@@ -48,7 +48,7 @@ pub fn need(path: &str) -> Need {
         "log" => Need::Perm("log"),
         "reports" => Need::Perm("reports"),
         "crates" | "shop-size" | "cards" | "variants" | "variant-designs" | "stickers" => Need::Perm("catalog"),
-        "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" | "radio" | "themes" => {
+        "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
             Need::Perm("content")
         }
         "horses" | "chess-skins" | "ctf" | "snake" => Need::Perm("games"),

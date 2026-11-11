@@ -20,12 +20,13 @@ export function Privacy({ info }: { info: LegalInfo | null }) {
           <tr><td>Nazwa gracza, hasło (zapisane jako skrót, nie wprost), data założenia konta</td><td>Założenie konta i prowadzenie gry</td><td>Art. 6 ust. 1 lit. b (umowa: Regulamin)</td></tr>
           <tr><td>Przebieg gry: karty, saldo, wymiany, rynek, znajomi, wiadomości w grze, ranking, osiągnięcia</td><td>Działanie gry i funkcji społecznościowych</td><td>Art. 6 ust. 1 lit. b</td></tr>
           <tr><td>Adres IP (w pamięci serwera, tymczasowo)</td><td>Ochrona przed zgadywaniem haseł i masowym wysyłaniem zgłoszeń</td><td>Art. 6 ust. 1 lit. f (bezpieczeństwo)</td></tr>
+          <tr><td>Lokalizacja (tylko po kliknięciu „Zaznacz moją lokalizację” w zakładce Paszport): kod państwa i data zdobycia stempla oraz państwo i czas ostatniej lokalizacji (do sprawdzenia, czy zmiana miejsca była możliwa)</td><td>Przyznanie stempla państwa w Paszporcie</td><td>Art. 6 ust. 1 lit. a (Twoja zgoda; możesz jej nie dawać, a gra działa bez Paszportu)</td></tr>
           <tr><td>Potwierdzenie akceptacji regulaminu: wersja i data</td><td>Dowód zgody na zasady</td><td>Art. 6 ust. 1 lit. f</td></tr>
           <tr><td>Zgłoszenia kart: treść, nazwa karty, e-mail (jeśli podasz), nazwa gracza (jeśli zalogowany)</td><td>Rozpatrzenie zgłoszenia i odpowiedź</td><td>Art. 6 ust. 1 lit. f (ochrona praw osób, których dotyczą karty)</td></tr>
           <tr><td>Dziennik działań administratorów (np. blokady, zmiany sald)</td><td>Bezpieczeństwo i rozliczalność</td><td>Art. 6 ust. 1 lit. f</td></tr>
         </tbody>
       </table>
-      <p>Podanie danych jest dobrowolne, ale bez nazwy i hasła nie założysz konta. <b>Nie prosimy o imię, nazwisko, adres ani numer telefonu</b> i nie musisz ich nam podawać. E-mail jest potrzebny tylko wtedy, gdy zgłaszasz usunięcie karty lub naruszenie praw autorskich, żebyśmy mogli odpisać.</p>
+      <p>Podanie danych jest dobrowolne, ale bez nazwy i hasła nie założysz konta. <b>Nie prosimy o imię, nazwisko, adres ani numer telefonu</b> i nie musisz ich nam podawać. Zakładka Paszport jest opcjonalna: pozycję z GPS wysyła Twoja przeglądarka dopiero po kliknięciu przycisku i zgodzie na lokalizację, serwer ustala z niej wyłącznie państwo (granice są wbudowane w serwer, współrzędne nie trafiają do żadnych zewnętrznych usług), po czym je zapomina: zapisujemy sam kod państwa z datą (i ostatnie państwo z czasem, do wykrywania podrabianej lokalizacji), a dokładnej pozycji nie zapisujemy ani nie pokazujemy nikomu. Nazwy graczy, którzy zdobyli dany stempel, widzą inni gracze. E-mail jest potrzebny tylko wtedy, gdy zgłaszasz usunięcie karty lub naruszenie praw autorskich, żebyśmy mogli odpisać.</p>
 
       <h2>3. Pliki cookie i pamięć przeglądarki</h2>
       <ul>

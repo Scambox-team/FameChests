@@ -3982,6 +3982,16 @@
  },
  "patchNotes": [
   {
+   "v": 28,
+   "date": "2026-11-11",
+   "title": "Paszport",
+   "items": [
+    "W menu jest nowa zakładka <b>Paszport</b>: stempel dla każdego z 196 państw uznawanych przez Polskę (członkowie ONZ, Kosowo, Palestyna i Watykan), pogrupowane według kontynentów. Dla każdego widzisz, ilu graczy go zdobyło, a po kliknięciu także kto i kiedy.",
+    "Stempel zdobywasz przyciskiem <b>Zaznacz moją lokalizację</b>. Wymaga to włączonego GPS (najlepiej na telefonie) i Twojej zgody. To całkowicie <b>opcjonalne</b>: bez GPS grasz tak samo jak dotąd, brakuje tylko stempli. Stemple nie dają nagród.",
+    "Prywatność: serwer ustala z pozycji tylko państwo i zapisuje sam kod państwa z datą. Dokładnej lokalizacji nie zapisujemy ani nie pokazujemy nikomu."
+   ]
+  },
+  {
    "v": 27,
    "date": "2026-11-10",
    "title": "Motyw Niepodległość",

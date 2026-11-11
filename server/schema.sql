@@ -403,3 +403,30 @@ CREATE TABLE IF NOT EXISTS discord_rewards (
     user_id BIGINT PRIMARY KEY,
     at DOUBLE PRECISION NOT NULL
 );
+
+-- Paszport (routes/passport.rs): stempel kraju zdobyty z pozycji GPS. Zapisujemy tylko kod państwa i czas - współrzędnych nigdy.
+CREATE TABLE IF NOT EXISTS passport_stamps (
+    user_id BIGINT NOT NULL,
+    country TEXT NOT NULL,
+    earned_at DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (user_id, country)
+);
+CREATE INDEX IF NOT EXISTS passport_stamps_country ON passport_stamps (country, earned_at);
+
+-- Paszport, ustawienia stempla z panelu admina: kolor (#rrggbb albo puste = z tabeli państw), nagroda za pierwsze zdobycie (JSON, lista nagród
+-- jak w osiągnięciach) i własna ikona (biały PNG z kanałem alfa, zmniejszony przez serwer; kolor nadaje stempel)
+CREATE TABLE IF NOT EXISTS passport_settings (
+    country TEXT PRIMARY KEY,
+    color TEXT NOT NULL DEFAULT '',
+    rewards TEXT NOT NULL DEFAULT '[]',
+    icon BYTEA,
+    icon_at DOUBLE PRECISION NOT NULL DEFAULT 0
+);
+
+-- Paszport, zabezpieczenie przed podrabianiem GPS: ostatnie państwo i czas ostatniej udanej lokalizacji gracza (bez współrzędnych);
+-- serwer sprawdza, czy od tamtej pory dało się dotrzeć do nowego państwa
+CREATE TABLE IF NOT EXISTS passport_last (
+    user_id BIGINT PRIMARY KEY,
+    country TEXT NOT NULL,
+    at DOUBLE PRECISION NOT NULL
+);

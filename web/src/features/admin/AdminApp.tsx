@@ -22,6 +22,7 @@ const RadioAdmin = lazy(() => import('./RadioAdmin'));
 const ThemesAdmin = lazy(() => import('./ThemesAdmin'));
 const GamesAdmin = lazy(() => import('./GamesAdmin'));
 const EventsAdmin = lazy(() => import('./EventsAdmin'));
+const PassportAdmin = lazy(() => import('./PassportAdmin'));
 const ReferralsAdmin = lazy(() => import('./ReferralsAdmin'));
 import './admin.css';
 import styles from './AdminApp.module.css';
@@ -57,6 +58,7 @@ function page(path: string): ReactNode {
   if (path === '/mockups') return <View id="mockupsBody" start={renderMockups} />;
   if (path === '/admin/reports') return <Suspense fallback={null}><ReportsAdmin /></Suspense>;
   if (path === '/admin/events') return <Suspense fallback={null}><EventsAdmin /></Suspense>;
+  if (path === '/admin/passport') return <Suspense fallback={null}><PassportAdmin /></Suspense>;
   if (path === '/admin/games') return <Suspense fallback={null}><GamesAdmin /></Suspense>;
   if (path === '/admin/referrals') return <Suspense fallback={null}><ReferralsAdmin /></Suspense>;
   if (path === '/admin/backups') return <Suspense fallback={null}><BackupsAdmin /></Suspense>;

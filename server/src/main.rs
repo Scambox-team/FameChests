@@ -10,6 +10,7 @@ mod arena;
 mod achievements;
 mod assets;
 mod backup;
+mod borders;
 mod horses;
 mod auth;
 mod catalog;

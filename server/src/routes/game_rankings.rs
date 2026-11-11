@@ -16,7 +16,7 @@ use crate::state::AppState;
 
 /// Ile miejsc pokazuje lista
 const TOP: usize = 15;
-const NOT_HIDDEN: &str = "u.banned = 0 AND u.ranking_hidden = 0 AND u.money_generated = 0";
+pub(super) const NOT_HIDDEN: &str = "u.banned = 0 AND u.ranking_hidden = 0 AND u.money_generated = 0";
 
 #[derive(Deserialize)]
 pub struct RankQuery {
