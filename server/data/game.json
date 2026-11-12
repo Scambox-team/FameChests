@@ -4011,6 +4011,14 @@
  },
  "patchNotes": [
   {
+   "v": 30,
+   "date": "2026-11-13",
+   "title": "Uczciwe wyniki w grach",
+   "items": [
+    "Wyniki Snake'a, Super Turbo Snake 3D i Super Turbo Run liczy teraz serwer: odtwarza Twoją grę i sam sprawdza, ile zjadłeś albo przebiegłeś. Gra zaczyna się chwilę po kliknięciu, gdy serwer przyśle swoje ziarno."
+   ]
+  },
+  {
    "v": 29,
    "date": "2026-11-12",
    "title": "Gry Super Turbo, Snake i Pinball",

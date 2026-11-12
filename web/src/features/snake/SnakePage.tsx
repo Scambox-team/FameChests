@@ -52,7 +52,8 @@ export function SnakePage() {
       if (!ticket.current) return;
       ticket.current = false;
       try {
-        const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { score });
+        const run = game.current?.getRun();   // serwer odtwarza grę z ziarna i tego zapisu, sam liczy jabłka
+        const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log: run?.log ?? [], steps: run?.steps ?? 0 });
         applyState(r.state);
         setWon({ reward: r.reward, capped: r.capped, card: r.card });
         if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
@@ -107,12 +108,14 @@ export function SnakePage() {
   }, []);
   useEffect(() => { if (look && !SKIN) game.current?.setLook(look); }, [look]);
 
-  const start = () => {
+  // gra zaczyna się dopiero z ziarnem od serwera (bez niego - losowe ziarno i gra bez nagrody)
+  const start = async () => {
     Sound.unlock(); Sound.snake('start');
     setWon(null);
     ticket.current = false;
-    api('/api/games/snake/start', { cards: true }).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
-    game.current?.start(); canvas.current?.focus();
+    let seed: number | undefined;
+    try { seed = (await api<{ seed: number }>('/api/games/snake/start', { cards: true })).seed; ticket.current = true; } catch { /* gra bez nagrody */ }
+    game.current?.start(seed); canvas.current?.focus();
   };
   const rw = look?.reward;
   const phase = hud?.phase ?? 'idle';

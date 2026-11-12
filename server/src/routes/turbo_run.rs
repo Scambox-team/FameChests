@@ -2,9 +2,10 @@
 //! Serwer wypłaca grosze za DYSTANS (metry biegu), tak jak Snake za jabłka: `per_100m` gr za każde 100 m od `min_dist` metrów,
 //! najwyżej `per_game` za grę i `daily` na dobę (klucze `run_reward_*` w `state`, ustawienia w panelu admina -> Gry).
 //! Za wysoki dystans jest też karta w wariancie Gamingowa RGB (`turbo.runTiers` w game.json, jak w Pinballu; BEZ limitu kart, `turbo_card`,
-//! wspólne z Snake 3D, który ma własne progi `turbo.snakeTiers`). Wynik liczy przeglądarka, więc serwer wydaje bilet na start (`TICKETS`, w pamięci procesu, jednorazowy) i odrzuca
-//! dystans niemożliwy w czasie od startu: bieg nie przekracza `MAX_SPEED` m/s (pauza tylko skraca dystans, więc zegar jest
-//! górną granicą), a pojedyncza gra - `MAX_DIST` metrów. Zarobek dnia gracza: `user_state` `run_day` / `run_today`.
+//! wspólne z Snake 3D, który ma własne progi `turbo.snakeTiers`). Dystansu z przeglądarki serwer NIE przyjmuje: przy starcie losuje
+//! ziarno tunelu (bilet `TICKETS` w pamięci procesu, jednorazowy), po biegu dostaje zapis klawiszy i sam ODTWARZA bieg (`run_sim`),
+//! licząc dystans do chwili śmierci; zapis dłuższy niż czas, który naprawdę minął (zegar serwera, tolerancja 10% + 3 s), nie daje
+//! nic, a dystans jednej gry jest ucinany do `MAX_DIST` metrów. Zarobek dnia gracza: `user_state` `run_day` / `run_today`.
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
@@ -33,12 +34,11 @@ pub const REWARD: &[(&str, &str, i64, i64)] = &[
     ("run_reward_daily", "daily", 900, 1_000_000),
 ];
 /// Najszybszy możliwy bieg: prędkość tunelu rośnie do 46 m/s, z turbem x1,35 (około 62 m/s); zapas na skoki i start
-const MAX_SPEED: f64 = 64.0;
-const SLACK_M: f64 = 30.0;
 /// Największy dystans jednej gry (ok. 5 minut najszybszego biegu)
 const MAX_DIST: i64 = 20_000;
 
-static TICKETS: LazyLock<Mutex<HashMap<i64, Instant>>> = LazyLock::new(Default::default);
+/// bilety biegów: gracz -> (chwila startu, ziarno tunelu)
+static TICKETS: LazyLock<Mutex<HashMap<i64, (Instant, u32)>>> = LazyLock::new(Default::default);
 
 struct Reward {
     per_100m: i64,
@@ -69,8 +69,9 @@ fn reward_for(r: &Reward, dist: i64) -> i64 {
 }
 
 /// Czy taki dystans dało się przebiec w tym czasie
-fn plausible(dist: i64, elapsed_secs: f64) -> bool {
-    (0..=MAX_DIST).contains(&dist) && dist as f64 <= elapsed_secs * MAX_SPEED + SLACK_M
+/// Czy zapis tylu kroków gry mógł powstać w tym czasie (bieg nie może trwać krócej niż jego zapis)
+fn plausible(ticks: u64, elapsed_secs: f64) -> bool {
+    elapsed_secs + 3.0 >= ticks as f64 * crate::run_sim::TICK * 0.9
 }
 
 fn cfg_json(r: &Reward, today: i64) -> serde_json::Value {
@@ -100,30 +101,41 @@ pub async fn run_config(State(st): State<AppState>, Me(me): Me) -> Res {
 
 pub async fn run_start(Me(me): Me) -> Res {
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
-    t.retain(|_, at| at.elapsed().as_secs() < 3 * 3600);
-    t.insert(me.id, Instant::now());
-    ok(json!({"ok": true}))
+    t.retain(|_, (at, _)| at.elapsed().as_secs() < 3 * 3600);
+    let seed: u32 = rand::random();
+    t.insert(me.id, (Instant::now(), seed));
+    ok(json!({"ok": true, "seed": seed}))
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct FinishRequest {
-    /// przebiegnięte metry
-    distance: i64,
+    /// zapis biegu: naprzemiennie numer kroku i kod klawisza (`INPUTS` w runCore.ts)
+    log: Vec<u64>,
+    /// liczba kroków według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
+    ticks: u64,
 }
 
 /// Koniec gry: grosze za dystans (w limicie gry i dnia). Bilet jest jednorazowy.
 pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<FinishRequest>) -> Res {
     let started = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&me.id);
-    let Some(started) = started else { return bad("Gra nie została rozpoczęta") };
-    if !plausible(req.distance, started.elapsed().as_secs_f64()) {
+    let Some((started, seed)) = started else { return bad("Gra nie została rozpoczęta") };
+    // serwer odtwarza bieg z ziarna i zapisu klawiszy (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy dystans
+    let log = req.log;
+    let outcome = tokio::task::spawn_blocking(move || crate::run_sim::replay(seed, &log)).await.ok().flatten();
+    let Some(o) = outcome else { return bad("Nieprawidłowy zapis gry") };
+    if o.ticks != req.ticks {
+        tracing::warn!(user = me.id, claimed = req.ticks, ticks = o.ticks, "run: przeglądarka i serwer policzyły różną długość biegu");
+    }
+    if !plausible(o.ticks, started.elapsed().as_secs_f64()) {
         return bad("Nieprawidłowy wynik");
     }
+    let distance = (o.dist.max(0.0).floor() as i64).min(MAX_DIST);
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
-    let base = reward_for(&r, req.distance);
+    let base = reward_for(&r, distance);
     let reward = base.min((r.daily - earned).max(0));
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
@@ -131,10 +143,10 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
         set_state(&mut tx, me.id, "run_day", today()).await?;
         set_state(&mut tx, me.id, "run_today", earned + reward).await?;
     }
-    let card = turbo_card(&mut tx, &st.cat(), &me, &g().turbo.run_tiers, req.distance).await?;
+    let card = turbo_card(&mut tx, &st.cat(), &me, &g().turbo.run_tiers, distance).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
-    ok(json!({"reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "card": card, "state": state}))
+    ok(json!({"distance": distance, "reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "card": card, "state": state}))
 }
 
 /// Panel admina (JSON): pola nagrody (`per100m`, `minDist`, `perGame`, `daily`); odpowiedź = aktualne ustawienia
@@ -192,11 +204,11 @@ mod tests {
     }
 
     #[test]
-    fn distance_must_fit_in_the_elapsed_time() {
+    fn run_must_fit_in_the_elapsed_time() {
         assert!(plausible(0, 0.0));
-        assert!(plausible(1_000, 30.0)); // ~33 m/s
-        assert!(!plausible(1_000, 5.0));
-        assert!(!plausible(MAX_DIST + 1, 10_000.0));
-        assert!(!plausible(-1, 10.0));
+        assert!(plausible(120 * 60, 60.0)); // minuta biegu w minutę
+        assert!(plausible(120 * 60, 52.0)); // tolerancja 10% + 3 s
+        assert!(!plausible(120 * 60, 40.0));
+        assert!(!plausible(120 * 600, 300.0));
     }
 }

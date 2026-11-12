@@ -16,7 +16,8 @@ import './run3d.css';
 import './turbo.css';
 
 // Gry Super Turbo -> Super Turbo Run 3D (three/runScene.ts, bieg po tunelu z HUD-em w środku kontenera).
-// Wynik w punktach i rekord liczy gra (localStorage `superTurboRun3D.best`); serwer dostaje przebiegnięty dystans (w metrach) po biegu
+// Wynik w punktach i rekord liczy gra (localStorage `superTurboRun3D.best`); serwer daje ziarno tunelu na start, po biegu dostaje zapis klawiszy,
+// sam odtwarza bieg (run_sim.rs) i liczy dystans,
 // i płaci wg ustawień z panelu admina (routes/turbo_run.rs, bilet z /api/games/run/start, bez kart).
 interface WonCard { id: number; person: string; variant: string; name: string; rarity: string }
 interface Reward {
@@ -45,17 +46,21 @@ export function RunPage() {
         game.current = createRun3D(el, {
           volume: () => Sound.volume,
           soundOn: () => Sound.enabled,
-          onStart: () => {
+          onStart: async () => {
             Sound.unlock();
             setWon(null);
             ticket.current = false;
-            api('/api/games/run/start', {}).then(() => { ticket.current = true; }).catch(() => { /* bieg bez nagrody */ });
+            try {
+              const r = await api<{ seed: number }>('/api/games/run/start', {});
+              ticket.current = true;
+              return r.seed;
+            } catch { return undefined; /* bieg bez nagrody */ }
           },
-          onOver: async ({ distance }) => {
+          onOver: async ({ log, ticks }) => {
             if (!ticket.current) return;
             ticket.current = false;
             try {
-              const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/run/finish', { distance });
+              const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/run/finish', { log, ticks });   // serwer odtwarza bieg i sam liczy dystans
               applyState(r.state);
               setWon({ reward: r.reward, capped: r.capped, card: r.card });
               if (r.reward > 0) { Sound.coin(1); toast(`Super Turbo Run: +${fmt(r.reward)}`); }

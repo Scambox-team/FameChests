@@ -16,7 +16,8 @@ import './snake3dpage.css';
 import './snake3d.css';
 
 // Zakładka Gry -> Gry Super Turbo -> Super Turbo Snake 3D (three/snakeScene.ts, neonowa arena z HUD-em w środku kontenera).
-// Wynik w punktach i rekord liczy gra (localStorage `snake3dBest`); serwer dostaje liczbę jabłek po grze i płaci wg ustawień z panelu admina.
+// Wynik w punktach i rekord liczy gra (localStorage `snake3dBest`); serwer daje ziarno na start, po grze dostaje zapis skrętów, sam odtwarza grę
+// (snake3d_sim.rs), liczy zjedzone kule i płaci wg ustawień z panelu admina.
 interface WonCard { id: number; person: string; variant: string; name: string; rarity: string }
 interface Reward { perApple: number; perGame: number; daily: number; minScore: number; today: number }
 interface TurboCards { cardVariant: string; cardTiers: { score: number; rarity: string; name: string }[] }
@@ -40,17 +41,21 @@ export function Snake3DPage() {
       game.current = createSnake3D(el, {
         volume: () => Sound.volume,
         soundOn: () => Sound.enabled,
-        onStart: () => {
+        onStart: async () => {
           Sound.unlock();
           setWon(null);
           ticket.current = false;
-          api('/api/games/snake/start', { turbo: true }).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
+          try {
+            const r = await api<{ seed: number }>('/api/games/snake/start', { turbo: true });
+            ticket.current = true;
+            return r.seed;
+          } catch { return undefined; /* gra bez nagrody */ }
         },
-        onOver: async ({ apples }) => {
+        onOver: async ({ log, ticks }) => {
           if (!ticket.current) return;
           ticket.current = false;
           try {
-            const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { score: apples });
+            const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log, steps: ticks });   // serwer odtwarza grę i sam liczy kule
             applyState(r.state);
             setWon({ reward: r.reward, capped: r.capped, card: r.card });
             if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }

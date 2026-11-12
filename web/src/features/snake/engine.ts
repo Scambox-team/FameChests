@@ -1,13 +1,13 @@
-// Snake: klasyczna plansza w kratkę, wąż i jabłka. Logika co krok (`step`), rysowanie na płótnie co klatkę.
+// Snake: klasyczna plansza w kratkę, wąż i jabłka. Logika co krok w deterministycznym rdzeniu (core.ts, odtwarzanym też przez serwer),
+// rysowanie na płótnie co klatkę.
 // Wygląd od admina (/api/games/snake): kolor węża i tła, obrazki PNG głowy, ciała, jabłka i tła (głowa i ciało patrzą w prawo,
 // gra je obraca w stronę ruchu). Bez obrazków wszystko rysuje się samo.
 
 import { drawSkin, type Skin } from './skins';
+import { COLS, ROWS, SnakeSim, VEC, type Dir, type P } from './core';
 
-export const COLS = 20, ROWS = 20;
-type P = { x: number; y: number };
-export type Dir = 'up' | 'down' | 'left' | 'right';
-const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+export { COLS, ROWS };
+export type { Dir };
 const OPP: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 const ANGLE: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
 
@@ -24,7 +24,6 @@ export interface SnakeEvents { eat?: (len: number) => void; over?: (record: bool
 
 const BEST_KEY = 'snakeBest';
 const readBest = () => { try { return +(localStorage.getItem(BEST_KEY) || 0) || 0; } catch { return 0; } };
-const START_MS = 140, MIN_MS = 65, FASTER = 3;   // czas kroku: krótszy o FASTER ms za każde jabłko, najkrócej MIN_MS
 
 function shade(hex: string, k: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -40,40 +39,28 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   let prev: P[] = [], eatAt: P = { x: 0, y: 0 };
   let snake: P[] = [], dir: Dir = 'right', queue: Dir[] = [], apple: P = { x: 0, y: 0 };
   let phase: SnakeHud['phase'] = 'idle', score = 0, best = readBest(), record = false;
-  let stepMs = START_MS, acc = 0, last = 0, raf = 0, eatFx = 0, size = 0;
+  let sim = new SnakeSim(0), stepMs = sim.stepMs, acc = 0, last = 0, raf = 0, eatFx = 0, size = 0;
 
   const hud = () => onHud({ phase, score, length: snake.length, best, record });
 
-  function reset() {
-    const y = Math.floor(ROWS / 2);
-    snake = [{ x: 6, y }, { x: 5, y }, { x: 4, y }];
-    dir = 'right'; queue = []; score = 0; record = false; stepMs = START_MS; acc = 0;
+  // ziarno daje serwer (/api/games/snake/start); bez niego gra się na losowym ziarnie, bez nagrody
+  function reset(seed = (Math.random() * 4294967296) >>> 0) {
+    sim = new SnakeSim(seed);
+    snake = sim.snake; dir = sim.dir; apple = sim.apple; queue = []; score = 0; record = false; stepMs = sim.stepMs; acc = 0;
     prev = snake;
-    placeApple();
-  }
-  function placeApple() {
-    const free: P[] = [];
-    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (!snake.some(s => s.x === x && s.y === y)) free.push({ x, y });
-    apple = free[Math.floor(Math.random() * free.length)] ?? { x: -1, y: -1 };
   }
 
   function step() {
-    if (queue.length) dir = queue.shift()!;
-    const v = VEC[dir], h = snake[0], next = { x: h.x + v.x, y: h.y + v.y };
-    const eats = next.x === apple.x && next.y === apple.y;
-    const body = eats ? snake : snake.slice(0, -1);   // ogon ucieka w tym samym kroku, więc można w niego wjechać, gdy nie jemy
-    if (next.x < 0 || next.y < 0 || next.x >= COLS || next.y >= ROWS || body.some(s => s.x === next.x && s.y === next.y)) return gameOver();
+    const was = apple, res = sim.step(queue.length ? queue.shift()! : sim.dir);
+    dir = sim.dir;
+    if (res === 'over') { if (sim.score > score) { score = sim.score; eatFx = 1; eatAt = was; } return gameOver(); }
     prev = snake;
-    snake = snake.slice();
-    snake.unshift(next);
-    if (eats) {
-      score++; eatFx = 1; eatAt = apple;
-      stepMs = Math.max(MIN_MS, stepMs - FASTER);
+    snake = sim.snake; apple = sim.apple; stepMs = sim.stepMs;
+    if (res === 'eat') {
+      score = sim.score; eatFx = 1; eatAt = was;
       if (score > best) { best = score; record = true; try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* bez zapisu */ } }
-      placeApple();
       ev.eat?.(snake.length);
-      if (apple.x < 0) return gameOver();   // cała plansza zajęta
-    } else snake.pop();
+    }
     hud();
   }
   function gameOver() {
@@ -201,7 +188,9 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   raf = requestAnimationFrame(frame);
 
   return {
-    start() { reset(); phase = 'play'; last = 0; hud(); },
+    start(seed?: number) { reset(seed); phase = 'play'; last = 0; hud(); },
+    /** zapis gry dla serwera: zmiany kierunku (krok, kod), liczba kroków */
+    getRun() { return { log: sim.log.slice(), steps: sim.steps }; },
     pause() { if (phase === 'play') { phase = 'pause'; hud(); } else if (phase === 'pause') { phase = 'play'; last = 0; hud(); } },
     turn(d: Dir) {
       if (phase !== 'play') return;

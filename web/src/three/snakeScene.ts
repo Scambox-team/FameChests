@@ -1,17 +1,20 @@
 // @ts-nocheck
 // Super Turbo Snake 3D (neon): gra z gotowego pliku (Downloads/index.html), przeniesiona do kontenera .sn3 zamiast całej strony.
 // Wszystko jest tu: scena three.js z bloomem, HUD (budowany z HTML poniżej), dźwięk z syntezatora Web Audio i wejście.
-// Wynik w punktach (REKORD w localStorage `snake3dBest`); serwerowi po grze idzie liczba zjedzonych jabłek (hooks.onOver).
+// Wynik w punktach (REKORD w localStorage `snake3dBest`). Logika kratek (ruch, jedzenie, złoto, kolizje) jest w deterministycznym rdzeniu
+// features/snake/core3d.ts z ziarnem od serwera (hooks.onStart): serwer odtwarza grę z zapisu skrętów (hooks.onOver) i sam liczy kule.
 // Ładować tylko dynamicznym import() po sprawdzeniu use3D() (SnakePage.tsx). Styl: features/snake/snake3d.css.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { Snake3DSim } from '../features/snake/core3d';
 
-export interface SnakeOver { apples: number; score: number; record: boolean }
+export interface SnakeOver { apples: number; score: number; record: boolean; log: number[]; ticks: number }
 export interface SnakeHooks {
-  onStart: () => void;
+  /** start gry: ziarno od serwera (undefined = gra bez nagrody na losowym ziarnie) */
+  onStart: () => Promise<number | undefined>;
   onOver: (r: SnakeOver) => void;
   volume: () => number;
   soundOn: () => boolean;
@@ -550,16 +553,16 @@ const cellZ = c => c.z - HALF + 0.5;
 const speed = () => Math.min(5.0 + foodsEaten * 0.17, 12.5);
 const level = () => 1 + Math.floor(foodsEaten / 5);
 
-function reset() {
-  const sx = Math.floor(N / 2), sz = Math.floor(N / 2) + 3;
-  cells = []; for (let i = 0; i < 4; i++) cells.push({ x: sx, z: sz + i });
-  tailHist = [{ x: sx, z: sz + 4 }, { x: sx, z: sz + 5 }, { x: sx, z: sz + 6 }];
-  exitDir = { x: 0, z: -1 }; turnQueue = []; pendingGrow = 0; progress = 0; tickCount = 0;
+let sim = null;
+function reset(seed = (Math.random() * 4294967296) >>> 0) {
+  sim = new Snake3DSim(seed);
+  cells = sim.cells; tailHist = sim.tailHist;
+  exitDir = sim.exitDir; turnQueue = []; pendingGrow = 0; progress = 0; tickCount = 0;
   Lvis = cells.length - 0.55;
   score = 0; displayScore = 0; foodsEaten = 0; combo = 0; maxCombo = 0; comboTimer = 0; energy = 100; boostLock = false;
   pulses = []; deathCut = -1; overDelay = -1; timeScale = 1;
   gold.active = false; gold.group.visible = false;
-  spawnFood(food);
+  showFood(food, sim.food);
   head.visible = true;
   $('score').textContent = '0';
 }
@@ -568,20 +571,14 @@ function occupied(x, z) {
   for (const c of cells) if (c.x === x && c.z === z) return true;
   return false;
 }
-function spawnFood(f) {
-  const h = cells[0];
-  for (let a = 0; a < 800; a++) {
-    const x = (Math.random() * N) | 0, z = (Math.random() * N) | 0;
-    if (occupied(x, z)) continue;
-    if (f === food && gold.active && gold.cell.x === x && gold.cell.z === z) continue;
-    if (f === gold && food.active && food.cell.x === x && food.cell.z === z) continue;
-    if (Math.abs(x - h.x) + Math.abs(z - h.z) < 3) continue;
-    f.cell = { x, z }; f.active = true; f.spawnT = gameTime; f.group.visible = true;
-    f.group.position.set(cellX(f.cell), 0, cellZ(f.cell)); f.group.scale.setScalar(0.001);
-    shockwave(f.group.position.x, f.group.position.z, f.color, 1.6, 0.5);
-    return true;
-  }
-  f.active = false; f.group.visible = false; return false;
+// kula z rdzenia (miejsce losuje core3d.ts) -> obiekt na scenie
+function showFood(f, s) {
+  f.active = s.active;
+  if (!s.active) { f.group.visible = false; return false; }
+  f.cell = { x: s.cell.x, z: s.cell.z }; f.spawnT = gameTime; f.group.visible = true;
+  f.group.position.set(cellX(f.cell), 0, cellZ(f.cell)); f.group.scale.setScalar(0.001);
+  shockwave(f.group.position.x, f.group.position.z, f.color, 1.6, 0.5);
+  return true;
 }
 
 // ---- path geometry ----
@@ -641,7 +638,7 @@ function queueTurn(t) {
   if (state !== 'playing') return;
   const h = cells[0], b = cells[1];
   const straight = (h.x - b.x) === exitDir.x && (h.z - b.z) === exitDir.z;
-  if (turnQueue.length === 0 && progress < 0.3 && straight) { exitDir = rot(exitDir, t); onTurn(t); }
+  if (turnQueue.length === 0 && progress < 0.3 && straight) { sim.turn(t); exitDir = sim.exitDir; onTurn(t); }
   else if (turnQueue.length < 3) turnQueue.push(t);
 }
 function onTurn(t) {
@@ -653,28 +650,22 @@ function onTurn(t) {
 
 // ---- tick ----
 function tick() {
-  const h = cells[0];
-  const nx = h.x + exitDir.x, nz = h.z + exitDir.z;
-  const eatF = food.active && food.cell.x === nx && food.cell.z === nz;
-  const eatG = gold.active && gold.cell.x === nx && gold.cell.z === nz;
-  const grow = pendingGrow > 0 || eatF || eatG;
-  let hit = nx < 0 || nz < 0 || nx >= N || nz >= N;
-  if (!hit) { const lim = grow ? cells.length : cells.length - 1; for (let i = 0; i < lim; i++) if (cells[i].x === nx && cells[i].z === nz) { hit = true; break; } }
-  if (hit) { crash(); return; }
-  cells.unshift({ x: nx, z: nz });
-  if (eatF) pendingGrow += 1;
-  if (eatG) pendingGrow += 3;
-  if (pendingGrow > 0) pendingGrow--; else { tailHist.unshift(cells.pop()); if (tailHist.length > 6) tailHist.length = 6; }
-  tickCount++;
-  if (eatF) eat(food);
-  if (eatG) eat(gold);
-  if (turnQueue.length) { const t = turnQueue.shift(); exitDir = rot(exitDir, t); onTurn(t); }
+  const r = sim.tick();   // ruch, jedzenie, złoto i kolizje liczy rdzeń (te same co na serwerze)
+  if (r.goldExpired) {
+    gold.active = false; gold.group.visible = false;
+    burst(gold.group.position.x, 0.6, gold.group.position.z, 0x886622, 30, 3, { lift: 1 });
+  }
+  if (r.hit) { crash(); return; }
+  pendingGrow = sim.pendingGrow; tickCount = sim.ticks;
+  if (r.ateFood) eat(food, r);
+  if (r.ateGold) eat(gold, r);
+  if (turnQueue.length) { const t = turnQueue.shift(); sim.turn(t); exitDir = sim.exitDir; onTurn(t); }
 }
 
-function eat(f) {
+function eat(f, r) {
   const isGold = f === gold;
   const x = cellX(f.cell), z = cellZ(f.cell);
-  foodsEaten++;
+  foodsEaten = sim.foods;
   combo = comboTimer > 0 ? combo + 1 : 1; comboTimer = COMBO_WINDOW; maxCombo = Math.max(maxCombo, combo);
   const turbo = boosting ? 2 : 1;
   const pts = (isGold ? 50 : 10) * combo * turbo;
@@ -703,8 +694,8 @@ function eat(f) {
   if (names[combo]) banner(names[combo], ['#00f0ff', '#ff2bd6', '#ffd23f', '#7bff6a', '#ff5a00', '#ffffff'][Object.keys(names).indexOf(String(combo))]);
   if (!isGold) {
     if (foodsEaten % 5 === 0) { banner('SPEED UP! LVL ' + level(), '#7b5cff'); AudioSys.levelUp(); }
-    spawnFood(food);
-    if (!gold.active && foodsEaten > 2 && Math.random() < 0.22) { if (spawnFood(gold)) { gold.life = 7; banner('ZŁOTO SIĘ POJAWIŁO!', '#ffd23f'); } }
+    showFood(food, sim.food);
+    if (r.goldSpawned && showFood(gold, sim.gold)) banner('ZŁOTO SIĘ POJAWIŁO!', '#ffd23f');
   }
 }
 
@@ -730,7 +721,7 @@ function gameOver() {
   $('newRecord').style.display = rec ? 'block' : 'none';
   $('overStats').innerHTML = `Długość <b>${cells.length}</b> &nbsp;·&nbsp; Max combo <b>x${maxCombo}</b> &nbsp;·&nbsp; Poziom <b>${level()}</b> &nbsp;·&nbsp; Rekord <b>${best}</b>`;
   overCount = 0; overTarget = score; $('finalScore').textContent = '0';
-  hooks.onOver({ apples: foodsEaten, score, record: rec });
+  hooks.onOver({ apples: sim.foods, score, record: rec, log: sim.log.slice(), ticks: sim.ticks });
   $('over').classList.remove('hidden');
   if (rec && score > 0) {
     AudioSys.record();
@@ -738,11 +729,16 @@ function gameOver() {
   }
 }
 
-function startGame() {
-  if (state === 'playing' || state === 'paused' || state === 'dying') return;
-  hooks.onStart();
+let starting = false;
+async function startGame() {
+  if (starting || state === 'playing' || state === 'paused' || state === 'dying') return;
+  starting = true;
   AudioSys.init();
-  reset();
+  let seed;
+  try { seed = await hooks.onStart(); } catch (e) { seed = undefined; }
+  starting = false;
+  if (dead) return;
+  reset(seed);
   state = 'playing'; camBlend = 0; root.classList.remove('inmenu');
   $('menu').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden');
   banner('GO!', '#00f0ff');
@@ -911,12 +907,7 @@ function updateFood(dt) {
     if (Math.random() < dt * 8) spawn(f.group.position.x + rand(-0.3, 0.3), 0.2, f.group.position.z + rand(-0.3, 0.3), 0, rand(1, 2.2), 0, ...(f === gold ? [2, 1.4, 0.2] : [2, 0.3, 1.6]), rand(0.08, 0.14), rand(0.6, 1.1), -0.5, 0.5);
   }
   if (gold.active && state === 'playing') {
-    gold.life -= dt;
-    gold.group.visible = gold.life > 2 || Math.sin(gameTime * 28) > -0.3;
-    if (gold.life <= 0) {
-      gold.active = false; gold.group.visible = false;
-      burst(gold.group.position.x, 0.6, gold.group.position.z, 0x886622, 30, 3, { lift: 1 });
-    }
+    gold.group.visible = sim.gold.life > 14 || Math.sin(gameTime * 28) > -0.3;   // znika po GOLD_TICKS krokach (rdzeń), ostatnie miga
   }
 }
 

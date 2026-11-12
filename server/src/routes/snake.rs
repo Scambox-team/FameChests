@@ -4,8 +4,10 @@
 //!   jabłko, tło) w image_cache jako `__snake_<miejsce>.png`;
 //! - dźwięki zjedzenia jabłka (najwyżej `MAX_SOUNDS`, gra losuje jeden): `image_cache/__snake_snd_<id>.<mp3|ogg|wav>`;
 //! - nagroda w groszach za wynik: `per_apple` gr za jabłko od `min_score` jabłek, najwyżej `per_game` za grę i `daily`
-//!   na dobę (klucze `snake_reward_*` w `state`). Wynik liczy przeglądarka, więc serwer wydaje bilet na start gry
-//!   (`TICKETS`, w pamięci procesu) i odrzuca wynik niemożliwy w tym czasie (`MIN_MS_PER_APPLE`). Zarobek dnia gracza:
+//!   na dobę (klucze `snake_reward_*` w `state`). Wyniku z przeglądarki serwer NIE przyjmuje: przy starcie losuje ziarno gry
+//!   (bilet `TICKETS` w pamięci procesu, jednorazowy), po grze dostaje zapis skrętów i sam ODTWARZA grę (`snake_sim` dla
+//!   Snake 2D, `snake3d_sim` dla Super Turbo Snake 3D), licząc jabłka i najkrótszy możliwy czas gry; gra krótsza niż
+//!   ten czas (zegar serwera, tolerancja 10% + 3 s) nie daje nic. Zarobek dnia gracza:
 //!   `user_state` `snake_day` / `snake_today`.
 //!
 //! Pliki idą do eksportu katalogu (export.rs).
@@ -48,13 +50,12 @@ const REWARD: &[(&str, &str, i64, i64)] = &[
     ("snake_reward_daily", "daily", 900, 1_000_000),
 ];
 /// Najszybciej, jak da się zjeść jabłko (krok węża trwa co najmniej 65 ms, jabłko jest zwykle kilka kratek dalej)
-const MIN_MS_PER_APPLE: u128 = 300;
-/// Plansza 22 x 22 (Snake 3D), wąż startuje z 4 kratek; złota kula daje +3 długości, więc zapas
-const MAX_SCORE: i64 = 600;
 
 /// Bilet gry: chwila startu i to, czy gra daje karty (zwykły Snake 2D; Snake 3D tylko grosze)
 struct Ticket {
     at: Instant,
+    /// ziarno gry (jedzenie losuje rdzeń z tego ziarna, także przy odtwarzaniu)
+    seed: u32,
     cards: bool,
     /// Super Turbo Snake 3D: zamiast Pikselowej wypada karta RGB (`turbo_run::turbo_card`)
     turbo: bool,
@@ -237,23 +238,42 @@ pub struct StartRequest {
 pub async fn snake_start(Me(me): Me, JsonBody(req): JsonBody<StartRequest>) -> Res {
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
     t.retain(|_, k| k.at.elapsed().as_secs() < 3 * 3600);
-    t.insert(me.id, Ticket { at: Instant::now(), cards: req.cards, turbo: req.turbo });
-    ok(json!({"ok": true}))
+    let seed: u32 = rand::random();
+    t.insert(me.id, Ticket { at: Instant::now(), seed, cards: req.cards, turbo: req.turbo });
+    ok(json!({"ok": true, "seed": seed}))
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct FinishRequest {
-    score: i64,
+    /// zapis gry: naprzemiennie numer kroku i kierunek (2D: kod 0-3) albo skręt (3D: 1 w prawo, 0 w lewo)
+    log: Vec<u64>,
+    /// liczba kroków według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
+    steps: u64,
 }
 
 /// Koniec gry: grosze za wynik (w limicie gry i dnia). Bilet jest jednorazowy.
 pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<FinishRequest>) -> Res {
     let started = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&me.id);
     let Some(ticket) = started else { return bad("Gra nie została rozpoczęta") };
-    let score = req.score;
-    if !(0..=MAX_SCORE).contains(&score) || ticket.at.elapsed().as_millis() < score as u128 * MIN_MS_PER_APPLE {
-        return bad("Nieprawidłowy wynik");
+    // serwer odtwarza grę z ziarna i zapisu (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy jabłka
+    let (seed, turbo, log) = (ticket.seed, ticket.turbo, req.log);
+    let replayed = tokio::task::spawn_blocking(move || {
+        if turbo {
+            crate::snake3d_sim::replay(seed, &log).map(|o| (o.foods, o.ticks, o.min_secs))
+        } else {
+            crate::snake_sim::replay(seed, &log).map(|o| (o.score, o.steps, o.min_ms / 1000.0))
+        }
+    })
+    .await
+    .ok()
+    .flatten();
+    let Some((score, steps, min_secs)) = replayed else { return bad("Nieprawidłowy zapis gry") };
+    if steps != req.steps {
+        tracing::warn!(user = me.id, claimed = req.steps, steps, turbo, "snake: przeglądarka i serwer policzyły różną długość gry");
+    }
+    if ticket.at.elapsed().as_secs_f64() + 3.0 < min_secs * 0.9 {
+        return bad("Nieprawidłowy wynik");   // zapis dłuższy niż czas, który naprawdę minął
     }
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
@@ -283,6 +303,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({
+        "score": score,
         "reward": reward,
         "capped": reward < base,          // limit dnia zabrał część nagrody
         "today": earned + reward,
