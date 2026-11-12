@@ -796,6 +796,7 @@ export function startPanel() {
     $("#questOn").checked = d.enabled;
     $("#questReroll").hidden = !d.enabled;
     $("#questReroll").disabled = d.done;
+    $("#questDailyLimit").value = d.dailyLimit;
     const next = d.nextAt ? `${d.done ? "Quest wypełniony, następny" : "Następny quest"} ${msgWhen(d.nextAt)}. ` : "";
     $("#questInfo").innerHTML = next + `Można teraz wylosować ${d.cards} kart, ${d.variants} rzadkich wariantów.` + (d.history.length ? `<ul>${d.history.map(q =>
       `<li><b>${q.startsAt ? msgWhen(q.startsAt) : esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr${q.wonAt ? `, wykonał(a) ${msgWhen(q.wonAt)}` : ""})` : "nikt"}</li>`).join("")}</ul>` : "");
@@ -1091,6 +1092,11 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     });
     $("#questOn").addEventListener("change", e => saveQuests({ enabled: e.target.checked }, e.target.checked ? "Questy włączone" : "Questy wyłączone"));
     $("#questReroll").addEventListener("click", () => saveQuests({ reroll: true }, "Nowy cel questa"));
+    $("#questDailyLimitSave").addEventListener("click", () => {
+      const n = Math.floor(Number($("#questDailyLimit").value));
+      if (!Number.isFinite(n) || n < 0 || n > 1000) return toast("Limit questów: liczba od 0 do 1000", true);
+      saveQuests({ dailyLimit: n }, `Limit wykonanych questów na dobę: ${n}`);
+    });
     $("#ctfOn").addEventListener("change", e => saveCtf({ enabled: e.target.checked }, e.target.checked ? "Quest CTF włączony" : "Quest CTF wyłączony"));
     $("#ctfReroll").addEventListener("click", () => saveCtf({ reroll: true, challenge: $("#ctfPick").value }, "Nowe zadanie CTF"));
     $("#ctfFlagShow").addEventListener("click", () => { const f = $("#ctfFlag"); f.hidden = !f.hidden; });

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Coins, Pause, Play } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
-import { applyState } from '../../game/session';
+import { Card } from '../../cards/Card';
+import { openViewer } from '../../fx/effects';
+import { applyState, syncInventory } from '../../game/session';
+import { variantName } from '../../game/rules';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { baseTheme } from '../../styles/theme';
@@ -20,12 +23,14 @@ const KEYS: Record<string, Dir> = {
   W: 'up', S: 'down', A: 'left', D: 'right',
 };
 
+interface WonCard { id: number; person: string; variant: string; name: string; rarity: string }
+
 export function SnakePage() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<SnakeGame | null>(null);
   const [hud, setHud] = useState<SnakeHud | null>(null);
   const { data: look, refetch } = useQuery({ queryKey: ['snake-look'], queryFn: () => api<SnakeLook>('/api/games/snake'), staleTime: 60_000 });
-  const [won, setWon] = useState<{ reward: number; capped: boolean } | null>(null);   // nagroda za ostatnią grę
+  const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);   // nagroda za ostatnią grę
   const sounds = useRef<HTMLAudioElement[]>([]);   // dźwięki jabłka od admina (gra losuje jeden)
   const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
 
@@ -47,10 +52,11 @@ export function SnakePage() {
       if (!ticket.current) return;
       ticket.current = false;
       try {
-        const r = await api<{ reward: number; capped: boolean; state: any }>('/api/games/snake/finish', { score });
+        const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { score });
         applyState(r.state);
-        setWon({ reward: r.reward, capped: r.capped });
+        setWon({ reward: r.reward, capped: r.capped, card: r.card });
         if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
+        if (r.card) { syncInventory(); toast(`Snake: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
         refetch();
       } catch (e: any) { toast(e.message, true); }
     };
@@ -105,7 +111,7 @@ export function SnakePage() {
     Sound.unlock(); Sound.snake('start');
     setWon(null);
     ticket.current = false;
-    api('/api/games/snake/start', {}).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
+    api('/api/games/snake/start', { cards: true }).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
     game.current?.start(); canvas.current?.focus();
   };
   const rw = look?.reward;
@@ -120,7 +126,8 @@ export function SnakePage() {
           <div className="sn-over">
             {phase === 'over' && <><b>Koniec gry</b><span>Jabłka: {hud!.score}{hud!.record ? ' · nowy rekord!' : ''}</span>
               {won && won.reward > 0 && <span className="sn-won">+{fmt(won.reward)}</span>}
-              {won?.capped && <span>Osiągnięto dzienny limit nagród</span>}</>}
+              {won?.capped && <span>Osiągnięto dzienny limit nagród</span>}
+              {won?.card && <span className="sn-card" onClick={() => openViewer(won.card!.person, won.card!.variant, won.card!.id)}><Card person={won.card.person} variant={won.card.variant} tilt={false} /></span>}</>}
             {phase === 'pause' && <b>Pauza</b>}
             {phase === 'idle' && <b>Snake</b>}
             <Button kind="hue" onClick={phase === 'pause' ? () => game.current?.pause() : start}>
@@ -144,6 +151,12 @@ export function SnakePage() {
             <Coins size={16} aria-hidden="true" />
             <span>Nagroda: <b>{fmt(rw.perApple)}</b> {`za jabłko od ${rw.minScore} jabłek, najwyżej ${fmt(rw.perGame)} za grę`}<br />
               <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+          </div>
+        )}
+        {rw && rw.cardTiers && rw.cardTiers.length > 0 && (
+          <div className="sn-reward">
+            <Coins size={16} aria-hidden="true" />
+            <span>Karta w wariancie {variantName(rw.cardVariant || 'pixel')} za wynik: {rw.cardTiers.map(t => `${t.score} jabłek: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
         <div className="sn-pad" aria-label="Kierunek">

@@ -51,7 +51,7 @@ pub fn need(path: &str) -> Need {
         "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
             Need::Perm("content")
         }
-        "horses" | "chess-skins" | "ctf" | "snake" => Need::Perm("games"),
+        "horses" | "chess-skins" | "ctf" | "snake" | "run" => Need::Perm("games"),
         // /users, /users/{id}, /users/{id}/<akcja>[/...]
         "users" => match (seg.len(), seg.get(2).copied()) {
             (1, _) => Need::Perm("users"),

@@ -100,7 +100,7 @@ fn usable(cat: &Catalog, r: &Value) -> bool {
 
 /// Wygląd stempli zmieniony z panelu: kolor i wersja ikony (adres `/passport/icon/<kod>?v=<wersja>`)
 async fn styles(c: &mut Conn) -> sqlx::Result<serde_json::Map<String, Value>> {
-    let rows = sqlx::query("SELECT country, color, icon_at, icon IS NOT NULL AS has_icon FROM passport_settings WHERE color <> '' OR icon IS NOT NULL")
+    let rows = sqlx::query("SELECT country, color, icon_at, icon_scale, icon IS NOT NULL AS has_icon FROM passport_settings WHERE color <> '' OR icon IS NOT NULL")
         .fetch_all(c)
         .await?;
     Ok(rows
@@ -113,6 +113,10 @@ async fn styles(c: &mut Conn) -> sqlx::Result<serde_json::Map<String, Value>> {
             }
             if r.get::<bool, _>("has_icon") {
                 o.insert("icon".into(), json!(r.get::<f64, _>("icon_at") as i64));
+                let scale: i32 = r.get("icon_scale");
+                if scale != 100 {
+                    o.insert("scale".into(), json!(scale));
+                }
             }
             (r.get::<String, _>("country"), Value::Object(o))
         })
@@ -293,13 +297,13 @@ pub async fn admin_passport(State(st): State<AppState>, Admin(_): Admin) -> Res 
     let cat = st.cat();
     let (variants, cards, chests) = reward_options(&cat);
     let mut c = st.db.acquire().await?;
-    let rows = sqlx::query("SELECT country, color, rewards, icon_at, icon IS NOT NULL AS has_icon FROM passport_settings").fetch_all(&mut *c).await?;
+    let rows = sqlx::query("SELECT country, color, rewards, icon_at, icon_scale, icon IS NOT NULL AS has_icon FROM passport_settings").fetch_all(&mut *c).await?;
     let settings: serde_json::Map<String, Value> = rows
         .iter()
         .map(|r| {
             let rewards: Value = serde_json::from_str(&r.get::<String, _>("rewards")).unwrap_or_else(|_| json!([]));
             let icon = r.get::<bool, _>("has_icon").then(|| r.get::<f64, _>("icon_at") as i64);
-            (r.get::<String, _>("country"), json!({"color": r.get::<String, _>("color"), "rewards": rewards, "icon": icon}))
+            (r.get::<String, _>("country"), json!({"color": r.get::<String, _>("color"), "rewards": rewards, "icon": icon, "iconScale": r.get::<i32, _>("icon_scale")}))
         })
         .collect();
     let counts = sqlx::query("SELECT country, COUNT(*) AS n FROM passport_stamps GROUP BY country").fetch_all(&mut *c).await?;
@@ -313,7 +317,13 @@ pub struct StampSave {
     /// #rrggbb albo puste (kolor z tabeli państw)
     color: String,
     rewards: Value,
+    /// skala własnej ikony w procentach (`ICON_SCALE_MIN..=ICON_SCALE_MAX`), brak pola = bez zmiany
+    #[serde(rename = "iconScale")]
+    icon_scale: Option<i64>,
 }
+
+pub const ICON_SCALE_MIN: i64 = 40;
+pub const ICON_SCALE_MAX: i64 = 160;
 
 /// Kolor i nagroda jednego stempla
 pub async fn admin_passport_save(State(st): State<AppState>, Admin(me): Admin, Path(code): Path<String>, JsonBody(req): JsonBody<StampSave>) -> Res {
@@ -325,19 +335,28 @@ pub async fn admin_passport_save(State(st): State<AppState>, Admin(me): Admin, P
     let cat = st.cat();
     let rewards: Vec<Value> = req.rewards.as_array().into_iter().flatten().filter_map(clean_reward).filter(|r| usable(&cat, r)).take(MAX_REWARDS).collect();
     let mut tx = st.db.begin().await?;
+    let mut scale: Option<i32> = None;
+    if let Some(p) = req.icon_scale {
+        if !(ICON_SCALE_MIN..=ICON_SCALE_MAX).contains(&p) {
+            return bad(format!("Skala ikony: od {ICON_SCALE_MIN}% do {ICON_SCALE_MAX}%"));
+        }
+        scale = Some(p as i32);
+    }
     sqlx::query(
-        "INSERT INTO passport_settings (country, color, rewards) VALUES ($1, $2, $3)
-         ON CONFLICT (country) DO UPDATE SET color = excluded.color, rewards = excluded.rewards",
+        "INSERT INTO passport_settings (country, color, rewards, icon_scale) VALUES ($1, $2, $3, COALESCE($4, 100))
+         ON CONFLICT (country) DO UPDATE SET color = excluded.color, rewards = excluded.rewards,
+             icon_scale = COALESCE($4, passport_settings.icon_scale)",
     )
     .bind(&code)
     .bind(&color)
     .bind(Value::Array(rewards.clone()).to_string())
+    .bind(scale)
     .execute(&mut *tx)
     .await?;
-    let desc = format!("{code}: kolor {}, nagrody: {}", if color.is_empty() { "domyślny" } else { &color }, rewards.len());
+    let desc = format!("{code}: kolor {}, nagrody: {}, skala ikony: {}", if color.is_empty() { "domyślny" } else { &color }, rewards.len(), scale.map_or("bez zmiany".to_owned(), |s| format!("{s}%")));
     log_admin(&mut tx, &me, "passport_save", None, &desc).await?;
     tx.commit().await?;
-    ok(json!({"ok": true, "color": color, "rewards": rewards}))
+    ok(json!({"ok": true, "color": color, "rewards": rewards, "iconScale": scale}))
 }
 
 /// Własna ikona stempla: wgranie (`image`) albo usunięcie (`remove=1`)

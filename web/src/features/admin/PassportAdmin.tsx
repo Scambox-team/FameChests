@@ -10,13 +10,14 @@ import s from './PassportAdmin.module.css';
 // ikona (jednokolorowy PNG na przezroczystym tle - kolor nadaje stempel) i nagroda za pierwsze zdobycie (karta w dowolnym wariancie,
 // skrzynka, grosze). Nagroda trafia do gracza tylko raz, w chwili zdobycia stempla; stemple zdobyte wcześniej nie dostają jej wstecz.
 type Reward = { type: 'card' | 'chest' | 'money'; person?: string; variant?: string; kind?: string; count?: number; amount?: number };
-interface Setting { color: string; rewards: Reward[]; icon: number | null }
+interface Setting { color: string; rewards: Reward[]; icon: number | null; iconScale: number }
 interface Data {
   settings: Record<string, Setting>; holders: Record<string, number>;
   variants: { key: string; name: string; enabled: boolean }[]; cards: { id: string; name: string; rarity: string }[]; chests: { kind: string; name: string }[];
 }
 const CONTINENT: Record<string, string> = { eu: 'Europa', as: 'Azja', af: 'Afryka', na: 'Ameryka Północna', sa: 'Ameryka Południowa', oc: 'Australia i Oceania' };
-const EMPTY: Setting = { color: '', rewards: [], icon: null };
+const EMPTY: Setting = { color: '', rewards: [], icon: null, iconScale: 100 };
+const SCALE_MIN = 40, SCALE_MAX = 160;
 
 const plain = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
 
@@ -70,12 +71,13 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
 }) {
   const [color, setColor] = useState(setting.color);
   const [rewards, setRewards] = useState<Reward[]>(setting.rewards);
+  const [scale, setScale] = useState(setting.iconScale ?? 100);
   const [busy, setBusy] = useState(false);
   const file = useRef<HTMLInputElement>(null);
-  useEffect(() => { setColor(setting.color); setRewards(setting.rewards); }, [setting.color, setting.rewards]);
-  const dirty = color !== setting.color || JSON.stringify(rewards) !== JSON.stringify(setting.rewards);
+  useEffect(() => { setColor(setting.color); setRewards(setting.rewards); setScale(setting.iconScale ?? 100); }, [setting.color, setting.rewards, setting.iconScale]);
+  const dirty = color !== setting.color || scale !== (setting.iconScale ?? 100) || JSON.stringify(rewards) !== JSON.stringify(setting.rewards);
   // podgląd stempla z tym, co jest w formularzu (kolor) i zapisaną ikoną
-  const shown: Country = { ...country, col: color || country.col, icon: setting.icon ? `/passport/icon/${country.c}?v=${setting.icon}` : undefined };
+  const shown: Country = { ...country, col: color || country.col, icon: setting.icon ? `/passport/icon/${country.c}?v=${setting.icon}` : undefined, iconScale: scale };
 
   const card = rewards.find(r => r.type === 'card'), chest = rewards.find(r => r.type === 'chest'), money = rewards.find(r => r.type === 'money');
   const set = (type: Reward['type'], r: Reward | null) => setRewards(list => [...list.filter(x => x.type !== type), ...(r ? [r] : [])]);
@@ -85,7 +87,7 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
     try { await fn(); toast(done); reload(); } catch (e: any) { toast(e.message, true); }
     setBusy(false);
   };
-  const save = () => run(() => api(`/api/admin/passport/${country.c}`, { color, rewards }), `Zapisano stempel: ${country.pl}`);
+  const save = () => run(() => api(`/api/admin/passport/${country.c}`, { color, rewards, iconScale: scale }), `Zapisano stempel: ${country.pl}`);
   const sendIcon = (f: File | undefined, remove = false) => {
     if (!remove && !f) return;
     const form = new FormData();
@@ -105,7 +107,7 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
         <b>{country.pl}</b>
         <span className="muted small">{country.c} · {CONTINENT[country.k]}</span>
         {setting.color && <span className={s.chip}><Palette size={12} aria-hidden="true" /> <i className={s.dot} style={{ background: setting.color }} /> {setting.color}</span>}
-        {setting.icon && <span className={s.chip}><Upload size={12} aria-hidden="true" /> własna ikona</span>}
+        {setting.icon && <span className={s.chip}><Upload size={12} aria-hidden="true" /> własna ikona{(setting.iconScale ?? 100) !== 100 ? ` ${setting.iconScale}%` : ''}</span>}
         {setting.rewards.length > 0 && <span className={s.chip}><Gift size={12} aria-hidden="true" /> {setting.rewards.map(r => summary(r, cardName, data)).join(', ')}</span>}
         <span className={`muted small ${s.holders}`}>zdobyło: {holders}</span>
       </button>
@@ -128,6 +130,13 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
                 <input ref={file} type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={e => sendIcon(e.target.files?.[0])} disabled={busy} aria-label="Plik ikony" />
                 <Button disabled={busy || !setting.icon} onClick={() => confirm('Usunąć własną ikonę? Wróci symbol domyślny.') && sendIcon(undefined, true)}><Trash2 size={15} aria-hidden="true" /> Usuń</Button>
               </div>
+              <label className={s.scale}>Rozmiar ikony na stemplu
+                <span className={s.row2}>
+                  <input type="range" min={SCALE_MIN} max={SCALE_MAX} step={5} value={scale} disabled={!setting.icon} onChange={e => setScale(+e.target.value)} aria-label="Rozmiar ikony w procentach" />
+                  <output>{scale}%</output>
+                  <Button disabled={scale === 100} onClick={() => setScale(100)}>100%</Button>
+                </span>
+              </label>
               <small className="muted">Jednokolorowy PNG bez tła. Ikona jest przycinana do zawartości, skalowana i barwiona kolorem stempla; zapisuje się od razu po wybraniu pliku.</small>
             </div>
           </div>
@@ -147,7 +156,7 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
           <p className="muted small">Skrzynka: skrzynki z kartami ze sklepu albo skrzynki z pieniędzmi (Codzienna, MEGA). Karty, skrzynki i grosze można łączyć.</p>
 
           <div className={s.btns}>
-            <Button kind="hue" disabled={busy || !dirty} onClick={save}>Zapisz kolor i nagrodę</Button>
+            <Button kind="hue" disabled={busy || !dirty} onClick={save}>Zapisz kolor, rozmiar ikony i nagrodę</Button>
             {dirty && <span className={s.dirty}>Niezapisane zmiany</span>}
           </div>
         </div>

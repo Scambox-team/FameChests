@@ -84,7 +84,7 @@ function BuyPanel({ crate }: { crate: Crate }) {
       </div>
       <div className={styles.switches}>
         <label><input type="checkbox" checked={!!game.fast} onChange={e => setFlag('fast', e.target.checked)} /><Zap size={15} aria-hidden="true" />Ultraszybko</label>
-        <label title="Otwiera raz za razem, dopóki starcza pieniędzy. Zatrzymuje się na tajnej karcie."><input type="checkbox" checked={!!game.auto} onChange={e => setFlag('auto', e.target.checked)} /><Repeat size={15} aria-hidden="true" />Auto</label>
+        <label title="Otwiera raz za razem, dopóki starcza pieniędzy."><input type="checkbox" checked={!!game.auto} onChange={e => setFlag('auto', e.target.checked)} /><Repeat size={15} aria-hidden="true" />Auto</label>
       </div>
       <div className={styles.acts}>
         <Button kind="hue" big disabled={!!game.opening || !crate.people.length || blocked} onClick={openCrates}>{openLabel}</Button>

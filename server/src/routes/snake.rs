@@ -23,9 +23,10 @@ use serde_json::{json, Map, Value};
 use super::variants::Form;
 use super::{ok, JsonBody};
 use crate::auth::{Admin, Me};
+use crate::data::g;
 use crate::db::{lock_me, Conn};
 use crate::error::{bad, AppError, Res};
-use crate::game::{add_state, get_state, log_admin, set_state};
+use crate::game::{add_state, get_state, insert_for, log_admin, set_state};
 use crate::images::{file_mtime, mimetype, sniff, Kind};
 use crate::state::AppState;
 use crate::web::send_file;
@@ -41,18 +42,26 @@ pub const SOUND_PREFIX: &str = "__snake_snd_";
 
 /// Nagroda: (klucz w `state`, pole formularza, wartość domyślna, największa dozwolona)
 const REWARD: &[(&str, &str, i64, i64)] = &[
-    ("snake_reward_per_apple", "perApple", 2, 1000),
+    ("snake_reward_per_apple", "perApple", 6, 1000),
     ("snake_reward_min_score", "minScore", 5, 400),
-    ("snake_reward_per_game", "perGame", 100, 100_000),
-    ("snake_reward_daily", "daily", 300, 1_000_000),
+    ("snake_reward_per_game", "perGame", 300, 100_000),
+    ("snake_reward_daily", "daily", 900, 1_000_000),
 ];
 /// Najszybciej, jak da się zjeść jabłko (krok węża trwa co najmniej 65 ms, jabłko jest zwykle kilka kratek dalej)
 const MIN_MS_PER_APPLE: u128 = 300;
 /// Plansza 22 x 22 (Snake 3D), wąż startuje z 4 kratek; złota kula daje +3 długości, więc zapas
 const MAX_SCORE: i64 = 600;
 
-/// Bilety gier: gracz -> chwila startu (jedna gra naraz; nowy start zastępuje poprzedni)
-static TICKETS: LazyLock<Mutex<HashMap<i64, Instant>>> = LazyLock::new(Default::default);
+/// Bilet gry: chwila startu i to, czy gra daje karty (zwykły Snake 2D; Snake 3D tylko grosze)
+struct Ticket {
+    at: Instant,
+    cards: bool,
+    /// Super Turbo Snake 3D: zamiast Pikselowej wypada karta RGB (`turbo_run::turbo_card`)
+    turbo: bool,
+}
+
+/// Bilety gier: gracz -> bilet (jedna gra naraz; nowy start zastępuje poprzedni)
+static TICKETS: LazyLock<Mutex<HashMap<i64, Ticket>>> = LazyLock::new(Default::default);
 
 pub fn file_id(slot: &str) -> String {
     format!("__snake_{slot}")
@@ -67,12 +76,12 @@ fn parse_hex(s: &str) -> Option<i64> {
     (s.len() == 6).then(|| i64::from_str_radix(s, 16).ok()).flatten()
 }
 
-async fn setting(c: &mut Conn, key: &str, default: i64) -> sqlx::Result<i64> {
+pub(super) async fn setting(c: &mut Conn, key: &str, default: i64) -> sqlx::Result<i64> {
     let v: Option<i64> = sqlx::query_scalar("SELECT value FROM state WHERE key = $1").bind(key).fetch_optional(&mut *c).await?;
     Ok(v.unwrap_or(default))
 }
 
-async fn put_setting(c: &mut Conn, key: &str, value: i64) -> sqlx::Result<()> {
+pub(super) async fn put_setting(c: &mut Conn, key: &str, value: i64) -> sqlx::Result<()> {
     sqlx::query("INSERT INTO state (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
         .bind(key)
         .bind(value)
@@ -143,7 +152,7 @@ async fn reward_cfg(c: &mut Conn) -> sqlx::Result<Reward> {
     Ok(Reward { per_apple: v[0], min_score: v[1], per_game: v[2], daily: v[3] })
 }
 
-fn today() -> i64 {
+pub(super) fn today() -> i64 {
     Local::now().date_naive().num_days_from_ce() as i64
 }
 
@@ -180,6 +189,7 @@ async fn look(st: &AppState, uid: Option<i64>) -> Res<Value> {
         Some(uid) => earned_today(&mut c, uid).await?,
         None => 0,
     };
+    let cfg = &g().snake;
     Ok(json!({
         "color": hex(setting(&mut c, "snake_color", DEFAULT_COLOR).await?),
         "background": hex(setting(&mut c, "snake_bg", DEFAULT_BG).await?),
@@ -187,7 +197,9 @@ async fn look(st: &AppState, uid: Option<i64>) -> Res<Value> {
         "images": images,
         "sounds": sounds,
         "maxSounds": MAX_SOUNDS,
-        "reward": {"perApple": r.per_apple, "minScore": r.min_score, "perGame": r.per_game, "daily": r.daily, "today": today},
+        "reward": {"perApple": r.per_apple, "minScore": r.min_score, "perGame": r.per_game, "daily": r.daily, "today": today,
+                   "cardVariant": cfg.card_variant, "cardTiers": super::pinball::tiers_json(&cfg.card_tiers)},
+        "turbo": {"cardVariant": g().turbo.card_variant, "cardTiers": super::pinball::tiers_json(&g().turbo.snake_tiers)},
     }))
 }
 
@@ -213,10 +225,19 @@ pub async fn snake_image(
 
 // ---------------------------------------------------------------- gra: bilet i nagroda
 
-pub async fn snake_start(Me(me): Me) -> Res {
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct StartRequest {
+    /// zwykły Snake 2D: wynik może dać kartę (Snake 3D nie wysyła tego pola i dostaje tylko grosze)
+    cards: bool,
+    /// Super Turbo Snake 3D: wynik może dać kartę RGB
+    turbo: bool,
+}
+
+pub async fn snake_start(Me(me): Me, JsonBody(req): JsonBody<StartRequest>) -> Res {
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
-    t.retain(|_, at| at.elapsed().as_secs() < 3 * 3600);
-    t.insert(me.id, Instant::now());
+    t.retain(|_, k| k.at.elapsed().as_secs() < 3 * 3600);
+    t.insert(me.id, Ticket { at: Instant::now(), cards: req.cards, turbo: req.turbo });
     ok(json!({"ok": true}))
 }
 
@@ -229,9 +250,9 @@ pub struct FinishRequest {
 /// Koniec gry: grosze za wynik (w limicie gry i dnia). Bilet jest jednorazowy.
 pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<FinishRequest>) -> Res {
     let started = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&me.id);
-    let Some(started) = started else { return bad("Gra nie została rozpoczęta") };
+    let Some(ticket) = started else { return bad("Gra nie została rozpoczęta") };
     let score = req.score;
-    if !(0..=MAX_SCORE).contains(&score) || started.elapsed().as_millis() < score as u128 * MIN_MS_PER_APPLE {
+    if !(0..=MAX_SCORE).contains(&score) || ticket.at.elapsed().as_millis() < score as u128 * MIN_MS_PER_APPLE {
         return bad("Nieprawidłowy wynik");
     }
     let mut tx = st.db.begin().await?;
@@ -246,6 +267,19 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
         set_state(&mut tx, me.id, "snake_day", today()).await?;
         set_state(&mut tx, me.id, "snake_today", earned + reward).await?;
     }
+    // karta za wynik, BEZ limitu na dobę: Snake 2D daje Pikselową, Snake 3D (Super Turbo) kartę RGB; progi jak w Pinballu
+    let cfg = &g().snake;
+    let mut card = None;
+    if ticket.turbo {
+        card = super::turbo_run::turbo_card(&mut tx, &st.cat(), &me, &g().turbo.snake_tiers, score).await?;
+    } else if ticket.cards {
+        let cat = st.cat();
+        if let Some(pid) = super::pinball::pick_card(&cat, &cfg.card_tiers, score) {
+            let item = insert_for(&mut tx, &cat, me.id, me.hidden_from_ranking(), &pid, &cfg.card_variant, "snake").await?;
+            let p = &cat.people[&pid];
+            card = Some(json!({"id": item.id, "person": pid, "variant": cfg.card_variant, "name": p.name, "rarity": p.rarity}));
+        }
+    }
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({
@@ -253,6 +287,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
         "capped": reward < base,          // limit dnia zabrał część nagrody
         "today": earned + reward,
         "daily": r.daily,
+        "card": card,
         "state": state,
     }))
 }

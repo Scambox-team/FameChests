@@ -2,9 +2,11 @@
 //! nie wierzy jej na słowo: przy starcie losuje ziarno gry, a przy końcu dostaje tylko zapis wciśnięć (tick + zdarzenie) i
 //! ODTWARZA całą grę (`pinball_sim.rs`, ten sam deterministyczny rdzeń w Rust), sam licząc punkty. Wynik, który gracz zobaczył,
 //! nie ma znaczenia - liczy się wynik serwera. Czas sprawdza się też zegarem: gra nie może trwać krócej niż jej zapis (ticki).
-//! Wypłata nie ma limitu na grę ani na dobę (`pinball` w game.json); limit ma tylko liczba kart na dobę.
+//! Wypłata nie ma limitu na grę, na dobę ani na liczbę kart (`pinball` w game.json); grosze mnoży poziom stołu
+//! (`level_reward_mult`: im wyższy poziom, tym więcej za punkt, ostatni 2x).
 //! Za wyjątkowy wynik jest też karta w wariancie Synthwave (`card_tiers`): im wyższy wynik, tym wyższa rzadkość,
 //! losowana ze skrzynek, które dziś są w sklepie (rotacja), a gdy ich nie ma - z domyślnych (stałych i sezonowych).
+//! `pick_card` z tym samym wzorem używa też Snake (`snake.rs`, wariant Pikselowa).
 
 use std::collections::BTreeSet;
 
@@ -16,38 +18,32 @@ use serde_json::json;
 use super::{ok, JsonBody};
 use crate::auth::Me;
 use crate::catalog::Catalog;
-use crate::data::g;
-use crate::db::{lock_me, now, Conn};
+use crate::data::{g, CardTier};
+use crate::db::{lock_me, now};
 use crate::error::{bad, Res};
 use crate::game::{add_state, balance, insert_for};
 use crate::pinball_sim::{self, TICK};
 use crate::state::AppState;
 
-/// Ile kart z Pinballa gracz dostał w ostatnich 24 h
-async fn cards_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM pinball_runs WHERE user_id = $1 AND card <> '' AND finished_at > $2")
-        .bind(uid)
-        .bind(now() - 86400.0)
-        .fetch_one(c)
-        .await
-}
-
-fn info(cards: i64) -> serde_json::Value {
+/// Progi kart z nazwami rzadkości (dla przeglądarki)
+pub fn tiers_json(tiers: &[CardTier]) -> Vec<serde_json::Value> {
     let g = g();
-    let cfg = &g.pinball;
-    let tiers: Vec<_> = cfg
-        .card_tiers
+    tiers
         .iter()
         .map(|t| json!({"score": t.score, "rarity": t.rarity, "name": g.rarities.get(&t.rarity).map(|r| r.name.as_str()).unwrap_or("")}))
-        .collect();
-    json!({"pointsPerGr": cfg.points_per_gr, "cardVariant": cfg.card_variant, "cardTiers": tiers,
-           "cardsLeft": (cfg.cards_per_day - cards).max(0)})
+        .collect()
+}
+
+fn info() -> serde_json::Value {
+    let g = g();
+    let cfg = &g.pinball;
+    json!({"pointsPerGr": cfg.points_per_gr, "cardVariant": cfg.card_variant, "cardTiers": tiers_json(&cfg.card_tiers),
+           "levelMults": cfg.level_reward_mult})
 }
 
 /// Karta za wynik: rzadkość z najwyższego osiągniętego progu, losowa ze skrzynek w rotacji (dziś w sklepie), a gdy
 /// nie ma w nich takiej rzadkości - z domyślnych (stałych i sezonowych); brak karty = niższa rzadkość.
-fn pick_card(cat: &Catalog, score: i64) -> Option<String> {
-    let tiers = &g().pinball.card_tiers;
+pub fn pick_card(cat: &Catalog, tiers: &[CardTier], score: i64) -> Option<String> {
     let top = tiers.iter().rposition(|t| score >= t.score)?;
     let pool = |rarity: &str, rotation: bool| -> Vec<String> {
         cat.crates
@@ -70,15 +66,15 @@ fn pick_card(cat: &Catalog, score: i64) -> Option<String> {
     None
 }
 
-/// Nagroda w groszach: punkty / `points_per_gr`, bez limitu
-fn reward_for(score: i64) -> i64 {
-    score.max(0) / g().pinball.points_per_gr.max(1)
+/// Nagroda w groszach: punkty / `points_per_gr` razy mnożnik poziomu (`level_reward_mult`), bez limitu
+fn reward_for(score: i64, level: usize) -> i64 {
+    let cfg = &g().pinball;
+    ((score.max(0) as f64 / cfg.points_per_gr.max(1) as f64) * cfg.reward_mult(level)).floor() as i64
 }
 
-/// Ustawienia i ile kart gracz może jeszcze dziś dostać
-pub async fn pinball_status(State(st): State<AppState>, Me(me): Me) -> Res {
-    let mut c = st.db.acquire().await?;
-    ok(info(cards_today(&mut c, me.id).await?))
+/// Ustawienia nagród (dla przeglądarki)
+pub async fn pinball_status(Me(_): Me) -> Res {
+    ok(info())
 }
 
 #[derive(Deserialize, Default)]
@@ -105,9 +101,8 @@ pub async fn pinball_start(State(st): State<AppState>, Me(me): Me, JsonBody(req)
         .bind(level as i32)
         .fetch_one(&mut *tx)
         .await?;
-    let cards = cards_today(&mut tx, me.id).await?;
     tx.commit().await?;
-    let mut v = info(cards);
+    let mut v = info();
     v["run"] = json!(id);
     v["seed"] = json!(seed);
     ok(v)
@@ -154,14 +149,13 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
                 // zapis jest dłuższy niż czas, który naprawdę minął: gra nie mogła się odbyć w prawdziwym czasie
                 (score, 0, "implausible")
             } else {
-                (score, reward_for(score), "ok")
+                (score, reward_for(score, level_n), "ok")
             }
         }
     };
-    // karta za wyjątkowy wynik: tylko przy poprawnie odtworzonej, dość długiej grze i w dziennym limicie kart (jedyny limit Pinballa)
-    let cards = cards_today(&mut tx, me.id).await?;
+    // karta za wyjątkowy wynik: tylko przy poprawnie odtworzonej i dość długiej grze (bez limitu na dobę)
     let cat = st.cat();
-    let card_pid = if reason == "ok" && cards < cfg.cards_per_day { pick_card(&cat, score) } else { None };
+    let card_pid = if reason == "ok" { pick_card(&cat, &cfg.card_tiers, score) } else { None };
     sqlx::query("UPDATE pinball_runs SET finished_at = $1, score = $2, reward = $3, card = $4, verified = $6 WHERE id = $5")
         .bind(now())
         .bind(score)
@@ -184,7 +178,7 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
     };
     let bal = balance(&mut tx, me.id).await?;
     tx.commit().await?;
-    let mut v = info(cards + card.is_some() as i64);
+    let mut v = info();
     v["card"] = json!(card);
     v["reward"] = json!(reward);
     v["reason"] = json!(reason);
@@ -200,9 +194,20 @@ mod tests {
     #[test]
     fn reward_has_no_cap() {
         let per = g().pinball.points_per_gr;
-        assert_eq!(reward_for(5_000), 5_000 / per);
-        assert_eq!(reward_for(100_000_000), 100_000_000 / per);
-        assert_eq!(reward_for(-5), 0);
+        assert_eq!(reward_for(5_000, 1), 5_000 / per);
+        assert_eq!(reward_for(100_000_000, 1), 100_000_000 / per);
+        assert_eq!(reward_for(-5, 1), 0);
+    }
+
+    #[test]
+    fn higher_levels_pay_more_up_to_double() {
+        let cfg = &g().pinball;
+        assert_eq!(cfg.level_reward_mult.len(), pinball_sim::level_count());
+        assert!(cfg.level_reward_mult.windows(2).all(|w| w[0] < w[1]), "mnożniki rosnąco");
+        assert_eq!(cfg.reward_mult(1), 1.0);
+        assert_eq!(cfg.reward_mult(pinball_sim::level_count()), 2.0);
+        assert_eq!(reward_for(100_000, 5), 2 * reward_for(100_000, 1));
+        assert_eq!(cfg.reward_mult(99), 2.0);
     }
 
     #[test]
@@ -210,12 +215,12 @@ mod tests {
         let cat = crate::catalog::build(&[], &[]);
         let tiers = &g().pinball.card_tiers;
         assert!(tiers.windows(2).all(|w| w[0].score < w[1].score), "progi rosnąco");
-        assert!(pick_card(&cat, tiers[0].score - 1).is_none());
+        assert!(pick_card(&cat, tiers, tiers[0].score - 1).is_none());
         let order = |pid: &str| g().rarities.get_index_of(&cat.people[pid].rarity).unwrap();
-        let low = pick_card(&cat, tiers[0].score).expect("karta za pierwszy próg");
+        let low = pick_card(&cat, tiers, tiers[0].score).expect("karta za pierwszy próg");
         assert_eq!(cat.people[&low].rarity, tiers[0].rarity);
         // najwyższy próg daje kartę nie gorszą niż najniższy
-        let high = pick_card(&cat, tiers.last().unwrap().score).expect("karta za najwyższy próg");
+        let high = pick_card(&cat, tiers, tiers.last().unwrap().score).expect("karta za najwyższy próg");
         assert!(order(&high) >= order(&low));
         assert!(!cat.people[&high].is_special());
     }

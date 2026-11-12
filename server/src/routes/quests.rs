@@ -3,7 +3,10 @@
 //! wymagany mnożnik; ULTRA LEGENDARNA od 2x). Pasuje każdy wariant z takim mnożnikiem, także połączony (`flag+gold`).
 //! Kto pierwszy, dostaje tę samą kartę w wariancie Wanted i tyle groszy, ile jest warta; dla reszty zadanie przepada.
 //!
-//! Quest trwa `DURATION` (24 h), potem losuje się nowy; wypełniony - nowy po `AFTER_WIN` (6 h) od wypełnienia.
+//! Quest trwa `DURATION` (24 h), potem losuje się nowy; wypełniony - nowy po `AFTER_WIN` (4 h) od wypełnienia.
+//! Jedno konto może wykonać najwyżej `DAILY_LIMIT_KEY` questów (domyślnie 4) w ostatnich 24 h, OSOBNO dla każdego rodzaju questa (`Kind`: Wanted,
+//! CTF): po limicie nie może już wygrać kolejnego tego rodzaju (ani karty, ani pieniędzy; quest zostaje dla innych), żeby jedna osoba
+//! nie zbierała wszystkich. Nowy rodzaj questa = nowy wariant `Kind` z zapytaniem o jego wygrane w `done_today`.
 //! Losuje się przy pierwszym zapytaniu po tym czasie (`daily_quests`, klucz = kolejny numer `q<n>`). Liczą się tylko karty, które
 //! dopiero powstają (skrzynki, kuźnia, ulepszacz, kasyno) - kupno na rynku albo wymiana nie wypełnia questa, inaczej
 //! wygrywałby ten, kto akurat ma najwięcej pieniędzy.
@@ -39,7 +42,42 @@ const MIN_ODDS: f64 = 1e-5;
 const HISTORY: i64 = 14;
 /// jak długo trwa quest i po jakim czasie od wypełnienia pojawia się nowy (sekundy)
 const DURATION: f64 = 24.0 * 3600.0;
-const AFTER_WIN: f64 = 6.0 * 3600.0;
+const AFTER_WIN: f64 = 4.0 * 3600.0;
+
+/// Limit wykonanych questów na konto w ostatnich 24 h, osobno dla każdego rodzaju questa (ustawienie w `state`, panel admina „Questy”, 0 = bez limitu)
+pub const DAILY_LIMIT_KEY: &str = "quests_daily_limit";
+pub const DEFAULT_DAILY_LIMIT: i64 = 4;
+pub const MAX_DAILY_LIMIT: i64 = 1000;
+
+pub async fn daily_limit(c: &mut Conn) -> sqlx::Result<i64> {
+    let v: Option<i64> = sqlx::query_scalar("SELECT value FROM state WHERE key = $1").bind(DAILY_LIMIT_KEY).fetch_optional(c).await?;
+    Ok(v.unwrap_or(DEFAULT_DAILY_LIMIT).clamp(0, MAX_DAILY_LIMIT))
+}
+
+/// Rodzaj questa (każdy ma własny licznik limitu)
+#[derive(Clone, Copy, Debug)]
+pub enum Kind {
+    Wanted,
+    Ctf,
+}
+
+/// Ile questów danego rodzaju gracz wykonał w ostatnich 24 h
+async fn done_today(c: &mut Conn, uid: i64, kind: Kind) -> sqlx::Result<i64> {
+    let sql = match kind {
+        Kind::Wanted => "SELECT COUNT(*) FROM daily_quests WHERE winner_id = $1 AND won_at > $2",
+        Kind::Ctf => "SELECT COUNT(*) FROM ctf_quests WHERE winner_id = $1 AND won_at > $2",
+    };
+    sqlx::query_scalar(sql).bind(uid).bind(now() - 86400.0).fetch_one(c).await
+}
+
+/// Czy gracz wykonał już dzienny limit questów tego rodzaju (konto 0 = bot / podgląd bez gracza: nigdy)
+pub async fn limit_reached(c: &mut Conn, uid: i64, kind: Kind) -> sqlx::Result<bool> {
+    if uid <= 0 {
+        return Ok(false);
+    }
+    let limit = daily_limit(c).await?;
+    Ok(limit > 0 && done_today(c, uid, kind).await? >= limit)
+}
 
 #[derive(sqlx::FromRow)]
 struct QuestRow {
@@ -56,7 +94,7 @@ struct QuestRow {
 }
 
 impl QuestRow {
-    /// Kiedy pojawi się następny quest: 6 h po wypełnieniu albo po końcu tego (stare questy dzienne bez czasu - od razu)
+    /// Kiedy pojawi się następny quest: 4 h po wypełnieniu albo po końcu tego (stare questy dzienne bez czasu - od razu)
     fn next_at(&self) -> f64 {
         match self.won_at.filter(|_| self.winner_id.is_some()) {
             Some(at) => at + AFTER_WIN,
@@ -207,6 +245,8 @@ pub struct QuestView {
     ends_at: Option<f64>,
     won_at: Option<f64>,
     next_at: f64,
+    /// ten gracz wykonał już dzienny limit questów i nie może wygrać tego (quest zostaje dla innych)
+    limit_reached: bool,
 }
 
 fn reward_for(cat: &Catalog, pid: &str) -> Option<i64> {
@@ -215,9 +255,10 @@ fn reward_for(cat: &Catalog, pid: &str) -> Option<i64> {
 
 async fn view(c: &mut Conn, cat: &Catalog, r: QuestRow, uid: i64) -> sqlx::Result<QuestView> {
     let winner: Option<String> = match r.winner_id {
-        Some(id) => sqlx::query_scalar("SELECT username FROM users WHERE id = $1").bind(id).fetch_optional(c).await?,
+        Some(id) => sqlx::query_scalar("SELECT username FROM users WHERE id = $1").bind(id).fetch_optional(&mut *c).await?,
         None => None,
     };
+    let limit_reached = r.winner_id.is_none() && limit_reached(&mut *c, uid, Kind::Wanted).await?;
     Ok(QuestView {
         reward: r.person_id.as_deref().and_then(|p| reward_for(cat, p)),
         done: r.winner_id.is_some(),
@@ -237,6 +278,7 @@ async fn view(c: &mut Conn, cat: &Catalog, r: QuestRow, uid: i64) -> sqlx::Resul
         starts_at: r.starts_at,
         ends_at: r.ends_at,
         won_at: r.won_at,
+        limit_reached,
     })
 }
 
@@ -271,6 +313,9 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
         && want_variant.as_deref().is_none_or(|v| parts(variant).contains(&v))
         && want_mult.is_none_or(|m| g().variant(variant).mult >= m);
     let Some(money) = reward_for(&cx.cat, pid).filter(|_| fits) else { return Ok(()) };
+    if limit_reached(&mut *c, cx.uid(), Kind::Wanted).await? {
+        return Ok(());   // dzienny limit questów Wanted na konto: wygra ktoś inny
+    }
     let won = sqlx::query(
         "UPDATE daily_quests SET winner_id = $1, won_at = $2, won_person = $3, money = $4 WHERE day = $5 AND winner_id IS NULL",
     )
@@ -278,7 +323,7 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
     .bind(now())
     .bind(pid)
     .bind(money)
-    .bind(key)
+    .bind(&key)
     .execute(&mut *c)
     .await?
     .rows_affected();
@@ -333,6 +378,7 @@ pub async fn admin_quests(State(st): State<AppState>, Admin(me): Admin) -> Res {
         "history": history,
         "cards": cards,
         "variants": variants.len(),
+        "dailyLimit": daily_limit(&mut c).await?,
     }))
 }
 
@@ -341,6 +387,9 @@ pub struct QuestSettings {
     enabled: Option<bool>,
     #[serde(default)]
     reroll: bool,
+    /// dzienny limit wykonanych questów na konto, osobno dla każdego rodzaju (0 = bez limitu)
+    #[serde(default, rename = "dailyLimit")]
+    daily_limit: Option<i64>,
 }
 
 /// Usuwa trwający, niewypełniony quest (następne zapytanie losuje nowy)
@@ -353,7 +402,17 @@ async fn drop_open(c: &mut Conn) -> sqlx::Result<()> {
 
 pub async fn admin_quests_save(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<QuestSettings>) -> Res {
     let mut tx = st.db.begin().await?;
-    if let Some(on) = req.enabled {
+    if let Some(limit) = req.daily_limit {
+        if !(0..=MAX_DAILY_LIMIT).contains(&limit) {
+            return bad(format!("Limit questów: liczba od 0 do {MAX_DAILY_LIMIT}"));
+        }
+        sqlx::query("INSERT INTO state (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
+            .bind(DAILY_LIMIT_KEY)
+            .bind(limit)
+            .execute(&mut *tx)
+            .await?;
+        log_admin(&mut tx, &me, "quests", None, &format!("limit wykonanych questów na konto na dobę (każdy rodzaj osobno): {limit}")).await?;
+    } else if let Some(on) = req.enabled {
         sqlx::query("INSERT INTO state (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
             .bind(ENABLED_KEY)
             .bind(i64::from(on))

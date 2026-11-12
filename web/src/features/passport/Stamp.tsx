@@ -4,7 +4,7 @@ import { SYMBOLS } from './symbols';
 import COUNTRIES from './countries.json';
 
 /** Wiersz tabeli państw (countries.json): kod ISO, nazwy, kontynent, kolor pieczątki, symbol (klucz z symbols.ts), skrót nazwy na pieczątce */
-export interface Country { c: string; pl: string; en: string; k: string; col: string; sym: string; s?: string; /** adres własnej ikony z panelu admina (zastępuje symbol) */ icon?: string }
+export interface Country { c: string; pl: string; en: string; k: string; col: string; sym: string; s?: string; /** adres własnej ikony z panelu admina (zastępuje symbol) */ icon?: string; /** skala własnej ikony w % (100 = bez zmiany) */ iconScale?: number }
 
 export const ALL_COUNTRIES = COUNTRIES as Country[];
 export const BY_CODE: Record<string, Country> = Object.fromEntries(ALL_COUNTRIES.map(c => [c.c, c]));
@@ -70,8 +70,10 @@ export function Stamp({ country, earned, className }: { country: Country; earned
         <text x="50" y="21" textAnchor="middle" fill="currentColor" stroke="none" fontSize="7.4" fontWeight="800" letterSpacing="1.6" fontFamily="var(--body)">{country.c}</text>
         {country.icon ? (
           <>
-            <mask id={`pi${uid}`} maskUnits="userSpaceOnUse" x="35" y="25" width="30" height="30"><image href={country.icon} x="35" y="25" width="30" height="30" /></mask>
-            <rect x="35" y="25" width="30" height="30" fill="currentColor" stroke="none" mask={`url(#pi${uid})`} />
+            <g transform={country.iconScale && country.iconScale !== 100 ? `translate(50 40) scale(${country.iconScale / 100}) translate(-50 -40)` : undefined}>
+              <mask id={`pi${uid}`} maskUnits="userSpaceOnUse" x="35" y="25" width="30" height="30"><image href={country.icon} x="35" y="25" width="30" height="30" /></mask>
+              <rect x="35" y="25" width="30" height="30" fill="currentColor" stroke="none" mask={`url(#pi${uid})`} />
+            </g>
           </>
         ) : Icon && <Icon x={35} y={25} width={30} height={30} strokeWidth={1.7} />}
         <path d="M13 61.5H87" strokeWidth="1" />

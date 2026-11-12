@@ -32,3 +32,7 @@
   .reward { grid-template-columns: 1fr 1fr; }
   .holders { margin-left: 0; }
 }
+
+.scale { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.scale input[type="range"] { flex: 1; min-width: 140px; }
+.scale output { min-width: 4ch; font-variant-numeric: tabular-nums; }

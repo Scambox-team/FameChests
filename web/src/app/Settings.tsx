@@ -6,6 +6,7 @@ import { getTheme, isDeepTheme, setTheme, type Theme } from '../styles/theme';
 import { useGame } from '../game/store';
 import { deepDefault2D, hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
+import { epicOff, setEpicOff } from '../fx/epicPref';
 import { RadioSettings } from './RadioSettings';
 import styles from './Settings.module.css';
 
@@ -19,6 +20,7 @@ export function SettingsPanel({ className }: { className?: string }) {
   const aeroOpen = game.themes.includes('aero');
   const indepOpen = game.themes.includes('independence');
   const [birds, setBirds] = useState(() => !casinoIntroOff());
+  const [epic, setEpic] = useState(() => !epicOff());
   const webgl = hasWebGL();
 
   const change = (v: number) => {
@@ -52,6 +54,10 @@ export function SettingsPanel({ className }: { className?: string }) {
       </label>
       <div className={`${styles.row} ${styles.sep}`}><b>Język</b><LangSwitch /></div>
       <div className={styles.sep}>
+        <label className={styles.check}>
+          <input type="checkbox" checked={epic} onChange={e => { setEpic(e.target.checked); setEpicOff(!e.target.checked); }} />
+          <span><b>Animacje lepszych kart</b><small>Wielkie odsłonięcie kart od Legendarnej wzwyż. Po wyłączeniu karta pokazuje się od razu, jak każda inna.</small></span>
+        </label>
         <label className={styles.check}>
           <input type="checkbox" checked={!user3DOff() && webgl} disabled={!webgl} onChange={e => toggle3d(e.target.checked)} />
           <span><b>Grafika 3D</b><small>{!webgl ? 'Twoja przeglądarka nie obsługuje WebGL.' : deepDefault2D() ? 'W tym motywie domyślnie wyłączona: gra pokazuje jego własne ilustracje 2D. Włącz, jeśli wolisz modele 3D.' : 'Wyłącz, jeśli gra działa wolno. Zostaną płaskie wersje.'}</small></span>

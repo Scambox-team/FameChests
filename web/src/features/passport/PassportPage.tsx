@@ -21,7 +21,7 @@ const CONTINENTS: [string, string][] = [
   ['eu', 'Europa'], ['as', 'Azja'], ['af', 'Afryka'], ['na', 'Ameryka Północna'], ['sa', 'Ameryka Południowa'], ['oc', 'Australia i Oceania']
 ];
 
-interface PassportData { stamps: { c: string; at: number }[]; holders: Record<string, number>; style: Record<string, { color?: string; icon?: number }>; total: number }
+interface PassportData { stamps: { c: string; at: number }[]; holders: Record<string, number>; style: Record<string, { color?: string; icon?: number; scale?: number }>; total: number }
 interface Reward { text: string }
 interface Holders { code: string; total: number; reward: Reward[]; users: { user: UserRef & { id: number }; at: number; me: boolean }[] }
 type Note = { kind: 'ok' | 'info' | 'err'; text: string };
@@ -69,7 +69,7 @@ export function PassportPage() {
   // wygląd z panelu admina (kolor, własna ikona) nałożony na tabelę państw
   const countries = useMemo(() => ALL_COUNTRIES.map(c => {
     const st = data?.style?.[c.c];
-    return st ? { ...c, col: st.color || c.col, icon: st.icon ? `/passport/icon/${c.c}?v=${st.icon}` : undefined } : c;
+    return st ? { ...c, col: st.color || c.col, icon: st.icon ? `/passport/icon/${c.c}?v=${st.icon}` : undefined, iconScale: st.scale } : c;
   }), [data]);
   const sorted = useMemo(() => {
     const by = new Map<string, Country[]>();

@@ -135,6 +135,7 @@
    "chance": 0.005,
    "mult": 9.5,
    "off": true,
+   "extraSource": "snake",
    "desc": "16-bitowa gra RPG: zdjęcie z dużych pikseli, niebieskie okienka z białą ramką, pasek HP i migająca strzałka."
   },
   "sketch": {
@@ -591,6 +592,7 @@
    "chance": 0.005,
    "mult": 10.0,
    "off": true,
+   "extraSource": "turbo",
    "desc": "Jak sprzęt gamingowy: ramka mieni się wszystkimi kolorami tęczy, czarne włókno węglowe, neonowa poświata nazwy, paneli i zdjęcia płynnie zmienia odcień."
   },
   "tabloid": {
@@ -1194,13 +1196,40 @@
   "pointsPerGr": 100,
   "minSeconds": 30,
   "cardVariant": "synthwave",
-  "cardsPerDay": 3,
+  "levelRewardMult": [1.0, 1.25, 1.5, 1.75, 2.0],
   "cardTiers": [
-   {"score": 100000, "rarity": "blue"},
-   {"score": 200000, "rarity": "purple"},
-   {"score": 350000, "rarity": "red"},
-   {"score": 600000, "rarity": "gold"},
-   {"score": 1000000, "rarity": "ultra"}
+   {"score": 50000, "rarity": "blue"},
+   {"score": 100000, "rarity": "purple"},
+   {"score": 175000, "rarity": "red"},
+   {"score": 300000, "rarity": "gold"},
+   {"score": 500000, "rarity": "ultra"}
+  ]
+ },
+ "turbo": {
+  "cardVariant": "rgb",
+  "snakeTiers": [
+   {"score": 25, "rarity": "blue"},
+   {"score": 50, "rarity": "purple"},
+   {"score": 80, "rarity": "red"},
+   {"score": 120, "rarity": "gold"},
+   {"score": 180, "rarity": "ultra"}
+  ],
+  "runTiers": [
+   {"score": 1000, "rarity": "blue"},
+   {"score": 2000, "rarity": "purple"},
+   {"score": 3500, "rarity": "red"},
+   {"score": 5500, "rarity": "gold"},
+   {"score": 8000, "rarity": "ultra"}
+  ]
+ },
+ "snake": {
+  "cardVariant": "pixel",
+  "cardTiers": [
+   {"score": 25, "rarity": "blue"},
+   {"score": 50, "rarity": "purple"},
+   {"score": 80, "rarity": "red"},
+   {"score": 120, "rarity": "gold"},
+   {"score": 180, "rarity": "ultra"}
   ]
  },
  "chessSkins": [
@@ -3981,6 +4010,20 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 29,
+   "date": "2026-11-12",
+   "title": "Gry Super Turbo, Snake i Pinball",
+   "items": [
+    "W zakładce <b>Gry</b> jest nowa zakładka <b>Gry Super Turbo</b> z kafelkami: nowa gra <b>Super Turbo Run 3D</b> (bieg po neonowym tunelu, grosze za przebiegnięty dystans) oraz <b>Super Turbo Snake 3D</b> (dawny Snake 3D).",
+    "<b>Snake</b>: grosze za jabłka są teraz trzy razy większe, a za wysoki wynik w zwykłym Snake'u (2D) możesz dostać kartę w wariancie <b>Pikselowa</b> (od 25 jabłek, bez limitu).",
+    "<b>Pinball</b>: karty Synthwave wypadają bez dziennego limitu i od dwa razy niższych wyników, a wyższe poziomy płacą więcej groszy (poziom 5: dwa razy tyle co poziom 1).",
+    "<b>Questy</b>: nowy quest pojawia się po 4 godzinach od wypełnienia poprzedniego. Jedno konto może wykonać najwyżej 4 questy dziennie każdego rodzaju (Wanted i CTF), żeby jedna osoba nie zbierała wszystkich. Po limicie nie odbierzesz już karty ani pieniędzy z tego questa.",
+    "Autootwieranie skrzynek nie zatrzymuje się już na tajnej karcie. W Ustawieniach możesz wyłączyć animacje lepszych kart. W ekwipunku gwiazdka ulubionych pojawia się od razu, a w Ulepszaczu wybrane karty są na początku listy.",
+    "W grach Super Turbo za wysoki wynik wypada karta w wariancie <b>Gamingowa RGB</b> (Run: od 1000 m, Snake 3D: od 25 jabłek, bez limitu).",
+    "W Paszporcie administrator może dopasować rozmiar ikony na stemplu."
+   ]
+  },
   {
    "v": 28,
    "date": "2026-11-11",

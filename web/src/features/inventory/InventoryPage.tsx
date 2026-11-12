@@ -44,10 +44,11 @@ function filtered(f: Filters) {
   return list.sort(by[f.sort]);
 }
 
-const Tile = memo(function Tile({ item, selected, onToggle }: { item: Item; selected: boolean; onToggle: (id: number) => void }) {
+// `fav` idzie osobnym propem: setFavorite zmienia `item.fav` w miejscu (ten sam obiekt), więc samo porównanie item.fav w memo nigdy by nie zobaczyło zmiany
+const Tile = memo(function Tile({ item, selected, fav: isFav, onToggle }: { item: Item; selected: boolean; fav: boolean; onToggle: (id: number) => void }) {
   const fav = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    try { await setFavorite([item.id], !item.fav); } catch (err: any) { Sound.error(); toast(err.message, true); }
+    try { await setFavorite([item.id], !isFav); } catch (err: any) { Sound.error(); toast(err.message, true); }
   };
   const zoom = (e: React.MouseEvent) => { e.stopPropagation(); openViewer(item.person, item.variant, item.id); };
   return (
@@ -55,13 +56,13 @@ const Tile = memo(function Tile({ item, selected, onToggle }: { item: Item; sele
       onClick={() => onToggle(item.id)} onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggle(item.id); } }}
       onContextMenu={e => { e.preventDefault(); openViewer(item.person, item.variant, item.id); }}>
       <Card person={item.person} variant={item.variant} uid={item.id} />
-      <button className={`${styles.pin} ${styles.fav}${item.fav ? ` ${styles.on}` : ''}`} type="button" onClick={fav} aria-label={item.fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'} title={item.fav ? 'Ulubiona: nie da się jej sprzedać ani zużyć' : 'Dodaj do ulubionych'}>
-        <Star size={15} fill={item.fav ? 'currentColor' : 'none'} />
+      <button className={`${styles.pin} ${styles.fav}${isFav ? ` ${styles.on}` : ''}`} type="button" onClick={fav} aria-label={isFav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'} title={isFav ? 'Ulubiona: nie da się jej sprzedać ani zużyć' : 'Dodaj do ulubionych'}>
+        <Star size={15} fill={isFav ? 'currentColor' : 'none'} />
       </button>
       <button className={`${styles.pin} ${styles.zoom}`} type="button" onClick={zoom} aria-label="Powiększ"><Maximize2 size={15} /></button>
     </div>
   );
-}, (a, b) => a.selected === b.selected && a.item.fav === b.item.fav && a.item.id === b.item.id);
+}, (a, b) => a.selected === b.selected && a.fav === b.fav && a.item.id === b.item.id);
 
 function RarityCounts({ value, onChange }: { value: string; onChange: (r: string) => void }) {
   const { cfg, items } = useGame();
@@ -146,7 +147,7 @@ function MyCards() {
       <p className="muted">Kart: <b>{list.length.toLocaleString('pl-PL')}</b>, wartość: <b>{fmt(total)}</b>{list.length !== game.items.length ? ` (wszystkich: ${game.items.length.toLocaleString('pl-PL')})` : ''}</p>
       <section className={styles.grid} aria-label="Karty">
         {ufo && <div className={`${styles.tile} ufo-item`} role="button" tabIndex={0} onClick={e => ufoAbduct(e.currentTarget)}><Card person={ufo.id} variant={ufo.fixedVariant || 'ufo'} /></div>}
-        {list.slice(0, limit).map(i => <Tile key={i.id} item={i} selected={selected.has(i.id)} onToggle={toggle} />)}
+        {list.slice(0, limit).map(i => <Tile key={i.id} item={i} selected={selected.has(i.id)} fav={i.fav} onToggle={toggle} />)}
         {!list.length && <p className={styles.empty}>{game.items.length ? 'Brak kart pasujących do filtrów.' : 'Ekwipunek jest pusty. Otwórz jakąś skrzynkę.'}</p>}
       </section>
       {list.length > limit && <div className={styles.more}><Button onClick={() => setLimit(l => l + PAGE)}>Pokaż więcej ({(list.length - limit).toLocaleString('pl-PL')})</Button></div>}

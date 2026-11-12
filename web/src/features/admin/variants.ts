@@ -245,6 +245,8 @@ const VR_SOURCES = {
   marketSeller: { chip: "rynek", title: "Premia sprzedającego na rynku" },
   casino: { chip: "kasyno", title: "Wygrane w kasynie (gdy wartość karty pasuje do puli), także gdy wariant jest wyłączony" },
   pinball: { chip: "pinball", title: "Nagroda za wynik w Pinballu" },
+  snake: { chip: "snake", title: "Nagroda za wynik w Snake'u" },
+  turbo: { chip: "turbo", title: "Nagroda za wynik w grach Super Turbo" },
 };
 function vrExtraHTML(v) {
   const V = vrV(v), src = VR_SOURCES[V.extraSource];
@@ -256,6 +258,10 @@ function vrExtraHTML(v) {
     ? `Questy są teraz <b>${VR.questOn == null ? "…" : VR.questOn ? "włączone " : "wyłączone "}</b> (panel admina → Questy). Pierwszy gracz, który wypełni questa, dostaje kartę w tym wariancie.`
     : V.extraSource === "pinball"
     ? `Za bardzo wysoki wynik w Pinballu gracz dostaje kartę w tym wariancie, losową ze skrzynek w rotacji: im lepszy wynik, tym wyższa rzadkość.`
+    : V.extraSource === "snake"
+    ? `Za dużo jabłek w zwykłym Snake'u (2D) gracz dostaje kartę w tym wariancie, losową ze skrzynek w rotacji: im lepszy wynik, tym wyższa rzadkość.`
+    : V.extraSource === "turbo"
+    ? `Za wysoki wynik w grach Super Turbo (Run: dystans, Snake 3D: jabłka) gracz dostaje kartę w tym wariancie, losową ze skrzynek w rotacji: im lepszy wynik, tym wyższa rzadkość. Bez limitu kart na dobę.`
     : V.extraSource === "market"
     ? `Gdy ktoś kupi albo wylicytuje kartę na rynku, z szansą ${pct(m.bonusChance || 0)} dostaje też tę kartę w tym wariancie.`
     : `Gdy zakup na rynku da premię (${pct(m.bonusChance || 0)}), sprzedający dostaje jeden z metali; ten wariant to ${pct(sum ? V.chance / sum : 0)} tych premii.`;

@@ -8,7 +8,7 @@ import { fmt } from '../../lib/format';
 import { CtfDialog, CtfSlide } from './CtfQuest';
 import s from './home.module.css';
 
-// czas do `nextAt` (sekundy): koniec questa albo 6 h po jego wypełnieniu - wtedy serwer losuje nowy
+// czas do `nextAt` (sekundy): koniec questa albo 4 h po jego wypełnieniu - wtedy serwer losuje nowy
 export function useCountdown(nextAt?: number) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
@@ -108,6 +108,7 @@ function WantedSlide({ quest: q }: { quest: any }) {
             <>
               <h2 className={s.name}>{target ? target.name : 'Dowolna karta'}{q.variant ? <span className={s.qVariant}> · {variantName(q.variant)}</span> : null}</h2>
               <p className={s.lead}>Zdobądź tę kartę ze skrzynki, kuźni lub kasyna.{q.minMult ? ` Potrzebny wariant z mnożnikiem wartości co najmniej ${q.minMult}x.` : ''} Kto pierwszy, dostaje ją w wariancie {variantName('wanted')}{q.reward ? ` i ${fmt(q.reward)}` : ''}.</p>
+              {q.limitReached && <p className={s.where}>Przekroczono dzienny limit questów Wanted. Do jutra nie odbierzesz już karty ani pieniędzy z tego questa.</p>}
               {!!q.crates?.length && <p className={s.where}>Wypada ze skrzynek: {q.crates.map((id: string) => crateOf(id)?.short ?? id).join(', ')}.</p>}
             </>
           ) : q.mine ? (

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
-import { applyState } from '../../game/session';
+import { Card } from '../../cards/Card';
+import { openViewer } from '../../fx/effects';
+import { variantName } from '../../game/rules';
+import { applyState, syncInventory } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
@@ -12,16 +15,18 @@ import { toast } from '../../ui/Toaster';
 import './snake3dpage.css';
 import './snake3d.css';
 
-// Zakładka Gry -> Snake: Super Turbo Snake 3D (three/snakeScene.ts, neonowa arena z HUD-em w środku kontenera).
+// Zakładka Gry -> Gry Super Turbo -> Super Turbo Snake 3D (three/snakeScene.ts, neonowa arena z HUD-em w środku kontenera).
 // Wynik w punktach i rekord liczy gra (localStorage `snake3dBest`); serwer dostaje liczbę jabłek po grze i płaci wg ustawień z panelu admina.
+interface WonCard { id: number; person: string; variant: string; name: string; rarity: string }
 interface Reward { perApple: number; perGame: number; daily: number; minScore: number; today: number }
+interface TurboCards { cardVariant: string; cardTiers: { score: number; rarity: string; name: string }[] }
 
 export function Snake3DPage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Snake3D | null>(null);
   const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
-  const [won, setWon] = useState<{ reward: number; capped: boolean } | null>(null);
-  const { data: look, refetch } = useQuery({ queryKey: ['snake3d-look'], queryFn: () => api<{ reward?: Reward }>('/api/games/snake'), staleTime: 60_000 });
+  const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);
+  const { data: look, refetch } = useQuery({ queryKey: ['snake3d-look'], queryFn: () => api<{ reward?: Reward; turbo?: TurboCards }>('/api/games/snake'), staleTime: 60_000 });
   const refetchRef = useRef(refetch);
   refetchRef.current = refetch;
   const on = use3D();
@@ -39,16 +44,17 @@ export function Snake3DPage() {
           Sound.unlock();
           setWon(null);
           ticket.current = false;
-          api('/api/games/snake/start', {}).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
+          api('/api/games/snake/start', { turbo: true }).then(() => { ticket.current = true; }).catch(() => { /* gra bez nagrody */ });
         },
         onOver: async ({ apples }) => {
           if (!ticket.current) return;
           ticket.current = false;
           try {
-            const r = await api<{ reward: number; capped: boolean; state: any }>('/api/games/snake/finish', { score: apples });
+            const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { score: apples });
             applyState(r.state);
-            setWon({ reward: r.reward, capped: r.capped });
+            setWon({ reward: r.reward, capped: r.capped, card: r.card });
             if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
+            if (r.card) { syncInventory(); toast(`Super Turbo: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
             refetchRef.current();
           } catch (e: any) { toast(e.message, true); }
         },
@@ -74,11 +80,12 @@ export function Snake3DPage() {
         <div ref={root} className="s3-root" />
       </div>
       <aside className="s3-side">
-        {won && (won.reward > 0 || won.capped) && (
+        {won && (won.reward > 0 || won.capped || won.card) && (
           <div className="s3-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>{won.reward > 0 ? <>Nagroda za ostatnią grę: <b className="s3-won">+{fmt(won.reward)}</b></> : 'Osiągnięto dzienny limit nagród'}
+            <span>{won.reward > 0 ? <>Nagroda za ostatnią grę: <b className="s3-won">+{fmt(won.reward)}</b></> : won.capped ? 'Osiągnięto dzienny limit nagród' : 'Nowa karta:'}
               {won.capped && won.reward > 0 && <><br /><small className="muted">Osiągnięto dzienny limit nagród</small></>}</span>
+            {won.card && <span style={{ width: 120, cursor: 'pointer', flex: 'none' }} onClick={() => openViewer(won.card!.person, won.card!.variant, won.card!.id)}><Card person={won.card.person} variant={won.card.variant} tilt={false} /></span>}
           </div>
         )}
         {rw && rw.perApple > 0 && rw.daily > 0 && (
@@ -86,6 +93,12 @@ export function Snake3DPage() {
             <Coins size={16} aria-hidden="true" />
             <span>Nagroda: <b>{fmt(rw.perApple)}</b> {`za jabłko od ${rw.minScore} jabłek, najwyżej ${fmt(rw.perGame)} za grę`}<br />
               <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+          </div>
+        )}
+        {look?.turbo && look.turbo.cardTiers.length > 0 && (
+          <div className="s3-reward">
+            <Coins size={16} aria-hidden="true" />
+            <span>Karta w wariancie {variantName(look.turbo.cardVariant)} za wynik: {look.turbo.cardTiers.map(t => `${t.score} jabłek: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
         <div className="s3-help">

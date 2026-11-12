@@ -36,6 +36,7 @@ export function QuestBox() {
         <p>Zdobądź {target}{q.variant ? ` w wariancie ${variantName(q.variant)}` : q.minMult ? ` w wariancie z mnożnikiem co najmniej ${q.minMult}x` : ''}. Kto pierwszy, ten wygrywa.</p>
         <small className="muted">Nagroda: ta karta w wariancie {variantName('wanted')}{reward ? ` + ${fmt(reward)}` : ' + jej wartość w groszach'}. Liczą się skrzynki, kuźnia, ulepszacz i kasyno.</small>
       </div>
+      {!q.done && q.limitReached && <span className="muted small">Przekroczono dzienny limit questów Wanted. Do jutra nie odbierzesz już karty ani pieniędzy z tego questa.</span>}
       {q.done && (q.mine
         ? <span className={styles.won}><Trophy size={16} aria-hidden="true" />Quest jest twój, +{fmt(q.money)}{q.wonAt ? ` (${questTime(q.wonAt)})` : ''}</span>
         : <span className="muted small">Quest przepadł. Wygrana: {q.winner || 'nieznany gracz'}{q.wonAt ? `, o ${questTime(q.wonAt)}` : ''}</span>)}

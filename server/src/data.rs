@@ -138,14 +138,43 @@ pub struct PinballCfg {
     pub min_seconds: f64,
     /// wariant karty za wyjątkowy wynik (Synthwave)
     pub card_variant: String,
-    /// najwięcej kart z Pinballa na gracza na 24 h
-    pub cards_per_day: i64,
+    /// mnożnik nagrody w groszach dla kolejnych poziomów (od 1.); poza listą obowiązuje ostatni, bez listy 1.0
+    #[serde(default)]
+    pub level_reward_mult: Vec<f64>,
     /// od jakiego wyniku jaka rzadkość karty (rosnąco)
-    pub card_tiers: Vec<PinballTier>,
+    pub card_tiers: Vec<CardTier>,
+}
+
+impl PinballCfg {
+    /// Mnożnik nagrody dla poziomu (numerowanego od 1)
+    pub fn reward_mult(&self, level: usize) -> f64 {
+        self.level_reward_mult.get(level.saturating_sub(1)).or(self.level_reward_mult.last()).copied().unwrap_or(1.0)
+    }
+}
+
+/// Karty za wynik w grach Super Turbo (Super Turbo Snake 3D i Run 3D): wariant Gamingowa RGB, progi osobno dla każdej gry
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TurboCfg {
+    pub card_variant: String,
+    /// od ilu jabłek jaka rzadkość (Snake 3D)
+    pub snake_tiers: Vec<CardTier>,
+    /// od ilu metrów jaka rzadkość (Run 3D)
+    pub run_tiers: Vec<CardTier>,
+}
+
+/// Karty za wynik w Snake (zwykły Snake 2D): jabłka -> rzadkość karty w wariancie Pikselowa, wzór jak w Pinballu
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnakeCfg {
+    /// wariant karty za wynik (Pikselowa)
+    pub card_variant: String,
+    /// od ilu jabłek jaka rzadkość karty (rosnąco)
+    pub card_tiers: Vec<CardTier>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct PinballTier {
+pub struct CardTier {
     pub score: i64,
     pub rarity: String,
 }
@@ -350,6 +379,8 @@ pub struct GameData {
     pub market: MarketCfg,
     pub chess: ChessCfg,
     pub pinball: PinballCfg,
+    pub snake: SnakeCfg,
+    pub turbo: TurboCfg,
     pub chess_skins: Vec<ChessSkin>,
     pub market_json: Value,
     pub roulette: RouletteCfg,
@@ -525,6 +556,8 @@ impl GameData {
             market: get(&raw, "market")?,
             chess: get(&raw, "chess")?,
             pinball: get(&raw, "pinball")?,
+            snake: get(&raw, "snake")?,
+            turbo: get(&raw, "turbo")?,
             chess_skins: get(&raw, "chessSkins")?,
             market_json: v("market"),
             roulette: get(&raw, "roulette")?,

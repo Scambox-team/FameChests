@@ -145,11 +145,14 @@
 
       <div class="panel" data-sec="questy">
         <h3>Questy</h3>
-        <p class="muted small">Wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Quest trwa 24 h, potem losuje się nowy; gdy ktoś go wypełni, nowy pojawia się 6 h później. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).
+        <p class="muted small">Wszyscy gracze dostają ten sam cel: konkretną kartę od Epickiej wzwyż. Quest trwa 24 h, potem losuje się nowy; gdy ktoś go wypełni, nowy pojawia się 4 h później. Epicka zawsze w rzadkim wariancie, wyższe zwykłe albo w wariancie (tylko to, co da się teraz zdobyć).
           Kto pierwszy, dostaje tę kartę w wariancie Wanted i jej wartość w groszach. Liczą się karty ze skrzynek, kuźni, ulepszacza i kasyna, nie z rynku ani wymian.</p>
         <label class="chk"><input type="checkbox" id="questOn"> Questy włączone</label>
         <button class="btn" id="questReroll" type="button">Wylosuj nowy cel</button>
         <div id="questInfo" class="muted small"></div>
+        <p class="small"><label>Limit wykonanych questów na konto na dobę <input type="number" id="questDailyLimit" min="0" max="1000" step="1" value="4" style="width:5em" aria-label="Limit wykonanych questów na dobę"></label>
+          <button class="btn" id="questDailyLimitSave" type="button">Zapisz limit</button></p>
+        <p class="muted small">Jedno konto może wykonać najwyżej tyle questów w ostatnich 24 h, osobno dla każdego rodzaju (Wanted i CTF po tyle, tak samo przyszłe questy). Po limicie nie może wygrać kolejnego tego rodzaju (ani karty, ani pieniędzy): quest zostaje dla innych graczy, a ten gracz widzi o tym komunikat. 0 = bez limitu.</p>
         <p class="muted small">Nagrodą jest wariant Wanted: wypada stąd, nawet gdy jest wyłączony na <a href="/variants">/variants</a> (dzięki temu nie wypada ze skrzynek ani gier).</p>
       </div>
 
@@ -157,7 +160,7 @@
         <h3>Quest CTF (capture the flag)</h3>
         <p class="muted small">Drugi quest na stronie startowej (gracz przełącza strzałką z Wanted). Wszyscy dostają to samo zadanie w stylu TryHackMe:
           strona z dziurą (komentarz w źródle, ciasteczko, robots.txt, nagłówki, cudze notatki, hasło w JavaScripcie) albo zakodowana wiadomość (Base64 + ROT13, szyfr Cezara, skrót hasła).
-          Flaga jest losowana przy każdym queście. Bez rozwiązania co kilka godzin odsłania się podpowiedź (3 h, 8 h, 14 h). Czas jak w Wanted: 24 h, po wypełnieniu nowy po 6 h.
+          Flaga jest losowana przy każdym queście. Bez rozwiązania co kilka godzin odsłania się podpowiedź (3 h, 8 h, 14 h). Czas jak w Wanted: 24 h, po wypełnieniu nowy po 4 h.
           Kto pierwszy wpisze flagę, dostaje losową kartę (Epicka - Legendarna, ze skrzynek w sklepie) w wariancie Cyfrowa i jej wartość w groszach. Gracz ma 8 prób na 10 minut.</p>
         <label class="chk"><input type="checkbox" id="ctfOn"> Quest CTF włączony</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">

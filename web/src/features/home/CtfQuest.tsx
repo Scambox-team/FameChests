@@ -15,6 +15,7 @@ import s from './home.module.css';
 import c from './ctf.module.css';
 
 const REWARD = 'digital';
+const LIMIT_NOTE = 'Przekroczono dzienny limit zadań CTF. Do jutra nie odbierzesz już karty ani pieniędzy z tego questa.';
 
 /** Stan questa CTF z /api/me; wygrana pokazuje się raz */
 export function noteCtf(q: any) {
@@ -103,6 +104,7 @@ export function CtfSlide({ onOpen }: { onOpen: () => void }) {
             <p className={s.lead}>{q.reward
               ? `Znajdź ukrytą flagę i wpisz ją jako pierwszy. Nagroda: ${prize?.name ?? '?'} w wariancie ${variantName(REWARD)} i ${fmt(q.reward)}.`
               : `Znajdź ukrytą flagę i wpisz ją jako pierwszy. Nagroda: ${prize?.name ?? '?'} w wariancie ${variantName(REWARD)}.`}</p>
+            {q.limitReached && <p className={s.where}>{LIMIT_NOTE}</p>}
             <button type="button" className={c.go} onClick={onOpen}>Rozwiąż zadanie</button>
             <span className={s.timer}><Lightbulb size={15} aria-hidden="true" />Podpowiedzi: <b>{q.hintsOpen}/{q.hintsTotal}</b>{q.nextHintAt ? <> · następna za <b>{hintIn}</b></> : null}</span>
           </>
@@ -180,11 +182,14 @@ export function CtfDialog({ onClose }: { onClose: () => void }) {
               ))}
             </ol>
             {!d.done ? (
+              <>
+              {d.limitReached && <p className={c.muted}><Lock size={14} aria-hidden="true" /> {LIMIT_NOTE}</p>}
               <form className={c.form} onSubmit={submit}>
                 <label className={c.prompt} htmlFor="ctfFlag">flag&gt;</label>
                 <input id="ctfFlag" value={flag} onChange={e => setFlag(e.target.value)} placeholder="SB{...}" autoComplete="off" spellCheck={false} maxLength={200} />
-                <button type="submit" disabled={busy || !flag.trim() || d.triesLeft <= 0}>Wyślij flagę</button>
+                <button type="submit" disabled={busy || !flag.trim() || d.triesLeft <= 0 || d.limitReached}>Wyślij flagę</button>
               </form>
+              </>
             ) : (
               <p className={c.solved}>
                 <CheckCircle2 size={16} aria-hidden="true" />

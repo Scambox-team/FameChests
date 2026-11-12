@@ -48,7 +48,8 @@ export function Upgrade() {
   const shown = useRef(0);   // w trakcie próby łuk zostaje taki, jak przy jej starcie
   if (!U.busy) shown.current = chance;
   const max = cfg.upgradeMaxItems;
-  const mine = sortCards(items().filter(i => U.inputs.has(i.id) || cardMatches(i, U.q)), CS.sorts.upg);
+  const sorted = sortCards(items().filter(i => U.inputs.has(i.id) || cardMatches(i, U.q)), CS.sorts.upg);
+  const mine = [...sorted.filter(i => U.inputs.has(i.id)), ...sorted.filter(i => !U.inputs.has(i.id))];   // wybrane na początku, jak w pozostałych grach (CardPicker)
   const [selCount, kart] = [U.inputs.size, plural(U.inputs.size, 'karta', 'karty', 'kart')];
 
   const finish = () => {

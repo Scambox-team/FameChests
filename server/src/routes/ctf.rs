@@ -2,7 +2,7 @@
 //! Wszyscy gracze dostają to samo zadanie w stylu TryHackMe (strona z dziurą, ciasteczko, robots.txt, zakodowana
 //! wiadomość...), a kto pierwszy wpisze flagę, dostaje kartę w wariancie Cyfrowa (`digital`) i jej wartość w groszach.
 //!
-//! Czas jak w Wanted: quest trwa `DURATION` (24 h), wypełniony - nowy po `AFTER_WIN` (6 h). Co jakiś czas bez rozwiązania
+//! Czas jak w Wanted: quest trwa `DURATION` (24 h), wypełniony - nowy po `AFTER_WIN` (4 h). Co jakiś czas bez rozwiązania
 //! odsłania się kolejna podpowiedź (`HINTS_AT`). Flaga i wszystko, co z niej wynika, jest losowane przy każdym queście
 //! (ziarno `seed` w `ctf_quests`), więc rozwiązanie z poprzedniego razu nie pasuje. Strony zadań to zwykły HTML pod
 //! `/ctf/<token>/` (bez logowania, po polsku - jak napisy na płótnie), flagę sprawdza tylko serwer.
@@ -33,7 +33,7 @@ use crate::state::AppState;
 pub const REWARD_VARIANT: &str = "digital";
 const ENABLED_KEY: &str = "ctf_enabled";
 const DURATION: f64 = 24.0 * 3600.0;
-const AFTER_WIN: f64 = 6.0 * 3600.0;
+const AFTER_WIN: f64 = 4.0 * 3600.0;
 /// po ilu sekundach od startu odsłania się kolejna podpowiedź
 const HINTS_AT: [f64; 3] = [3.0 * 3600.0, 8.0 * 3600.0, 14.0 * 3600.0];
 /// rzadkości karty-nagrody
@@ -796,15 +796,18 @@ pub struct CtfView {
     hints_total: usize,
     /// kiedy odsłoni się następna podpowiedź (None = wszystkie widać)
     next_hint_at: Option<f64>,
+    /// ten gracz wykonał już dzienny limit questów i nie może zdobyć tej flagi (quest zostaje dla innych)
+    limit_reached: bool,
 }
 
 async fn view(c: &mut Conn, cat: &Catalog, r: &CtfRow, uid: i64) -> sqlx::Result<CtfView> {
     let ch = challenge(&r.challenge);
     let winner: Option<String> = match r.winner_id {
-        Some(id) => sqlx::query_scalar("SELECT username FROM users WHERE id = $1").bind(id).fetch_optional(c).await?,
+        Some(id) => sqlx::query_scalar("SELECT username FROM users WHERE id = $1").bind(id).fetch_optional(&mut *c).await?,
         None => None,
     };
     let open = r.hints_open(now());
+    let limit_reached = r.winner_id.is_none() && super::quests::limit_reached(&mut *c, uid, super::quests::Kind::Ctf).await?;
     Ok(CtfView {
         key: r.key.clone(),
         challenge: r.challenge.clone(),
@@ -824,6 +827,7 @@ async fn view(c: &mut Conn, cat: &Catalog, r: &CtfRow, uid: i64) -> sqlx::Result
         hints_open: open,
         hints_total: HINTS_AT.len(),
         next_hint_at: HINTS_AT.get(open).map(|t| r.starts_at + t).filter(|_| r.winner_id.is_none()),
+        limit_reached,
     })
 }
 
@@ -903,6 +907,10 @@ pub async fn ctf_submit(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     let Some(r) = current(&mut tx, &cx.cat).await? else { return bad("Quest CTF jest teraz wyłączony") };
     if r.winner_id.is_some() {
         return bad("Ktoś już zdobył tę flagę - nowe zadanie pojawi się niedługo");
+    }
+    if super::quests::limit_reached(&mut tx, cx.uid(), super::quests::Kind::Ctf).await? {
+        let limit = super::quests::daily_limit(&mut tx).await?;
+        return bad(format!("Przekroczono dzienny limit zadań CTF ({limit} na dobę). Ta flaga zostaje dla innych graczy, wróć jutro"));
     }
     sqlx::query("UPDATE ctf_quests SET attempts = attempts + 1 WHERE key = $1").bind(&r.key).execute(&mut *tx).await?;
     if normalize(guess) != normalize(&r.flag) {

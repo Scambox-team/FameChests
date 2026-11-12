@@ -11,7 +11,10 @@ const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: {
 const OPP: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 const ANGLE: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
 
-export interface SnakeReward { perApple: number; minScore: number; perGame: number; daily: number; today: number }
+export interface SnakeReward {
+  perApple: number; minScore: number; perGame: number; daily: number; today: number;
+  cardVariant: string; cardTiers: { score: number; rarity: string; name: string }[];
+}
 export interface SnakeLook {
   color: string; background: string; images: Partial<Record<'head' | 'body' | 'apple' | 'bg', string | null>>;
   sounds?: { id: string; url: string }[]; maxSounds?: number; reward?: SnakeReward;

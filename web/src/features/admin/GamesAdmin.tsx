@@ -6,6 +6,10 @@ import s from './GamesAdmin.module.css';
 
 // Zakładka panelu admina „Gry”: wygląd Snake'a (routes/snake.rs) - kolor węża i tła, obrazki PNG.
 interface Reward { perApple: number; minScore: number; perGame: number; daily: number }
+interface RunReward { per100m: number; minDist: number; perGame: number; daily: number }
+const RUN_FIELDS: [keyof RunReward, string, string][] = [
+  ['per100m', 'Groszy za każde 100 m', 'gr'], ['minDist', 'Od ilu metrów', 'm'], ['perGame', 'Najwyżej za jedną grę', 'gr'], ['daily', 'Najwyżej na dzień (gracz)', 'gr'],
+];
 interface Look {
   color: string; background: string; defaults: { color: string; background: string }; images: Record<string, string | null>;
   sounds: { id: string; url: string }[]; maxSounds: number; reward: Reward;
@@ -26,6 +30,15 @@ export default function GamesAdmin() {
   const [bg, setBg] = useState('#0d130f');
   const [busy, setBusy] = useState(false);
   const [reward, setReward] = useState<Record<string, string>>({});
+  const [run, setRun] = useState<Record<string, string>>({});
+  const applyRun = (r: RunReward) => setRun(Object.fromEntries(RUN_FIELDS.map(([k]) => [k, String(r[k])])));
+  useEffect(() => { api<{ reward: RunReward }>('/api/admin/run').then(d => applyRun(d.reward)).catch(e => toast(e.message, true)); }, []);
+  const saveRun = async () => {
+    setBusy(true);
+    try { applyRun((await api<{ reward: RunReward }>('/api/admin/run', Object.fromEntries(RUN_FIELDS.map(([k]) => [k, +(run[k] || 0)])))).reward); toast('Nagroda Super Turbo Run zapisana'); }
+    catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
   const apply = (l: Look) => {
     setLook(l); setColor(l.color); setBg(l.background);
     setReward(Object.fromEntries(REWARD_FIELDS.map(([k]) => [k, String(l.reward[k])])));
@@ -133,7 +146,22 @@ export default function GamesAdmin() {
         </div>
         <p className="muted small">Przykład: {reward.perApple || 0} gr × 30 jabłek = {Math.min(+(reward.perApple || 0) * 30, +(reward.perGame || 0))} gr
           {30 < +(reward.minScore || 0) ? ' (za mało jabłek - 0 gr)' : ''}.</p>
+        <p className="muted small">Karty w wariancie Pikselowa za wynik w zwykłym Snake'u (2D) dostaje się od progów jabłek z game.json (<code>snake.cardTiers</code>), bez limitu kart na dobę. Snake 3D (Super Turbo) daje zamiast Pikselowej kartę RGB.</p>
         <div className={s.btns}><Button kind="hue" disabled={busy} onClick={saveReward}>Zapisz nagrodę</Button></div>
+      </div>
+      <div className="panel">
+        <h3>Gry Super Turbo: nagroda w groszach i karty RGB</h3>
+        <p className="muted small">Po skończonym biegu gracz dostaje grosze za przebiegnięty dystans: od podanej liczby metrów, z limitem na jedną grę i na dzień. Serwer
+          odrzuca dystans niemożliwy w czasie od startu gry. 0 groszy za 100 m albo 0 na dzień = bez nagród. Pola grosza dotyczą Super Turbo Run; Snake 3D płaci wg ustawień Snake'a. Za wysoki wynik (Run: dystans, Snake 3D: jabłka) wypada karta w wariancie Gamingowa RGB, progi w game.json (<code>turbo.runTiers</code> i <code>turbo.snakeTiers</code>), bez limitu kart na dobę.</p>
+        <div className={s.reward}>
+          {RUN_FIELDS.map(([k, label, unit]) => (
+            <label key={k}>{label}
+              <span><input type="number" min={0} step={1} value={run[k] ?? ''} onChange={e => setRun(r => ({ ...r, [k]: e.target.value }))} /> {unit}</span>
+            </label>
+          ))}
+        </div>
+        <p className="muted small">Przykład: 1000 m = {Math.min(Math.floor(1000 * +(run.per100m || 0) / 100), +(run.perGame || 0))} gr{1000 < +(run.minDist || 0) ? ' (za krótko - 0 gr)' : ''}.</p>
+        <div className={s.btns}><Button kind="hue" disabled={busy} onClick={saveRun}>Zapisz nagrodę</Button></div>
       </div>
     </section>
   );

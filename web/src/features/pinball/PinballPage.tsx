@@ -22,7 +22,7 @@ const bestOf = (n: number) => { try { return +(localStorage.getItem(n === 1 ? 'p
 const read3d = () => { try { return localStorage.getItem('pinball3d') !== 'off'; } catch { return true; } };
 
 type Tier = { score: number; rarity: string; name: string };
-type Rewards = { pointsPerGr: number; cardTiers: Tier[]; cardsLeft: number };
+type Rewards = { pointsPerGr: number; cardTiers: Tier[]; levelMults?: number[] };
 type Won = { id: number; person: string; variant: string; name: string; rarity: string };
 type Result = { reward: number; reason: string; card: Won | null; score?: number };
 const WHY: Record<string, string> = {
@@ -31,6 +31,8 @@ const WHY: Record<string, string> = {
   invalid: 'Serwer nie zdołał odtworzyć zapisu gry, nagrody nie ma.',
   no_run: 'Nie udało się rozliczyć gry.',
 };
+
+const levelMult = (r: Rewards, level: number) => r.levelMults?.[level - 1] ?? r.levelMults?.[r.levelMults.length - 1] ?? 1;
 
 export function PinballPage() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -141,8 +143,9 @@ export function PinballPage() {
           <div className="pb-reward" role="status">
             <b>Nagroda w groszach</b>
             <span>{`${fmtGr(1)} za każde ${rewards.pointsPerGr} pkt, bez limitu.`}</span>
+            {levelMult(rewards, level) !== 1 && <span>{`Poziom ${level}: nagroda x${String(levelMult(rewards, level)).replace('.', ',')}, czyli ${fmtGr(1)} za każde ${Math.round(rewards.pointsPerGr / levelMult(rewards, level))} pkt.`}</span>}
             {rewards.cardTiers.length > 0 && (
-              <span>{`Karta Synthwave od ${fmtNum(rewards.cardTiers[0].score)} pkt (${rewards.cardTiers.map(t => `${fmtNum(t.score)}: ${t.name}`).join(', ')}). Dziś jeszcze kart: ${rewards.cardsLeft}.`}</span>
+              <span>{`Karta Synthwave od ${fmtNum(rewards.cardTiers[0].score)} pkt (${rewards.cardTiers.map(t => `${fmtNum(t.score)}: ${t.name}`).join(', ')}), bez limitu.`}</span>
             )}
             {result?.card && hud?.phase === 'over' && (
               <span className="pb-reward-card" onClick={() => openViewer(result.card!.person, result.card!.variant, result.card!.id)}>

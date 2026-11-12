@@ -422,6 +422,8 @@ CREATE TABLE IF NOT EXISTS passport_settings (
     icon BYTEA,
     icon_at DOUBLE PRECISION NOT NULL DEFAULT 0
 );
+-- skala własnej ikony na stemplu w procentach (100 = bez zmiany)
+ALTER TABLE passport_settings ADD COLUMN IF NOT EXISTS icon_scale INTEGER NOT NULL DEFAULT 100;
 
 -- Paszport, zabezpieczenie przed podrabianiem GPS: ostatnie państwo i czas ostatniej udanej lokalizacji gracza (bez współrzędnych);
 -- serwer sprawdza, czy od tamtej pory dało się dotrzeć do nowego państwa

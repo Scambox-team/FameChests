@@ -3,6 +3,7 @@
 import { api } from '../../api/client';
 import { cardHTML, cvColors } from '../../cards/cardHtml';
 import { confetti, epicOpen, epicReveal, GOLDS, receiptReveal } from '../../fx/effects';
+import { epicOff } from '../../fx/epicPref';
 import { VARIANT_COLORS } from '../../fx/variantColors';
 import { baseVariant, cardValue, crateOf, imgUrl, isSpecial, person, plural, rand, rarityIdx, varRank, variantName, variantParts } from '../../game/rules';
 import { announceFirsts } from '../../game/actions';
@@ -306,7 +307,6 @@ async function afterSpin(o: Opening) {
   if (S.opening !== o) return;
   $('#skipBtn').hidden = true;   // przy „Ultraszybko” bęben nie woła tego sam
   const drops = o.drops!;
-  if (S.autoRun && drops.some(d => person(d.person).rarity === 'secret')) stopAuto('Tajna karta! Auto zatrzymane');
   const rankOf = (d: Drop) => rarityIdx(person(d.person).rarity);
   const epics = drops.filter(d => rankOf(d) >= rarityIdx('gold')).sort((a, b) => rankOf(b) - rankOf(a) || varRank(b.variant) - varRank(a.variant));
   for (const d of epics) {
@@ -317,7 +317,7 @@ async function afterSpin(o: Opening) {
     await receiptReveal(d, { fast: o.fast, auto: !!S.autoRun });
     if (S.opening !== o) return;
   }
-  showResults(o, epics.length > 0);
+  showResults(o, epics.length > 0 && !epicOff());
 }
 
 export function skipSpin() {
@@ -365,7 +365,7 @@ function showResults(o: Opening, afterEpic: boolean) {
     flash(`radial-gradient(circle, ${S.cfg.rarities[bestR].color}55, transparent 70%)`);
     Sound.reveal('purple');
   } else {
-    Sound.reveal(bestR);
+    Sound.reveal(bestR === 'secret' || bestR === 'special' ? 'ultra' : bestR);   // bez animacji lepszych kart ta sama fanfara co ULTRA
     if (bestR === 'red') flash('radial-gradient(circle, #ff404066, transparent 70%)');
   }
   const specials = drops.filter(d => isSpecial(d.variant));
