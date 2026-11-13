@@ -59,6 +59,8 @@ services:
       METRICS_ADDR: ""
       # bot Discorda pyta o dane przez /api/bot/snapshot z tym hasłem (z .env)
       BOT_TOKEN: "${DISCORD_BOT_GAME_TOKEN:-}"
+      # webhook kanału adminów na Discordzie: tam trafiają zgłoszenia kart (puste = wyłączone)
+      REPORTS_WEBHOOK_URL: "${REPORTS_WEBHOOK_URL:-}"
     volumes:
       # zdjęcia kart, kopie bazy: w folderze data-lokalne obok projektu; usuń go, żeby zacząć od zera
       - ./data-lokalne:/data

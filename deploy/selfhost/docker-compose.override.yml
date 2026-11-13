@@ -105,6 +105,8 @@ services:
       BACKUP_KEEP: ${GAME_BACKUP_KEEP:-14}
       # hasło bota Discorda do /api/bot/snapshot (puste = endpoint wyłączony)
       BOT_TOKEN: ${DISCORD_BOT_GAME_TOKEN:-}
+      # webhook kanału adminów na Discordzie: tam trafiają zgłoszenia kart (puste = wyłączone)
+      REPORTS_WEBHOOK_URL: ${REPORTS_WEBHOOK_URL:-}
     volumes:
       # zdjęcia (image_cache/) i pliki od admina - przetrwają restart i aktualizację obrazu
       - game-data:/data

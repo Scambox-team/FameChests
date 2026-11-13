@@ -168,12 +168,12 @@ pub const CHALLENGES: [Challenge; 25] = [
         title: "Wyciek bazy",
         category: "Krypto",
         level: 2,
-        brief: "Z bazy danych serwisu wyciekła tabela użytkowników. Odgadnij hasło administratora. Flaga to SB{hasło}.",
+        brief: "Z bazy danych serwisu wyciekła tabela użytkowników. Odgadnij hasło administratora. Flaga to SB{hasło_kod}, gdzie kod to wartość z kolumny kod przy adminie.",
         page: false,
         hints: [
             "Ten ciąg to skrót (hash). Nie da się go odwrócić, ale popularne hasła da się po prostu sprawdzić.",
             "64 znaki szesnastkowe to SHA-256. Słabe hasła są w gotowych tabelach skrótów.",
-            "Wklej skrót admina na crackstation.net. Flaga to SB{znalezione hasło}.",
+            "Wklej skrót admina na crackstation.net. Flaga to SB{znalezione hasło_kod z kolumny kod}.",
         ],
     },
     Challenge {
@@ -324,12 +324,12 @@ pub const CHALLENGES: [Challenge; 25] = [
         title: "Telegraf Kebab-Softu",
         category: "Krypto",
         level: 1,
-        brief: "Ktoś stuka alfabetem Morse'a w ścianę serwerowni. Zapisaliśmy to jako kropki i kreski. Flaga ma postać SB{slowo_slowo_cyfry}, więc spacje między słowami zamień na podkreślenia.",
+        brief: "Ktoś stuka alfabetem Morse'a w ścianę serwerowni. Zapisaliśmy to jako kropki i kreski. Flaga ma postać SB{xxxx_xxxx_xxxx} (trzy czteroznakowe grupy liter i cyfr), więc spacje między grupami zamień na podkreślenia.",
         page: false,
         hints: [
             "Kropki i kreski to alfabet Morse'a. Znaki oddziela spacja, a słowa ukośnik.",
             "Rozszyfrujesz go w dowolnym tłumaczu Morse'a w internecie albo w CyberChef (From Morse Code).",
-            "Całość to SB i trzy słowa. Zapisz je jako SB{pierwsze_drugie_trzecie}, małymi literami.",
+            "Całość to SB i trzy czteroznakowe grupy. Zapisz je jako SB{pierwsza_druga_trzecia}, małymi literami.",
         ],
     },
     Challenge {
@@ -442,6 +442,8 @@ struct Secrets {
     flag: String,
     /// klucz szyfru Vigenère'a (losowany na końcu, żeby starsze losowania się nie zmieniły)
     key: &'static str,
+    /// losowy kod admina w wycieku (zadanie `hash`): flaga = hasło + ten kod, więc nie da się jej zgadnąć z samej listy słabych haseł
+    hash_code: String,
 }
 
 const KEYS: [&str; 8] = ["KEBAB", "SEJF", "HAKER", "KLUCZ", "PIRAT", "SMOK", "TOKEN", "BAJT"];
@@ -453,10 +455,20 @@ fn secrets(seed: i64) -> Secrets {
     let password = format!("{}{}", WORDS.choose(&mut r).unwrap(), r.gen_range(10..100));
     let shift = r.gen_range(3..=23);
     let leaked = *LEAKED.choose(&mut r).unwrap();
-    let (a, b) = (WORDS.choose(&mut r).unwrap(), WORDS.choose(&mut r).unwrap());
-    let flag = format!("SB{{{a}_{b}_{:04x}}}", r.gen_range(0..0x1_0000u32));
+    // Dawna flaga to dwa słowa z krótkiej listy: da się ją zapamiętać i zgadywać. Te losowania zostają tylko po to,
+    // żeby reszta sekretów (klucz) wypadała tak samo jak w questach już otwartych.
+    let _ = (WORDS.choose(&mut r), WORDS.choose(&mut r), r.gen_range(0..0x1_0000u32));
     let key = *KEYS.choose(&mut r).unwrap();
-    Secrets { code, note, password, shift, leaked, flag, key }
+    // Nowa flaga: 12 losowych znaków [a-z0-9] w trzech czwórkach (~62 bity), bez żadnego słownika
+    let flag = format!("SB{{{}_{}_{}}}", random_chunk(&mut r), random_chunk(&mut r), random_chunk(&mut r));
+    let hash_code = random_chunk(&mut r) + &random_chunk(&mut r);
+    Secrets { code, note, password, shift, leaked, flag, key, hash_code }
+}
+
+/// Cztery losowe znaki [a-z0-9]
+fn random_chunk(r: &mut ChaCha8Rng) -> String {
+    const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+    (0..4).map(|_| ALPHABET[r.gen_range(0..ALPHABET.len())] as char).collect()
 }
 
 /// Środek flagi bez `SB{` i `}`
@@ -581,7 +593,7 @@ fn sql_injected(s: &str) -> bool {
 fn flag_for(challenge: &str, seed: i64) -> String {
     let s = secrets(seed);
     if challenge == "hash" {
-        format!("SB{{{}}}", s.leaked)
+        format!("SB{{{}_{}}}", s.leaked, s.hash_code)
     } else {
         s.flag
     }
@@ -628,9 +640,12 @@ fn task_data(challenge: &str, seed: i64, flag: &str) -> Option<String> {
             let mut r = ChaCha8Rng::seed_from_u64(seed as u64 ^ 0x5eed);
             let noise = |r: &mut ChaCha8Rng| (0..32).map(|_| format!("{:02x}", r.gen_range(0..=255u8))).collect::<String>();
             Some(format!(
-                "id | login   | sha256\n 1 | admin   | {}\n 2 | ania_k  | {}\n 3 | marek99 | {}",
+                "id | login   | kod      | sha256\n 1 | admin   | {} | {}\n 2 | ania_k  | {} | {}\n 3 | marek99 | {} | {}",
+                s.hash_code,
                 sha256_hex(s.leaked),
+                noise(&mut r)[..8].to_string(),
                 noise(&mut r),
+                noise(&mut r)[..8].to_string(),
                 noise(&mut r)
             ))
         }
@@ -1423,7 +1438,14 @@ mod tests {
         assert_ne!(flag_for("source", 42), flag_for("source", 43));
         assert!(flag_for("idor", 7).starts_with("SB{") && flag_for("idor", 7).ends_with('}'));
         let h = flag_for("hash", 9);
-        assert!(LEAKED.iter().any(|w| h == format!("SB{{{w}}}")));
+        assert!(LEAKED.iter().any(|w| h.starts_with(&format!("SB{{{w}_"))));
+        // flaga nie wynika z żadnej krótkiej listy: różne ziarna dają różne flagi
+        let flags: std::collections::HashSet<_> = (1..200).map(|s| flag_for("source", s)).collect();
+        assert_eq!(flags.len(), 199);
+        let f = flag_for("source", 5);
+        assert!(inner(&f).split('_').all(|g| g.len() == 4 && g.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())));
+        let hh = flag_for("hash", 9);
+        assert!(hh.contains(&secrets(9).hash_code));
     }
 
     #[test]
@@ -1445,8 +1467,9 @@ mod tests {
         assert!(rot13(&String::from_utf8(raw).unwrap()).ends_with(&flag));
         let flag = flag_for("hash", seed);
         let data = task_data("hash", seed, &flag).unwrap();
-        let word = flag.trim_start_matches("SB{").trim_end_matches('}');
+        let word = inner(&flag).split('_').next().unwrap();
         assert!(data.contains(&sha256_hex(word)));
+        assert!(data.contains(&secrets(seed).hash_code));
     }
 
     #[test]

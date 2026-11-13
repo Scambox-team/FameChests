@@ -39,7 +39,7 @@ export function Privacy({ info }: { info: LegalInfo | null }) {
       <p>Strona ładuje czcionki z usługi Google Fonts. Przeglądarka łączy się wtedy z serwerami Google, które widzą Twój adres IP i dane przeglądarki. Zdjęcia kart, flagi i dźwięki wysyła nasz serwer, a nie zewnętrzne serwisy.</p>
 
       <h2>5. Komu przekazujemy dane</h2>
-      <p>Dane przetwarzają dostawcy infrastruktury, z których korzystamy (hosting aplikacji i baza danych), na podstawie umów powierzenia. Dane osobowe mogą być przekazywane poza Europejski Obszar Gospodarczy tylko z zachowaniem zabezpieczeń wymaganych przez RODO. Nie sprzedajemy danych i nie udostępniamy ich reklamodawcom. Dane możemy ujawnić organom publicznym, jeśli prawo tego wymaga.</p>
+      <p>Dane przetwarzają dostawcy infrastruktury, z których korzystamy (hosting aplikacji i baza danych), na podstawie umów powierzenia. Treść zgłoszeń kart (razem z podanym adresem e-mail i nazwą gracza) trafia też na prywatny kanał administratorów w serwisie Discord, żeby można je było szybko rozpatrzyć; dostęp do niego mają tylko administratorzy gry. Dane osobowe mogą być przekazywane poza Europejski Obszar Gospodarczy tylko z zachowaniem zabezpieczeń wymaganych przez RODO. Nie sprzedajemy danych i nie udostępniamy ich reklamodawcom. Dane możemy ujawnić organom publicznym, jeśli prawo tego wymaga.</p>
       <p>Nazwa gracza, avatar, karty w gablocie i pozycja w rankingu są widoczne dla innych graczy. Wybierz nazwę, która nie ujawnia Twoich danych.</p>
 
       <h2>6. Jak długo</h2>

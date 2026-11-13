@@ -24,7 +24,7 @@ use crate::text::clean;
 
 /// Wersja regulaminu i polityki prywatności. Zmiana = wszyscy gracze akceptują ponownie przy następnym wejściu.
 /// Zmieniając teksty w `web/src/features/legal/`, podnieś też tę datę (RRRR-MM-DD).
-pub const TERMS_VERSION: &str = "2026-11-11";
+pub const TERMS_VERSION: &str = "2026-11-13";
 
 /// Najmniejszy wiek gracza (regulamin, formularz rejestracji)
 pub const MIN_AGE: u32 = 16;
@@ -168,15 +168,90 @@ pub async fn report_create(
     .bind(now())
     .bind(me.as_ref().map(|u| u.id))
     .bind(me.as_ref().map(|u| u.username.clone()).unwrap_or_default())
-    .bind(person_id)
-    .bind(card_name)
-    .bind(variant)
+    .bind(&person_id)
+    .bind(&card_name)
+    .bind(&variant)
     .bind(category)
-    .bind(message)
-    .bind(contact)
+    .bind(&message)
+    .bind(&contact)
     .execute(&st.db)
     .await?;
+    if let Some(url) = st.cfg.reports_webhook.clone() {
+        let note = DiscordNote {
+            category: category_label(category),
+            card: card_name,
+            variant,
+            reporter: me.as_ref().map(|u| u.username.clone()),
+            contact,
+            message,
+        };
+        // w tle: wolny albo niedziałający Discord nie może opóźnić ani zepsuć zgłoszenia
+        tokio::spawn(async move { send_discord(&url, note).await });
+    }
     ok(json!({"ok": true}))
+}
+
+/// Treść wiadomości na kanał adminów
+struct DiscordNote {
+    category: &'static str,
+    card: String,
+    variant: String,
+    reporter: Option<String>,
+    contact: String,
+    message: String,
+}
+
+/// Adres webhooka Discorda i nic innego (inaczej serwer wysyłałby zapytania pod dowolny adres z konfiguracji)
+pub fn valid_webhook(url: &str) -> bool {
+    ["https://discord.com/api/webhooks/", "https://discordapp.com/api/webhooks/"]
+        .iter()
+        .any(|p| url.strip_prefix(p).is_some_and(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_alphanumeric() || "/_-?=&".contains(c))))
+}
+
+static HTTP: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .expect("http")
+});
+
+/// Skraca do `max` znaków (limity pól embedu Discorda)
+fn cut(s: &str, max: usize) -> String {
+    if s.chars().count() <= max {
+        s.to_owned()
+    } else {
+        s.chars().take(max - 1).collect::<String>() + "…"
+    }
+}
+
+fn discord_body(n: &DiscordNote) -> serde_json::Value {
+    let mut fields = vec![json!({"name": "Rodzaj", "value": cut(n.category, 200), "inline": false})];
+    let card = if n.variant.is_empty() { n.card.clone() } else { format!("{} ({})", n.card, n.variant) };
+    fields.push(json!({"name": "Karta", "value": cut(&card, 200), "inline": true}));
+    fields.push(json!({"name": "Zgłasza", "value": cut(n.reporter.as_deref().unwrap_or("bez konta"), 100), "inline": true}));
+    if !n.contact.is_empty() {
+        fields.push(json!({"name": "Kontakt", "value": cut(&n.contact, 150), "inline": true}));
+    }
+    json!({
+        "username": "Zgłoszenia kart",
+        // treść pisze obcy człowiek: żadnych @everyone ani pingów ról
+        "allowed_mentions": {"parse": []},
+        "embeds": [{
+            "title": "Nowe zgłoszenie karty",
+            "description": cut(&n.message, 1500),
+            "color": 0xE5484D,
+            "fields": fields,
+        }],
+    })
+}
+
+async fn send_discord(url: &str, note: DiscordNote) {
+    match HTTP.post(url).json(&discord_body(&note)).send().await {
+        Ok(r) if r.status().is_success() => {}
+        Ok(r) => tracing::warn!("Webhook zgłoszeń: Discord odpowiedział {}", r.status()),
+        Err(e) => tracing::warn!("Webhook zgłoszeń: nie udało się wysłać: {e}"),
+    }
 }
 
 fn category_label(key: &str) -> &'static str {
@@ -292,6 +367,31 @@ mod tests {
         )
         .unwrap();
         assert_eq!((r.card_name.as_str(), r.leave_empty.as_str()), ("Ktoś", "bot"));
+    }
+
+    #[test]
+    fn webhook_must_be_a_discord_address() {
+        assert!(valid_webhook("https://discord.com/api/webhooks/123/abc_DEF-9"));
+        assert!(!valid_webhook("http://discord.com/api/webhooks/123/abc"));
+        assert!(!valid_webhook("https://evil.example/api/webhooks/123/abc"));
+        assert!(!valid_webhook("https://discord.com.evil.example/api/webhooks/1/a"));
+        assert!(!valid_webhook("https://discord.com/api/webhooks/"));
+    }
+
+    #[test]
+    fn discord_message_has_no_pings_and_fits_limits() {
+        let n = DiscordNote {
+            category: "błąd na karcie",
+            card: "Ktoś".into(),
+            variant: "gold".into(),
+            reporter: None,
+            contact: String::new(),
+            message: format!("@everyone {}", "x".repeat(5000)),
+        };
+        let b = discord_body(&n);
+        assert_eq!(b["allowed_mentions"]["parse"].as_array().unwrap().len(), 0);
+        assert!(b["embeds"][0]["description"].as_str().unwrap().chars().count() <= 1500);
+        assert_eq!(b["embeds"][0]["fields"][2]["value"], "bez konta");
     }
 
     #[test]

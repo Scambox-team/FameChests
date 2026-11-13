@@ -16,6 +16,7 @@
 //!   OWNER_IDS      1,5                        id kont właścicieli (kopie bazy, ochrona ich kont przed innymi adminami);
 //!                                             tylko tutaj - nie da się ich nadać z panelu ani z bazy
 //!   BOT_TOKEN      min. 16 znaków (losowy)     hasło bota Discorda do /api/bot/snapshot; bez niego endpoint nie istnieje
+//!   REPORTS_WEBHOOK_URL https://discord.com/api/webhooks/<id>/<token>   webhook kanału adminów: zgłoszenia kart pojawiają się tam na bieżąco (to sekret, nie w repozytorium)
 //!   SMTP_URL       smtp://mailpit:1025 | smtps://user:pass@host:465   własna wysyłka maili (reset hasła, zmiana emaila); bez niej: tylko log
 //!   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS   zamiast SMTP_URL (te same co GOTRUE_SMTP_*; 465 = TLS, 587 = STARTTLS)
 //!   MAIL_FROM      ScamBox <no-reply@example.pl>   nadawca maili gry (bez niego SMTP_SENDER_NAME + SMTP_ADMIN_EMAIL)
@@ -79,6 +80,8 @@ pub struct Config {
     pub owner_ids: Vec<i64>,
     /// token bota Discorda (BOT_TOKEN): chroni /api/bot/snapshot; brak = endpoint wyłączony (404)
     pub bot_token: Option<String>,
+    /// webhook kanału adminów na Discordzie (REPORTS_WEBHOOK_URL): każde zgłoszenie karty ląduje tam jako wiadomość; brak = nic nie idzie
+    pub reports_webhook: Option<String>,
     /// Supabase Auth (GOTRUE_URL): konta z emailem i odzyskiwaniem hasła; None = same nazwy i hasła
     pub gotrue: Option<crate::gotrue::GoTrue>,
     /// własna wysyłka maili (SMTP_URL, MAIL_FROM); bez SMTP_URL maile trafiają tylko do logu
@@ -260,6 +263,13 @@ impl Config {
             contact_email: env("CONTACT_EMAIL"),
             owner_ids: parse_ids(&env("OWNER_IDS").unwrap_or_default())?,
             bot_token: env("BOT_TOKEN").filter(|t| t.len() >= 16),
+            reports_webhook: env("REPORTS_WEBHOOK_URL").filter(|u| {
+                let ok = crate::routes::reports::valid_webhook(u);
+                if !ok {
+                    tracing::warn!("REPORTS_WEBHOOK_URL: to nie adres webhooka Discorda (https://discord.com/api/webhooks/...), zgłoszenia nie będą wysyłane");
+                }
+                ok
+            }),
             gotrue,
             mailer: crate::mailer::Mailer::from_config(&crate::mailer::MailConfig::from_env(env))?,
             public_url: env("PUBLIC_URL").map(|u| u.trim_end_matches('/').to_owned()),
