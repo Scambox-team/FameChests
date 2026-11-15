@@ -84,12 +84,28 @@ function stopAuto(msg?: string) {
 }
 export const stopAutoRun = () => stopAuto();
 
+// Przełączenie karty przeglądarki / zminimalizowanie okna wyłącza auto: w tle gra nie kupuje skrzynek bez wiedzy gracza.
+// Trwająca runda kończy się normalnie (jest już opłacona), następna już nie rusza. Podsumowanie pokazujemy po powrocie,
+// bo toast w ukrytej karcie zniknąłby, zanim gracz go zobaczy.
+let stoppedWhileAway = '';
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    const r = S.autoRun;
+    if (!r) return;
+    stopAuto();
+    stoppedWhileAway = `Auto zatrzymane, bo przełączyłeś kartę (rund: ${r.rounds}, wydano ${fmt(r.spent)})`;
+  } else if (stoppedWhileAway) {
+    toast(stoppedWhileAway);
+    stoppedWhileAway = '';
+  }
+});
+
 function autoNext(o: Opening) {
   if (!S.autoRun) return;
   const crate = crateOf(o.crate), owned = Math.min(S.chests[o.crate] || 0, o.count), cost = (o.count - owned) * (crate?.price || 0);
   if (!crate || S.state.balance < cost) return stopAuto('Auto zatrzymane, skończyły się pieniądze');
   if (owned < o.count && !crate.canBuy) return stopAuto('Auto zatrzymane, tej skrzynki nie można już kupić');
-  setTimeout(() => { if (S.autoRun && S.opening === o && !epicOpen()) openAgain(); }, o.fast ? 800 : 1500);
+  setTimeout(() => { if (S.autoRun && S.opening === o && !epicOpen() && !document.hidden) openAgain(); }, o.fast ? 800 : 1500);
 }
 
 // ---------------------------------------------------------------- przebieg

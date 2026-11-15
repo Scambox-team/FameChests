@@ -209,6 +209,8 @@ export const EN: Record<string, string> = {
   "Au!": "Ouch!",
   "Auto zatrzymane, skończyły się pieniądze": "Auto stopped, out of money",
   "Auto zatrzymane, tej skrzynki nie można już kupić": "Auto stopped, this crate can no longer be bought",
+  "Auto zatrzymane, bo przełączyłeś kartę": "Auto stopped because you switched tabs",
+  "{0} (rund: {1}, wydano {2})": "{0} (rounds: {1}, spent {2})",
   "Automat do gry": "Slot machine",
   "BIAŁA": "WHITE",
   "BIAŁE": "WHITE",
