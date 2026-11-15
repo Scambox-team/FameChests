@@ -102,6 +102,24 @@ pub async fn snapshot(State(st): State<AppState>, headers: HeaderMap) -> Res {
         None => Value::Null,
     };
 
+    // quest CTF: bez flagi, danych zadania i podpowiedzi (to zostaje w grze); karta-nagroda w wariancie Cyfrowa
+    let ctf = match super::ctf::ctf_view(&mut c, &cat, 0).await? {
+        Some(q) => {
+            let mut v = serde_json::to_value(&q).unwrap_or(Value::Null);
+            for k in ["mine", "limitReached"] {
+                if let Some(o) = v.as_object_mut() {
+                    o.remove(k);
+                }
+            }
+            if let Some(p) = v.get("person").and_then(Value::as_str).and_then(|id| cat.person(id)) {
+                v["personName"] = json!(p.name);
+                v["rarity"] = json!(g().rarities.get(&p.rarity).map_or(p.rarity.clone(), |r| r.name.clone()));
+            }
+            v
+        }
+        None => Value::Null,
+    };
+
     // eventy: trwające i zaczynające się w ciągu 14 dni (jak w grze)
     let t = now() as i64;
     let events: Vec<Value> = cat
@@ -136,6 +154,7 @@ pub async fn snapshot(State(st): State<AppState>, headers: HeaderMap) -> Res {
         "totalCards": cat.people.len(),
         "ranking": {"value": top(|p| p.value), "cards": top(|p| p.unique as i64), "opened": top(|p| p.opened)},
         "quest": quest,
+        "ctf": ctf,
         "events": events,
         "crates": crates,
         "nextRotation": next_rotation,

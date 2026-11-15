@@ -9,7 +9,7 @@ Bot dla serwera społeczności scambox.pl. Działa w Dockerze obok gry i co minu
 |---|---|
 | Liczba kont i graczy online w nazwach kanałów **głosowych** (`👥 \| Konta: 2 524`, `🟢 \| Online: 37`), odświeżane co 10 min | `DISCORD_CH_ACCOUNTS`, `DISCORD_CH_ONLINE` |
 | Ranking (wartość kolekcji, karty, otwarte skrzynki) - jedna wiadomość, którą bot edytuje | `DISCORD_CH_RANKING` |
-| Aktualny quest i jego koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja | `DISCORD_CH_QUESTS` |
+| Aktualne questy (Wanted i CTF, każdy osobną wiadomością) i ich koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja. Z CTF tylko tytuł, kategoria, poziom i nagroda - zadanie, podpowiedzi i flaga zostają w grze | `DISCORD_CH_QUESTS` |
 | Eventy: wiadomość na event, edytowana do końca, potem oznaczona jako zakończona | `DISCORD_CH_EVENTS` |
 | Skrzynki w sklepie: nowa wiadomość po każdej rotacji (o północy czasu serwera) | `DISCORD_CH_CRATES` |
 | Aktualizacje gry: nowy wpis z listy zmian (`patchNotes`), gdy wzrośnie numer wersji. Pierwszy start tylko zapamiętuje obecną | `DISCORD_CH_PATCH` |
@@ -49,7 +49,7 @@ Gra i bot muszą mieć ten sam `DISCORD_BOT_GAME_TOKEN` - to hasło, którym bot
 | `/profil gracz` | wartość kolekcji, zebrane karty, otwarte skrzynki, miejsca w rankingu, kontrakty, ulepszacz, najcenniejsze karty; nazwę gracza podpowiada Discord |
 | `/ranking wedlug` | top 10 według wartości, kart albo skrzynek |
 | `/karta nazwa wariant` | obrazek karty dokładnie jak w grze (CSS wariantu, zdjęcie, napisy) z wartością; nazwę i wariant podpowiada Discord. Tajne i specjalne karty są pomijane |
-| `/quest` | aktualny quest |
+| `/quest` | aktualne questy: Wanted i CTF |
 | `/skrzynki` | skrzynki w sklepie i następna rotacja |
 | `/polacz` | kod do połączenia konta Discord z kontem w grze (widoczny tylko dla Ciebie) |
 
