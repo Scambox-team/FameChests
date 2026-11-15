@@ -226,6 +226,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/bot/snapshot", get(bot::snapshot))
         .route("/api/bot/player", get(bot::player))
         .route("/api/bot/drops", get(bot::drops))
+        .route("/api/bot/notifications", get(bot::notifications))
         .route("/api/bot/cards", get(bot::cards))
         .route("/api/bot/render-session", post(bot::render_session))
         .route("/api/bot/links", get(bot::links))
@@ -233,6 +234,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/discord", get(bot::discord_status))
         .route("/api/discord/link", post(bot::discord_link))
         .route("/api/discord/unlink", post(bot::discord_unlink))
+        .route("/api/discord/notify", post(bot::discord_notify))
         .route("/api/me", get(me))
         .route("/api/themes/seen", post(social::themes_seen))
         .route("/api/messages/seen", post(messages_seen))
@@ -251,6 +253,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/market/{lid}/offer", post(market_offer))
         .route("/api/market/{lid}/bid", post(market_bid))
         .route("/api/market/{lid}/cancel", post(market_cancel))
+        .route("/api/market/{lid}/watch", post(market_watch))
         // kasyno
         .route("/api/casino/roulette", post(casino_roulette))
         .route("/api/casino/slots", post(casino_slots))

@@ -25,6 +25,7 @@ const PING_ROLE = env('DISCORD_PING_ROLE_ID');
 const COMMANDS_ONLY = env('COMMANDS_ONLY', '1') !== '0';
 const STATE_FILE = path.join(env('DATA_DIR', '/data'), 'state.json');
 const TICK_MS = 60_000;
+const DM_EVERY_MS = 15_000;
 // Discord pozwala na 2 zmiany nazwy kanału na 10 minut - 10 minut to bezpieczny odstęp
 const STATS_EVERY_MS = Math.max(10, Number(env('STATS_EVERY_MIN', '10')) || 10) * 60_000;
 const GOLD = 0xe5b94a;
@@ -508,6 +509,8 @@ client.once('ready', async () => {
   await features.ensureRoles();
   await tick();
   setInterval(tick, TICK_MS);
+  // powiadomienia na DM częściej niż reszta: przy licytacji liczy się czas
+  setInterval(features.dms, DM_EVERY_MS);
 });
 
 for (const sig of ['SIGTERM', 'SIGINT']) {

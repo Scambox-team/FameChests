@@ -10,3 +10,10 @@
 .discordBtn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1px solid var(--rule); border-radius: var(--radius-s, 8px); background: var(--raised); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
 .discordBtn:hover:not(:disabled) { border-color: var(--hue); }
 .discordBtn:disabled { opacity: .5; cursor: default; }
+/* powiadomienia na DM od bota (DiscordLink) */
+.discordNotify { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; padding: 12px 0 0; border-top: 1px solid var(--rule); }
+.discordNotify h4 { margin: 0; font-size: 14px; }
+.discordCheck { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 14px; cursor: pointer; }
+.discordCheck input { margin-top: 3px; accent-color: var(--hue); flex: none; }
+.discordCheck span { display: flex; flex-direction: column; gap: 2px; }
+.discordCheck b { color: var(--text); font-weight: 600; }

@@ -81,6 +81,18 @@ Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze je
 
 Progi, kolory i nazwy ról są w `src/roles.js`. Gracz poza rankingiem (zablokowany, ukryty przez admina) dostaje tylko `🔗 Połączony`.
 
+## Powiadomienia na DM
+
+Gracz z połączonym kontem może dostawać od bota wiadomości prywatne (domyślnie wszystko wyłączone):
+
+| Co | Gdzie się włącza |
+|---|---|
+| Nowa oferta w obserwowanej licytacji (własnej albo cudzej; nie dostaje jej sam licytujący) | dzwonek przy licytacji na Rynku |
+| Zaproszenie do znajomych | gra: Ustawienia → Discord |
+| Propozycja wymiany | gra: Ustawienia → Discord |
+
+Gra zapisuje powiadomienia w kolejce (`discord_notifications`), bot co 15 s pobiera nowe z `/api/bot/notifications` i wysyła DM. Nic nie trzeba dopisywać do `.env`. Gracz z zamkniętymi wiadomościami prywatnymi z serwera po prostu ich nie dostanie (bot to pomija). Powiadomienia starsze niż 6 h (np. po dłuższej awarii bota) nie są już wysyłane. Link w wiadomości prowadzi do gry, gdy gra ma ustawione `PUBLIC_URL` (albo bot `GAME_PUBLIC_URL`).
+
 ## Ping przy nowym queście, evencie i aktualizacji
 
 Utwórz rolę (np. `Powiadomienia`), skopiuj jej id i wpisz w `DISCORD_PING_ROLE_ID`. Gracze nadają ją sobie sami.

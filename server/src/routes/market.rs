@@ -152,6 +152,10 @@ struct MarketResponse {
     wanted: Vec<WantedView>,
     history: Vec<HistoryView>,
     my_offers: Vec<MyOfferView>,
+    /// licytacje, które obserwuję (powiadomienia na DM od bota)
+    watching: Vec<i64>,
+    /// przycisk obserwowania ma sens: bot włączony i Discord połączony
+    discord: bool,
 }
 
 fn listing_status(s: ListingStatus) -> &'static str {
@@ -378,7 +382,10 @@ pub async fn market(State(st): State<AppState>, Me(me): Me) -> Res {
         })
         .collect();
     set_state(&mut c, me, "market_seen", now as i64).await?;
-    ok(MarketResponse { now, listings, wanted, history: past, my_offers })
+    let watching: Vec<i64> = sqlx::query_scalar("SELECT listing_id FROM market_watch WHERE user_id = $1").bind(me).fetch_all(&mut *c).await?;
+    let linked: Option<i64> = sqlx::query_scalar("SELECT user_id FROM discord_links WHERE user_id = $1").bind(me).fetch_optional(&mut *c).await?;
+    let discord = cx.st.cfg.bot_token.is_some() && linked.is_some();
+    ok(MarketResponse { now, listings, wanted, history: past, my_offers, watching, discord })
 }
 
 // ---------------------------------------------------------------- oferty
@@ -694,9 +701,50 @@ pub async fn market_bid(
             .execute(&mut *tx)
             .await?;
     }
+    // powiadomienia na DM dla obserwujących tę licytację (bot Discorda)
+    let p = &cx.cat.people[&l.person_id];
+    let card = if p.is_secret() { "Tajna karta".to_owned() } else { p.name.clone() };
+    let variant = (l.variant != "normal").then(|| g().variant(&l.variant).name.clone());
+    let ends = l.ends_at.map(|e| if e - now < rules.snipe_seconds { now + rules.snipe_seconds } else { e });
+    let data = json!({"card": card, "variant": variant, "bidder": cx.me.username, "amount": amount, "endsAt": ends, "listing": lid});
+    super::bot::notify_bid(&mut tx, &cx.st, lid, cx.uid(), data).await?;
     let state = get_state(&mut tx, cx.uid()).await?;
     tx.commit().await?;
     ok(json!({"ok": true, "state": state}))
+}
+
+#[derive(Deserialize)]
+pub struct WatchRequest {
+    on: bool,
+}
+
+/// Obserwowanie licytacji (własnej albo cudzej): bot Discorda wyśle DM przy każdej nowej ofercie.
+/// Wymaga połączonego Discorda; po końcu licytacji wpis znika sam (`bot::notifications`).
+pub async fn market_watch(State(st): State<AppState>, Me(me): Me, Path(lid): Path<i64>, JsonBody(req): JsonBody<WatchRequest>) -> Res {
+    let mut c = st.db.acquire().await?;
+    if !req.on {
+        sqlx::query("DELETE FROM market_watch WHERE listing_id = $1 AND user_id = $2").bind(lid).bind(me.id).execute(&mut *c).await?;
+        return ok(json!({"ok": true, "watching": false}));
+    }
+    if st.cfg.bot_token.is_none() {
+        return bad("Bot Discorda nie jest włączony");
+    }
+    let linked: Option<i64> = sqlx::query_scalar("SELECT user_id FROM discord_links WHERE user_id = $1").bind(me.id).fetch_optional(&mut *c).await?;
+    if linked.is_none() {
+        return bad("Najpierw połącz konto z Discordem (Ustawienia → Discord)");
+    }
+    let open: Option<i64> =
+        sqlx::query_scalar("SELECT id FROM market_listings WHERE id = $1 AND status = 'active' AND kind = 'auction'").bind(lid).fetch_optional(&mut *c).await?;
+    if open.is_none() {
+        return bad("Ta licytacja już się skończyła");
+    }
+    sqlx::query("INSERT INTO market_watch (listing_id, user_id, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
+        .bind(lid)
+        .bind(me.id)
+        .bind(now())
+        .execute(&mut *c)
+        .await?;
+    ok(json!({"ok": true, "watching": true}))
 }
 
 /// Wycofanie mojej oferty - karta wraca do ekwipunku (licytacji, w której ktoś już licytuje, nie da się wycofać)

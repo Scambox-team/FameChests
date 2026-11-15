@@ -16,7 +16,7 @@ use super::JsonBody;
 use crate::auth::{Me, User};
 use crate::game::Ctx;
 use crate::data::g;
-use crate::db::now;
+use crate::db::{now, Conn};
 use crate::error::Res;
 use crate::events::{day_start, today};
 use crate::game::{collection_stats, UserBrief};
@@ -400,7 +400,135 @@ pub async fn discord_status(State(st): State<AppState>, Me(me): Me) -> Res {
     let mut c = st.db.acquire().await?;
     let linked: Option<f64> = sqlx::query_scalar("SELECT linked_at FROM discord_links WHERE user_id = $1").bind(me.id).fetch_optional(&mut *c).await?;
     let rewarded: Option<f64> = sqlx::query_scalar("SELECT at FROM discord_rewards WHERE user_id = $1").bind(me.id).fetch_optional(&mut *c).await?;
-    ok(json!({"enabled": st.cfg.bot_token.is_some(), "linked": linked.is_some(), "reward": DISCORD_REWARD, "rewarded": rewarded.is_some()}))
+    let prefs: Option<(i32, i32)> = sqlx::query_as("SELECT friends, trades FROM discord_notify_settings WHERE user_id = $1")
+        .bind(me.id)
+        .fetch_optional(&mut *c)
+        .await?;
+    let (friends, trades) = prefs.unwrap_or((0, 0));
+    ok(json!({
+        "enabled": st.cfg.bot_token.is_some(), "linked": linked.is_some(), "reward": DISCORD_REWARD, "rewarded": rewarded.is_some(),
+        "notify": {"friends": friends == 1, "trades": trades == 1},
+    }))
+}
+
+// ---------------------------------------------------------------- powiadomienia na DM
+
+/// Jak długo trzymamy wpisy w kolejce; bot po dłuższej przerwie nie zasypie gracza starymi powiadomieniami
+const NOTIFY_KEEP_SECS: f64 = 3.0 * 86400.0;
+const NOTIFY_FRESH_SECS: f64 = 6.0 * 3600.0;
+
+/// Ustawienie gracza, od którego zależy powiadomienie
+#[derive(Clone, Copy)]
+pub enum Pref {
+    Friends,
+    Trades,
+}
+
+fn notify_url(st: &AppState, path: &str) -> Option<String> {
+    st.cfg.public_url.as_ref().map(|u| format!("{u}{path}"))
+}
+
+/// Powiadomienie dla jednego gracza, jeśli bot jest włączony, gracz ma połączony Discord i włączył ten rodzaj powiadomień
+pub async fn notify_user(c: &mut Conn, st: &AppState, uid: i64, pref: Pref, kind: &str, data: Value, path: &str) -> sqlx::Result<()> {
+    if st.cfg.bot_token.is_none() {
+        return Ok(());
+    }
+    let sql = match pref {
+        Pref::Friends => concat!(
+            "INSERT INTO discord_notifications (user_id, kind, data, url, created_at) SELECT $1, $2, $3, $4, $5 ",
+            "WHERE EXISTS (SELECT 1 FROM discord_links WHERE user_id = $1) ",
+            "AND EXISTS (SELECT 1 FROM discord_notify_settings WHERE user_id = $1 AND friends = 1)"
+        ),
+        Pref::Trades => concat!(
+            "INSERT INTO discord_notifications (user_id, kind, data, url, created_at) SELECT $1, $2, $3, $4, $5 ",
+            "WHERE EXISTS (SELECT 1 FROM discord_links WHERE user_id = $1) ",
+            "AND EXISTS (SELECT 1 FROM discord_notify_settings WHERE user_id = $1 AND trades = 1)"
+        ),
+    };
+    sqlx::query(sql).bind(uid).bind(kind).bind(data.to_string()).bind(notify_url(st, path)).bind(now()).execute(c).await?;
+    Ok(())
+}
+
+/// Nowa oferta w licytacji: powiadomienie dla wszystkich obserwujących z połączonym Discordem, poza licytującym
+pub async fn notify_bid(c: &mut Conn, st: &AppState, listing: i64, bidder: i64, data: Value) -> sqlx::Result<()> {
+    if st.cfg.bot_token.is_none() {
+        return Ok(());
+    }
+    sqlx::query(
+        "INSERT INTO discord_notifications (user_id, kind, data, url, created_at)
+         SELECT w.user_id, 'bid', $3, $4, $5 FROM market_watch w JOIN discord_links d ON d.user_id = w.user_id
+         WHERE w.listing_id = $1 AND w.user_id <> $2",
+    )
+    .bind(listing)
+    .bind(bidder)
+    .bind(data.to_string())
+    .bind(notify_url(st, "/market"))
+    .bind(now())
+    .execute(c)
+    .await?;
+    Ok(())
+}
+
+#[derive(serde::Deserialize)]
+pub struct NotifyReq {
+    friends: Option<bool>,
+    trades: Option<bool>,
+}
+
+/// `POST /api/discord/notify` {friends?, trades?} (gracz): włączenie / wyłączenie powiadomień na DM
+pub async fn discord_notify(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<NotifyReq>) -> Res {
+    let mut c = st.db.acquire().await?;
+    sqlx::query(
+        "INSERT INTO discord_notify_settings (user_id, friends, trades) VALUES ($1, COALESCE($2, 0), COALESCE($3, 0))
+         ON CONFLICT (user_id) DO UPDATE SET friends = COALESCE($2, discord_notify_settings.friends),
+                                             trades = COALESCE($3, discord_notify_settings.trades)",
+    )
+    .bind(me.id)
+    .bind(req.friends.map(i32::from))
+    .bind(req.trades.map(i32::from))
+    .execute(&mut *c)
+    .await?;
+    let (friends, trades): (i32, i32) =
+        sqlx::query_as("SELECT friends, trades FROM discord_notify_settings WHERE user_id = $1").bind(me.id).fetch_one(&mut *c).await?;
+    ok(json!({"notify": {"friends": friends == 1, "trades": trades == 1}}))
+}
+
+#[derive(serde::Deserialize)]
+pub struct NotifyQuery {
+    after: Option<i64>,
+}
+
+/// `GET /api/bot/notifications?after=<id>` (bot): powiadomienia do wysłania na DM, najstarsze pierwsze, do 50.
+/// `max` = najwyższe id (pierwszy start bota zaczyna od niego). Starsze niż NOTIFY_FRESH_SECS są pomijane, starsze niż
+/// NOTIFY_KEEP_SECS usuwane; razem z nimi obserwowane licytacje, które już się skończyły.
+pub async fn notifications(State(st): State<AppState>, headers: HeaderMap, axum::extract::Query(q): axum::extract::Query<NotifyQuery>) -> Res {
+    match authorized(&st, &headers) {
+        None => return Ok(axum::http::StatusCode::NOT_FOUND.into_response()),
+        Some(false) => return Ok(axum::http::StatusCode::UNAUTHORIZED.into_response()),
+        Some(true) => {}
+    }
+    let mut c = st.db.acquire().await?;
+    let t = now();
+    sqlx::query("DELETE FROM discord_notifications WHERE created_at < $1").bind(t - NOTIFY_KEEP_SECS).execute(&mut *c).await?;
+    sqlx::query("DELETE FROM market_watch w WHERE NOT EXISTS (SELECT 1 FROM market_listings l WHERE l.id = w.listing_id AND l.status = 'active')")
+        .execute(&mut *c)
+        .await?;
+    let max: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(id), 0) FROM discord_notifications").fetch_one(&mut *c).await?;
+    let rows: Vec<(i64, String, String, String, Option<String>, f64)> = sqlx::query_as(
+        "SELECT n.id, d.discord_id, n.kind, n.data, n.url, n.created_at FROM discord_notifications n
+         JOIN discord_links d ON d.user_id = n.user_id WHERE n.id > $1 AND n.created_at > $2 ORDER BY n.id LIMIT 50",
+    )
+    .bind(q.after.unwrap_or(max))
+    .bind(t - NOTIFY_FRESH_SECS)
+    .fetch_all(&mut *c)
+    .await?;
+    let items: Vec<Value> = rows
+        .into_iter()
+        .map(|(id, did, kind, data, url, at)| {
+            json!({"id": id, "discordId": did, "kind": kind, "data": serde_json::from_str::<Value>(&data).unwrap_or(Value::Null), "url": url, "at": at})
+        })
+        .collect();
+    ok(json!({"max": max, "items": items}))
 }
 
 #[derive(serde::Deserialize)]

@@ -403,6 +403,29 @@ CREATE TABLE IF NOT EXISTS discord_rewards (
     user_id BIGINT PRIMARY KEY,
     at DOUBLE PRECISION NOT NULL
 );
+-- powiadomienia na DM od bota (routes/bot.rs: notify_*): kolejka, którą bot czyta po id; id Discorda bierzemy przy odczycie,
+-- więc po odłączeniu konta nic już nie wychodzi. `data` = JSON z polami zależnymi od `kind` (bid / friend / trade)
+CREATE TABLE IF NOT EXISTS discord_notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    kind TEXT NOT NULL,
+    data TEXT NOT NULL,
+    url TEXT,
+    created_at DOUBLE PRECISION NOT NULL
+);
+-- co gracz chce dostawać (domyślnie nic): zaproszenia do znajomych, propozycje wymiany
+CREATE TABLE IF NOT EXISTS discord_notify_settings (
+    user_id BIGINT PRIMARY KEY,
+    friends INTEGER NOT NULL DEFAULT 0,
+    trades INTEGER NOT NULL DEFAULT 0
+);
+-- obserwowane licytacje: powiadomienie o każdej nowej ofercie (także na własnej licytacji)
+CREATE TABLE IF NOT EXISTS market_watch (
+    listing_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (listing_id, user_id)
+);
 
 -- Paszport (routes/passport.rs): stempel kraju zdobyty z pozycji GPS. Zapisujemy tylko kod państwa i czas - współrzędnych nigdy.
 CREATE TABLE IF NOT EXISTS passport_stamps (
