@@ -225,7 +225,7 @@ pub struct DropsQuery {
     after: Option<i64>,
 }
 
-/// `GET /api/bot/drops?after=<id>` - nowe rzadkie dropy (Legendarna, ULTRA, Tajna) po id, najstarsze pierwsze, do 20.
+/// `GET /api/bot/drops?after=<id>` - nowe wyjątkowe dropy (karta warta >= DISCORD_DROP_MULT cen skrzynki, shop.rs) po id, najstarsze pierwsze, do 20.
 /// `max` = najwyższe id w tabeli (bot przy pierwszym starcie zaczyna od niego, żeby nie ogłaszać starych).
 /// Nazwa Tajnej karty nie wychodzi z gry: zamiast niej `secret: true`.
 pub async fn drops(State(st): State<AppState>, headers: HeaderMap, axum::extract::Query(q): axum::extract::Query<DropsQuery>) -> Res {

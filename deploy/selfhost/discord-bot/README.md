@@ -13,7 +13,7 @@ Bot dla serwera społeczności scambox.pl. Działa w Dockerze obok gry i co minu
 | Eventy: wiadomość na event, edytowana do końca, potem oznaczona jako zakończona | `DISCORD_CH_EVENTS` |
 | Skrzynki w sklepie: nowa wiadomość po każdej rotacji (o północy czasu serwera) | `DISCORD_CH_CRATES` |
 | Aktualizacje gry: nowy wpis z listy zmian (`patchNotes`), gdy wzrośnie numer wersji. Pierwszy start tylko zapamiętuje obecną | `DISCORD_CH_PATCH` |
-| Rzadkie dropy: Legendarna, ULTRA i Tajna karta ze skrzynki, z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
+| Wyjątkowe dropy: karta ze skrzynki warta co najmniej 30 cen tej skrzynki (3 razy rzadziej niż „Ostatnie najlepsze dropy” w sklepie, `DISCORD_DROP_MULT` w `server/src/routes/shop.rs`), z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
 | Alert, gdy gra nie odpowiada 3 minuty (ping właściciela serwera, potem komunikat o powrocie) | `DISCORD_CH_ALERTS` (bez niego: wiadomość prywatna do właściciela) |
 | Komendy `/profil`, `/ranking`, `/karta`, `/quest`, `/skrzynki`, `/polacz` | `DISCORD_CH_COMMANDS` (gdy ustawiony i `DISCORD_COMMANDS_ONLY=1`, publiczne komendy działają tylko tam) |
 
