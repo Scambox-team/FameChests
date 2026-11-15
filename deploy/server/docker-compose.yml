@@ -1,0 +1,337 @@
+name: famechests
+# ScamBox / FameChests - serwer na zwyklym Postgresie + GoTrue + Cloudflare Tunnel (+ opcjonalny bot Discorda).
+# TEN PLIK JEST SAMODZIELNY: wystarczy go skopiowac razem z .env (wzor: .env.example). Konfiguracja wylacznie w .env.
+# Wymaga Docker Compose >= 2.23 (sekcja configs z content). Aktualizacja gry: docker compose pull scambox && docker compose up -d
+#
+# Limity projektu: suma RAM = 3072 MB, suma CPU = 0.80 (20% z 4 watkow)
+# Podzial RAM: db 1024 + scambox 1280 + fw 32 + cloudflared 224 + auth 128 + auth-init 32 + discord-bot 352 = 3072
+# Podzial CPU: db 0.25 + scambox 0.35 + fw 0.02 + cloudflared 0.08 + auth 0.05 + discord-bot 0.05 = 0.80
+#
+# Izolacja sieci: cloudflared siedzi w przestrzeni sieciowej "fw" - z tunelu da sie dojsc tylko do gry,
+# bez hosta i LAN.
+# Profile (COMPOSE_PROFILES w .env): "discord" wlacza bota Discorda. Reszta dziala zawsze.
+
+services:
+  db:
+    image: postgres:17-bookworm
+    container_name: famechests-db
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    cpus: 0.25
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}
+      POSTGRES_DB: famechests
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [db-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d famechests"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Jednorazowy, idempotentny init roli/schematu dla GoTrue na zwyklym postgresie.
+  auth-init:
+    image: postgres:17-bookworm
+    container_name: famechests-auth-init
+    mem_limit: 32m
+    memswap_limit: 32m
+    cpus: 0.02
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?ustaw AUTH_DB_PASSWORD w .env (./gen-auth-keys.sh)}
+    configs:
+      - source: auth_init_sql
+        target: /auth-init.sql
+    command: ["sh", "-c", "exec psql -h db -U postgres -d famechests -v ON_ERROR_STOP=1 -v pw=\"$$AUTH_DB_PASSWORD\" -f /auth-init.sql"]
+    networks: [db-net]
+
+  # Supabase Auth (GoTrue): konta z emailem + reset hasla. Dostepny tylko dla gry, bez portow.
+  auth:
+    image: supabase/gotrue:v2.197.0
+    container_name: famechests-auth
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.05
+    restart: unless-stopped
+    depends_on:
+      auth-init:
+        condition: service_completed_successfully
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${GAME_PUBLIC_URL:?ustaw GAME_PUBLIC_URL w .env (bez koncowego /)}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${AUTH_DB_PASSWORD:?ustaw AUTH_DB_PASSWORD w .env}@db:5432/famechests
+      GOTRUE_SITE_URL: ${GAME_PUBLIC_URL}
+      GOTRUE_URI_ALLOW_LIST: ${GAME_PUBLIC_URL}/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?ustaw JWT_SECRET w .env (./gen-auth-keys.sh)}
+      GOTRUE_JWT_ISSUER: ${GAME_PUBLIC_URL}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-false}
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-ScamBox}
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "ScamBox: potwierdź adres email"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "ScamBox: ustaw nowe hasło"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "ScamBox: potwierdź nowy adres email"
+      # szablony maili z gry (edytowalne w panelu admina -> Maile)
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://scambox:8000/email/confirmation.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://scambox:8000/email/recovery.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://scambox:8000/email/email_change.html
+    networks: [db-net, mail-net]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  scambox:
+    image: ghcr.io/scambox-team/famechests:latest
+    container_name: scambox
+    mem_limit: 1280m
+    memswap_limit: 1280m
+    cpus: 0.35
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    environment:
+      GOTRUE_URL: http://auth:9999
+      GOTRUE_SERVICE_KEY: ${SERVICE_ROLE_KEY:?ustaw SERVICE_ROLE_KEY w .env (./gen-auth-keys.sh)}
+      PUBLIC_URL: ${GAME_PUBLIC_URL:?ustaw GAME_PUBLIC_URL w .env (bez koncowego /)}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/famechests
+      DB_SCHEMA: famechests
+      SECRET_KEY: ${GAME_SECRET_KEY:?ustaw GAME_SECRET_KEY w .env}
+      DATA_DIR: /data
+      BACKUP_DIR: /backups
+      OPERATOR_NAME: ${OPERATOR_NAME:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      OWNER_IDS: ${OWNER_IDS:-}
+      COOKIE_SECURE: "1"
+      TRUST_PROXY: "1"
+      METRICS_ADDR: ""
+      RUST_LOG: ${RUST_LOG:-scambox=info}
+      BACKUP_EVERY_HOURS: ${BACKUP_EVERY_HOURS:-24}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      # haslo bota Discorda do /api/bot/snapshot (puste = endpoint wylaczony)
+      BOT_TOKEN: ${DISCORD_BOT_GAME_TOKEN:-}
+      # webhook kanalu adminow na Discordzie: tam trafiaja zgloszenia kart (puste = wylaczone)
+      REPORTS_WEBHOOK_URL: ${REPORTS_WEBHOOK_URL:-}
+      # poczta gry (reset hasla, zmiana emaila, potwierdzenie, test z panelu) - ten sam SMTP co GoTrue
+      # SMTP_URL (np. smtps://user:haslo@host:465) ma pierwszenstwo przed SMTP_HOST/PORT/USER/PASS
+      SMTP_URL: ${SMTP_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-ScamBox}
+      MAIL_FROM: ${MAIL_FROM:-}
+    volumes:
+      - game-data:/data
+      - ./backups:/backups
+    # Dostep lokalny (LAN). cloudflared i tak tu nie siegnie - fw blokuje adres hosta i LAN.
+    ports:
+      - "${SCAMBOX_LOCAL_PORT:-5000}:8000"
+    networks:
+      db-net: {}
+      mail-net: {}
+      tunnel-net:
+        ipv4_address: 172.31.250.10
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /login HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+
+  # Bot Discorda (profil "discord" w COMPOSE_PROFILES). Obraz budowany z publicznego repo (nic do pobrania recznie).
+  # Rozmawia z gra w sieci Dockera (http://scambox:8000) i z Discordem (polaczenie wychodzace). Bez otwartych portow.
+  discord-bot:
+    profiles: [discord]
+    build:
+      context: https://github.com/Scambox-team/FameChests.git#main:deploy/selfhost/discord-bot
+    image: famechests-discord-bot:local
+    container_name: famechests-discord-bot
+    mem_limit: 352m
+    memswap_limit: 352m
+    cpus: 0.05
+    restart: unless-stopped
+    depends_on:
+      scambox:
+        condition: service_healthy
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      DISCORD_PING_ROLE_ID: ${DISCORD_PING_ROLE_ID:-}
+      GAME_PUBLIC_URL: ${GAME_PUBLIC_URL:-}
+      BOT_TOKEN: ${DISCORD_BOT_GAME_TOKEN:-}
+      GAME_URL: http://scambox:8000
+      COMMANDS_ONLY: ${DISCORD_COMMANDS_ONLY:-1}
+      CH_ACCOUNTS: ${DISCORD_CH_ACCOUNTS:-}
+      CH_ONLINE: ${DISCORD_CH_ONLINE:-}
+      CH_RANKING: ${DISCORD_CH_RANKING:-}
+      CH_QUESTS: ${DISCORD_CH_QUESTS:-}
+      CH_EVENTS: ${DISCORD_CH_EVENTS:-}
+      CH_CRATES: ${DISCORD_CH_CRATES:-}
+      CH_PATCH: ${DISCORD_CH_PATCH:-}
+      CH_DROPS: ${DISCORD_CH_DROPS:-}
+      CH_COMMANDS: ${DISCORD_CH_COMMANDS:-}
+      CH_ALERTS: ${DISCORD_CH_ALERTS:-}
+    volumes:
+      - discord-bot-data:/data
+    networks: [mail-net]
+
+  # Firewall sidecar: filtruje ruch wychodzacy wspolnej przestrzeni sieciowej fw+cloudflared.
+  fw:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM alpine:3.20
+        RUN apk add --no-cache iptables iptables-legacy
+    image: famechests-fw:local
+    container_name: famechests-fw
+    mem_limit: 32m
+    memswap_limit: 32m
+    cpus: 0.02
+    restart: unless-stopped
+    cap_add: [NET_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "1"
+    environment:
+      GAME_IP: 172.31.250.10
+    configs:
+      - source: fw_sh
+        target: /fw.sh
+    command: ["sh", "/fw.sh"]
+    networks:
+      tunnel-net:
+        ipv4_address: 172.31.250.20
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/fw-ready"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7
+    container_name: famechests-cloudflared
+    mem_limit: 224m
+    memswap_limit: 224m
+    cpus: 0.08
+    restart: unless-stopped
+    network_mode: "service:fw"
+    depends_on:
+      fw:
+        condition: service_healthy
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TOKEN:-}
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+
+configs:
+  auth_init_sql:
+    content: |
+      -- idempotentny init pod GoTrue na zwyklym postgresie
+      SELECT format('CREATE ROLE supabase_auth_admin LOGIN NOINHERIT CREATEROLE PASSWORD %L', :'pw')
+      WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='supabase_auth_admin') \gexec
+      SELECT format('ALTER ROLE supabase_auth_admin LOGIN PASSWORD %L', :'pw') \gexec
+      CREATE SCHEMA IF NOT EXISTS auth AUTHORIZATION supabase_auth_admin;
+      ALTER SCHEMA auth OWNER TO supabase_auth_admin;
+      ALTER ROLE supabase_auth_admin SET search_path = auth;
+      GRANT CONNECT ON DATABASE famechests TO supabase_auth_admin;
+  fw_sh:
+    content: |
+      #!/bin/sh
+      # Firewall sidecar: filtruje ruch WYCHODZACY wspolnej przestrzeni sieciowej fw+cloudflared.
+      set -eu
+      GAME_IP="$${GAME_IP:-172.31.250.10}"
+      rm -f /tmp/fw-ready
+
+      # Backend taki jak reguly Dockera (DOCKER_OUTPUT w tabeli nat)
+      if iptables-legacy -t nat -S 2>/dev/null | grep -q DOCKER_OUTPUT; then
+        IPT=iptables-legacy; IPT6=ip6tables-legacy
+      else
+        IPT=iptables-nft; IPT6=ip6tables-nft
+      fi
+      echo "fw: backend $$IPT"
+
+      C=FW_OUT
+      $$IPT -N $$C 2>/dev/null || $$IPT -F $$C
+      $$IPT -F $$C
+      $$IPT -A $$C -o lo -j ACCEPT
+      $$IPT -A $$C -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      $$IPT -A $$C -d 127.0.0.11 -j ACCEPT
+      $$IPT -A $$C -d "$$GAME_IP" -p tcp --dport 8000 -j ACCEPT
+      for n in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 169.254.0.0/16 224.0.0.0/4 0.0.0.0/8; do
+        $$IPT -A $$C -d $$n -j DROP
+      done
+      $$IPT -A $$C -j ACCEPT
+      $$IPT -C OUTPUT -j $$C 2>/dev/null || $$IPT -I OUTPUT 1 -j $$C
+
+      I=FW_IN
+      $$IPT -N $$I 2>/dev/null || true
+      $$IPT -F $$I
+      $$IPT -A $$I -i lo -j ACCEPT
+      $$IPT -A $$I -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      $$IPT -A $$I -j DROP
+      $$IPT -C INPUT -j $$I 2>/dev/null || $$IPT -I INPUT 1 -j $$I
+
+      if command -v $$IPT6 >/dev/null 2>&1; then
+        $$IPT6 -P INPUT DROP 2>/dev/null || true
+        $$IPT6 -P OUTPUT DROP 2>/dev/null || true
+        $$IPT6 -P FORWARD DROP 2>/dev/null || true
+      fi
+
+      touch /tmp/fw-ready
+      echo "fw: gotowe"
+      exec sleep infinity
+
+networks:
+  db-net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.251.0/24
+  mail-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.252.0/24
+  tunnel-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-famechests
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+
+volumes:
+  db-data:
+  game-data:
+  discord-bot-data:
