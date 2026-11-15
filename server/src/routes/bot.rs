@@ -329,7 +329,16 @@ pub async fn links(State(st): State<AppState>, headers: HeaderMap) -> Res {
     let items: Vec<(i64, String, String)> =
         sqlx::query_as("SELECT user_id, person_id, variant FROM items WHERE user_id = ANY($1)").bind(&ids).fetch_all(&mut *c).await?;
     let mut rarities: HashMap<i64, HashSet<String>> = HashMap::new();
-    let mut rzulty: HashSet<i64> = HashSet::new();
+    // rola RZUŁTY na stałe za wylosowanie Rzułtego ze skrzynki (klaser pamięta to także po sprzedaży karty;
+    // source NULL = stare wpisy sprzed zapisywania źródła), a poza tym za samo posiadanie karty (rynek, wymiana)
+    let dropped: Vec<i64> = sqlx::query_scalar(
+        "SELECT DISTINCT user_id FROM user_collected WHERE user_id = ANY($1) AND person_id = 'pl_secret'
+         AND variant ~ '(^|[+])rzulty([+]|$)' AND (source = 'drop' OR source IS NULL)",
+    )
+    .bind(&ids)
+    .fetch_all(&mut *c)
+    .await?;
+    let mut rzulty: HashSet<i64> = dropped.into_iter().collect();
     for (uid, pid, variant) in &items {
         if let Some(p) = cat.person(pid) {
             rarities.entry(*uid).or_default().insert(p.rarity.clone());

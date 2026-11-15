@@ -10,7 +10,11 @@ export const ROLE_DEFS = {
 
   top1: { name: '👑 Top 1', color: 0xf5c542, hoist: true },
   top3: { name: '🥇 Top 3', color: 0xc0c6d0, hoist: true },
+  top5: { name: '🥈 Top 5', color: 0xa8b2bd, hoist: true },
   top10: { name: '🏆 Top 10', color: 0xcd7f32, hoist: true },
+  top20: { name: '🎖️ Top 20', color: 0xb5651d },
+  top50: { name: '🏅 Top 50', color: 0x8e6e53 },
+  top100: { name: '📈 Top 100', color: 0x7f8c8d },
 
   secret: { name: '🔮 Posiadacz Tajnej', color: 0x9b59ff },
   ultra: { name: '🌈 Łowca ULTRA', color: 0xff4fd8 },
@@ -39,7 +43,11 @@ const GROUPS = [
   [
     ['top1', (l) => l.place === 1],
     ['top3', (l) => l.place <= 3],
+    ['top5', (l) => l.place <= 5],
     ['top10', (l) => l.place <= 10],
+    ['top20', (l) => l.place <= 20],
+    ['top50', (l) => l.place <= 50],
+    ['top100', (l) => l.place <= 100],
   ],
   [
     ['secret', (l) => has(l, 'secret')],

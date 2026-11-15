@@ -69,8 +69,8 @@ Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze je
 
 | Grupa | Role (od najlepszej) |
 |---|---|
-| Wyjątkowa | **🟡 RZUŁTY**: tylko dla tych, którzy mają w grze kartę **Jan Paweł II w wariancie Rzulty**. Jaskrawożółta, osobna sekcja na liście członków, najwyżej wśród ról bota |
-| Ranking wartości | 👑 Top 1, 🥇 Top 3, 🏆 Top 10 (osobne sekcje na liście członków) |
+| Wyjątkowa | **🟡 RZUŁTY**: dla tych, którzy wylosowali ze skrzynki **Jana Pawła II w wariancie Rzulty** (rola zostaje także po sprzedaży karty) albo mają taką kartę teraz. Jaskrawożółta, osobna sekcja na liście członków, najwyżej wśród ról bota |
+| Ranking wartości | 👑 Top 1, 🥇 Top 3, 🥈 Top 5, 🏆 Top 10 (osobne sekcje na liście członków), 🎖️ Top 20, 🏅 Top 50, 📈 Top 100 |
 | Najrzadsze karty | 🔮 Posiadacz Tajnej, 🌈 Łowca ULTRA, ⭐ Łowca Legend |
 | Majątek | 💰 Milioner (1 000 000 gr wartości kolekcji), 💵 Bogacz (100 000 gr) |
 | Kolekcja | 🏛️ Kompletna kolekcja (100% kart), 📚 Kolekcjoner (50%), 🃏 Zbieracz (25%) |
