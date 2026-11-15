@@ -9,7 +9,8 @@ import { baseVariant, cardValue, crateOf, imgUrl, isSpecial, person, plural, ran
 import { announceFirsts } from '../../game/actions';
 import { applyState, refreshConfig } from '../../game/session';
 import { S, touch } from '../../game/store';
-import { esc, fmt, sleep } from '../../lib/format';
+import { esc, fmt } from '../../lib/format';
+import { bgSleep as sleep, bgTimeout } from '../../lib/bgTimer';
 import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
 import type { CrateScene } from '../../three/crateScene';
@@ -84,20 +85,20 @@ function stopAuto(msg?: string) {
 }
 export const stopAutoRun = () => stopAuto();
 
-// Przełączenie karty przeglądarki / zminimalizowanie okna wyłącza auto: w tle gra nie kupuje skrzynek bez wiedzy gracza.
-// Trwająca runda kończy się normalnie (jest już opłacona), następna już nie rusza. Podsumowanie pokazujemy po powrocie,
-// bo toast w ukrytej karcie zniknąłby, zanim gracz go zobaczy.
-let stoppedWhileAway = '';
+// Autootwieranie działa też w ukrytej karcie (gracze tak grają). W tle nie ma po co animować: bębny stają od razu,
+// wielkie odsłonięcia i scena 3D są pomijane, a odliczanie idzie minutnikiem z Workera, którego przeglądarka nie przycina.
+const inBackground = () => document.hidden && !!S.autoRun;
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    const r = S.autoRun;
-    if (!r) return;
-    stopAuto();
-    stoppedWhileAway = `Auto zatrzymane, bo przełączyłeś kartę (rund: ${r.rounds}, wydano ${fmt(r.spent)})`;
-  } else if (stoppedWhileAway) {
-    toast(stoppedWhileAway);
-    stoppedWhileAway = '';
-  }
+  if (!inBackground()) return;
+  skipSpin();
+  // odsłonięcie otwarte przed przełączeniem karty: przeklikaj je do końca
+  const click = (n: number) => {
+    const el = document.querySelector<HTMLElement>('.rv, .r3, .rcp');
+    if (!el || n <= 0) return;
+    el.click();
+    bgTimeout(() => click(n - 1), 200);
+  };
+  click(6);
 });
 
 function autoNext(o: Opening) {
@@ -105,7 +106,7 @@ function autoNext(o: Opening) {
   const crate = crateOf(o.crate), owned = Math.min(S.chests[o.crate] || 0, o.count), cost = (o.count - owned) * (crate?.price || 0);
   if (!crate || S.state.balance < cost) return stopAuto('Auto zatrzymane, skończyły się pieniądze');
   if (owned < o.count && !crate.canBuy) return stopAuto('Auto zatrzymane, tej skrzynki nie można już kupić');
-  setTimeout(() => { if (S.autoRun && S.opening === o && !epicOpen() && !document.hidden) openAgain(); }, o.fast ? 800 : 1500);
+  bgTimeout(() => { if (S.autoRun && S.opening === o && !epicOpen()) openAgain(); }, inBackground() ? 300 : o.fast ? 800 : 1500);
 }
 
 // ---------------------------------------------------------------- przebieg
@@ -177,9 +178,9 @@ async function testOpen(crate: any, count: number) {
 
 // przed wynikiem: w zwykłym trybie wieko uchyla się w kolorze skrzynki, a o karcie decydują dopiero bębny
 async function lidBeforeResult(o: Opening) {
-  if (!crate3d.scene) await sceneOverlay(o);
+  if (!crate3d.scene && !inBackground()) await sceneOverlay(o);
   const scene = crate3d.scene;
-  if (o.fast || !scene) return sleep(o.fast ? 120 : 450);
+  if (o.fast || !scene || inBackground()) return sleep(o.fast || inBackground() ? 120 : 450);
   await scene.open(crateHue(crateOf(o.crate)).hue, .3);
 }
 
@@ -216,7 +217,7 @@ async function sceneOverlay(o: Opening) {
 async function revealFast(o: Opening) {
   const best = bestDrop(o.drops!), r = person(best.person).rarity;
   const power: Record<string, number> = { green: .1, uncommon: .15, blue: .25, purple: .45, red: .65, gold: .85 };
-  await crate3d.scene?.open(S.cfg.rarities[r].color, power[r] ?? 1);
+  if (!inBackground()) await crate3d.scene?.open(S.cfg.rarities[r].color, power[r] ?? 1);
   showStage(o);
   $('#reels').hidden = true;
   await afterSpin(o);
@@ -295,8 +296,11 @@ function runStage() {
   o.spinning = true;
   const ease = (t: number) => 1 - Math.pow(1 - t, 4.2);
   let lastLand = 0;
+  // w ukrytej karcie requestAnimationFrame stoi, więc bęben dokręca się od razu minutnikiem
+  const next = () => inBackground() ? bgTimeout(() => frame(performance.now()), 50) : requestAnimationFrame(frame);
   const frame = (ts: number) => {
     if (S.opening !== o) return;
+    if (inBackground()) o.reels!.forEach(r => { r.start = Math.min(r.start, ts - r.dur); });
     let all = true;
     for (const r of o.reels!) {
       if (r.done) continue;
@@ -313,23 +317,25 @@ function runStage() {
       } else all = false;
     }
     if (all) { o.spinning = false; $('#skipBtn').hidden = true; afterSpin(o); }
-    else requestAnimationFrame(frame);
+    else next();
   };
-  requestAnimationFrame(frame);
+  next();
 }
 
 async function afterSpin(o: Opening) {
-  await sleep(o.fast ? 150 : 700);
+  await sleep(o.fast || inBackground() ? 150 : 700);
   if (S.opening !== o) return;
   $('#skipBtn').hidden = true;   // przy „Ultraszybko” bęben nie woła tego sam
   const drops = o.drops!;
   const rankOf = (d: Drop) => rarityIdx(person(d.person).rarity);
   const epics = drops.filter(d => rankOf(d) >= rarityIdx('gold')).sort((a, b) => rankOf(b) - rankOf(a) || varRank(b.variant) - varRank(a.variant));
   for (const d of epics) {
+    if (inBackground()) break;
     await epicReveal(d, { fast: o.fast, auto: !!S.autoRun });
     if (S.opening !== o) return;
   }
   for (const d of drops.filter(d => variantParts(d.variant).includes('receipt') && !epics.includes(d))) {
+    if (inBackground()) break;
     await receiptReveal(d, { fast: o.fast, auto: !!S.autoRun });
     if (S.opening !== o) return;
   }
