@@ -81,11 +81,20 @@ export function CtfSlide({ onOpen }: { onOpen: () => void }) {
                 {q.person && <span className={c.prize}><Card person={q.person} variant={REWARD} /></span>}
               </>
             ) : (
-              <span className={c.owned}>
-                <b>FLAGA ZDOBYTA</b>
-                <span>{q.mine ? 'przez ciebie' : `przez ${q.winner || '???'}`}</span>
-                <small>nowe zadanie za {left}</small>
-              </span>
+              <>
+                <span className={c.owned}>
+                  <b>FLAGA ZDOBYTA</b>
+                  <span>{q.mine ? 'przez ciebie' : `przez ${q.winner || '???'}`}</span>
+                  <small>nowe zadanie za {left}</small>
+                </span>
+                {/* zabrana karta-nagroda: zostaje na ekranie, przygaszona, z pieczątką */}
+                {q.person && (
+                  <span className={`${c.prize} ${c.taken}`} title={`Zabrana karta: ${prize?.name ?? '?'} (${variantName(REWARD)})`}>
+                    <Card person={q.person} variant={REWARD} />
+                    <i className={c.stamp} aria-hidden="true">{q.mine ? 'TWOJA' : 'ZABRANA'}</i>
+                  </span>
+                )}
+              </>
             )}
             <span className={c.scan} aria-hidden="true" />
           </span>
@@ -111,7 +120,9 @@ export function CtfSlide({ onOpen }: { onOpen: () => void }) {
         ) : q.mine ? (
           <p className={`${s.lead} ${s.won}`}><Trophy size={16} aria-hidden="true" />{`Flaga jest twoja: ${prize?.name ?? '?'} w wariancie ${variantName(REWARD)} i ${fmt(q.money)}.`}</p>
         ) : (
-          <p className={s.lead}>{`Ktoś był szybszy. Flagę zdobył ${q.winner || '?'}.`} <button type="button" className={c.link} onClick={onOpen}>Zobacz rozwiązanie</button></p>
+          <p className={s.lead}>{prize
+            ? `Ktoś był szybszy. ${q.winner || '?'} zdobył flagę i zabrał kartę ${prize.name} w wariancie ${variantName(REWARD)}.`
+            : `Ktoś był szybszy. Flagę zdobył ${q.winner || '?'}.`} <button type="button" className={c.link} onClick={onOpen}>Zobacz rozwiązanie</button></p>
         )}
         {done && q.wonAt && <span className={s.timer}><CheckCircle2 size={15} aria-hidden="true" />Wykonano o <b>{questTime(q.wonAt)}</b></span>}
         <span className={s.timer}><Timer size={15} aria-hidden="true" />{done ? 'Nowy quest za' : 'Quest kończy się za'} <b>{left}</b></span>
@@ -194,6 +205,7 @@ export function CtfDialog({ onClose }: { onClose: () => void }) {
               <p className={c.solved}>
                 <CheckCircle2 size={16} aria-hidden="true" />
                 {d.mine ? 'Ta flaga jest twoja.' : `Flagę zdobył ${d.winner || '?'}.`}
+                {d.person && <> Zabrana karta: <b>{person(d.person).name}</b> ({variantName(REWARD)}).</>}
                 {d.flag && <> Flaga: <code>{d.flag}</code></>}
               </p>
             )}

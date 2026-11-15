@@ -12,14 +12,9 @@ import { SettingsPage } from '../features/settings/SettingsPage';
 import { RankingPage } from '../features/social/RankingPage';
 import { ShareDialog } from '../features/social/ShareDialog';
 import { installViewerActions } from '../features/social/showcase';
-import { ChessPage } from '../features/chess/ChessPage';
-import { ArenaPage } from '../features/arena/ArenaPage';
-import { startArena } from '../features/arena/arena';
 import { bibiPlay, bibiQueue } from '../features/achievements/bibi';
 import { openingHooks } from '../features/crates/opening';
-import { CasinoPage } from '../features/casino/CasinoPage';
 import { showJackpotResult } from '../features/casino/jackpotResult';
-import { hrNews } from '../features/casino/horsesEngine';
 import { BinderPage } from '../features/binder/BinderPage';
 import { CratesPage } from '../features/crates/CratesPage';
 import { HomePage } from '../features/home/HomePage';
@@ -50,7 +45,7 @@ function onMe(me: any) {
   noteCtf(me.ctf);
   noteUfo(me);
   noteMarketBonus(me.marketBonus);
-  if (me.horseNews?.length) hrNews(me.horseNews);
+  if (me.horseNews?.length) import('../features/casino/horsesEngine').then(m => m.hrNews(me.horseNews));
   if (me.achUnseen && !S.opening) achPoll();
   if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
@@ -76,7 +71,7 @@ function Game() {
       noteUfo(me);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
-      if (S.cfg.arena) startArena();   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania
+      if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania ani nie pobiera jej kodu
       if (me.jackpot) setTimeout(() => showJackpotResult(me.jackpot), 600);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -122,6 +117,10 @@ function Game() {
   );
 }
 
+// zakładki z dużym kodem (kasyno, gry, Arena) pobierają się dopiero przy pierwszym wejściu
+const CasinoPage = lazy(() => import('../features/casino/CasinoPage').then(m => ({ default: m.CasinoPage })));
+const ChessPage = lazy(() => import('../features/chess/ChessPage').then(m => ({ default: m.ChessPage })));
+const ArenaPage = lazy(() => import('../features/arena/ArenaPage').then(m => ({ default: m.ArenaPage })));
 const PassportPage = lazy(() => import('../features/passport/PassportPage').then(m => ({ default: m.PassportPage })));
 const AdminApp = lazy(() => import('../features/admin/AdminApp'));
 const ADMIN_PATHS = ['/admin', '/variants', '/stickers', '/designer', '/mockups'];
