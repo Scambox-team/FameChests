@@ -386,6 +386,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
           <button class="btn primary" data-act="share">Pokaż znajomym</button>
           <button class="btn" data-act="pin">${viewerActions.showcaseHas?.(pid, variant) ? "Zdejmij z gabloty" : "Do gabloty"}</button>
           <button class="btn" data-act="fav" aria-pressed="${!!viewerActions.isFavorite?.(pid, variant, uid)}">${viewerActions.isFavorite?.(pid, variant, uid) ? "Usuń z ulubionych" : "Do ulubionych"}</button>
+          ${S.items.some(i => i.id === +uid) ? '<button class="btn primary" data-act="stickers">Naklejki</button>' : ""}
           ${isBlank(variant) && S.items.some(i => i.id === +uid) ? '<button class="btn primary" data-act="draw">Rysuj na karcie</button>' : ""}
           ${scratchable(variant, uid) ? '<button class="btn primary" data-act="scratch">Zdrap kartę</button>' : ""}
           ${giftWrapped(variant, uid) ? '<button class="btn primary" data-act="unwrap">Odpakuj</button>' : ""}
@@ -419,6 +420,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "fav") return viewerActions.toggleFavorite?.(pid, variant, uid).then(() => openViewer(pid, variant, uid));
+    if (act === "stickers") return viewerActions.openStickers?.(+uid);
     if (act === "draw") return viewerActions.openDrawing?.(+uid);
     if (act === "scratch") return viewerActions.openScratch?.(+uid);
     // Prezentowy: kliknięcie zapakowanej karty też ją odpakowuje

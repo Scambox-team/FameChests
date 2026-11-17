@@ -4011,6 +4011,24 @@
  },
  "patchNotes": [
   {
+   "v": 32,
+   "date": "2026-11-17",
+   "title": "Naklejki",
+   "items": [
+    "<b>Naklejki</b>: nowe kolekcjonerskie naklejki z rzadkościami kart. Nakleisz je na dowolną kartę (najwyżej 5 na kartę, nad zdjęciem albo nad całą kartą), a każda może być też foliowana, holo albo złota. Skrzynka z naklejkami to jedna z dużych nagród za level; naklejki są w ekwipunku, w nowej zakładce, a kartę z naklejkami edytujesz też z jej podglądu."
+   ]
+  },
+  {
+   "v": 31,
+   "date": "2026-11-17",
+   "title": "Poziomy i EXP",
+   "items": [
+    "Za otwieranie skrzynek, gry, kasyno, rynek, wymiany i questy dostajesz teraz <b>EXP</b>. Pasek z levelem jest u góry (kliknij go albo wejdź w swój profil), tam zobaczysz wszystkie levele (1-100), nagrody i to, skąd bierze się EXP. Po przekroczeniu dziennego progu EXP za to samo zdarzenie maleje.",
+    "Każdy nowy level daje nagrodę, a co 10. level - dużą: wybierasz 2 z 4 (skrzynka z pieniędzmi, karty Mityczne lub lepsze i slot dodatkowy), reszta przepada. Stare konta dostają część EXP za dotychczasową grę, ale bez nagród za przeskoczone levele.",
+    "Level 100 daje odznakę <b>za służbę w roku RRRR</b> (widoczną na profilu i w rankingu), a level wraca do 1. Kolejne dojścia do 100 w tym samym roku podnoszą odznakę: zwykła, brązowa, srebrna, złota, platynowa, szmaragdowa, ametystowa, rubinowa, szafirowa, diamentowa, czarny diament, papieska."
+   ]
+  },
+  {
    "v": 30,
    "date": "2026-11-13",
    "title": "Uczciwe wyniki w grach",

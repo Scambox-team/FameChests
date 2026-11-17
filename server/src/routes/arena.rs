@@ -95,6 +95,7 @@ async fn arena_record(st: &AppState, b: &mut Battle) -> sqlx::Result<()> {
                 _ => None,
             };
             crate::achievements::count_arena(&mut tx, uid, finisher).await?;
+            crate::exp::award(&mut tx, uid, "arena_win", 1).await?;
             if rules.reward_wins.contains(&arena_wins_today(&mut tx, uid).await?) {
                 chest = Some(rules.reward_chest.clone());
                 add_chests(&mut tx, uid, &format!("money_{}", rules.reward_chest), 1).await?;

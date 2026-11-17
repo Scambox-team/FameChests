@@ -7,6 +7,7 @@ import { api } from '../api/client';
 import { S, useGame } from '../game/store';
 import { Avatar } from '../ui/UserLink';
 import { Money } from '../ui/Money';
+import { ExpBar } from '../features/exp/ExpBar';
 import { Ambient } from './Ambient';
 import { InstallButton } from './InstallButton';
 import { SettingsPanel, SoundControl } from './Settings';
@@ -179,7 +180,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className={styles.phoneTop}>
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
-        <span className={styles.phoneMoney}><Money value={game.state.balance} /></span>
+        <span className={styles.phoneMoney}><ExpBar compact /> <Money value={game.state.balance} /></span>
         <button className={`${styles.icon} ${styles.phoneGift}`} type="button" aria-label="Codzienna skrzynka" onClick={() => S.openDaily?.()}>
           <Gift size={20} strokeWidth={1.6} />
           {game.dailyClaimable && <i className={styles.ready} aria-label="do odebrania" />}
@@ -190,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={styles.top}>
           <h1 className={styles.title}><LastEm>{title}</LastEm></h1>
           <div className={styles.topRight}>
+            <ExpBar />
             <span className={styles.money}><Money value={game.state.balance} /></span>
             <button className={styles.daily} type="button" onClick={() => S.openDaily?.()}>
               <Gift size={17} strokeWidth={1.6} aria-hidden="true" />Codzienna skrzynka

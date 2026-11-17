@@ -150,7 +150,7 @@ pub async fn discover(c: &mut Conn, uid: i64, pid: &str) -> sqlx::Result<bool> {
 // ---------------------------------------------------------------- skrzynki w ekwipunku
 
 pub fn valid_chest_kind(cat: &Catalog, kind: &str) -> bool {
-    cat.crates.get(kind).is_some_and(|c| !c.special) || g().money_kind(kind).is_some()
+    cat.crates.get(kind).is_some_and(|c| !c.special) || g().money_kind(kind).is_some() || crate::stickers::crate_of_kind(kind).is_some()
 }
 
 /// Skrzynki w ekwipunku: {rodzaj: ile}
@@ -504,6 +504,8 @@ pub async fn owned_rows(c: &mut Conn, cat: &Catalog, uid: i64, ids: &[i64]) -> s
 }
 
 pub async fn delete_items(c: &mut Conn, uid: i64, ids: &[i64]) -> sqlx::Result<()> {
+    // naklejki z usuwanych kart wracają do ekwipunku właściciela (sprzedaż, kontrakt, ulepszacz)
+    crate::stickers::release_from_cards(&mut *c, uid, ids).await?;
     sqlx::query!("DELETE FROM items WHERE user_id = $1 AND id = ANY($2)", uid, ids).execute(&mut *c).await?;
     sqlx::query!("DELETE FROM showcase WHERE user_id = $1 AND item_id = ANY($2)", uid, ids).execute(c).await?;
     Ok(())

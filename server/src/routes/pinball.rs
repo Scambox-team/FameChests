@@ -168,6 +168,9 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
     }
+    if reason == "ok" {
+        crate::exp::award(&mut tx, me.id, "pinball", 1).await?;   // tylko gra odtworzona przez serwer i dość długa
+    }
     let card = match &card_pid {
         Some(pid) => {
             let item = insert_for(&mut tx, &cat, me.id, me.hidden_from_ranking(), pid, &cfg.card_variant, "pinball").await?;

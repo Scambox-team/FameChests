@@ -66,5 +66,6 @@ export function navFor(c: NavContext) {
 export function titleFor(pathname: string) {
   if (pathname.startsWith('/player/')) return 'Profil';
   if (pathname.startsWith('/ustawienia')) return 'Ustawienia';
+  if (pathname.startsWith('/level')) return 'Poziom';   // nie ma go w menu: wchodzi się z paska EXP albo z profilu
   return GAME_NAV.find(i => i.path === '/' ? pathname === '/' : pathname.startsWith(i.path!))?.label ?? 'ScamBox';
 }

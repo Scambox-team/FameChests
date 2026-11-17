@@ -143,6 +143,9 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
         set_state(&mut tx, me.id, "run_day", today()).await?;
         set_state(&mut tx, me.id, "run_today", earned + reward).await?;
     }
+    if distance >= r.min_dist {
+        crate::exp::award(&mut tx, me.id, "run", 1).await?;
+    }
     let card = turbo_card(&mut tx, &st.cat(), &me, &g().turbo.run_tiers, distance).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;

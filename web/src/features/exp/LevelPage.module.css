@@ -1,0 +1,53 @@
+/* Strona „Poziom” */
+.progress { display: flex; flex-direction: column; gap: 10px; margin-top: var(--gap); }
+.headRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.bigNum { font: 800 24px/1.1 var(--display); letter-spacing: -.02em; }
+.jump { margin-left: auto; padding: 6px 14px; border: 1px solid var(--control); border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.jump:hover { background: color-mix(in srgb, var(--text) 9%, transparent); }
+.meter { height: 12px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 13%, transparent); }
+.meter i { display: block; height: 100%; border-radius: inherit; background: var(--hue); transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+section.service { flex-direction: row; align-items: center; gap: 18px; margin-top: var(--gap); }
+.service > div { min-width: 0; }
+.service h3 { margin: 0 0 4px; font-size: 17px; line-height: 1.2; }
+.service p { margin: 0; max-width: 56ch; }
+.serviceArt { flex: none; width: 96px; height: 120px; display: grid; place-items: center; }
+.serviceArt svg { width: 100%; height: 100%; }
+.serviceOff { color: var(--faint); border-radius: var(--radius-m); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.sources { margin-top: var(--gap); }
+.sources summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+.group h4 { margin: 14px 0 6px; font-size: 14px; color: var(--muted); }
+.group ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.group li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 6px 10px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.group li span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.group li b { font-variant-numeric: tabular-nums; }
+.tools { margin-top: var(--gap); }
+.levels { margin: var(--gap) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.lvl { display: grid; grid-template-columns: 44px minmax(120px, 190px) 1fr auto; align-items: center; gap: 6px 14px; padding: 8px 14px 8px 8px; border-radius: var(--radius-m); background: var(--surface); content-visibility: auto; contain-intrinsic-size: auto 64px; }
+.num { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--raised); font: 800 14px var(--display); font-variant-numeric: tabular-nums; }
+.done .num { background: var(--hue); color: var(--on-hue); }
+.done { opacity: .72; }
+.next { opacity: 1; box-shadow: inset 0 0 0 2px var(--hue); }
+.bigLvl { background: color-mix(in srgb, var(--hue) 14%, var(--surface)); }
+.bigLvl .num { border-radius: 10px; }
+.info { display: flex; flex-direction: column; min-width: 0; }
+.info em { font-style: normal; color: var(--warn); font-weight: 500; }
+.rewards { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--text) 9%, transparent); font-size: 12.5px; overflow-wrap: anywhere; }
+.special { background: color-mix(in srgb, var(--warn) 22%, transparent); }
+.state { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+@media (max-width: 820px) {
+  .lvl { grid-template-columns: 44px 1fr auto; }
+  .rewards { grid-column: 1 / -1; }
+  .service { align-items: flex-start; }
+  .serviceArt { width: 72px; height: 90px; }
+  .jump { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+.pending { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: var(--gap); box-shadow: inset 0 0 0 2px var(--hue); }
+.pending div { flex: 1 1 220px; min-width: 0; }
+.ladder { display: flex; flex-wrap: wrap; gap: 8px 6px; margin-top: 10px; }
+.tier { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 56px; opacity: .38; filter: grayscale(.6); }
+.tierOn { opacity: 1; filter: none; }
+.tierArt { display: block; width: 40px; height: 50px; }
+.tierArt svg { width: 100%; height: 100%; display: block; }
+.tier small { font-size: 10px; line-height: 1.1; text-align: center; color: var(--muted); overflow-wrap: anywhere; }

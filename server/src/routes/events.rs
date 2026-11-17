@@ -28,6 +28,7 @@ pub(super) fn reward_view(cat: &Catalog, r: &Value) -> Value {
             let kind = s("kind");
             let name = g().money_kind(kind).and_then(|m| g().money_chests.get(m).map(|c| c.name.clone()))
                 .or_else(|| cat.crates.get(kind).map(|c| c.name.clone()))
+                .or_else(|| crate::stickers::crate_of_kind(kind).map(|c| c.name))
                 .unwrap_or_else(|| kind.to_owned());
             json!({"type": "chest", "kind": kind, "count": n, "text": format!("{name}{times}")})
         }
@@ -125,6 +126,7 @@ pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path
         .cloned()
         .collect();
     grant_rewards(&mut tx, &cx, &usable, "advent").await?;
+    crate::exp::award(&mut tx, me.id, "advent", 1).await?;
     let state = get_state(&mut tx, me.id).await?;
     let chests = get_chests(&mut tx, &cat, me.id).await?;
     tx.commit().await?;
@@ -147,6 +149,7 @@ pub(super) fn reward_options(cat: &Catalog) -> (Vec<Value>, Vec<Value>, Vec<Valu
     cards.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     let mut chests: Vec<Value> = g.money_chests.iter().map(|(k, c)| json!({"kind": format!("money_{k}"), "name": c.name})).collect();
     chests.extend(cat.crates.values().filter(|c| !c.special).map(|c| json!({"kind": c.id, "name": c.name})));
+    chests.extend(crate::stickers::crates().iter().map(|c| json!({"kind": c.kind(), "name": c.name})));
     (variants, cards, chests)
 }
 

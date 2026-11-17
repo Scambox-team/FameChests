@@ -1,6 +1,6 @@
 // Zapytania do serwera gry. POST, gdy jest body; serwer odpowiada JSON-em z polem `error` przy błędzie.
 type Hook = () => void;
-const hooks: { achievements?: Hook; bibi?: Hook } = {};
+const hooks: { achievements?: Hook; bibi?: Hook; exp?: (n: number) => void } = {};
 export const onResponseHeaders = (h: typeof hooks) => Object.assign(hooks, h);
 
 /** Liczba zapytań zmieniających dane w toku: synchronizacja ekwipunku czeka, aż się skończą */
@@ -19,6 +19,8 @@ export async function api<T = any>(path: string, body?: unknown): Promise<T> {
   }
   if (res.headers.get('X-Bibi')) hooks.bibi?.();
   if (res.headers.get('X-Ach')) hooks.achievements?.();
+  const gained = Number(res.headers.get('X-Exp'));
+  if (gained > 0) hooks.exp?.(gained);
   if (!res.ok) throw new Error(data?.error || 'Błąd serwera');
   if (data === null) throw new Error('Błąd połączenia z serwerem, spróbuj jeszcze raz');
   return data as T;

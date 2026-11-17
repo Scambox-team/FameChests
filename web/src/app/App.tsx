@@ -34,6 +34,11 @@ import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
 import { RenderCard } from '../features/render/RenderCard';
 import { achPoll } from '../features/achievements/popups';
+import { expHeader, noteExp } from '../features/exp/exp';
+import { LevelPage } from '../features/exp/LevelPage';
+import { ExpChoiceHost } from '../features/exp/ExpChoice';
+import { StickerEditorHost } from '../features/stickers/StickerEditor';
+import { StickerRevealHost } from '../features/stickers/StickerReveal';
 import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
 import styles from './App.module.css';
@@ -44,6 +49,7 @@ function onMe(me: any) {
   noteQuest(me.quest);
   noteCtf(me.ctf);
   noteUfo(me);
+  noteExp(me.exp);
   noteMarketBonus(me.marketBonus);
   if (me.horseNews?.length) import('../features/casino/horsesEngine').then(m => m.hrNews(me.horseNews));
   if (me.achUnseen && !S.opening) achPoll();
@@ -63,12 +69,13 @@ function Game() {
   useEffect(() => {
     let stop: undefined | (() => void), alive = true;
     openingHooks.bibiPlay = bibiPlay;
-    onResponseHeaders({ achievements: achPoll, bibi: bibiQueue });
+    onResponseHeaders({ achievements: achPoll, bibi: bibiQueue, exp: expHeader });
     boot().then(me => {
       if (!alive) return;
       noteQuest(me.quest);
       noteCtf(me.ctf);
       noteUfo(me);
+      noteExp(me.exp);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
       if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania ani nie pobiera jej kodu
@@ -101,6 +108,7 @@ function Game() {
           <Route path="/games/:tab" element={<ChessPage />} />
           <Route path="/games/:tab/:sub" element={<ChessPage />} />
           <Route path="/passport" element={<PassportPage />} />
+          <Route path="/level" element={<LevelPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
@@ -111,6 +119,9 @@ function Game() {
       </Suspense>
       <Stage />
       <Notices />
+      <ExpChoiceHost />
+      <StickerEditorHost />
+      <StickerRevealHost />
       <ShareDialog />
       <ReportDialog />
     </AppShell>

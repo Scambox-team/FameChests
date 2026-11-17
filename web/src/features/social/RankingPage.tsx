@@ -8,10 +8,11 @@ import { fmt, fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { SearchField, Tabs } from '../../ui/Field';
 import { UserLink } from '../../ui/UserLink';
+import { ServiceBadge } from '../exp/LevelPage';
 import s from './social.module.css';
 
-type By = 'value' | 'cards' | 'opened';
-const KEY: Record<By, string> = { value: 'value', cards: 'unique', opened: 'opened' };
+type By = 'value' | 'cards' | 'opened' | 'level';
+const KEY: Record<By, string> = { value: 'value', cards: 'unique', opened: 'opened', level: 'level' };
 const MEDALS = ['#e5b94a', '#c2c6cf', '#c98a55'];
 
 // wybór zostaje po powrocie na ekran
@@ -51,6 +52,7 @@ export function RankingPage() {
   const total = Math.max(1, r.totalCards);
   const value = (p: any) => by === 'value' ? fmt(p.value)
     : by === 'cards' ? <>{p.unique} / {r.totalCards} <span className="muted">({Math.round(p.unique / total * 100)}%)</span></>
+    : by === 'level' ? `Level ${p.level}`
     : `${fmtNum(p.opened)} ${plural(p.opened, 'skrzynka', 'skrzynki', 'skrzynek')}`;
 
   return (
@@ -58,7 +60,7 @@ export function RankingPage() {
       <PageHero icon={Trophy} title="Najlepsi gracze" lead="Ranking według wartości kolekcji, zebranych kart albo otwartych skrzynek. Wyszukasz tu każdego gracza, także spoza rankingu."
         stats={[['Online', <><i className={s.online} /> {fmtNum(r.online)}</>], [plural(r.accounts, 'Konto', 'Konta', 'Kont') + ' w grze', fmtNum(r.accounts)]]} />
       <div className={s.rankTools}>
-        <Tabs label="Ranking według" value={by} onChange={v => { setBy(v); Sound.click(); }} items={[{ id: 'value', label: 'Wartość kolekcji' }, { id: 'cards', label: 'Zebrane karty' }, { id: 'opened', label: 'Otwarte skrzynki' }]} />
+        <Tabs label="Ranking według" value={by} onChange={v => { setBy(v); Sound.click(); }} items={[{ id: 'value', label: 'Wartość kolekcji' }, { id: 'cards', label: 'Zebrane karty' }, { id: 'opened', label: 'Otwarte skrzynki' }, { id: 'level', label: 'Poziom' }]} />
         <Tabs label="Zakres" value={scope} onChange={v => { setScope(v); Sound.click(); }} items={[{ id: 'all', label: 'Wszyscy' }, { id: 'friends', label: 'Znajomi' }]} />
         <SearchField value={search} onChange={e => setSearch(e.target.value)} placeholder="Szukaj gracza" aria-label="Szukaj gracza" />
       </div>
@@ -67,6 +69,8 @@ export function RankingPage() {
           <div key={p.username} className={`${s.rankRow}${p.me ? ` ${s.rankMe}` : ''}`}>
             <span className={s.rankPos}>{i < 3 ? <Medal size={22} color={MEDALS[i]} aria-label={`${i + 1}. miejsce`} /> : i + 1}</span>
             <UserLink user={p} />
+            {by !== 'level' && p.level > 1 && <span className={s.rankLv} title={`Level ${p.level}`}>Lv {p.level}</span>}
+            {p.serviceBadge && <ServiceBadge year={p.serviceBadge.year} tier={p.serviceBadge.tier} className={s.rankSvc} />}
             {p.friend && <Users size={15} className={s.rankTag} aria-label="Znajomy" />}
             {p.isAdmin && <Crown size={15} className={s.rankTag} aria-label="Admin" />}
             <span className={s.rankValue}>{value(p)}</span>

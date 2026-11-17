@@ -14,7 +14,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     P('karty', 'Karty', 'Wyszukiwarka wszystkich kart, nowa karta, eksport wyników', 'catalog'),
     P('import', 'Import i eksport kart', 'Dodawanie i zmiana wielu kart z pliku JSON / CSV, wzory plików', 'catalog'),
     G('warianty', 'Warianty', 'Wyglądy kart, gdzie wypadają, wydarzenia', '/variants', 'catalog'),
-    G('naklejki', 'Naklejki', 'Naklejki na kartach', '/stickers', 'catalog'),
+    G('naklejki', 'Naklejki na wariantach', 'Naklejki będące wyglądem wariantu karty (np. MLG) - nie mają nic wspólnego z naklejkami graczy', '/stickers', 'catalog'),
+    G('gnaklejki', 'Naklejki dla graczy', 'Kolekcjonerskie naklejki (PNG, rzadkości, warianty foliowana / holo / złota) i skrzynki z naklejkami', '/admin/gstickers', 'catalog'),
     G('kreator', 'Kreator wariantów', 'Tworzenie własnych wariantów kart', '/designer', 'catalog'),
     G('specjalne', 'Karty specjalne', 'Wszystkie karty specjalne i ich wyglądy', '/mockups', 'catalog'),
     P('linki', 'Linki do kart specjalnych', 'Adresy, po których gracz dostaje kartę specjalną', 'content'),
@@ -23,6 +24,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     P('gracze', 'Gracze', 'Lista graczy, saldo, blokady, ekwipunek', 'users'),
     P('dziennik', 'Dziennik adminów', 'Co i kiedy zmienili admini', 'log'),
     G('zgloszenia', 'Zgłoszenia', 'Zgłoszenia od graczy', '/admin/reports', 'reports'),
+    G('exp', 'EXP i levele', 'Źródła EXP, krzywa leveli 1-100, nagrody za levele, rozkład graczy, ręczne nadanie EXP', '/admin/exp', 'economy'),
     G('polecenia', 'Polecenia', 'Kody polecające i nagrody za zaproszenia', '/admin/referrals', 'content'),
   ] },
   { id: 'tresci', label: 'Treści', items: [
