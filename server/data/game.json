@@ -4011,6 +4011,17 @@
  },
  "patchNotes": [
   {
+   "v": 31,
+   "date": "2026-11-17",
+   "title": "Obrona Orbity, AIMPULSE i Plinko",
+   "items": [
+    "👾 Nowa gra w zakładce <b>Gry</b>: <b>Obrona Orbity</b>. Zatrzymaj flotę najeźdźców, zanim dotrze do linii obrony: strzelaj, chowaj się za osłonami i trafiaj złotego satelitę po bonus. Każda fala jest szybsza. Na telefonie użyj przycisków pod planszą.",
+    "🎯 W <b>Grach Super Turbo</b> nowy kafelek: <b>Super Turbo AIMPULSE 3D</b>, neonowa strzelnica 3D. Trafiaj kule jak najszybciej, omijaj czerwone miny, łap złote bonusy i nabijaj combo. Trzy poziomy i rundy 30, 60 albo 120 s.",
+    "🪙 Za punkty w obu grach dostajesz <b>grosze</b> (z limitem na grę i na dzień). Punkty liczy serwer: odtwarza Twoją grę ruch po ruchu, więc wyniku nie da się podrobić.",
+    "🔻 Nowa gra w <b>Kasynie</b>: <b>Plinko</b>. Postaw karty, wybierz ryzyko i puść kulkę przez 12 rzędów kołków. Wraca stawka × mnożnik przegródki, do ×170 przy wysokim ryzyku. Możesz puścić naraz do 20 kulek: stawka dzieli się między nie po równo."
+   ]
+  },
+  {
    "v": 30,
    "date": "2026-11-13",
    "title": "Uczciwe wyniki w grach",

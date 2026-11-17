@@ -8,6 +8,7 @@ pub mod mail_admin;
 pub mod arena;
 pub mod backups;
 pub mod cards_io;
+pub mod arcade;
 pub mod casino;
 pub mod chess;
 pub mod drawings;
@@ -97,6 +98,8 @@ pub fn router(st: AppState) -> Router {
         .route("/games/turbo", get(index))
         .route("/games/turbo/snake", get(index))
         .route("/games/turbo/run", get(index))
+        .route("/games/turbo/aimpulse", get(index))
+        .route("/games/invaders", get(index))
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))
@@ -257,6 +260,7 @@ pub fn router(st: AppState) -> Router {
         // kasyno
         .route("/api/casino/roulette", post(casino_roulette))
         .route("/api/casino/slots", post(casino_slots))
+        .route("/api/casino/plinko", get(casino_plinko_config).post(casino_plinko))
         .route("/api/casino/blackjack", get(casino_blackjack))
         .route("/api/casino/blackjack/deal", post(casino_blackjack_deal))
         .route("/api/casino/blackjack/hit", post(casino_blackjack_hit))
@@ -305,6 +309,10 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/run/start", post(turbo_run::run_start))
         .route("/api/games/run/finish", post(turbo_run::run_finish))
         .route("/api/admin/run", get(turbo_run::admin_run).post(turbo_run::admin_run_save))
+        .route("/api/games/arcade/{name}", get(arcade::arcade_config))
+        .route("/api/games/arcade/{name}/start", post(arcade::arcade_start))
+        .route("/api/games/arcade/{name}/finish", post(arcade::arcade_finish))
+        .route("/api/admin/arcade/{name}", get(arcade::admin_arcade).post(arcade::admin_arcade_save))
         .route("/api/events", get(events::events_list))
         .route("/api/events/{id}/advent", post(events::advent_claim))
         .route("/api/admin/events", get(events::admin_events).post(events::admin_events_save))

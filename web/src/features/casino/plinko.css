@@ -1,0 +1,22 @@
+/* PLINKO (kasyno): plansza z kołkami na płótnie 560 x 520 + tabela mnożników */
+.pl-cols { grid-template-columns: minmax(300px, 520px) minmax(0, 1fr); }
+.pl-left { gap: 12px; }
+.pl-board { position: relative; width: 100%; aspect-ratio: 560 / 520; border-radius: var(--radius-m); background: radial-gradient(120% 80% at 50% 0%, #1d1440, #0b0918 70%); box-shadow: inset 0 0 0 1px #ffffff14, 0 18px 40px #0007; overflow: hidden; }
+.pl-board.busy { box-shadow: inset 0 0 0 1px #facc1566, 0 18px 40px #0007, 0 0 40px #facc1522; }
+.pl-canvas { display: block; width: 100%; height: 100%; }
+.pl-wait { position: absolute; inset: 0; display: grid; place-items: center; }
+.pl-risk { display: flex; gap: 6px; width: 100%; }
+.pl-risk button { flex: 1; padding: 9px 6px; border: 0; border-radius: var(--radius-s); background: var(--raised); color: var(--muted); font-weight: 700; cursor: pointer; box-shadow: inset 0 0 0 1px #ffffff12; }
+.pl-risk button.on { color: #fff; background: color-mix(in srgb, var(--hue) 30%, var(--raised)); box-shadow: inset 0 0 0 1px var(--hue); }
+.pl-risk button:disabled { cursor: default; opacity: .6; }
+.pl-balls { align-items: center; }
+.pl-balls > span { flex: none; padding-right: 4px; }
+.pl-drop { width: 100%; }
+.pl-big { font: 800 34px / 1 var(--display); color: #facc15; }
+.pl-h { padding: 2px 7px; border-radius: 999px; background: var(--raised); font-size: 12px; font-weight: 700; color: var(--muted); }
+.pl-h.win { color: #0b0b14; background: #facc15; }
+.pl-table { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; margin: 8px 0 12px; }
+.pl-table span { padding: 6px 2px; border-radius: 6px; text-align: center; font: 700 13px / 1 var(--display); color: #0b0b14; opacity: .85; transition: transform .2s, opacity .2s; }
+.pl-table span i { display: block; margin-top: 3px; font: 700 10px / 1 var(--body); font-style: normal; }
+.pl-table span.lit { opacity: 1; transform: translateY(-3px) scale(1.08); box-shadow: 0 0 0 2px #fff, 0 6px 16px #0008; }
+@media (max-width: 900px) { .pl-cols { grid-template-columns: 1fr; } }

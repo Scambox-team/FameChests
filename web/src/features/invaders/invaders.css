@@ -1,0 +1,35 @@
+/* OBRONA ORBITY (zakładka Gry): plansza 480 x 540 na płótnie + panel z wynikiem jak w Snake'u */
+.iv-page { --iv-color: #4ade80; --iv-h: min(calc(100dvh - 180px), 860px); display: grid; grid-template-columns: minmax(0, calc(var(--iv-h) * 480 / 540)) 300px; gap: 24px; justify-content: center; align-items: start; }
+.iv-board {
+  position: relative; width: 100%; aspect-ratio: 480 / 540; border-radius: var(--radius-m); overflow: hidden; background: #05030f;
+  box-shadow: 0 0 0 1px #ffffff14, 0 0 0 6px #ffffff08, 0 24px 60px #0009, 0 0 60px color-mix(in srgb, var(--iv-color) 16%, transparent);
+}
+.iv-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; image-rendering: pixelated; }
+.iv-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--iv-color); }
+.iv-over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; background: #05030fb0; text-align: center; }
+.iv-over b { font: 700 clamp(28px, 6vw, 44px) / 1 var(--display); color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--iv-color) 60%, transparent); }
+.iv-over span { color: var(--muted); max-width: 34ch; }
+.iv-won { font: 700 22px / 1 var(--display); color: #facc15 !important; }
+.iv-side { display: flex; flex-direction: column; gap: 14px; }
+.iv-score { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.iv-score div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; }
+.iv-score span { color: var(--muted); font-size: 12px; }
+.iv-score b { font: 700 26px / 1 var(--display); font-variant-numeric: tabular-nums; color: #fff; }
+.iv-score div:first-child b { color: var(--iv-color); }
+.iv-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.iv-reward { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px #ffffff0d; font-size: 14px; }
+.iv-reward svg { flex: none; margin-top: 2px; color: #facc15; }
+.iv-pad { display: none; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; }
+.iv-pad button { display: grid; place-items: center; height: 64px; border: 0; border-radius: var(--radius-s); background: var(--raised); color: #fff; box-shadow: inset 0 0 0 1px #ffffff14; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.iv-pad button:active { background: color-mix(in srgb, var(--iv-color) 35%, var(--raised)); }
+.iv-pad .fire { color: #fb7185; }
+.iv-help h3 { margin: 6px 0; font-size: 15px; }
+.iv-help p, .iv-help ul { margin: 0 0 8px; }
+.iv-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
+.iv-help kbd { padding: 1px 6px; border-radius: 4px; background: #ffffff12; font: 600 12px var(--body); }
+@media (max-width: 900px) {
+  .iv-page { grid-template-columns: 1fr; justify-items: center; }
+  .iv-board { width: min(100%, calc((100dvh - 330px) * 480 / 540), 560px); min-width: min(100%, 280px); }
+  .iv-side { width: min(100%, 560px); }
+}
+@media (pointer: coarse), (max-width: 900px) { .iv-pad { display: grid; } }

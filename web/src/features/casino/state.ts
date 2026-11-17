@@ -17,10 +17,11 @@ export const CS = {
   history: [] as number[],
   last: null as any,
   lost: false,               // ostatnia runda przegrana: przy wyjściu z kasyna pytamy, czy na pewno
-  sorts: { rl: 'value', jp: 'value', bj: 'value', bjd: 'value', sl: 'value', hr: 'value', upg: 'value' } as Record<string, string>,
+  sorts: { rl: 'value', jp: 'value', bj: 'value', bjd: 'value', sl: 'value', pl: 'value', hr: 'value', upg: 'value' } as Record<string, string>,
   bj: { loaded: false, game: null as any, view: { player: [] as string[], dealer: [] as string[] }, end: null as any, sel: new Set<number>(), dsel: new Set<number>(), q: '', history: [] as any[], anim: null as any },
   jp: { data: null as any, q: '', sig: '', lastLobby: null as number | null, busy: false, newPublic: true, newInvites: '', shown: new Set<number>() },
   sl: { sel: new Set<number>(), q: '', last: null as any, reels: null as string[][] | null, history: [] as any[] },
+  pl: { sel: new Set<number>(), q: '', last: null as any, history: [] as { avg: number; n: number; win: boolean }[], risk: 'mid', balls: 1 },
   upg: { inputs: new Set<number>(), mult: 2, angle: 0, q: '', busy: false }
 };
 
