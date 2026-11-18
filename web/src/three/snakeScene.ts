@@ -9,12 +9,13 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { Snake3DSim } from '../features/snake/core3d';
+import { Snake3DSim, SEG } from '../features/snake/core3d';
+import { LiveSeeds } from '../features/games/liveSeeds';
 
 export interface SnakeOver { apples: number; score: number; record: boolean; log: number[]; ticks: number }
 export interface SnakeHooks {
-  /** start gry: ziarno od serwera (undefined = gra bez nagrody na losowym ziarnie) */
-  onStart: () => Promise<number | undefined>;
+  /** start gry: ziarna odcinków od serwera (undefined = gra bez nagrody na losowych ziarnach) */
+  onStart: () => Promise<LiveSeeds | undefined>;
   onOver: (r: SnakeOver) => void;
   volume: () => number;
   soundOn: () => boolean;
@@ -553,9 +554,10 @@ const cellZ = c => c.z - HALF + 0.5;
 const speed = () => Math.min(5.0 + foodsEaten * 0.17, 12.5);
 const level = () => 1 + Math.floor(foodsEaten / 5);
 
-let sim = null;
-function reset(seed = (Math.random() * 4294967296) >>> 0) {
-  sim = new Snake3DSim(seed);
+let sim = null, live = LiveSeeds.local(SEG);
+function reset(seeds = LiveSeeds.local(SEG)) {
+  live = seeds;
+  sim = new Snake3DSim(live.seed);
   cells = sim.cells; tailHist = sim.tailHist;
   exitDir = sim.exitDir; turnQueue = []; pendingGrow = 0; progress = 0; tickCount = 0;
   Lvis = cells.length - 0.55;
@@ -737,6 +739,7 @@ async function startGame() {
   let seed;
   try { seed = await hooks.onStart(); } catch (e) { seed = undefined; }
   starting = false;
+  if (!(seed instanceof LiveSeeds)) seed = undefined;
   if (dead) return;
   reset(seed);
   state = 'playing'; camBlend = 0; root.classList.remove('inmenu');
@@ -972,7 +975,11 @@ function frame(now) {
     energy = boosting ? Math.max(0, energy - 30 * dt) : Math.min(100, energy + 10 * dt);
     const sp = speed() * (boosting ? BOOST_MULT : brakeHeld ? BRAKE_MULT : 1);
     progress += dt * sp;
-    while (progress >= 1 && state === 'playing') { progress -= 1; tick(); }
+    while (progress >= 1 && state === 'playing') {
+      if (!live.canStep(sim.ticks)) { progress = Math.min(progress, 0.999); break; }   // czekamy na ziarno od serwera
+      progress -= 1; tick();
+      live.pump(sim.ticks, sim.log);
+    }
     if (combo > 0) { comboTimer -= dt; if (comboTimer <= 0) { combo = 0; comboTimer = 0; } }
     dangerVis = damp(dangerVis, dangerAhead() && progress > 0.15 ? 1 : 0, 10, rdt);
   } else if (state !== 'paused') {

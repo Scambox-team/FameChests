@@ -20,3 +20,7 @@ fs-coin.mp3  freesound.org/s/146723  "coin object by Leszek_Szary" (Leszek_Szary
 fs-coins.mp3  freesound.org/s/17502  "Coin dropping.wav by Jace" (Jace)
 fs-payout.mp3  freesound.org/s/361346  "slot machine payout.wav by jack126guy" (jack126guy)
 fs-lose.mp3  freesound.org/s/648462  "Wrong Answer by -Andreas" (-Andreas)
+fs-pig-1.mp3  freesound.org/s/442907  "Pig Grunt by qubodup" (qubodup), CC0
+fs-pig-2.mp3  freesound.org/s/536746  "Pig.ogg by egomassive" (egomassive), CC0
+fs-pig-3.mp3  freesound.org/s/473519  "Oink.mp3 by awr1001" (awr1001), CC0
+fs-pig-4.mp3  freesound.org/s/842313  "Swine - Pig; Dinosaur-like Grunt by TheKingOfGeeks360" (TheKingOfGeeks360), CC0

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { LiveSeeds, startLive } from '../games/liveSeeds';
+import { SEG } from './aimCore';
 import { applyState } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
@@ -19,7 +21,7 @@ import './turbo.css';
 export function AimpulsePage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Aim3D | null>(null);
-  const ticket = useRef(false);   // serwer przyjął start rundy: po końcu prosimy o nagrodę
+  const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start rundy: po końcu prosimy o nagrodę
   const [won, setWon] = useState<{ reward: number; capped: boolean; score: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const { data: look, refetch } = useQuery({ queryKey: ['aimpulse-reward'], queryFn: () => api<{ reward: ArcadeReward }>('/api/games/arcade/aimpulse'), staleTime: 60_000 });
@@ -39,19 +41,20 @@ export function AimpulsePage() {
           soundOn: () => Sound.enabled,
           onStart: async (diff, dur) => {
             setWon(null);
-            ticket.current = false;
-            try {
-              const r = await api<{ seed: number }>('/api/games/arcade/aimpulse/start', { diff, dur });
-              ticket.current = true;
-              return r.seed;
-            } catch { return undefined; /* runda bez nagrody */ }
+            ticket.current = null;
+            const { live } = await startLive('/api/games/arcade/aimpulse/start', { diff, dur }, '/api/games/arcade/aimpulse/commit', SEG);
+            if (live.online) ticket.current = live;
+            return live;
           },
           onOver: async ({ log }) => {
-            if (!ticket.current) return 'RUNDA BEZ NAGRODY';
-            ticket.current = false;
+            const live = ticket.current;
+            ticket.current = null;
+            if (!live) return 'RUNDA BEZ NAGRODY';
             try {
-              // serwer odtwarza rundę z ziarna i zapisu strzałów, sam liczy punkty
-              const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/aimpulse/finish', { log });
+              // serwer odtwarza rundę z ziaren i zapisu strzałów (część zatwierdził już w trakcie rundy), sam liczy punkty
+              const rest = await live.rest(log);
+              if (!rest) return 'RUNDA BEZ NAGRODY (PRZERWANE POŁĄCZENIE)';
+              const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/aimpulse/finish', { log: rest });
               applyState(r.state);
               setWon({ reward: r.reward, capped: r.capped, score: r.score });
               refetchRef.current();

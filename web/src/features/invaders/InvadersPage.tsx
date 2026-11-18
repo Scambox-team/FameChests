@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Coins, Crosshair, Flag, Pause, Play } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { LiveSeeds, startLive } from '../games/liveSeeds';
+import { SEG } from './core';
 import { applyState } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
@@ -23,7 +25,7 @@ const KEYS: Record<string, number> = { ArrowLeft: LEFT, ArrowRight: RIGHT, a: LE
 export function InvadersPage() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<InvadersGame | null>(null);
-  const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
+  const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start gry: po końcu prosimy o nagrodę
   const [hud, setHud] = useState<InvHud | null>(null);
   const [won, setWon] = useState<{ reward: number; capped: boolean; score: number } | null>(null);
   const { data: look, refetch } = useQuery({ queryKey: ['invaders-reward'], queryFn: () => api<{ reward: ArcadeReward }>('/api/games/arcade/invaders'), staleTime: 60_000 });
@@ -33,11 +35,14 @@ export function InvadersPage() {
       sound: invSound,
       over: async run => {
         invSound('over');
-        if (!ticket.current) return;
-        ticket.current = false;
+        const live = ticket.current;
+        ticket.current = null;
+        if (!live) return;
         try {
-          // serwer odtwarza grę z ziarna i zapisu klawiszy, sam liczy punkty
-          const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/invaders/finish', { log: run.log, ticks: run.ticks });
+          // serwer odtwarza grę z ziaren i zapisu klawiszy (część zatwierdził już w trakcie gry), sam liczy punkty
+          const rest = await live.rest(run.log);
+          if (!rest) return toast('Obrona Orbity: połączenie z serwerem przerwane - ta gra jest bez nagrody', true);
+          const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/invaders/finish', { log: rest, ticks: run.ticks });
           applyState(r.state);
           setWon({ reward: r.reward, capped: r.capped, score: r.score });
           if (r.reward > 0) { Sound.coin(1); toast(`Obrona Orbity: +${fmt(r.reward)}`); }
@@ -80,11 +85,10 @@ export function InvadersPage() {
   const start = async () => {
     Sound.unlock(); invSound('start');
     setWon(null);
-    ticket.current = false;
-    let seed: number | undefined;
-    try { seed = (await api<{ seed: number }>('/api/games/arcade/invaders/start', {})).seed; ticket.current = true; }
-    catch { toast('Gra bez nagrody: serwer nie przyjął startu', true); }
-    game.current?.start(seed); canvas.current?.focus();
+    ticket.current = null;
+    const { live } = await startLive('/api/games/arcade/invaders/start', {}, '/api/games/arcade/invaders/commit', SEG);
+    if (live.online) ticket.current = live; else toast('Gra bez nagrody: serwer nie przyjął startu', true);
+    game.current?.start(live); canvas.current?.focus();
   };
 
   // przyciski dotykowe: trzymanie = wciśnięty klawisz

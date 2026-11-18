@@ -4,7 +4,8 @@
 // gra je obraca w stronę ruchu). Bez obrazków wszystko rysuje się samo.
 
 import { drawSkin, type Skin } from './skins';
-import { COLS, ROWS, SnakeSim, VEC, type Dir, type P } from './core';
+import { COLS, ROWS, SEG, SnakeSim, VEC, type Dir, type P } from './core';
+import { LiveSeeds } from '../games/liveSeeds';
 
 export { COLS, ROWS };
 export type { Dir };
@@ -39,13 +40,16 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   let prev: P[] = [], eatAt: P = { x: 0, y: 0 };
   let snake: P[] = [], dir: Dir = 'right', queue: Dir[] = [], apple: P = { x: 0, y: 0 };
   let phase: SnakeHud['phase'] = 'idle', score = 0, best = readBest(), record = false;
-  let sim = new SnakeSim(0), stepMs = sim.stepMs, acc = 0, last = 0, raf = 0, eatFx = 0, size = 0;
+  let live = LiveSeeds.local(SEG);
+  let sim = new SnakeSim(live.seed), stepMs = sim.stepMs, acc = 0, last = 0, raf = 0, eatFx = 0, size = 0;
 
   const hud = () => onHud({ phase, score, length: snake.length, best, record });
 
-  // ziarno daje serwer (/api/games/snake/start); bez niego gra się na losowym ziarnie, bez nagrody
-  function reset(seed = (Math.random() * 4294967296) >>> 0) {
-    sim = new SnakeSim(seed);
+  // ziarna odcinków daje serwer (/api/games/snake/start + /commit, features/games/liveSeeds.ts); bez niego gra się na losowych
+  // ziarnach, bez nagrody
+  function reset(seeds = LiveSeeds.local(SEG)) {
+    live = seeds;
+    sim = new SnakeSim(live.seed);
     snake = sim.snake; dir = sim.dir; apple = sim.apple; queue = []; score = 0; record = false; stepMs = sim.stepMs; acc = 0;
     prev = snake;
   }
@@ -174,7 +178,11 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
     last = t;
     if (phase === 'play') {
       acc += dt;
-      while (acc >= stepMs && phase === 'play') { acc -= stepMs; step(); }
+      while (acc >= stepMs && phase === 'play') {
+        if (!live.canStep(sim.steps)) { acc = Math.min(acc, stepMs); break; }   // czekamy na ziarno od serwera
+        acc -= stepMs; step();
+        live.pump(sim.steps, sim.log);
+      }
     }
     eatFx = Math.max(0, eatFx - dt / 180);
     draw(t);
@@ -188,7 +196,7 @@ export function createSnake(canvas: HTMLCanvasElement, onHud: (h: SnakeHud) => v
   raf = requestAnimationFrame(frame);
 
   return {
-    start(seed?: number) { reset(seed); phase = 'play'; last = 0; hud(); },
+    start(seeds?: LiveSeeds) { reset(seeds); phase = 'play'; last = 0; hud(); },
     /** zapis gry dla serwera: zmiany kierunku (krok, kod), liczba kroków */
     getRun() { return { log: sim.log.slice(), steps: sim.steps }; },
     pause() { if (phase === 'play') { phase = 'pause'; hud(); } else if (phase === 'pause') { phase = 'play'; last = 0; hud(); } },

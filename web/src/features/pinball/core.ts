@@ -66,6 +66,9 @@ export function fexp(x: number) {
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /** mulberry32: 32-bitowy generator z ziarnem; liczby całkowite liczą się tak samo w JS i w Rust */
+/** ticków w odcinku losowania (`SEG` w pinball_sim.rs) - 2 s gry */
+export const SEG = 240;
+
 export class Rng {
   private a: number;
   constructor(seed: number) { this.a = seed | 0; }
@@ -155,7 +158,9 @@ export class Sim {
   readonly spec: Spec;
   readonly H: number;
   readonly DY: number;
-  readonly rng: Rng;
+  rng: Rng;
+  /** ziarno odcinka `k` (po SEG ticków; features/games/liveSeeds.ts) */
+  private seeds: (k: number) => number;
   fx: Fx;
   tick = 0;
   time = 0;
@@ -181,10 +186,10 @@ export class Sim {
   dTxt: string; sTxt: string; lTxt: string;
   wallSnd = 0; fanSnd = 0; gooSnd = 0; padSnd = 0;
 
-  constructor(level: number, seed: number, fx: Fx = NOFX) {
+  constructor(level: number, seeds: (k: number) => number, fx: Fx = NOFX) {
     const geo = this.geo = geoOf(level);
     const spec = this.spec = geo.spec;
-    this.H = geo.H; this.DY = geo.DY; this.fx = fx; this.rng = new Rng(seed);
+    this.H = geo.H; this.DY = geo.DY; this.fx = fx; this.seeds = seeds; this.rng = new Rng(seeds(0));
     this.fl = { x: 134, y: 735 + geo.DY, rest: 0.52, up: -0.52, ang: 0.52, w: 0, on: false, len: LEN };
     this.fr = { x: 294, y: 735 + geo.DY, rest: Math.PI - 0.52, up: Math.PI + 0.52, ang: Math.PI - 0.52, w: 0, on: false, len: LEN };
     // dodatkowe łapy wyżej na stole (te same klawisze co dolne)
@@ -515,6 +520,12 @@ export class Sim {
 
   /** Jeden stały krok symulacji (TICK) */
   step() {
+    this.stepInner();
+    // nowy odcinek losowania (jak w pinball_sim.rs)
+    if (this.phase !== 'over' && this.tick % SEG === 0) this.rng = new Rng(this.seeds(this.tick / SEG));
+  }
+
+  private stepInner() {
     const dt = TICK;
     this.tick++;
     this.time += dt;

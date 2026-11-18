@@ -730,6 +730,38 @@
    "off": true,
    "desc": "Karta z jasnego dębu: proste słoje, wypalone napisy, panele wyfrezowane w desce i ramka z ciemnego drewna."
   },
+  "banknote50": {
+   "name": "Banknot 50 zł",
+   "chance": 0.005,
+   "mult": 5.0,
+   "off": true,
+   "extraSource": "piggy",
+   "desc": "Nagroda ze Skarbonki dla każdego, kto do niej wpłacił: karta jak niebieski banknot 50 zł. W podglądzie pozioma."
+  },
+  "banknote100": {
+   "name": "Banknot 100 zł",
+   "chance": 0.005,
+   "mult": 8.0,
+   "off": true,
+   "extraSource": "piggy",
+   "desc": "Nagroda za 3. miejsce w Skarbonce: karta jak zielony banknot 100 zł. W podglądzie pozioma."
+  },
+  "banknote200": {
+   "name": "Banknot 200 zł",
+   "chance": 0.005,
+   "mult": 12.0,
+   "off": true,
+   "extraSource": "piggy",
+   "desc": "Nagroda za 2. miejsce w Skarbonce: karta jak złocisty banknot 200 zł. W podglądzie pozioma."
+  },
+  "banknote500": {
+   "name": "Banknot 500 zł",
+   "chance": 0.005,
+   "mult": 20.0,
+   "off": true,
+   "extraSource": "piggy",
+   "desc": "Nagroda za 1. miejsce w Skarbonce: karta jak brązowo-fioletowy banknot 500 zł. W podglądzie pozioma."
+  },
   "dowod": {
    "name": "Dowód osobisty",
    "chance": 0.005,

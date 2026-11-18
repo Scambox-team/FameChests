@@ -1474,6 +1474,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     super::horses::horse_forget_user(&mut tx, uid).await?; // zakłady na wyścigi konne i postawione w nich karty
     sqlx::query("DELETE FROM user_counters WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM passport_stamps WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM piggy_contrib WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM passport_last WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM pinball_runs WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM user_achievements WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;

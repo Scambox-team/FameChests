@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { LiveSeeds, startLive } from '../games/liveSeeds';
+import { SEG } from './core3d';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { variantName } from '../../game/rules';
@@ -25,7 +27,7 @@ interface TurboCards { cardVariant: string; cardTiers: { score: number; rarity: 
 export function Snake3DPage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Snake3D | null>(null);
-  const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
+  const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start gry: ziarna odcinków, po końcu prosimy o nagrodę
   const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);
   const { data: look, refetch } = useQuery({ queryKey: ['snake3d-look'], queryFn: () => api<{ reward?: Reward; turbo?: TurboCards }>('/api/games/snake'), staleTime: 60_000 });
   const refetchRef = useRef(refetch);
@@ -44,18 +46,19 @@ export function Snake3DPage() {
         onStart: async () => {
           Sound.unlock();
           setWon(null);
-          ticket.current = false;
-          try {
-            const r = await api<{ seed: number }>('/api/games/snake/start', { turbo: true });
-            ticket.current = true;
-            return r.seed;
-          } catch { return undefined; /* gra bez nagrody */ }
+          ticket.current = null;
+          const { live } = await startLive('/api/games/snake/start', { turbo: true }, '/api/games/snake/commit', SEG);
+          if (live.online) ticket.current = live;
+          return live;
         },
         onOver: async ({ log, ticks }) => {
-          if (!ticket.current) return;
-          ticket.current = false;
+          const live = ticket.current;
+          ticket.current = null;
+          if (!live) return;
           try {
-            const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log, steps: ticks });   // serwer odtwarza grę i sam liczy kule
+            const rest = await live.rest(log);
+            if (!rest) return toast('Snake: połączenie z serwerem przerwane - ta gra jest bez nagrody', true);
+            const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log: rest, steps: ticks });   // serwer odtwarza grę i sam liczy kule
             applyState(r.state);
             setWon({ reward: r.reward, capped: r.capped, card: r.card });
             if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }

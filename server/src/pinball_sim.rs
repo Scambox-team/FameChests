@@ -1189,8 +1189,12 @@ pub const MAX_EVENTS: usize = 60_000;
 /// Najdłuższa gra (ticki): 60 minut
 pub const MAX_TICKS: u32 = 60 * 60 * 120;
 
-/// Odtwarza grę z ziarna i zapisu (`log` = naprzemiennie: tick, kod zdarzenia). None = zapis nieprawidłowy.
-pub fn replay(level: usize, seed: u32, log: &[u64]) -> Option<Outcome> {
+/// Ticków w odcinku losowania (`live.rs`; to samo `SEG` w core.ts) - 2 s gry
+pub const SEG: u32 = 240;
+
+/// Odtwarza grę z ziaren odcinków (`seeds`, po `SEG` ticków; gra, która doszła do odcinka bez ziarna, jest odrzucana) i zapisu
+/// (`log` = naprzemiennie: tick, kod zdarzenia). None = zapis nieprawidłowy.
+pub fn replay(level: usize, seeds: &[u32], log: &[u64]) -> Option<Outcome> {
     if !log.len().is_multiple_of(2) || log.len() / 2 > MAX_EVENTS {
         return None;
     }
@@ -1204,7 +1208,7 @@ pub fn replay(level: usize, seed: u32, log: &[u64]) -> Option<Outcome> {
         last = t;
         events.push((t as u32, Input::from_code(u32::try_from(c).ok()?)?));
     }
-    let mut sim = Sim::new(level, seed)?;
+    let mut sim = Sim::new(level, *seeds.first()?)?;
     sim.start();
     let mut idx = 0;
     while sim.tick < MAX_TICKS {
@@ -1215,6 +1219,10 @@ pub fn replay(level: usize, seed: u32, log: &[u64]) -> Option<Outcome> {
         sim.step();
         if sim.phase == Phase::Over {
             return Some(Outcome { score: sim.score as i64, ticks: sim.tick, over: true });
+        }
+        // nowy odcinek losowania (jak koniec `step` w core.ts)
+        if sim.tick.is_multiple_of(SEG) {
+            sim.rng = Rng(*seeds.get((sim.tick / SEG) as usize)?);
         }
     }
     Some(Outcome { score: sim.score as i64, ticks: sim.tick, over: false })
@@ -1245,10 +1253,11 @@ mod tests {
 
     #[test]
     fn invalid_logs_are_rejected() {
-        assert!(replay(1, 1, &[0]).is_none());
-        assert!(replay(1, 1, &[5, 0, 3, 1]).is_none());
-        assert!(replay(1, 1, &[0, 99]).is_none());
-        assert!(replay(9, 1, &[]).is_none());
+        let s = crate::live::test_seeds(1, 4);
+        assert!(replay(1, &s, &[0]).is_none());
+        assert!(replay(1, &s, &[5, 0, 3, 1]).is_none());
+        assert!(replay(1, &s, &[0, 99]).is_none());
+        assert!(replay(9, &s, &[]).is_none());
     }
 
     /// Nagrania botów z przeglądarki (rdzeń core.ts) muszą dać na serwerze dokładnie ten sam wynik i tę samą długość gry
@@ -1265,7 +1274,7 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/pinball_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.level, f.seed, &f.log).expect("zapis");
+            let o = replay(f.level, &crate::live::test_seeds(f.seed, u64::from(f.ticks / SEG) + 1), &f.log).expect("zapis");
             assert!(o.over, "poziom {}: gra nie doszła do końca", f.level);
             assert_eq!((o.score, o.ticks), (f.score, f.ticks), "poziom {} seed {}", f.level, f.seed);
         }

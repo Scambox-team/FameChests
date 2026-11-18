@@ -958,13 +958,16 @@ impl Sim {
     }
 }
 
-/// Odtwarza bieg: `log` = naprzemiennie numer kroku i kod klawisza (0/1 lewo w dół / w górę, 2/3 prawo, 4/5 skok).
-/// None = zapis nie do przyjęcia.
-pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
+/// kroków w odcinku losowania (`live.rs`; to samo `SEG` w runCore.ts) - 2 s biegu
+pub const SEG: u64 = 240;
+
+/// Odtwarza bieg: `seeds` = ziarna odcinków po `SEG` kroków, `log` = naprzemiennie numer kroku i kod klawisza (0/1 lewo w dół /
+/// w górę, 2/3 prawo, 4/5 skok). None = zapis nie do przyjęcia (także bieg, który doszedł do odcinka bez ziarna).
+pub fn replay(seeds: &[u32], log: &[u64]) -> Option<Outcome> {
     if !log.len().is_multiple_of(2) || log.len() / 2 > MAX_EVENTS {
         return None;
     }
-    let mut s = Sim::new(seed);
+    let mut s = Sim::new(*seeds.first()?);
     s.ensure_rows();
     let (mut ticks, mut ev) = (0u64, 0usize);
     while ticks < MAX_TICKS {
@@ -991,6 +994,9 @@ pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
         if s.dead {
             return Some(Outcome { dist: s.dist, ticks });
         }
+        if ticks.is_multiple_of(SEG) {
+            s.rng = Rng::new(*seeds.get((ticks / SEG) as usize)?);
+        }
     }
     Some(Outcome { dist: s.dist, ticks })
 }
@@ -1012,25 +1018,19 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/run_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.seed, &f.log).expect("zapis");
+            let o = replay(&crate::live::test_seeds(f.seed, f.ticks / SEG + 1), &f.log).expect("zapis");
             assert_eq!((o.dist.to_bits(), o.ticks), (f.dist.to_bits(), f.ticks), "ziarno {}: {} vs {}", f.seed, o.dist, f.dist);
         }
     }
 
     #[test]
-    fn recording_from_the_real_scene_replays_the_same() {
-        // nagranie z prawdziwej sceny (three/runScene.ts): skręt w prawo i skok w 16. kroku, bieg skończony po 841 krokach na 114 m
-        let o = replay(12345, &[16, 2, 16, 3, 16, 4, 16, 5]).unwrap();
-        assert_eq!((o.ticks, o.dist.floor() as i64), (841, 114));
-    }
-
-    #[test]
     fn bad_logs_are_rejected() {
-        assert!(replay(1, &[5]).is_none());
-        assert!(replay(1, &[10, 0, 3, 1]).is_none());
-        assert!(replay(1, &[0, 9]).is_none());
+        let seeds = crate::live::test_seeds(1, 400);
+        assert!(replay(&seeds, &[5]).is_none());
+        assert!(replay(&seeds, &[10, 0, 3, 1]).is_none());
+        assert!(replay(&seeds, &[0, 9]).is_none());
         // bez klawiszy biegacz w końcu wpada w dziurę albo przeszkodę
-        let o = replay(7, &[]).unwrap();
+        let o = replay(&crate::live::test_seeds(7, 400), &[]).unwrap();
         assert!(o.ticks < MAX_TICKS && o.dist > 0.0);
     }
 }

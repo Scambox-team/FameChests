@@ -9,7 +9,7 @@ import { fmt, fmtNum } from '../../lib/format';
 import { UserLink } from '../../ui/UserLink';
 import { CrateArt } from '../crates/CrateArt';
 import { PatchNotes } from '../notices/Notices';
-import { QuestTile } from './QuestTile';
+import { QuestsTile } from '../quests/QuestsTile';
 import { EventsTile } from '../events/EventsTile';
 import s from './home.module.css';
 
@@ -24,7 +24,7 @@ export function HomePage() {
         <EventsTile />
         <CratesTile />
         <ArenaTile />
-        <QuestTile />
+        <QuestsTile />
         <Link to="/games" className={`${s.tile} ${s.games}`}>
           <div className={s.board} aria-hidden="true"><ChessKnight className={s.knight} strokeWidth={1.3} /></div>
           <div className={s.copy}>

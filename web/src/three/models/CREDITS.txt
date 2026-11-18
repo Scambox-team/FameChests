@@ -1,0 +1,2 @@
+piggybank.glb - "Piggy Bank" by CreativeTrio (poly.pizza/m/1KAexv0Erv), CC0 1.0. Uzyty w scenie skarbonki (piggyScene.ts).
+pig.glb - "Penny Pig" wygenerowany w Meshy (meshy.ai) na zlecenie wlasciciela projektu; tekstury zmniejszone do 1024 px. Zasady uzycia wg planu konta Meshy, z ktorego pobrano model (darmowy plan: CC BY 4.0 z uznaniem Meshy - sprawdzic przed publikacja).

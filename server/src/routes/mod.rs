@@ -24,6 +24,7 @@ pub mod aim;
 pub mod bot;
 pub mod game_rankings;
 pub mod quests;
+pub mod piggy;
 pub mod ctf;
 pub mod referral;
 pub mod reports;
@@ -303,14 +304,20 @@ pub fn router(st: AppState) -> Router {
         .route("/api/aim/finish", post(aim::aim_finish))
         .route("/api/games/snake", get(snake::snake_config))
         .route("/api/games/snake/start", post(snake::snake_start))
+        .route("/api/piggy", get(piggy::piggy_status))
+        .route("/api/piggy/hit", post(piggy::piggy_hit))
+        .route("/api/admin/quests/piggy", get(piggy::admin_piggy).post(piggy::admin_piggy_save))
+        .route("/api/games/snake/commit", post(snake::snake_commit))
         .route("/api/games/snake/finish", post(snake::snake_finish))
         .route("/api/admin/snake", post(snake::admin_snake_save))
         .route("/api/games/run", get(turbo_run::run_config))
         .route("/api/games/run/start", post(turbo_run::run_start))
+        .route("/api/games/run/commit", post(turbo_run::run_commit))
         .route("/api/games/run/finish", post(turbo_run::run_finish))
         .route("/api/admin/run", get(turbo_run::admin_run).post(turbo_run::admin_run_save))
         .route("/api/games/arcade/{name}", get(arcade::arcade_config))
         .route("/api/games/arcade/{name}/start", post(arcade::arcade_start))
+        .route("/api/games/arcade/{name}/commit", post(arcade::arcade_commit))
         .route("/api/games/arcade/{name}/finish", post(arcade::arcade_finish))
         .route("/api/admin/arcade/{name}", get(arcade::admin_arcade).post(arcade::admin_arcade_save))
         .route("/api/events", get(events::events_list))
@@ -318,6 +325,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/events", get(events::admin_events).post(events::admin_events_save))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
+        .route("/api/pinball/commit", post(pinball::pinball_commit))
         .route("/api/pinball/finish", post(pinball::pinball_finish))
         .route("/api/games/chess", get(chess::chess_lobby))
         .route("/api/games/chess/create", post(chess::chess_create))

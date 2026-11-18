@@ -95,6 +95,7 @@ export const Sound = (() => {
     page: ["page-1", "page-2", "page-3"], whoosh: ["card-slide-1", "card-slide-2", "card-slide-3", "card-slide-4"],
     move: ["chess-move-1", "chess-move-2", "chess-move-3"], notify: ["pluck"], dice: ["dice-shake"],
     // skrzynki (freesound.org)
+    pig: ["fs-pig-1.mp3", "fs-pig-2.mp3", "fs-pig-3.mp3", "fs-pig-4.mp3"],   // prawdziwe nagrania świń (freesound, CC0)
     open: ["fs-open-2.mp3"], tick: ["fs-tick.mp3"], land: ["fs-land.mp3"], deal: ["fs-deal.mp3", "fs-land.mp3"],
     rare: ["fs-rare.mp3"], epic: ["fs-epic.mp3"], mythic: ["fs-mythic.mp3"], charge: ["fs-charge.mp3"], boom: ["fs-boom.mp3"], stinger: ["fs-stinger.mp3"],
     gold: ["fs-gold.mp3"], ultra: ["fs-ultra.mp3"], secret: ["fs-secret.mp3"],
@@ -586,6 +587,27 @@ export const Sound = (() => {
       if (!enabled) return;
       const c = ac(), t = c.currentTime;
       warble(t, 0.5, 2600, 2900, { rate: 28, depth: 120, vol: 0.09, type: "sine" });
+    },
+    // świnka (skarbonka): chrumkanie (2-3 krótkie, rzężące pomruki), parsknięcie, kwik przy rozbiciu. Syntezator, bo darmowe
+    // nagrania chrumkania są na licencji z wymogiem podania autora albo bez jasnej licencji
+    oink(kind = "grunt") {
+      if (!enabled) return;
+      // prawdziwe nagranie świni (losowe z czterech, lekko zmieniona wysokość); syntezator tylko, gdy nagrania jeszcze się nie wczytały
+      if (kind !== "squeal" && sample("pig", { vol: 0.9, rate: 0.92 + Math.random() * 0.16 })) return;
+      const t = ac().currentTime;
+      if (kind === "squeal" && sample("pig", { vol: 0.9, rate: 1.25 })) { sample("pig", { vol: 0.8, rate: 1.1, delay: 0.14 }); sample("pig", { vol: 0.8, rate: 1.4, delay: 0.3 }); return; }
+      if (kind === "squeal") {
+        warble(t, 0.7, 1000, 1900, { rate: 13, depth: 170, vol: 0.09, type: "sawtooth" });
+        tone(1600, t + 0.38, 0.32, { type: "triangle", vol: 0.05, slideTo: 520 });
+        return;
+      }
+      const n = kind === "snort" ? 1 : 2 + (Math.random() < 0.5 ? 1 : 0);
+      for (let i = 0; i < n; i++) {
+        const s = t + i * 0.16, f = 100 + Math.random() * 35;
+        warble(s, kind === "snort" ? 0.2 : 0.13, f, f * 0.68, { rate: 32, depth: 18, vol: 0.14, type: "sawtooth" });
+        noise(s, 0.1, { vol: 0.11, freq: 420, q: 1.5 });
+        tone(f * 2.2, s, 0.08, { type: "triangle", vol: 0.04, slideTo: f });
+      }
     },
     // pinball (features/pinball): same syntezatory, krótkie, bo lecą co chwilę; p = wysokość / siła
     pin(kind, p = 1) {

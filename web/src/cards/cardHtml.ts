@@ -11,7 +11,7 @@ import { drawingVersions } from './drawingVersions';
 import { use3D } from '../three/support';
 import { warmFont } from '../styles/theme';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", banknote50: "💵 50 ZŁ", banknote100: "💵 100 ZŁ", banknote200: "💵 200 ZŁ", banknote500: "💵 500 ZŁ", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -266,6 +266,48 @@ function dowodCard(p) {
     <div class="id-sign"><small>PODPIS<em>/ SIGNATURE</em></small><i>${esc(p.name)}</i></div>
     <div class="id-can"><b>${String(cardValue(p.id)).padStart(6, "0")}</b><small>WARTOŚĆ<em>/ VALUE</em></small></div>
     <i class="id-water">KOLEKCJONERSKI</i>
+  </div>`;
+}
+// Banknoty (nagrody Skarbonki, routes/piggy.rs): karta wzorowana na polskich banknotach 50 / 100 / 200 / 500 zł - nominał pionowo
+// po lewej na jasnym pasie, pas z nominałem u góry, duży portret w medalionie z imieniem po łuku, giloszowane tło, mikrodruk,
+// znak wodny, nitka zabezpieczająca, hologram (200 / 500), farba zmienna optycznie (OVI), prostokąt z mikrowzorem, numery
+// seryjne, podpisy, perforacja i znak dla niewidomych. Zamiast „Narodowy Bank Polski” i orła: „Narodowy Bank ScamBox” i tarcza SB
+// (karta ma przypominać banknot, nie udawać pieniądza). Jak Dowód: cała karta to warstwa .bn-card nad kartą, na pionowej karcie
+// obrócona o 90°, w podglądzie karta jest pozioma. .bn-card jest kontenerem (cqw = szerokość banknotu). Klasy bn-.
+const BN_WORDS = { 50: "PIĘĆDZIESIĄT ZŁOTYCH", 100: "STO ZŁOTYCH", 200: "DWIEŚCIE ZŁOTYCH", 500: "PIĘĆSET ZŁOTYCH" };
+const BN_DATE = { 50: "5 STYCZNIA 2026 r.", 100: "5 STYCZNIA 2026 r.", 200: "6 WRZEŚNIA 2026 r.", 500: "25 LUTEGO 2026 r." };
+function banknoteCard(p, denom) {
+  if (!p) return "";
+  const photo = imgUrl(p.id, "normal"), name = String(p.name).toUpperCase();
+  const initial = "S";
+  const arc = `bn-arc-${p.id}-${denom}`;
+  // imię po łuku medalionu: krótsze większą czcionką, długie mniejszą (łuk ma ok. 66 jednostek)
+  const fs = Math.max(3, Math.min(4.8, 62 / (name.length * 0.74))).toFixed(2);
+  // znak dla niewidomych: 50 romb, 100 krzyż, 200 trójkąt, 500 kreski
+  const blind = { 50: '<i class="bn-blind dia"></i>', 100: '<i class="bn-blind cross"></i>', 200: '<i class="bn-blind tri"></i>', 500: '<i class="bn-blind bars"><b></b><b></b><b></b><b></b></i>' }[denom];
+  const emblem = denom === 100 ? '<i class="bn-rosette"></i>' : denom === 500 ? '<i class="bn-shield"><b>SB</b></i>' : denom === 200 ? '<i class="bn-laurel"></i>' : '<i class="bn-crest big"><b>SB</b></i>';
+  const ovi = denom === 100 || denom === 500 ? '<i class="bn-ovi quatre"></i>' : `<i class="bn-ovi mono"><b>${initial}</b></i>`;
+  const micro = `${`SCAMBOX ${denom} ZŁ · NBS · `.repeat(12)}`;
+  return `<div class="vx-deco bn-card bn-${denom}">
+    <i class="bn-paper"></i><i class="bn-guil"></i><i class="bn-guil2"></i><i class="bn-lead"></i><i class="bn-flecks"></i>
+    <i class="bn-frame"></i>
+    <i class="bn-water"><img src="${photo}" alt="" loading="lazy" draggable="false"></i>
+    <b class="bn-big">${denom}</b><i class="bn-words">${BN_WORDS[denom]}</i>
+    <i class="bn-dots"></i><i class="bn-dots b"></i><i class="bn-ticks"></i><i class="bn-ticks b"></i>${blind}
+    ${denom === 50 ? "" : '<i class="bn-crest"><b>SB</b></i>'}${denom === 500 ? '<i class="bn-burst"></i>' : ""}
+    <div class="bn-bank">NARODOWY<br>BANK<br>SCAMBOX</div>
+    ${emblem}
+    ${denom >= 200 ? '<i class="bn-holo"></i>' : ""}
+    <div class="bn-band"><b>${denom}</b></div>
+    <i class="bn-micro">${micro}</i><i class="bn-micro b">${micro}</i>
+    <div class="bn-medal"><i class="bn-ring"></i><i class="bn-rays"></i><img src="${photo}" alt="" loading="lazy" draggable="false"><i class="bn-engrave"></i><i class="bn-fade"></i>
+      <svg class="bn-name" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="${arc}" d="M 18.5 81.5 A 44.5 44.5 0 0 1 18.5 18.5"/></defs><text style="font-size:${fs}px"><textPath href="#${arc}" startOffset="50%" text-anchor="middle">${esc(name)}</textPath></text></svg></div>
+    ${ovi}
+    <i class="bn-kc"></i><i class="bn-win"><b>${denom}</b></i>
+    <div class="bn-city"><b>SCAMBOX</b><br>${BN_DATE[denom]}</div>
+    <div class="bn-sign a"><small>PREZES</small><i>Mr. Scam Box</i></div>
+    <div class="bn-sign b"><small>GŁÓWNY<br>SKARBNIK</small><i>Skrzynkowski</i></div>
+    <i class="bn-strip"></i>
   </div>`;
 }
 // Przerysowania zdjęcia po wczytaniu: (img, proporcje, szerokość ekranowa) -> canvas. Blueprint: kontur białą kreską; Dolarowa:
@@ -1085,6 +1127,7 @@ export const VX_DECO = {
   // Kryształowy: iskry w losowych miejscach
   crystal: () => `<div class="vx-deco">${Array.from({ length: 12 }, () => `<i class="cry-spark" style="left:${vxN(3, 97)}%;top:${vxN(3, 97)}%;--s:${vxN(.5, 1.4, 2)};animation-delay:-${vxN(0, 4, 1)}s;animation-duration:${vxN(1.6, 3.4, 1)}s"></i>`).join("")}</div>`,
   dowod: p => dowodCard(p),
+  banknote50: p => banknoteCard(p, 50), banknote100: p => banknoteCard(p, 100), banknote200: p => banknoteCard(p, 200), banknote500: p => banknoteCard(p, 500),
   christmas: () => `<div class="vx-deco vx-clip"><i class="snw-layer a"></i><i class="snw-layer b"></i></div><div class="vx-deco">${xmLights(30)}</div>`,
   tree: () => `<div class="vx-deco vx-clip">${TRE_BRANCHES}</div><div class="vx-deco vx-clip">${treBalls(4, 3, 18, [4, 16])}${treBalls(4, 82, 97, [4, 16])}</div>`,
   gift: () => `<div class="vx-deco"><i class="gf-frame"></i>${GF_BOW("small")}</div>`,

@@ -101,6 +101,7 @@ function Game() {
           <Route path="/games/:tab" element={<ChessPage />} />
           <Route path="/games/:tab/:sub" element={<ChessPage />} />
           <Route path="/passport" element={<PassportPage />} />
+          <Route path="/quests" element={<QuestsPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
@@ -121,6 +122,7 @@ function Game() {
 const CasinoPage = lazy(() => import('../features/casino/CasinoPage').then(m => ({ default: m.CasinoPage })));
 const ChessPage = lazy(() => import('../features/chess/ChessPage').then(m => ({ default: m.ChessPage })));
 const ArenaPage = lazy(() => import('../features/arena/ArenaPage').then(m => ({ default: m.ArenaPage })));
+const QuestsPage = lazy(() => import('../features/quests/QuestsPage').then(m => ({ default: m.QuestsPage })));
 const PassportPage = lazy(() => import('../features/passport/PassportPage').then(m => ({ default: m.PassportPage })));
 const AdminApp = lazy(() => import('../features/admin/AdminApp'));
 const ADMIN_PATHS = ['/admin', '/variants', '/stickers', '/designer', '/mockups'];

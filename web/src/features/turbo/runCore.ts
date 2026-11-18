@@ -53,6 +53,8 @@ export class Rng {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 }
+/** kroków w odcinku losowania tunelu (`SEG` w run_sim.rs) - 2 s biegu */
+export const SEED_SEG = 240;
 export const LC = new Float32Array(N), LS = new Float32Array(N);
 for (let l = 0; l < N; l++) { LC[l] = Math.cos(l * DTH); LS[l] = Math.sin(l * DTH); }
 
@@ -62,6 +64,8 @@ const NOFX = new Proxy({}, { get: () => () => {} });
 export function createRunCore(fx = NOFX) {
   const F = new Proxy(fx, { get: (o, k) => o[k] || (() => {}) });
   let rng = new Rng(1);
+  /** ziarno odcinka `k` (po SEG kroków; features/games/liveSeeds.ts) i czy wolno zrobić krok (ziarno już jest) */
+  let seedOf = k => k, gate = _counter => true;
   const rand = (a, b) => b === undefined ? rng.next() * a : a + rng.next() * (b - a);
   const randi = (a, b) => Math.floor(rand(a, b + 1));
   const pick = a => a[Math.floor(rng.next() * a.length)];
@@ -283,9 +287,11 @@ export function createRunCore(fx = NOFX) {
   const itemX = (l, h) => (APO - h) * LS[l], itemY = (l, h) => -(APO - h) * LC[l];
   const flyers = [];
 
-  /** Start biegu z ziarnem tunelu (od serwera albo losowym) */
-  function start(seed) {
-    rng = new Rng(seed);
+  /** Start biegu: `seeds(k)` = ziarno odcinka tunelu `k` (od serwera albo losowe), `canStep(licznik)` = czy ziarno na następny
+   *  krok już jest (inaczej bieg czeka) */
+  function start(seeds, canStep = _c => true) {
+    seedOf = seeds; gate = canStep;
+    rng = new Rng(seeds(0));
     resetGen(false);
     Object.assign(G, { state: 'playing', dist: 0, jp: 0, speed: 9, score: 0, gems: 0, combo: 0, comboT: 0, mult: 1, maxCombo: 0, zone: 0, turbo: 0, shield: false,
       magnet: 0, x2: 0, inv: 0, shake: 0, deadT: 0, fallT: 0, camTh: 0, camH: 0, popAcc: 0, popT: 0, energy: 0, deathDist: 0 });
@@ -446,6 +452,8 @@ export function createRunCore(fx = NOFX) {
     ensureRows();
     run.tick++;
     if (G.state !== 'playing') return;
+    // nowy odcinek losowania tunelu (jak w run_sim.rs)
+    if (run.tick % SEED_SEG === 0) rng = new Rng(seedOf(run.tick / SEED_SEG));
     if (G.turbo > 0) G.turbo -= G.speed * dt;
     G.magnet -= dt; G.x2 -= dt; G.inv -= dt;
     // dalej tylko przeglądarka: punkty, combo i kryształy przyciągane magnesem
@@ -466,7 +474,10 @@ export function createRunCore(fx = NOFX) {
     }
     if (G.state === 'playing') {
       run.acc += dt;
-      while (run.acc >= TICK && G.state === 'playing') { run.acc -= TICK; tick(); }
+      while (run.acc >= TICK && G.state === 'playing') {
+        if (!gate(run.tick)) { run.acc = Math.min(run.acc, TICK); break; }   // czekamy na ziarno od serwera
+        run.acc -= TICK; tick();
+      }
     } else if (G.state === 'dying') {
       G.deadT += dt;
       if (G.cause === 'crash') G.speed *= Math.exp(-dt * 3.5);

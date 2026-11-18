@@ -1,7 +1,8 @@
 // Obrona Orbity: rysowanie na płótnie i pętla gry. Logikę (ruchy, trafienia, punkty) liczy wyłącznie rdzeń core.ts,
 // tu tylko stały krok 60 na sekundę, klawisze, efekty (iskry, napisy, gwiazdy) i dźwięki. Efekty używają Math.random -
 // nie wpływają na grę, którą serwer odtwarza z zapisu klawiszy.
-import { ACOLS, AH, AROWS, AW, FIRE, H, InvadersSim, LEFT, PH, PW, PY, RIGHT, SAUCER_H, SAUCER_W, SAUCER_Y, SC, SHIELD_COLS, SHIELD_ROWS, SHIELD_X, SHIELD_Y, TICK, W } from './core';
+import { LiveSeeds } from '../games/liveSeeds';
+import { SEG, ACOLS, AH, AROWS, AW, FIRE, H, InvadersSim, LEFT, PH, PW, PY, RIGHT, SAUCER_H, SAUCER_W, SAUCER_Y, SC, SHIELD_COLS, SHIELD_ROWS, SHIELD_X, SHIELD_Y, TICK, W } from './core';
 
 export type Phase = 'idle' | 'play' | 'pause' | 'over';
 export interface InvHud { phase: Phase; score: number; lives: number; wave: number; best: number; record: boolean }
@@ -109,6 +110,7 @@ export function createInvaders(canvas: HTMLCanvasElement, onHud: (h: InvHud) => 
   const sparks: { x: number; y: number; vx: number; vy: number; life: number; c: string }[] = [];
   const texts: { x: number; y: number; t: string; life: number; c: string }[] = [];
   let sim: InvadersSim | null = null;
+  let live = LiveSeeds.local(SEG);
   let phase: Phase = 'idle';
   let keys = 0;
   let acc = 0, last = performance.now(), raf = 0, shake = 0, flash = 0, banner = 0;
@@ -250,7 +252,11 @@ export function createInvaders(canvas: HTMLCanvasElement, onHud: (h: InvHud) => 
     if (phase === 'play' && sim) {
       acc += dt;
       let n = 0;
-      while (acc >= TICK && n < 6 && !sim.over) { sim.step(keys); acc -= TICK; n++; }
+      while (acc >= TICK && n < 6 && !sim.over) {
+        if (!live.canStep(sim.tick)) { acc = Math.min(acc, TICK); break; }   // czekamy na ziarno od serwera
+        sim.step(keys); acc -= TICK; n++;
+      }
+      live.pump(sim.tick, sim.log);
       if (n === 6) acc = 0;
       handleEvents();
       if (sim.over) finish();
@@ -265,8 +271,10 @@ export function createInvaders(canvas: HTMLCanvasElement, onHud: (h: InvHud) => 
     get phase() { return phase; },
     /** rdzeń bieżącej gry (do testów w trybie dev) */
     get sim() { return sim; },
-    start(seed?: number) {
-      sim = new InvadersSim(seed ?? (Math.random() * 2 ** 32) >>> 0);
+    /** `seeds` = ziarna odcinków od serwera (features/games/liveSeeds.ts); bez nich gra bez nagrody */
+    start(seeds?: LiveSeeds) {
+      live = seeds ?? LiveSeeds.local(SEG);
+      sim = new InvadersSim(live.seed);
       phase = 'play'; record = false; acc = 0; keys = 0; banner = 2; sparks.length = 0; texts.length = 0;
       last = performance.now();
       hud();

@@ -455,3 +455,31 @@ CREATE TABLE IF NOT EXISTS passport_last (
     country TEXT NOT NULL,
     at DOUBLE PRECISION NOT NULL
 );
+-- Skarbonka (routes/piggy.rs): wspólny quest na jedną dobę i wkłady graczy
+CREATE TABLE IF NOT EXISTS piggy_quests (
+    day TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    rarity TEXT NOT NULL,
+    target BIGINT NOT NULL,
+    total BIGINT NOT NULL DEFAULT 0,
+    starts_at DOUBLE PRECISION NOT NULL,
+    ends_at DOUBLE PRECISION NOT NULL,
+    filled_at DOUBLE PRECISION NOT NULL DEFAULT 0,
+    broken_at DOUBLE PRECISION NOT NULL DEFAULT 0,
+    hits BIGINT NOT NULL DEFAULT 0,
+    need_hits BIGINT NOT NULL DEFAULT 60,
+    min_breakers BIGINT NOT NULL DEFAULT 3
+);
+CREATE TABLE IF NOT EXISTS piggy_contrib (
+    day TEXT NOT NULL,
+    user_id BIGINT NOT NULL,
+    amount BIGINT NOT NULL DEFAULT 0,
+    hits BIGINT NOT NULL DEFAULT 0,
+    first_at DOUBLE PRECISION NOT NULL DEFAULT 0,
+    place INTEGER NOT NULL DEFAULT 0,
+    item_id BIGINT NOT NULL DEFAULT 0,
+    person_id TEXT NOT NULL DEFAULT '',
+    variant TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (day, user_id)
+);
+CREATE INDEX IF NOT EXISTS piggy_contrib_amount ON piggy_contrib (day, amount DESC);

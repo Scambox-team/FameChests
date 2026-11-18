@@ -9,7 +9,6 @@
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
-use std::time::Instant;
 
 use axum::extract::State;
 use serde::Deserialize;
@@ -24,7 +23,9 @@ use crate::auth::{Admin, Me};
 use crate::db::{lock_me, Conn};
 use crate::error::{bad, Res};
 use crate::game::{add_state, get_state, log_admin, set_state};
+use crate::live::Live;
 use crate::state::AppState;
+use super::snake::CommitRequest;
 
 /// Nagroda: (klucz w `state`, pole formularza, wartość domyślna, największa dozwolona)
 pub const REWARD: &[(&str, &str, i64, i64)] = &[
@@ -37,8 +38,8 @@ pub const REWARD: &[(&str, &str, i64, i64)] = &[
 /// Największy dystans jednej gry (ok. 5 minut najszybszego biegu)
 const MAX_DIST: i64 = 20_000;
 
-/// bilety biegów: gracz -> (chwila startu, ziarno tunelu)
-static TICKETS: LazyLock<Mutex<HashMap<i64, (Instant, u32)>>> = LazyLock::new(Default::default);
+/// bilety biegów: gracz -> ziarna tunelu wydawane odcinkami (`live.rs`)
+static TICKETS: LazyLock<Mutex<HashMap<i64, Live>>> = LazyLock::new(Default::default);
 
 struct Reward {
     per_100m: i64,
@@ -101,17 +102,32 @@ pub async fn run_config(State(st): State<AppState>, Me(me): Me) -> Res {
 
 pub async fn run_start(Me(me): Me) -> Res {
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
-    t.retain(|_, (at, _)| at.elapsed().as_secs() < 3 * 3600);
-    let seed: u32 = rand::random();
-    t.insert(me.id, (Instant::now(), seed));
-    ok(json!({"ok": true, "seed": seed}))
+    t.retain(|_, l| l.at.elapsed().as_secs() < 3 * 3600);
+    let live = Live::new(crate::run_sim::SEG, crate::run_sim::TICK, 2);
+    let (seeds, seg) = (live.released(), live.seg);
+    t.insert(me.id, live);
+    ok(json!({"ok": true, "seeds": seeds, "seg": seg}))
+}
+
+/// W trakcie biegu: zatwierdza zapis do początku odcinka i wydaje kolejne ziarna tunelu (`live.rs`)
+pub async fn run_commit(Me(me): Me, JsonBody(req): JsonBody<CommitRequest>) -> Res {
+    let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(live) = t.get_mut(&me.id) else { return bad("Gra nie została rozpoczęta") };
+    match live.commit(req.upto, &req.log) {
+        Ok(seeds) => ok(json!({"seeds": seeds})),
+        Err(why) => {
+            tracing::warn!(user = me.id, why, "run: odrzucony odcinek biegu");
+            t.remove(&me.id);
+            bad("Nieprawidłowy zapis gry")
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct FinishRequest {
-    /// zapis biegu: naprzemiennie numer kroku i kod klawisza (`INPUTS` w runCore.ts)
-    log: Vec<u64>,
+    /// reszta zapisu biegu po ostatnim zatwierdzonym odcinku: naprzemiennie numer kroku i kod klawisza (`INPUTS` w runCore.ts)
+    log: Vec<i64>,
     /// liczba kroków według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
     ticks: u64,
 }
@@ -119,10 +135,15 @@ pub struct FinishRequest {
 /// Koniec gry: grosze za dystans (w limicie gry i dnia). Bilet jest jednorazowy.
 pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<FinishRequest>) -> Res {
     let started = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&me.id);
-    let Some((started, seed)) = started else { return bad("Gra nie została rozpoczęta") };
-    // serwer odtwarza bieg z ziarna i zapisu klawiszy (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy dystans
-    let log = req.log;
-    let outcome = tokio::task::spawn_blocking(move || crate::run_sim::replay(seed, &log)).await.ok().flatten();
+    let Some(live) = started else { return bad("Gra nie została rozpoczęta") };
+    let started = live.at;
+    let Some((log, seeds)) = live.finish(&req.log) else { return bad("Nieprawidłowy zapis gry") };
+    if log.iter().any(|v| *v < 0) {
+        return bad("Nieprawidłowy zapis gry");
+    }
+    let log: Vec<u64> = log.into_iter().map(|v| v as u64).collect();
+    // serwer odtwarza bieg z ziaren i zapisu klawiszy (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy dystans
+    let outcome = tokio::task::spawn_blocking(move || crate::run_sim::replay(&seeds, &log)).await.ok().flatten();
     let Some(o) = outcome else { return bad("Nieprawidłowy zapis gry") };
     if o.ticks != req.ticks {
         tracing::warn!(user = me.id, claimed = req.ticks, ticks = o.ticks, "run: przeglądarka i serwer policzyły różną długość biegu");
@@ -144,6 +165,7 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
         set_state(&mut tx, me.id, "run_today", earned + reward).await?;
     }
     let card = turbo_card(&mut tx, &st.cat(), &me, &g().turbo.run_tiers, distance).await?;
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({"distance": distance, "reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "card": card, "state": state}))

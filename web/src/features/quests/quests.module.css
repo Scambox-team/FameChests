@@ -1,0 +1,124 @@
+/* Zakładka Questy (QuestsPage.tsx), Skarbonka (Piggy.tsx) i kafelek na stronie startowej (QuestsTile.tsx) */
+.page { display: grid; gap: var(--gap); }
+
+/* ---------- Skarbonka */
+.piggy { position: relative; overflow: hidden; isolation: isolate; display: grid; gap: 18px; padding: 22px; border-radius: var(--radius);
+  background: radial-gradient(60% 70% at 25% 35%, color-mix(in srgb, #ff7aa8 22%, transparent), transparent 70%),
+    radial-gradient(50% 60% at 85% 10%, color-mix(in srgb, var(--hue) 18%, transparent), transparent 70%), var(--surface);
+  border: 1px solid var(--rule); }
+.piggy.full { background: radial-gradient(60% 70% at 25% 35%, color-mix(in srgb, #ffd166 30%, transparent), transparent 70%),
+    radial-gradient(50% 60% at 85% 10%, color-mix(in srgb, #ff7aa8 22%, transparent), transparent 70%), var(--surface); }
+.off { gap: 8px; }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+.timer { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.timer b { color: var(--text); font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: center; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.stage { position: relative; display: grid; place-items: center; min-height: 380px; padding: 0; border: 0; border-radius: var(--radius-m); cursor: pointer;
+  background: radial-gradient(closest-side at 50% 62%, #ffffff12, transparent); color: inherit; font: inherit; }
+.stage:disabled { cursor: default; }
+.stage:focus-visible { outline: 2px solid var(--hue); outline-offset: 3px; }
+.full .stage { cursor: crosshair; }
+.canvas { width: 100%; height: 380px; display: block; }
+.hint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; max-width: 92%;
+  padding: 6px 12px; border-radius: 999px; background: #000a; color: #fff; font-size: 13px; font-weight: 600; text-align: center; pointer-events: none; }
+.full .hint { background: #ffd166; color: #2a1a00; animation: hintPulse 1.2s ease-in-out infinite; }
+@keyframes hintPulse { 50% { transform: translateX(-50%) scale(1.05); } }
+
+.info { display: grid; gap: 12px; align-content: start; }
+.title { margin: 0; font: 800 clamp(26px, 3vw, 38px)/1.05 var(--display); letter-spacing: -.02em; }
+.lead { margin: 0; color: var(--muted); line-height: 1.45; }
+.amounts { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.amounts b { font: 800 26px/1 var(--display); font-variant-numeric: tabular-nums; }
+.amounts span { color: var(--muted); }
+.people { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 14px; }
+
+/* pasek podzielony na graczy */
+.bar { position: relative; height: 26px; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent);
+  box-shadow: inset 0 2px 6px #0006; }
+.barSmall { height: 10px; margin-top: 4px; }
+.barFill { position: absolute; inset: 0; display: flex; border-radius: inherit; overflow: hidden; }
+.barFill > i { cursor: default; }
+.barFill > i:hover, .barFill > i:focus-visible { filter: brightness(1.2); outline: none; }
+.tip { position: absolute; bottom: calc(100% + 10px); transform: translateX(-50%); z-index: 5; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center;
+  min-width: 190px; max-width: 280px; padding: 8px 12px; border-radius: var(--radius-s); background: #0c0a0d; border: 1px solid var(--rule); box-shadow: 0 8px 22px #000a; color: #fff; font-size: 13px; pointer-events: none; }
+.tip::after { content: ""; position: absolute; left: 50%; top: 100%; width: 10px; height: 10px; background: #0c0a0d; border: 1px solid var(--rule); border-top: 0; border-left: 0; transform: translate(-50%, -5px) rotate(45deg); }
+.tip b { overflow-wrap: anywhere; }
+.tip > span { grid-column: 1 / -1; color: #c9c3cc; font-variant-numeric: tabular-nums; }
+.tipDot { width: 10px; height: 10px; border-radius: 50%; }
+.barFill > i { height: 100%; flex: none; box-shadow: inset -1px 0 0 #0003; transition: width .6s cubic-bezier(.2, .8, .2, 1); position: relative; }
+.barFill > i.mine { outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
+.barFill > i::after { content: ""; position: absolute; inset: 0 0 50%; background: linear-gradient(#fff6, #fff0); }
+.restShare { background: repeating-linear-gradient(45deg, #ffffff40 0 6px, #ffffff20 6px 12px); }
+.barPct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000; font-variant-numeric: tabular-nums; }
+
+/* podium */
+.podium { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.podium li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "m n v" "m p p"; column-gap: 10px; align-items: center;
+  padding: 8px 12px; border-radius: var(--radius-s); background: var(--raised); }
+.podium li > svg { grid-area: m; }
+.pName { grid-area: n; font-weight: 700; overflow-wrap: anywhere; }
+.pVal { grid-area: v; font-variant-numeric: tabular-nums; font-weight: 700; }
+.pPrize { grid-area: p; color: var(--muted); font-size: 12.5px; }
+.emptyPlace { opacity: .55; }
+.me { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--muted); }
+.me b { color: var(--text); }
+
+.myReward { display: flex; gap: 14px; align-items: center; padding: 10px; border-radius: var(--radius-m); background: color-mix(in srgb, #ffd166 14%, var(--raised)); }
+.myReward p { margin: 0; display: flex; gap: 6px; align-items: flex-start; }
+.rewardCard { flex: none; width: 90px; padding: 0; border: 0; background: none; cursor: zoom-in; }
+
+.prizes { display: grid; gap: 10px; }
+.prizes h3 { margin: 0; font: 700 17px/1.2 var(--display); }
+.prizeRow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 620px) { .prizeRow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.prize { margin: 0; display: grid; gap: 6px; justify-items: center; text-align: center; font-size: 13px; color: var(--muted); }
+.prizeCard { width: min(130px, 100%); padding: 0; border: 0; background: none; cursor: zoom-in; transition: transform .2s; }
+.prizeCard:hover { transform: translateY(-4px); }
+.prev { margin: 0; color: var(--muted); font-size: 14px; border-top: 1px solid var(--rule); padding-top: 12px; }
+
+/* płaska świnka (bez WebGL) */
+.flatPig { width: min(420px, 100%); height: auto; overflow: visible; }
+.wiggle { animation: pigWiggle .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes pigWiggle { 20% { transform: rotate(-7deg) scale(1.06, .92); } 45% { transform: rotate(5deg) scale(.96, 1.05); } 70% { transform: rotate(-2deg); } }
+.flatBurst { position: relative; width: 10px; height: 10px; }
+.flatBurst i { position: absolute; width: 14px; height: 10px; border-radius: 3px; background: #f4a3bf; animation: shard 1.2s ease-out forwards;
+  transform: rotate(var(--a)) translateX(0); }
+.flatBurst i:nth-child(3n) { background: #e5b94a; border-radius: 50%; width: 12px; height: 12px; }
+@keyframes shard { 0% { opacity: 1; } to { transform: rotate(var(--a)) translateX(var(--d)) translateY(60px); opacity: .9; } }
+
+/* ---------- kafelek na stronie startowej */
+.tile { grid-column: span 4; min-height: 460px;
+  background: radial-gradient(70% 55% at 50% 28%, color-mix(in srgb, #ff7aa8 20%, transparent), transparent 70%), linear-gradient(#17141a, #0f0d10); }
+.tileArt { position: absolute; inset: 0 0 auto; height: 38%; display: grid; place-items: center; z-index: -1; }
+.tilePig { width: 92px; height: 92px; color: #ff9cc0; filter: drop-shadow(0 10px 22px #ff7aa855); transition: transform .3s; }
+a.tile:hover .tilePig { transform: translateY(-6px) rotate(-6deg); }
+.tilePoster { width: 84px; transform: rotate(-3deg); filter: drop-shadow(0 10px 18px #000a); }
+
+@media (prefers-reduced-motion: reduce) {
+  .full .hint { animation: none; }
+  .wiggle, .flatBurst i { animation: none; }
+}
+
+/* ---------- kafelki w zakładce Questy (jak na stronie startowej) */
+.wide { grid-column: 1 / -1; }
+.prizeTile { grid-column: span 4; min-height: 400px; justify-content: flex-start; gap: 12px;
+  background: radial-gradient(70% 50% at 50% 0%, color-mix(in srgb, #ffd166 16%, transparent), transparent 70%), linear-gradient(#17141a, #0f0d10); }
+.tileTitle { margin: 0; font: 800 26px/1.05 var(--display); letter-spacing: -.02em; }
+.prizeTile .prizeRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.prizeTile .prizeCard { width: min(150px, 100%); }
+.qTile { }
+@media (max-width: 1260px) { .prizeTile { grid-column: span 12; } .prizeTile .prizeRow { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .prizeTile .prizeRow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Skarbonka w kafelku na stronie startowej */
+.tilePiggy { padding-top: 8px; justify-content: flex-start; gap: 8px; }
+.tileStage { position: relative; flex: 1 1 auto; min-height: 250px; margin: 0 -22px; }
+.compact { position: absolute; inset: 0; width: 100%; min-height: 0; background: none; }
+.compact .canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.compact .hint { bottom: 6px; font-size: 12px; }
+.fCoin { background: #e5b94a !important; border-radius: 50% !important; width: 12px !important; height: 12px !important; }
+.fNote { background: #5f8f55 !important; width: 20px !important; height: 10px !important; }
+@media (max-width: 1260px) { .tile { grid-column: span 12; } }

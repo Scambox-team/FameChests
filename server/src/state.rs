@@ -14,6 +14,18 @@ use crate::catalog::Catalog;
 use crate::config::Config;
 use crate::images::Images;
 
+/// Katalog dla miejsc bez dostępu do `AppState` (np. wycena kart w licznikach kasyna); ustawiany raz przy starcie
+static CATALOG: std::sync::OnceLock<Arc<ArcSwap<Catalog>>> = std::sync::OnceLock::new();
+
+pub fn set_global_catalog(c: Arc<ArcSwap<Catalog>>) {
+    let _ = CATALOG.set(c);
+}
+
+/// Bieżący katalog (None przed startem serwera, np. w testach)
+pub fn global_catalog() -> Option<Arc<Catalog>> {
+    CATALOG.get().map(|c| c.load_full())
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,

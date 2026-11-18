@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Coins, Pause, Play } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { LiveSeeds, startLive } from '../games/liveSeeds';
+import { SEG } from './core';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { applyState, syncInventory } from '../../game/session';
@@ -32,7 +34,7 @@ export function SnakePage() {
   const { data: look, refetch } = useQuery({ queryKey: ['snake-look'], queryFn: () => api<SnakeLook>('/api/games/snake'), staleTime: 60_000 });
   const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);   // nagroda za ostatnią grę
   const sounds = useRef<HTMLAudioElement[]>([]);   // dźwięki jabłka od admina (gra losuje jeden)
-  const ticket = useRef(false);   // serwer przyjął start gry: po końcu prosimy o nagrodę
+  const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start gry: ziarna odcinków, po końcu prosimy o nagrodę
 
   useEffect(() => {
     sounds.current = SKIN ? [] : (look?.sounds ?? []).map(s => { const a = new Audio(s.url); a.preload = 'auto'; return a; });
@@ -49,11 +51,15 @@ export function SnakePage() {
     const over = async (rec: boolean, score: number) => {
       Sound.snake('over');
       if (rec) Sound.snake('best');
-      if (!ticket.current) return;
-      ticket.current = false;
+      const live = ticket.current;
+      ticket.current = null;
+      if (!live) return;
       try {
-        const run = game.current?.getRun();   // serwer odtwarza grę z ziarna i tego zapisu, sam liczy jabłka
-        const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log: run?.log ?? [], steps: run?.steps ?? 0 });
+        // serwer odtwarza grę z ziaren i zapisu (część zatwierdził już w trakcie gry), sam liczy jabłka
+        const run = game.current?.getRun();
+        const log = await live.rest(run?.log ?? []);
+        if (!log) return toast('Snake: połączenie z serwerem przerwane - ta gra jest bez nagrody', true);
+        const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/snake/finish', { log, steps: run?.steps ?? 0 });
         applyState(r.state);
         setWon({ reward: r.reward, capped: r.capped, card: r.card });
         if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
@@ -112,10 +118,10 @@ export function SnakePage() {
   const start = async () => {
     Sound.unlock(); Sound.snake('start');
     setWon(null);
-    ticket.current = false;
-    let seed: number | undefined;
-    try { seed = (await api<{ seed: number }>('/api/games/snake/start', { cards: true })).seed; ticket.current = true; } catch { /* gra bez nagrody */ }
-    game.current?.start(seed); canvas.current?.focus();
+    ticket.current = null;
+    const { live } = await startLive('/api/games/snake/start', { cards: true }, '/api/games/snake/commit', SEG);
+    if (live.online) ticket.current = live;
+    game.current?.start(live); canvas.current?.focus();
   };
   const rw = look?.reward;
   const phase = hud?.phase ?? 'idle';

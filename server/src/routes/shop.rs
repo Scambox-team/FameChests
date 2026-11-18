@@ -310,6 +310,7 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
     let discovered = note_drops(&mut tx, &cx, &drops_of(&drops), "drop").await?;
     let persons: Vec<String> = drops.iter().map(|d| d.person.clone()).collect();
     crate::achievements::count_open(&mut tx, cx.uid(), &cr.id, req.count, &persons).await?;
+    super::piggy::add(&mut tx, cx.uid(), super::piggy::Ev::Crates(cr.price * req.count)).await?;
     let state = get_state(&mut tx, cx.uid()).await?;
     let chests = get_chests(&mut tx, &cx.cat, cx.uid()).await?;
     tx.commit().await?;

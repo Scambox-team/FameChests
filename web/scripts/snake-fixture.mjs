@@ -12,12 +12,15 @@ const src = join(here, '..', 'src', 'features');
 const fixtures = join(here, '..', '..', 'server', 'tests', 'fixtures');
 const lcg = s => { let r = s >>> 0; return () => { r = (Math.imul(r, 1664525) + 1013904223) >>> 0; return r / 4294967296; }; };
 
+// ziarna odcinków (to samo co segSeed w features/games/liveSeeds.ts i live::test_seeds w Rust)
+const segSeeds = base => k => { let a = (base ^ Math.imul(k, 0x9E3779B9)) | 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return (((t ^ (t >>> 14)) >>> 0) / 4294967296 * 4294967296) >>> 0; };
+
 // ---------------------------------------------------------------- Snake 2D: bot idzie do jabłka, unika ścian i ogona
 {
   const { SnakeSim, DIRS, VEC, COLS, ROWS } = await import(pathToFileURL(join(src, 'snake', 'core.ts')).href);
   const out = [];
   for (const seed of [1, 2, 7, 4242, 987654321]) {
-    const sim = new SnakeSim(seed), rnd = lcg(seed);
+    const sim = new SnakeSim(segSeeds(seed)), rnd = lcg(seed);
     while (!sim.over && sim.steps < 20000) {
       const h = sim.snake[0], body = sim.snake.slice(0, -1);
       const safe = d => { const v = VEC[d], x = h.x + v.x, y = h.y + v.y; return x >= 0 && y >= 0 && x < COLS && y < ROWS && !body.some(s => s.x === x && s.y === y); };
@@ -42,7 +45,7 @@ const lcg = s => { let r = s >>> 0; return () => { r = (Math.imul(r, 1664525) + 
   const { Snake3DSim, N } = await import(pathToFileURL(join(src, 'snake', 'core3d.ts')).href);
   const out = [];
   for (const seed of [1, 3, 99, 31337, 2024001]) {
-    const sim = new Snake3DSim(seed), rnd = lcg(seed);
+    const sim = new Snake3DSim(segSeeds(seed)), rnd = lcg(seed);
     const free = (d) => { const h = sim.cells[0], x = h.x + d.x, z = h.z + d.z; return x >= 0 && z >= 0 && x < N && z < N && !sim.cells.slice(0, -1).some(c => c.x === x && c.z === z); };
     const turned = t => t > 0 ? { x: -sim.exitDir.z, z: sim.exitDir.x } : { x: sim.exitDir.z, z: -sim.exitDir.x };
     while (!sim.over && sim.ticks < 20000) {
@@ -68,7 +71,7 @@ const lcg = s => { let r = s >>> 0; return () => { r = (Math.imul(r, 1664525) + 
   const out = [];
   for (const seed of [1, 5, 77, 123456, 3141592653]) {
     const core = createRunCore(), { G, P, getRow } = core, rnd = lcg(seed);
-    core.start(seed);
+    core.start(segSeeds(seed));
     let holdJump = 0;
     while (G.state === 'playing' && core.run.tick < 120 * 60 * 4) {
       const lane = mod(jround(P.th / DTH), N), j = Math.floor(G.dist / TL);
@@ -83,7 +86,8 @@ const lcg = s => { let r = s >>> 0; return () => { r = (Math.imul(r, 1664525) + 
       if (holdJump > 0 && --holdJump === 0) core.setKey('jump', false);
       core.tick();
     }
-    out.push({ seed, log: core.run.log, dist: G.deathDist || G.dist, ticks: core.run.tick });
+    // tylko biegi zakończone upadkiem (serwer odtwarza bieg do końca)
+    if (G.state !== 'playing') out.push({ seed, log: core.run.log, dist: G.deathDist || G.dist, ticks: core.run.tick });
   }
   writeFileSync(join(fixtures, 'run_replays.json'), JSON.stringify(out) + '\n');
   console.log('run 3D:', out.map(o => `${o.seed}: ${Math.floor(o.dist)} m / ${o.ticks} kroków`).join(', '));

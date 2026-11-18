@@ -6,6 +6,8 @@
 export const COLS = 20, ROWS = 20;
 /** czas kroku: krótszy o FASTER ms za każde jabłko, najkrócej MIN_MS */
 export const START_MS = 140, MIN_MS = 65, FASTER = 3;
+/** kroków w odcinku losowania: każdy odcinek ma własne ziarno od serwera (features/games/liveSeeds.ts, `SEG` w snake_sim.rs) */
+export const SEG = 16;
 export type P = { x: number; y: number };
 export type Dir = 'up' | 'down' | 'left' | 'right';
 /** kody kierunków w zapisie gry */
@@ -37,9 +39,11 @@ export class SnakeSim {
   over = false;
   log: number[] = [];
   private rng: Rng;
+  private seeds: (k: number) => number;
 
-  constructor(seed: number) {
-    this.rng = new Rng(seed);
+  /** `seeds(k)` = ziarno odcinka `k` */
+  constructor(seeds: (k: number) => number) {
+    this.seeds = seeds; this.rng = new Rng(seeds(0));
     const y = Math.floor(ROWS / 2);
     this.snake = [{ x: 6, y }, { x: 5, y }, { x: 4, y }];
     this.placeApple();
@@ -67,9 +71,16 @@ export class SnakeSim {
       this.stepMs = Math.max(MIN_MS, this.stepMs - FASTER);
       this.placeApple();
       if (this.apple.x < 0) { this.over = true; return 'over'; }   // cała plansza zajęta
+      this.nextSeg();
       return 'eat';
     }
     this.snake.pop();
+    this.nextSeg();
     return 'move';
+  }
+
+  /** Nowy odcinek losowania po kroku (jak w snake_sim.rs) */
+  private nextSeg() {
+    if (this.steps % SEG === 0) this.rng = new Rng(this.seeds(this.steps / SEG));
   }
 }

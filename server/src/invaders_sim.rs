@@ -402,13 +402,18 @@ impl Sim {
     }
 }
 
+/// kroków w odcinku losowania (`live.rs`; to samo `SEG` w core.ts) - 2 s gry
+pub const SEG: u64 = 120;
+
 /// Odtwarza grę: `log` = naprzemiennie numer kroku i maska klawiszy (bity: 1 lewo, 2 prawo, 4 strzał), `ticks` = ile kroków
 /// zrobiła przeglądarka (gra kończy się wcześniej, jeśli statek zginął). None = zapis nie do przyjęcia.
-pub fn replay(seed: u32, log: &[u64], ticks: u64) -> Option<Outcome> {
+///
+/// `seeds` = ziarna odcinków po `SEG` kroków (`live.rs`); gra, która doszła do odcinka bez ziarna, jest odrzucana.
+pub fn replay(seeds: &[u32], log: &[u64], ticks: u64) -> Option<Outcome> {
     if !log.len().is_multiple_of(2) || log.len() / 2 > MAX_EVENTS || ticks > MAX_TICKS {
         return None;
     }
-    let mut sim = Sim::new(seed);
+    let mut sim = Sim::new(*seeds.first()?);
     let (mut ev, mut mask) = (0, 0u64);
     while !sim.over && sim.tick < ticks {
         while ev < log.len() && log[ev] == sim.tick {
@@ -422,6 +427,10 @@ pub fn replay(seed: u32, log: &[u64], ticks: u64) -> Option<Outcome> {
             return None;
         }
         sim.step(mask);
+        // nowy odcinek losowania (jak koniec `step` w core.ts)
+        if !sim.over && sim.tick.is_multiple_of(SEG) {
+            sim.rng = Rng::new(*seeds.get((sim.tick / SEG) as usize)?);
+        }
     }
     // zmiany klawiszy po końcu gry: zapis się nie zgadza
     if ev < log.len() {
@@ -448,19 +457,22 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/invaders_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.seed, &f.log, f.ticks).expect("zapis");
+            let o = replay(&crate::live::test_seeds(f.seed, f.ticks / SEG + 1), &f.log, f.ticks).expect("zapis");
             assert_eq!((o.score, o.ticks, o.wave), (f.score, f.ticks, f.wave), "ziarno {}", f.seed);
         }
     }
 
     #[test]
     fn bad_logs_are_rejected() {
-        assert!(replay(1, &[5], 100).is_none());
-        assert!(replay(1, &[3, 9], 100).is_none());
-        assert!(replay(1, &[10, 1, 5, 2], 100).is_none());
+        let seeds = crate::live::test_seeds(1, 6);
+        assert!(replay(&seeds, &[5], 100).is_none());
+        assert!(replay(&seeds, &[3, 9], 100).is_none());
+        assert!(replay(&seeds, &[10, 1, 5, 2], 100).is_none());
         // klawisze po końcu zapisanej gry
-        assert!(replay(1, &[500, 1], 100).is_none());
-        let idle = replay(1, &[], 600).unwrap();
+        assert!(replay(&seeds, &[500, 1], 100).is_none());
+        let idle = replay(&seeds, &[], 600).unwrap();
         assert_eq!((idle.score, idle.ticks), (0, 600));
+        // gra dłuższa niż wydane ziarna
+        assert!(replay(&seeds[..2], &[], 600).is_none());
     }
 }

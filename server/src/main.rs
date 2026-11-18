@@ -31,6 +31,7 @@ mod mail_templates;
 mod mailer;
 mod aim_sim;
 mod det;
+mod live;
 mod snake_sim;
 mod snake3d_sim;
 mod run_sim;
@@ -144,6 +145,7 @@ async fn serve(cfg: Config) -> anyhow::Result<()> {
         online: Default::default(),
         backups: Arc::new(backup::Backups::new(&cfg).await),
     };
+    state::set_global_catalog(st.catalog.clone());
     if cfg.owner_ids.is_empty() {
         tracing::warn!("brak OWNER_IDS: nikt nie pobierze kopii bazy z panelu (automatyczne kopie i tak się robią)");
     }
