@@ -1,0 +1,120 @@
+/* Stary Pinball (engine.ts): wybór stołu i automat. Kolor wnosi każdy stół przez zmienne --pb-a / --pb-b (światła)
+   i --pb-dmd (wyświetlacz). Klasy z prefiksem opb-, żeby nie mieszały się z nowym Pinballem (features/pinball). */
+.opb { color: #fff; font-family: Rubik, sans-serif; }
+.opb-empty { padding: 30px; text-align: center; color: #aaa; }
+.opb-btn { padding: 9px 12px; border-radius: 10px; border: 1px solid #ffffff33; background: #ffffff14; color: #fff; cursor: pointer;
+  font: 700 14px Rubik, sans-serif; }
+.opb-btn:hover { background: #ffffff24; }
+.opb-th-neon { --pb-a: #ff3df2; --pb-b: #5ef2ff; --pb-bg: #1a0233; }
+.opb-th-casino { --pb-a: #ffd54a; --pb-b: #ff4040; --pb-bg: #0f6a3a; }
+.opb-th-space { --pb-a: #43d2ff; --pb-b: #ff8a3d; --pb-bg: #0a0f3a; }
+.opb-th-ghost { --pb-a: #9dff6a; --pb-b: #ff8a1f; --pb-bg: #2a1240; }
+.opb-th-dragon { --pb-a: #ff5a1a; --pb-b: #ffdf3d; --pb-bg: #3a0700; }
+
+/* ---------- wybór stołu */
+.opb-hero { display: flex; gap: 24px; align-items: stretch; margin: 14px 0 18px; padding: 18px 20px; border-radius: 14px; flex-wrap: wrap;
+  background: radial-gradient(120% 140% at 0% 0%, #3a0a5a 0%, #0c0216 55%, #000 100%); border: 1px solid #ff3df255;
+  box-shadow: 0 0 30px #ff3df222, inset 0 0 40px #5ef2ff11; position: relative; overflow: hidden; }
+.opb-hero::after { content: ""; position: absolute; inset: auto -10% -60% -10%; height: 120%; pointer-events: none; opacity: .25;
+  background: repeating-linear-gradient(90deg, #ff3df2 0 1px, transparent 1px 46px), repeating-linear-gradient(0deg, #ff3df2 0 1px, transparent 1px 30px);
+  transform: perspective(300px) rotateX(60deg); }
+.opb-hero-txt { flex: 1 1 380px; position: relative; z-index: 1; }
+#view-games .opb-hero h3 { font: 900 34px Rubik, sans-serif; letter-spacing: .04em; margin: 0 0 6px; color: #fff;
+  text-shadow: 0 0 6px #ff3df2, 0 0 22px #ff3df2, 0 0 40px #5ef2ff88; }
+.opb-hero p { color: #e8d8ff; line-height: 1.5; margin: 0 0 12px; }
+.opb-cap { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #cbb8ea; }
+.opb-cap-bar { height: 8px; border-radius: 6px; background: #ffffff14; overflow: hidden; }
+.opb-cap-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--pb-a, #ff3df2), var(--pb-b, #5ef2ff)); border-radius: 6px; transition: width .3s; }
+.opb-keys { flex: 0 1 330px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #d9c8f5; position: relative; z-index: 1; justify-content: center; }
+.opb kbd { display: inline-block; min-width: 20px; padding: 1px 6px; margin-right: 3px; border-radius: 5px; background: #ffffff14; border: 1px solid #ffffff33;
+  border-bottom-width: 2px; font: 700 11px Rubik, sans-serif; color: #fff; text-align: center; }
+
+.opb-tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.opb-card { display: flex; gap: 14px; padding: 14px; border-radius: 14px; position: relative; overflow: hidden;
+  background: linear-gradient(160deg, var(--pb-bg) 0%, #050505 75%); border: 1px solid color-mix(in srgb, var(--pb-a) 40%, transparent);
+  box-shadow: 0 0 0 1px #0008, 0 10px 30px #0008; transition: transform .2s, box-shadow .2s; }
+.opb-card:not(.locked):hover { transform: translateY(-3px); box-shadow: 0 0 24px color-mix(in srgb, var(--pb-a) 35%, transparent), 0 12px 30px #000a; }
+.opb-prev { position: relative; flex: 0 0 auto; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px #000, 0 0 0 4px color-mix(in srgb, var(--pb-a) 55%, #222); }
+.opb-prev canvas { display: block; width: 150px; height: 270px; }
+.opb-card.locked .opb-prev canvas { filter: grayscale(.85) brightness(.45); }
+.opb-lock { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; text-align: center;
+  color: #fff; font-size: 12px; background: #0007; }
+.opb-lock span { font-size: 34px; filter: drop-shadow(0 2px 6px #000); }
+.opb-lock .opb-cap-bar { width: 100%; margin-top: 6px; }
+.opb-lock small { color: #ccc; }
+.opb-info { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.opb-num { font: 800 11px Rubik, sans-serif; letter-spacing: .2em; color: var(--pb-b); }
+#view-games .opb-info h4 { font: 900 22px Rubik, sans-serif; margin: 0; color: #fff; text-shadow: 0 0 12px var(--pb-a); }
+.opb-stars { color: var(--pb-a); letter-spacing: 2px; font-size: 15px; }
+.opb-stars small { color: #aaa; letter-spacing: 0; font-size: 12px; margin-left: 4px; }
+.opb-meta { display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #ddd; }
+.opb-top { margin: 4px 0 0; padding: 6px 8px 6px 28px; background: #0006; border-radius: 8px; font-size: 12px; color: #ccc; }
+.opb-top li { padding: 1px 0; }
+.opb-top li span { display: inline-block; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.opb-top li b { float: right; color: #fff; }
+.opb-top li.me { color: var(--pb-a); }
+.opb-none { color: #888; font-size: 12px; margin: 4px 0 0; }
+#view-games .opb-go { margin-top: auto; padding: 10px 14px; border: 0; border-radius: 10px; cursor: pointer; font: 900 16px Rubik, sans-serif; letter-spacing: .05em;
+  color: #000; background: linear-gradient(90deg, var(--pb-a, #ff3df2), var(--pb-b, #5ef2ff)); box-shadow: 0 0 18px color-mix(in srgb, var(--pb-a, #ff3df2) 50%, transparent);
+  transition: transform .15s, filter .15s; }
+#view-games .opb-go:hover:not(:disabled) { transform: scale(1.03); filter: brightness(1.15); }
+#view-games .opb-go:disabled { background: #333; color: #888; box-shadow: none; cursor: not-allowed; }
+
+/* ---------- automat */
+.opb-play { display: flex; gap: 22px; justify-content: center; align-items: flex-start; }
+.opb-side { flex: 0 0 330px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 80px; }
+.opb-backbox { border-radius: 14px; padding: 10px; background: linear-gradient(180deg, #1a1a1a, #050505); border: 2px solid #333;
+  box-shadow: 0 0 0 2px #000, 0 0 30px color-mix(in srgb, var(--pb-a) 30%, transparent), inset 0 0 20px #000; }
+.opb-bb-title { text-align: center; font: 900 18px Rubik, sans-serif; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; color: #fff;
+  text-shadow: 0 0 8px var(--pb-a), 0 0 20px var(--pb-a); animation: pbTitle 3s ease-in-out infinite; }
+@keyframes pbTitle { 50% { text-shadow: 0 0 8px var(--pb-b), 0 0 24px var(--pb-b); } }
+.opb-dmd { display: block; width: 100%; aspect-ratio: 4 / 1; border-radius: 6px; background: #0a0503; box-shadow: inset 0 0 12px #000, 0 0 16px color-mix(in srgb, var(--pb-dmd) 25%, transparent); }
+.opb-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.opb-stats > div, .opb-mis { background: linear-gradient(160deg, color-mix(in srgb, var(--pb-bg) 70%, #000), #070707); border: 1px solid #ffffff1a; border-radius: 10px; padding: 8px 10px; }
+.opb-stats small, .opb-mis small { display: block; font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: .1em; }
+.opb-stats b { font: 800 18px Rubik, sans-serif; color: #fff; }
+#pbEarn { color: #7dff9a; text-shadow: 0 0 10px #3ddc8488; }
+.opb-mis #pbMis { font-size: 14px; color: #fff; margin: 3px 0 6px; min-height: 2.6em; }
+.opb-btns { display: flex; gap: 8px; }
+.opb-btns .btn { flex: 1; }
+.opb-help { font-size: 12px; color: #888; line-height: 1.9; }
+.opb-cab { position: relative; flex: 0 0 auto; padding: 10px; border-radius: 18px;
+  background: linear-gradient(90deg, #111, #2a2a2a 8%, #0b0b0b 50%, #2a2a2a 92%, #111);
+  box-shadow: 0 0 0 2px #000, 0 0 40px color-mix(in srgb, var(--pb-a) 30%, transparent), 0 20px 50px #000; }
+.opb-cab::before { content: ""; position: absolute; inset: 4px; border-radius: 15px; pointer-events: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pb-a) 60%, transparent); animation: pbRim 2.4s linear infinite; }
+@keyframes pbRim { 50% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pb-b) 60%, transparent); } }
+#pbCanvas { display: block; border-radius: 10px; touch-action: none; cursor: pointer; }
+.opb-pause, .opb-over { position: absolute; inset: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #000b; z-index: 2; }
+.opb-pause[hidden], .opb-over[hidden] { display: none; }
+.opb-pause > div { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.opb-pause b { font: 900 40px Rubik, sans-serif; letter-spacing: .2em; color: #fff; text-shadow: 0 0 20px var(--pb-a); }
+.opb-over-in { text-align: center; padding: 24px; display: flex; flex-direction: column; gap: 8px; align-items: center; animation: pbPop .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes pbPop { from { transform: scale(.6); opacity: 0; } }
+.opb-over-t { font: 900 22px Rubik, sans-serif; letter-spacing: .3em; color: var(--pb-b); }
+.opb-over-score { font: 900 46px Rubik, sans-serif; color: #fff; text-shadow: 0 0 20px var(--pb-a); }
+.opb-newbest { font: 900 18px Rubik, sans-serif; color: #ffe35a; animation: pbBlink .5s steps(2) infinite; }
+@keyframes pbBlink { 50% { opacity: .35; } }
+.opb-over-earn { font: 900 36px Rubik, sans-serif; color: #7dff9a; text-shadow: 0 0 18px #3ddc84; }
+.opb-unlock { padding: 10px 14px; border-radius: 10px; background: #ffe35a22; border: 1px solid #ffe35a88; color: #ffe9a0; }
+.opb-small { font-size: 12px; color: #aaa; margin: 0; max-width: 260px; }
+.opb-over-btns { display: flex; gap: 10px; margin-top: 8px; }
+.opb-touch { display: none; }
+
+@media (max-width: 760px) {
+  .opb-play { flex-direction: column; align-items: center; gap: 10px; }
+  .opb-side { position: static; flex: none; width: 100%; max-width: 520px; }
+  .opb-stats { grid-template-columns: repeat(4, 1fr); }
+  .opb-stats b { font-size: 14px; }
+  .opb-mis, .opb-help { display: none; }
+  .opb-card { flex-direction: column; align-items: center; }
+  .opb-tables { grid-template-columns: 1fr; }
+}
+@media (pointer: coarse) {
+  .opb-touch { display: flex; gap: 8px; width: 100%; max-width: 520px; }
+  .opb-touch button { flex: 1; padding: 16px 0; border-radius: 12px; border: 1px solid #ffffff33; background: #ffffff14; color: #fff; font: 800 15px Rubik, sans-serif; touch-action: none; }
+  .opb-touch button:active { background: color-mix(in srgb, var(--pb-a) 40%, transparent); }
+  .opb-help { display: none; }
+}
+/* telefon: przewinięcie do stołu zostawia miejsce na górny pasek i dolną nawigację gry */
+@media (max-width: 820px) { .opb-cab { scroll-margin: 64px 0 72px; } }

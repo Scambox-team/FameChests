@@ -17,6 +17,7 @@ pub mod horses;
 pub mod market;
 pub mod passport;
 pub mod pinball;
+pub mod old_pinball;
 pub mod poker;
 pub mod pages;
 pub mod aim;
@@ -92,6 +93,7 @@ pub fn router(st: AppState) -> Router {
         .route("/binder/hall-of-fame", get(index))
         .route("/games/figures", get(index))
         .route("/games/pinball", get(index))
+        .route("/games/old-pinball", get(index))
         .route("/games/snake", get(index))
         .route("/games/snake3d", get(index))
         .route("/games/turbo", get(index))
@@ -308,6 +310,9 @@ pub fn router(st: AppState) -> Router {
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))
         .route("/api/pinball/finish", post(pinball::pinball_finish))
+        .route("/api/games/old-pinball", get(old_pinball::old_pinball_lobby))
+        .route("/api/games/old-pinball/start", post(old_pinball::old_pinball_start))
+        .route("/api/games/old-pinball/finish", post(old_pinball::old_pinball_finish))
         .route("/api/games/chess", get(chess::chess_lobby))
         .route("/api/games/chess/create", post(chess::chess_create))
         .route("/api/games/chess/test", post(chess::chess_test))

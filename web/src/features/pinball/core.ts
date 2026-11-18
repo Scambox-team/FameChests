@@ -164,6 +164,7 @@ export class Sim {
   score = 0; ballNo = 1; mult = 1; extra = 0;
   balls: Ball[] = [];
   queue = 0; queueT = 0;
+  queueManual = false;   // uratowana kulka czeka w wyrzutni na gracza (dowolna siła), nie leci sama
   saveT = 0; saveArmed = false;
   multiball = false; jackpots = 0;
   tilted = false; nudges: number[] = [];
@@ -223,7 +224,7 @@ export class Sim {
   /** Początek gry (od razu gra się toczy; ziarno jest w konstruktorze) */
   start() {
     if (this.phase === 'play') return;
-    this.phase = 'play'; this.score = 0; this.ballNo = 1; this.mult = 1; this.extra = 0; this.jackpots = 0; this.multiball = false; this.queue = 0;
+    this.phase = 'play'; this.score = 0; this.ballNo = 1; this.mult = 1; this.extra = 0; this.jackpots = 0; this.multiball = false; this.queue = 0; this.queueManual = false;
     this.lanes.forEach(l => l.lit = false); this.drops.forEach(d => d.down = false); this.stands.forEach(s => s.lit = false);
     this.vhsDone = this.radDone = false;
     this.serve();
@@ -251,8 +252,8 @@ export class Sim {
     if (this.multiball && left <= 1) { this.multiball = false; this.say('KONIEC MULTIBALLA', `jackpoty: ${this.jackpots}`, 'purple'); }
     if (left > 0) return;
     if (this.saveT > 0 && !this.tilted) {
-      this.fx.sound('save'); this.say('KULKA URATOWANA', '', 'cyan', 1.5);
-      this.queue = 1; this.queueT = 0.5; this.saveT = 0;
+      this.fx.sound('save'); this.say('KULKA URATOWANA', 'wyrzuć ją: spacja', 'cyan', 1.8);
+      this.queue = 1; this.queueT = 0.5; this.saveT = 0; this.queueManual = true;
       return;
     }
     this.endBall();
@@ -261,7 +262,7 @@ export class Sim {
     const sa = this.geo.saucer;
     this.multiball = true; this.jackpots = 0; this.vhsDone = this.radDone = false;
     this.stands.forEach(s => s.lit = false);
-    this.queue += 2; this.queueT = 1.2; this.saveT = Math.max(this.saveT, 15);
+    this.queue += 2; this.queueT = 1.2; this.saveT = Math.max(this.saveT, 15); this.queueManual = false;
     this.fx.sound('jackpot'); this.fx.bump(10);
     this.say('MULTIBALL', 'strzelaj w słońce: JACKPOT', 'yellow', 2.6);
     this.fx.burst(sa.x, sa.y, 'yellow', 50, 500);
@@ -557,7 +558,7 @@ export class Sim {
     }
     if (this.queue > 0) {
       this.queueT -= dt;
-      if (this.queueT <= 0 && !this.balls.some(this.inLane)) { const nb = this.newBall(); nb.auto = 0.45; this.balls.push(nb); this.queue--; this.queueT = 0.9; }
+      if (this.queueT <= 0 && !this.balls.some(this.inLane)) { const nb = this.newBall(); nb.auto = this.queueManual ? 0 : 0.45; this.queueManual = false; this.balls.push(nb); this.queue--; this.queueT = 0.9; }
     }
     if (this.charging) { const c0 = this.charge; this.charge = Math.min(1, this.charge + dt * 1.1); if (Math.floor(c0 * 8) !== Math.floor(this.charge * 8)) this.fx.sound('charge', this.charge); }
     if (this.saveT > 0 && !this.balls.some(this.inLane)) this.saveT -= dt;

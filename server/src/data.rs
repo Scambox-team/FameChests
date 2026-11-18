@@ -152,6 +152,31 @@ impl PinballCfg {
     }
 }
 
+/// Stary Pinball (zakładka Gry -> Stary Pinball, `routes/old_pinball.rs`): grosze za punkty z limitami, bo grę liczy przeglądarka
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OldPinballCfg {
+    pub daily_cap: i64,
+    pub per_minute: i64,
+    pub min_seconds: f64,
+    pub max_points_per_second: f64,
+    pub max_hours: f64,
+    pub tables: Vec<OldPinballTable>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OldPinballTable {
+    pub id: String,
+    pub name: String,
+    /// grosze za 1000 punktów
+    pub pay: f64,
+    /// najlepszy wynik na poprzednim stole potrzebny do odblokowania
+    pub unlock: i64,
+    #[serde(default)]
+    pub unlock_bonus: i64,
+}
+
 /// Karty za wynik w grach Super Turbo (Super Turbo Snake 3D i Run 3D): wariant Gamingowa RGB, progi osobno dla każdej gry
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -379,6 +404,7 @@ pub struct GameData {
     pub market: MarketCfg,
     pub chess: ChessCfg,
     pub pinball: PinballCfg,
+    pub old_pinball: OldPinballCfg,
     pub snake: SnakeCfg,
     pub turbo: TurboCfg,
     pub chess_skins: Vec<ChessSkin>,
@@ -556,6 +582,7 @@ impl GameData {
             market: get(&raw, "market")?,
             chess: get(&raw, "chess")?,
             pinball: get(&raw, "pinball")?,
+            old_pinball: get(&raw, "oldPinball")?,
             snake: get(&raw, "snake")?,
             turbo: get(&raw, "turbo")?,
             chess_skins: get(&raw, "chessSkins")?,

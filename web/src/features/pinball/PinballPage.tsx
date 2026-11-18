@@ -36,6 +36,7 @@ const levelMult = (r: Rewards, level: number) => r.levelMults?.[level - 1] ?? r.
 
 export function PinballPage() {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const game = useRef<PinballGame | null>(null);
   const [hud, setHud] = useState<PinHud | null>(null);
   const [tilt3d, setTilt3d] = useState(read3d);
@@ -114,7 +115,7 @@ export function PinballPage() {
 
   return (
     <div className={`pb-page pb-sk-${baseTheme()}`}>
-      <div className={`pb-stage${tilt3d ? ' is-3d' : ''}`}>
+      <div ref={stage} className={`pb-stage${tilt3d ? ' is-3d' : ''}`}>
         <div className="pb-cabinet">
           <div className="pb-table">
             <canvas ref={canvas} className="pb-canvas" aria-label="Stół pinballa. Lewa łapa: Z albo strzałka w lewo, prawa łapa: strzałka w prawo, wyrzut: spacja." />
@@ -176,7 +177,7 @@ export function PinballPage() {
         <GameRanking game="pinball" level={level} title={`Ranking: ${LEVELS[level - 1].name}`} refresh={result?.score} />
         <div className="pb-best"><span>Twój rekord</span><b>{fmt(hud?.best ?? 0)}</b></div>
         <div className="pb-actions">
-          <Button kind="hue" onClick={() => { Sound.unlock(); game.current?.start(); canvas.current?.focus(); }} disabled={playing}>
+          <Button kind="hue" onClick={() => { Sound.unlock(); game.current?.start(); canvas.current?.focus({ preventScroll: true }); stage.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }} disabled={playing}>
             <Play size={16} aria-hidden="true" /> {hud?.phase === 'over' ? 'Zagraj jeszcze raz' : 'Zagraj'}
           </Button>
           <Button onClick={toggle3d} aria-pressed={tilt3d}>{tilt3d ? <Box size={16} aria-hidden="true" /> : <Square size={16} aria-hidden="true" />} {tilt3d ? 'Widok 3D' : 'Widok z góry'}</Button>

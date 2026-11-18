@@ -401,6 +401,8 @@ pub struct Sim {
     balls: Vec<Ball>,
     queue: i64,
     queue_t: f64,
+    /// uratowana kulka czeka w wyrzutni na gracza (dowolna siła), nie leci sama
+    queue_manual: bool,
     save_t: f64,
     save_armed: bool,
     multiball: bool,
@@ -501,6 +503,7 @@ impl Sim {
             balls: vec![],
             queue: 0,
             queue_t: 0.0,
+            queue_manual: false,
             save_t: 0.0,
             save_armed: false,
             multiball: false,
@@ -585,6 +588,7 @@ impl Sim {
         self.jackpots = 0.0;
         self.multiball = false;
         self.queue = 0;
+        self.queue_manual = false;
         for l in &mut self.lanes {
             l.lit = false;
         }
@@ -626,6 +630,7 @@ impl Sim {
             self.queue = 1;
             self.queue_t = 0.5;
             self.save_t = 0.0;
+            self.queue_manual = true;
             return;
         }
         self.end_ball();
@@ -641,6 +646,7 @@ impl Sim {
         self.queue += 2;
         self.queue_t = 1.2;
         self.save_t = self.save_t.max(15.0);
+        self.queue_manual = false;
     }
     fn launch(&mut self, i: usize, power: f64) {
         let jitter = self.rng.next();
@@ -1132,7 +1138,8 @@ impl Sim {
             self.queue_t -= dt;
             if self.queue_t <= 0.0 && !self.balls.iter().any(|b| self.in_lane(b)) {
                 let mut nb = self.new_ball();
-                nb.auto = 0.45;
+                nb.auto = if self.queue_manual { 0.0 } else { 0.45 };
+                self.queue_manual = false;
                 self.balls.push(nb);
                 self.queue -= 1;
                 self.queue_t = 0.9;

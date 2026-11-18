@@ -1192,6 +1192,20 @@
   "crateWhite": "szachy",
   "crateBlack": "szachy_czarne"
  },
+ "oldPinball": {
+  "dailyCap": 30000,
+  "perMinute": 600,
+  "minSeconds": 15,
+  "maxPointsPerSecond": 60000,
+  "maxHours": 2,
+  "tables": [
+   {"id": "neon", "name": "Neonowy Automat", "pay": 0.7, "unlock": 0, "unlockBonus": 0},
+   {"id": "casino", "name": "Kasyno Royale", "pay": 0.8, "unlock": 250000, "unlockBonus": 2000},
+   {"id": "space", "name": "Misja Kosmos", "pay": 0.9, "unlock": 250000, "unlockBonus": 3000},
+   {"id": "ghost", "name": "Noc Duchów", "pay": 1.2, "unlock": 350000, "unlockBonus": 4000},
+   {"id": "dragon", "name": "Smocze Wulkany", "pay": 1.5, "unlock": 200000, "unlockBonus": 6000}
+  ]
+ },
  "pinball": {
   "pointsPerGr": 100,
   "minSeconds": 30,
@@ -4010,6 +4024,16 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 31,
+   "date": "2026-11-14",
+   "title": "Pinball: większy stół i Stary Pinball",
+   "items": [
+    "Pinball ma większy stół: panel z wynikiem jest po lewej, a stół zajmuje prawie całą wysokość ekranu.",
+    "Uratowana kulka nie wylatuje już sama: czeka w wyrzutni i wystrzelisz ją z dowolną siłą.",
+    "Nowa zakładka w Grach: Stary Pinball z pięcioma stołami. Punkty zamieniają się w grosze (do 30 000 gr na dobę)."
+   ]
+  },
   {
    "v": 30,
    "date": "2026-11-13",
