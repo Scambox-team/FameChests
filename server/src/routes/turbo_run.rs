@@ -154,6 +154,7 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     let distance = (o.dist.max(0.0).floor() as i64).min(MAX_DIST);
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    super::game_rankings::record_score(&mut tx, me.id, "run", distance).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
     let base = reward_for(&r, distance);

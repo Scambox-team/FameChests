@@ -30,7 +30,7 @@ pub async fn cache_headers(req: Request, next: Next) -> Response {
     resp
 }
 
-/// Odpowiedzi tekstowe spakowane gzipem (ekwipunek z kilkoma tysiącami kart to ~0,5 MB JSON-a, po spakowaniu ~35 KB)
+/// Odpowiedzi tekstowe i pliki aplikacji (JS, CSS, model 3D) spakowane gzipem (ekwipunek z kilkoma tysiącami kart to ~0,5 MB JSON-a, po spakowaniu ~35 KB)
 #[derive(Clone, Copy)]
 pub struct GzipTypes;
 
@@ -38,7 +38,18 @@ impl Predicate for GzipTypes {
     fn should_compress<B: axum::body::HttpBody>(&self, resp: &axum::http::Response<B>) -> bool {
         let ctype = resp.headers().get(header::CONTENT_TYPE).and_then(|v| v.to_str().ok()).unwrap_or("");
         let mime = ctype.split(';').next().unwrap_or("").trim();
-        matches!(mime, "application/json" | "text/html" | "image/svg+xml" | "application/manifest+json")
+        matches!(
+            mime,
+            "application/json"
+                | "text/html"
+                | "image/svg+xml"
+                | "application/manifest+json"
+                // pliki aplikacji (React, CSS ~700 KB): bez gzipa każdy nowy gracz pobierał ich kilka razy więcej
+                | "text/css"
+                | "text/javascript"
+                | "application/javascript"
+                | "model/gltf-binary"
+        )
     }
 }
 

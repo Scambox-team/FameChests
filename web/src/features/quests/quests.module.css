@@ -104,14 +104,8 @@ a.tile:hover .tilePig { transform: translateY(-6px) rotate(-6deg); }
 
 /* ---------- kafelki w zakładce Questy (jak na stronie startowej) */
 .wide { grid-column: 1 / -1; }
-.prizeTile { grid-column: span 4; min-height: 400px; justify-content: flex-start; gap: 12px;
-  background: radial-gradient(70% 50% at 50% 0%, color-mix(in srgb, #ffd166 16%, transparent), transparent 70%), linear-gradient(#17141a, #0f0d10); }
 .tileTitle { margin: 0; font: 800 26px/1.05 var(--display); letter-spacing: -.02em; }
-.prizeTile .prizeRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.prizeTile .prizeCard { width: min(150px, 100%); }
 .qTile { }
-@media (max-width: 1260px) { .prizeTile { grid-column: span 12; } .prizeTile .prizeRow { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 620px) { .prizeTile .prizeRow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ---------- Skarbonka w kafelku na stronie startowej */
 .tilePiggy { padding-top: 8px; justify-content: flex-start; gap: 8px; }

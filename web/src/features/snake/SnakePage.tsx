@@ -13,6 +13,7 @@ import { Sound } from '../../sound/sound';
 import { baseTheme } from '../../styles/theme';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
+import { GameRanking } from '../chess/GameRanking';
 import { createSnake, type Dir, type SnakeGame, type SnakeHud, type SnakeLook } from './engine';
 import './snake.css';
 
@@ -168,6 +169,7 @@ export function SnakePage() {
             <span>Karta w wariancie {variantName(rw.cardVariant || 'pixel')} za wynik: {rw.cardTiers.map(t => `${t.score} jabłek: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
+        <GameRanking game="snake" title="Ranking Snake: jabłka" refresh={won} />
         <div className="sn-pad" aria-label="Kierunek">
           <button type="button" className="u" aria-label="W górę" onClick={() => turn('up')}><ArrowUp size={20} /></button>
           <button type="button" className="l" aria-label="W lewo" onClick={() => turn('left')}><ArrowLeft size={20} /></button>

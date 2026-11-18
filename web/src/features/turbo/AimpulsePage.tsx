@@ -10,6 +10,7 @@ import { Sound } from '../../sound/sound';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import type { Aim3D } from '../../three/aimpulseScene';
 import { Button } from '../../ui/Button';
+import { GameRanking } from '../chess/GameRanking';
 import { toast } from '../../ui/Toaster';
 import { pts, type ArcadeReward } from '../invaders/InvadersPage';
 import './aimpulse.css';
@@ -99,6 +100,7 @@ export function AimpulsePage() {
               <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
           </div>
         )}
+        <GameRanking game="aimpulse" title="Ranking AIMPULSE: punkty" refresh={won} />
         <div className="tb-help">
           <h3>Sterowanie</h3>
           <p>Mysz: celowanie (kursor chowa się po starcie), <kbd>LPM</kbd> strzał, <kbd>R</kbd> restart, <kbd>M</kbd> muzyka, <kbd>F</kbd> pełny ekran, <kbd>Esc</kbd> pauza</p>

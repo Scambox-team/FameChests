@@ -26,6 +26,7 @@ export type PiggyQuest = {
   top: { name: string; amount: number }[];
   shares: { name: string; amount: number; me: boolean }[]; rest: number; restCount: number;
   places: string[];
+  playerCap: number;
   mine: { amount: number; hits: number; place: number | null; reward: { id: number; person: string; variant: string; name: string } | null };
 };
 export type PiggyData = { enabled: boolean; quest: PiggyQuest | null; previous: PiggyQuest | null };
@@ -139,11 +140,20 @@ export function PiggyStage({ q, compact }: { q: PiggyQuest; compact?: boolean })
   useEffect(() => {
     if (flat || !canvas.current) return;
     let alive = true;
-    import('../../three/piggyScene').then(m => {
-      if (!alive || !canvas.current) return;
-      try { scene.current = m.createPiggyScene(canvas.current); scene.current.set(latest.current); } catch { setFlat(true); }
-    }).catch(() => setFlat(true));
-    return () => { alive = false; scene.current?.dispose(); scene.current = null; };
+    const start = () => {
+      import('../../three/piggyScene').then(m => {
+        if (!alive || !canvas.current) return;
+        try { scene.current = m.createPiggyScene(canvas.current); scene.current.set(latest.current); } catch { setFlat(true); }
+      }).catch(() => setFlat(true));
+    };
+    // scena (three.js + model ok. 2 MB) ładuje się dopiero, gdy świnka jest blisko ekranu: na stronie startowej leży poniżej pierwszego ekranu
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === 'undefined') start();
+    else {
+      io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io?.disconnect(); io = null; start(); } }, { rootMargin: '120px' });
+      io.observe(canvas.current);
+    }
+    return () => { alive = false; io?.disconnect(); scene.current?.dispose(); scene.current = null; };
   }, [flat]);
   useEffect(() => { scene.current?.set({ fill, crack, broken }); });
 
@@ -257,6 +267,7 @@ export function PiggyQuestPanel() {
           <p className={s.me}>
             <Coins size={15} aria-hidden="true" />
             {q.mine.amount > 0 ? <>Twój wkład: <b>{fmt(q.mine.amount)}</b>{q.mine.place ? <> · {q.mine.place}. miejsce</> : null}</> : 'Jeszcze nic nie wpłaciłeś - wystarczy zrobić coś z zadania.'}
+            {q.playerCap > 0 && !broken ? <>{' · '}Limit na gracza: <b>{fmt(q.playerCap)}</b></> : null}
           </p>
           {broken && q.mine.reward && (
             <div className={s.myReward}>
@@ -271,26 +282,6 @@ export function PiggyQuestPanel() {
       {prev && <PrevDay q={prev} />}
       <span hidden>{sample}</span>
     </section>
-  );
-}
-
-/** Kafelek z nagrodami skarbonki: cztery banknoty (karta o rzadkości z dzisiejszego questa) */
-export function PiggyPrizes({ q }: { q: PiggyQuest }) {
-  const sample = useMemo(() => sampleOf(q.rarity), [q.rarity]);
-  return (
-    <>
-      <h2 className={s.tileTitle}>Nagrody skarbonki</h2>
-      <p className={s.lead}>Karta {q.rarityName} dla każdego, kto wpłacił. Im wyższe miejsce, tym lepszy banknot.</p>
-      <div className={s.prizeRow}>
-        {q.places.map((v, i) => (
-          <figure key={v} className={s.prize}>
-            {sample ? <button type="button" className={s.prizeCard} onClick={() => openViewer(sample, v)} aria-label={`Podgląd wariantu ${variantName(v)}`}><Card person={sample} variant={v} /></button> : null}
-            <figcaption>{i < 3 ? `${i + 1}. miejsce` : 'Pozostali'} · {variantName(v)}</figcaption>
-          </figure>
-        ))}
-      </div>
-      <p className="muted small">Gdy świnka się zapełni, trzeba ją razem rozbić (kilka osób klika). Jeśli nikt jej nie rozbije, pęknie sama o północy. Niezapełniona skarbonka przepada.</p>
-    </>
   );
 }
 

@@ -13,6 +13,7 @@ import { Sound } from '../../sound/sound';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import type { Snake3D } from '../../three/snakeScene';
 import { Button } from '../../ui/Button';
+import { GameRanking } from '../chess/GameRanking';
 import { toast } from '../../ui/Toaster';
 import './snake3dpage.css';
 import './snake3d.css';
@@ -109,6 +110,7 @@ export function Snake3DPage() {
             <span>Karta w wariancie {variantName(look.turbo.cardVariant)} za wynik: {look.turbo.cardTiers.map(t => `${t.score} jabłek: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
+        <GameRanking game="snake3d" title="Ranking Snake 3D: jabłka" refresh={won} />
         <div className="s3-help">
           <h3>Sterowanie</h3>
           <p><kbd>A</kbd> <kbd>D</kbd> albo <kbd>←</kbd> <kbd>→</kbd> skręt, <kbd>W</kbd> turbo, <kbd>S</kbd> hamulec, <kbd>P</kbd> pauza, <kbd>M</kbd> dźwięk, <kbd>F</kbd> pełny ekran</p>

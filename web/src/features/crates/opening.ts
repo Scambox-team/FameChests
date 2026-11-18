@@ -2,7 +2,7 @@
 // dziesiątek kafelków 60 razy na sekundę. W trybie ultraszybkim nie ma bębnów: wieko 3D od razu pokazuje wynik.
 import { api } from '../../api/client';
 import { cardHTML, cvColors } from '../../cards/cardHtml';
-import { confetti, epicOpen, epicReveal, GOLDS, receiptReveal } from '../../fx/effects';
+import { crateConfetti, epicOpen, epicReveal, GOLDS, receiptReveal } from '../../fx/effects';
 import { epicOff } from '../../fx/epicPref';
 import { VARIANT_COLORS } from '../../fx/variantColors';
 import { baseVariant, cardValue, crateOf, imgUrl, isSpecial, person, plural, rand, rarityIdx, varRank, variantName, variantParts } from '../../game/rules';
@@ -396,7 +396,7 @@ function showResults(o: Opening, afterEpic: boolean) {
     const colors = VARIANT_COLORS[topBase] || cvColors(topBase) || GOLDS;
     if (topBase === 'mlg') setTimeout(() => Sound.airhorn(), 250);
     const rare = varRank(top.variant) >= varRank('gold');
-    setTimeout(() => confetti(colors, topBase === 'negative' ? 360 : varRank(top.variant) > varRank('gold') ? 260 : rare ? 140 : 60), 300);
+    setTimeout(() => crateConfetti(colors, topBase === 'negative' ? 360 : varRank(top.variant) > varRank('gold') ? 260 : rare ? 140 : 60), 300);
     if (rare) toast(`${variantName(top.variant)}: ${person(top.person).name}`);
   }
   o.shown = true;

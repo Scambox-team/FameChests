@@ -13,6 +13,7 @@ import { Sound } from '../../sound/sound';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import type { Run3D } from '../../three/runScene';
 import { Button } from '../../ui/Button';
+import { GameRanking } from '../chess/GameRanking';
 import { toast } from '../../ui/Toaster';
 import './run3d.css';
 import './turbo.css';
@@ -115,6 +116,7 @@ export function RunPage() {
             <span>Karta w wariancie {variantName(rw.cardVariant)} za dystans: {rw.cardTiers.map(t => `${fmt(t.score)} m: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
+        <GameRanking game="run" title="Ranking Run 3D: dystans" refresh={won} />
         <div className="tb-help">
           <h3>Sterowanie</h3>
           <p><kbd>A</kbd> <kbd>D</kbd> albo <kbd>←</kbd> <kbd>→</kbd> bieg po ścianach tunelu, <kbd>Spacja</kbd> skok (przytrzymaj, żeby skoczyć wyżej), <kbd>P</kbd> pauza, <kbd>M</kbd> dźwięk, <kbd>F</kbd> pełny ekran</p>

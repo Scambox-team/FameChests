@@ -5,25 +5,20 @@ import { PageHero } from '../../ui/PageHero';
 import { CtfDialog, CtfSlide } from '../home/CtfQuest';
 import { WantedSlide } from '../home/QuestTile';
 import h from '../home/home.module.css';
-import { PiggyPrizes, PiggyQuestPanel, usePiggy } from './Piggy';
+import { PiggyQuestPanel } from './Piggy';
 import s from './quests.module.css';
 
 // Zakładka Questy (/quests): kafelki jak na stronie startowej. Pierwszy, szeroki kafelek to Skarbonka (quest główny, wspólny
-// cel), niżej w rzędzie: nagrody skarbonki, Wanted i CTF (te same widoki co dawniej na stronie startowej).
+// cel), niżej w rzędzie: Wanted i CTF (te same widoki co dawniej na stronie startowej).
 export function QuestsPage() {
   const { quest, ctf } = useGame();
-  const { data } = usePiggy();
   const [ctfOpen, setCtfOpen] = useState(false);
   useEffect(() => { document.title = 'Questy - ScamBox'; }, []);
-  const piggy = data?.quest;
   return (
     <div className={s.page}>
       <PageHero icon={ScrollText} title="Questy" lead="Wspólna skarbonka dla wszystkich graczy i zadania, w których wygrywa najszybszy." />
       <div className={h.tiles}>
         <div className={s.wide}><PiggyQuestPanel /></div>
-        {piggy && (
-          <section className={`${h.tile} ${s.prizeTile}`} aria-label="Nagrody skarbonki"><PiggyPrizes q={piggy} /></section>
-        )}
         <section className={`${h.tile} ${h.quest} ${s.qTile}`} aria-label="Quest Wanted">
           <div className={h.qTrack}><div className={h.qSlide}><WantedSlide quest={quest} /></div></div>
         </section>

@@ -47,9 +47,11 @@ pub const RARITIES: &[(&str, f64, u32)] = &[("blue", 0.7, 30), ("purple", 1.0, 4
 /// Ustawienia w tabeli `state`: (klucz, pole w panelu, domyślna, najmniejsza, największa)
 const SETTINGS: &[(&str, &str, i64, i64, i64)] = &[
     ("piggy_enabled", "enabled", 0, 0, 1),
-    ("piggy_base", "base", 10_000_000, 1_000, 100_000_000_000),
+    ("piggy_base", "base", 1_000_000, 1_000, 100_000_000_000),
     ("piggy_hits", "hits", 60, 1, 100_000),
     ("piggy_breakers", "breakers", 3, 1, 100),
+    // limit wkładu jednego gracza: procent celu dzisiejszej skarbonki (wpłaty ponad limit się nie liczą)
+    ("piggy_player_pct", "playerPct", 25, 1, 100),
 ];
 
 /// Zdarzenie, które może wpłacić do świnki
@@ -89,6 +91,11 @@ fn day_bounds() -> (String, f64, f64) {
         Local.from_local_datetime(&d.and_hms_opt(0, 0, 0).unwrap_or_default()).earliest().map_or(0.0, |t| t.timestamp() as f64)
     };
     (today.to_string(), at(today), at(today.succ_opt().unwrap_or(today)))
+}
+
+/// Najwięcej, ile jeden gracz może wpłacić do świnki o danym celu (`pct` procent celu, co najmniej 1 gr)
+pub fn player_cap(target: i64, pct: i64) -> i64 {
+    (target.saturating_mul(pct.clamp(1, 100)) / 100).max(1)
 }
 
 pub fn target_for(base: i64, kind: &str, rarity: &str) -> i64 {
@@ -205,8 +212,15 @@ pub async fn add(c: &mut Conn, uid: i64, ev: Ev) -> sqlx::Result<()> {
             info
         }
     };
-    let Some((kind, _)) = info else { return Ok(()) };
+    let Some((kind, target)) = info else { return Ok(()) };
     let v = ev.value(&kind);
+    if v <= 0 {
+        return Ok(());
+    }
+    // limit jednego gracza: wpłata ponad niego nie liczy się do świnki (ani do wkładu)
+    let cap = player_cap(target, setting(c, "piggy_player_pct").await?);
+    let have: i64 = sqlx::query_scalar("SELECT amount FROM piggy_contrib WHERE day = $1 AND user_id = $2").bind(&day).bind(uid).fetch_optional(&mut *c).await?.unwrap_or(0);
+    let v = v.min(cap - have);
     if v <= 0 {
         return Ok(());
     }
@@ -317,6 +331,7 @@ async fn view(c: &mut Conn, cat: &Catalog, uid: i64, q: &Quest) -> sqlx::Result<
         "filledAt": q.filled_at, "brokenAt": q.broken_at, "hits": q.hits, "needHits": q.need_hits,
         "breakers": breakers, "minBreakers": q.min_breakers.min(rows.len().max(1) as i64),
         "participants": rows.len(),
+        "playerCap": player_cap(q.target, setting(c, "piggy_player_pct").await?),
         "top": ranked.iter().take(3).map(|r| json!({"name": r.1, "amount": r.2})).collect::<Vec<_>>(),
         "shares": shares, "rest": rest, "restCount": rows.len().saturating_sub(BAR),
         "places": PLACES,
@@ -453,7 +468,7 @@ pub async fn admin_piggy(State(st): State<AppState>, Admin(_me): Admin) -> Res {
     ok(admin_view(&mut c).await?)
 }
 
-/// Zapis ustawień (`enabled`, `base`, `hits`, `breakers`); `reroll` = dzisiejsze zadanie od nowa (tylko przed pierwszą wpłatą),
+/// Zapis ustawień (`enabled`, `base`, `hits`, `breakers`); `reroll` = dzisiejsze zadanie od nowa (po wpłatach: zmiana zadania, rzadkości i celu na miejscu, wpłaty zostają; rozbitej nie da się zmienić),
 /// `kind` / `rarity` = wybrane zamiast losowych (razem z `reroll`)
 pub async fn admin_piggy_save(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<serde_json::Map<String, Value>>) -> Res {
     let mut tx = st.db.begin().await?;
@@ -484,8 +499,28 @@ pub async fn admin_piggy_save(State(st): State<AppState>, Admin(me): Admin, Json
         let (day, ..) = day_bounds();
         let paid: i64 = sqlx::query_scalar("SELECT COALESCE(SUM(amount), 0)::BIGINT FROM piggy_contrib WHERE day = $1").bind(&day).fetch_one(&mut *tx).await?;
         if paid > 0 {
-            return bad("Do dzisiejszej skarbonki już ktoś wpłacił - zmiana zadania byłaby nie fair");
-        }
+            // ktoś już wpłacił: zmieniamy zadanie, rzadkość i cel na miejscu - wpłaty i uderzenia zostają
+            let Some(q) = sqlx::query_as::<_, Quest>("SELECT * FROM piggy_quests WHERE day = $1 FOR UPDATE").bind(&day).fetch_optional(&mut *tx).await? else {
+                return bad("Dziś nie ma skarbonki");
+            };
+            if q.broken_at > 0.0 {
+                return bad("Dzisiejsza skarbonka jest już rozbita, nagrody rozdane - nie da się jej zmienić");
+            }
+            let kind = req.get("kind").and_then(Value::as_str).filter(|k| KINDS.iter().any(|x| x.0 == *k)).unwrap_or(&q.kind).to_owned();
+            let rarity = req.get("rarity").and_then(Value::as_str).filter(|r| RARITIES.iter().any(|x| x.0 == *r)).unwrap_or(&q.rarity).to_owned();
+            let target = mults(&mut tx).await?.target(setting(&mut tx, "piggy_base").await?, &kind, &rarity);
+            // pełna świnka zostaje pełna tylko, jeśli nowy cel nadal jest osiągnięty
+            let filled_at = if q.total >= target { if q.filled_at > 0.0 { q.filled_at } else { now() } } else { 0.0 };
+            sqlx::query("UPDATE piggy_quests SET kind = $2, rarity = $3, target = $4, filled_at = $5 WHERE day = $1")
+                .bind(&day)
+                .bind(&kind)
+                .bind(&rarity)
+                .bind(target)
+                .bind(filled_at)
+                .execute(&mut *tx)
+                .await?;
+            log.push(format!("dzisiaj (po wpłatach): {kind} / {rarity} / {target} gr"));
+        } else {
         sqlx::query("DELETE FROM piggy_contrib WHERE day = $1").bind(&day).execute(&mut *tx).await?;
         sqlx::query("DELETE FROM piggy_quests WHERE day = $1").bind(&day).execute(&mut *tx).await?;
         forget_cache();
@@ -495,6 +530,7 @@ pub async fn admin_piggy_save(State(st): State<AppState>, Admin(me): Admin, Json
             let target = mults(&mut tx).await?.target(setting(&mut tx, "piggy_base").await?, &kind, &rarity);
             sqlx::query("UPDATE piggy_quests SET kind = $2, rarity = $3, target = $4 WHERE day = $1").bind(&day).bind(&kind).bind(&rarity).bind(target).execute(&mut *tx).await?;
             log.push(format!("dzisiaj: {kind} / {rarity} / {target} gr"));
+        }
         }
     }
     forget_cache();
@@ -516,6 +552,13 @@ mod tests {
         assert!(target_for(300_000, "crates", "gold") > target_for(300_000, "crates", "purple"));
         assert!(target_for(300_000, "casino_win", "purple") < target_for(300_000, "casino_play", "purple"));
         assert_eq!(target_for(10, "games", "blue") % 1000, 0);
+    }
+
+    #[test]
+    fn player_limit_is_a_share_of_the_goal() {
+        assert_eq!(player_cap(1_000_000, 25), 250_000);
+        assert_eq!(player_cap(1_000, 1), 10);
+        assert_eq!(player_cap(1_000_000, 500), 1_000_000);
     }
 
     #[test]

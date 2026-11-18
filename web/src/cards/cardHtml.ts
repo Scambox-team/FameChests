@@ -1457,7 +1457,7 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
         <span class="card-hp"><small>${T("hpLabel", "HP")}</small>${T("hp", p.hp)}</span>
         <span class="card-type">${T("type", type.icon)}</span>
       </div>
-      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}</div>
+      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" decoding="async" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}</div>
       <div class="card-sub${p.subtitle || p.texts?.sub ? " has-subtitle" : ""}">${T("sub", p.subtitle ? esc(p.subtitle)
         : bs ? esc(bs.label) : variantSub(variant, pid) ?? `${type.name} · ${esc(crate.short)}`)}</div>
       ${abils.map((a, i) => `<div class="card-attack${i ? " atk2" : ""}${a.kind !== "off" ? " " + a.kind : ""}">

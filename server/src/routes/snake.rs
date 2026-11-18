@@ -310,6 +310,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     }
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    super::game_rankings::record_score(&mut tx, me.id, if turbo { "snake3d" } else { "snake" }, score).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
     let base = reward_for(&r, score);

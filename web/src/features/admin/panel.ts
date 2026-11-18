@@ -810,7 +810,7 @@ export function startPanel() {
     try { d = await api("/api/admin/quests/piggy"); } catch (e) { return toast(e.message, true); }
     const st = d.settings, f = $("#piggyForm");
     $("#piggyOn").checked = !!st.enabled;
-    f.elements.base.value = st.base; f.elements.hits.value = st.hits; f.elements.breakers.value = st.breakers;
+    f.elements.base.value = st.base; f.elements.hits.value = st.hits; f.elements.breakers.value = st.breakers; f.elements.playerPct.value = st.playerPct;
     const kind = $("#piggyKind"), rar = $("#piggyRarity");
     if (kind.options.length <= 1) kind.insertAdjacentHTML("beforeend", d.kinds.map(k => `<option value="${esc(k.kind)}">${esc(k.title)}</option>`).join(""));
     if (rar.options.length <= 1) rar.insertAdjacentHTML("beforeend", d.rarities.map(r => `<option value="${esc(r)}">${esc(A.cat?.rarities?.[r]?.name || r)}</option>`).join(""));
@@ -1133,10 +1133,10 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       e.preventDefault();
       const f = e.target, n = k => Math.floor(Number(f.elements[k].value));
       const pct = attr => Object.fromEntries([...document.querySelectorAll(`#piggyPct [${attr}]`)].map(i => [i.getAttribute(attr), Math.floor(Number(i.value))]));
-      savePiggy({ base: n("base"), hits: n("hits"), breakers: n("breakers"), kindPct: pct("data-kpct"), rarityPct: pct("data-rpct") }, "Zapisano ustawienia skarbonki");
+      savePiggy({ base: n("base"), hits: n("hits"), breakers: n("breakers"), playerPct: n("playerPct"), kindPct: pct("data-kpct"), rarityPct: pct("data-rpct") }, "Zapisano ustawienia skarbonki");
     });
     $("#piggyReroll").addEventListener("click", () => {
-      if (!confirm("Ustawić dzisiejszą skarbonkę od nowa?")) return;
+      if (!confirm("Zmienić dzisiejszą skarbonkę? Jeśli ktoś już wpłacił, jego wpłaty zostają i liczą się do nowego celu.")) return;
       savePiggy({ reroll: true, kind: $("#piggyKind").value || null, rarity: $("#piggyRarity").value || null }, "Nowa skarbonka na dziś");
     });
     $("#ctfOn").addEventListener("change", e => saveCtf({ enabled: e.target.checked }, e.target.checked ? "Quest CTF włączony" : "Quest CTF wyłączony"));

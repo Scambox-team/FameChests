@@ -220,6 +220,7 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
     let score = p.score.clamp(0, game.max_score());
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    super::game_rankings::record_score(&mut tx, me.id, game.key(), score).await?;
     let r = reward_cfg(&mut tx, game).await?;
     let earned = earned_today(&mut tx, me.id, game).await?;
     let base = reward_for(&r, score);

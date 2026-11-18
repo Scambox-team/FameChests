@@ -8,6 +8,7 @@ import { applyState } from '../../game/session';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
+import { GameRanking } from '../chess/GameRanking';
 import { toast } from '../../ui/Toaster';
 import { createInvaders, FIRE, LEFT, RIGHT, type InvadersGame, type InvHud } from './engine';
 import { invSound } from './sfx';
@@ -139,6 +140,7 @@ export function InvadersPage() {
               <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
           </div>
         )}
+        <GameRanking game="invaders" title="Ranking Obrony Orbity: punkty" refresh={won} />
         <div className="iv-pad" aria-label="Sterowanie dotykowe">
           <button type="button" aria-label="W lewo" {...hold(LEFT)}><ArrowLeft size={22} /></button>
           <button type="button" className="fire" aria-label="Strzał" {...hold(FIRE)}><Crosshair size={22} /></button>

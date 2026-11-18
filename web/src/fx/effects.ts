@@ -14,7 +14,7 @@ import { kindIcon, typeIcon } from '../icons/cardIcons';
 import { crateIconPath } from '../icons/crateIcons';
 import { crateLook3d } from '../features/crates/crateLook';
 import { use3D } from '../three/support';
-import { epicOff } from './epicPref';
+import { confettiOff, epicOff } from './epicPref';
 
 const $ = (s, el: any = document) => el.querySelector(s);
 const $$ = (s, el: any = document) => [...el.querySelectorAll(s)];
@@ -191,7 +191,7 @@ function epicRevealFlat(drop, { fast = false, auto = false } = {}) {
       if (tier === "secret") Sound.choir(); else if (tier === "ultra") Sound.ultra(true); else Sound.gold();
       const [x, y] = center();
       P.burst(x, y, tier === "gold" ? 160 : 260, colors, { speed: tier === "gold" ? 12 : 16, stars: .3 });
-      if (tier !== "gold") setTimeout(() => confetti(colors, tier === "ultra" ? 180 : 120), 400);
+      if (tier !== "gold") setTimeout(() => crateConfetti(colors, tier === "ultra" ? 180 : 120), 400);
       // pył w snopie światła: spokojnie opada (Tajna) albo unosi się wokół karty
       dust = setInterval(() => {
         const [cx, cy, b] = center();
@@ -264,7 +264,7 @@ export function receiptReveal(drop, { fast = false, auto = false } = {}) {
       el.classList.remove("printing");
       el.classList.add("done");
       Sound.tear();
-      confetti(["#ffffff", "#e8e4da", "#1a1a1a"], fast ? 40 : 80);
+      crateConfetti(["#ffffff", "#e8e4da", "#1a1a1a"], fast ? 40 : 80);
       if (auto) autoTimer = setTimeout(close, fast ? 900 : 1500);
     }
     function close() {
@@ -489,6 +489,11 @@ export const secretReveal = epicReveal;
 
 // ================================================================ KONFETTI
 export const confettiState = { parts: [], running: false };
+/** Konfetti z otwierania skrzynek: znika, gdy gracz wyłączył je w Ustawieniach */
+export function crateConfetti(colors, count) {
+  if (!confettiOff()) confetti(colors, count);
+}
+
 export function confetti(colors, count) {
   const cv = $("#confetti");
   cv.width = innerWidth; cv.height = innerHeight;

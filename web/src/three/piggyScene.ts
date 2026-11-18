@@ -7,7 +7,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import pigUrl from './models/pig.glb?url';
-import bankUrl from './models/piggybank.glb?url';
 import { sceneTheme } from './sceneTheme';
 
 export type PiggyState = { fill: number; crack: number; broken: boolean };
@@ -233,9 +232,9 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
   let target: PiggyState = { fill: 0, crack: 0, broken: false };
   let fill = 0, broken = false, rain = 0;
   let wob = 0, wobV = 0, sq = 0, sqV = 0, t = 0;
-  let slotY = 1;
-  // gotowy model z pliku (poly.pizza, CC0): root stoi na podłodze, `k` = skala bazowa, `h` = wysokość po skali
-  let model: { root: THREE.Group; k: number; h: number; top: number; real: boolean; overlay: { tex: THREE.Texture; draw: (n: number) => void; mat: THREE.Material } } | null = null;
+  let slotY = 1, slotX = -0.05;   // gdzie spadają monety i tkwi moneta: szczelina modelu
+  // gotowy model z pliku (Meshy, CC BY 4.0 - uznanie w Regulaminie i na stronie O stronie): root stoi na podłodze, `k` = skala bazowa, `h` = wysokość po skali
+  let model: { root: THREE.Group; k: number; h: number; top: number; slotZ: number; real: boolean; overlay: { tex: THREE.Texture; draw: (n: number) => void; mat: THREE.Material } } | null = null;
 
   function layout(sx: number, sy: number) {
     if (model) {
@@ -244,8 +243,9 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
       const kx = model.real ? 0.9 + (sx - 0.74) * 0.55 : sx / 0.95, ky = model.real ? 0.92 + (sy - 0.8) * 0.4 : sy / 0.92;
       model.root.scale.set(model.k * kx, model.k * ky, model.k * kx);
       slotY = model.top * ky;
+      slotX = model.slotZ * kx;
       slot.position.set(0, slotY - 0.06, 0);
-      stuck.position.set(0, slotY + 0.08, 0);
+      stuck.position.set(slotX, slotY + 0.08, 0);
       stuck.visible = fill > 0.93 && !broken;
       shadow.scale.set(0.8 + 0.22 * sx, 0.8 + 0.22 * sx, 1);
       return;
@@ -266,6 +266,7 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
     });
     tail.position.set(-1.25 * sx - 0.08, y0 + 0.25 * sy, 0);
     tail.rotation.set(0, Math.PI / 2, 0.4);
+    slotX = -0.05;
     slotY = y0 + sy;
     slot.position.set(-0.05, slotY - 0.02, 0);
     stuck.position.set(-0.05, slotY + 0.1, 0);
@@ -370,7 +371,7 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
     },
     coin() {
       if (broken || reduced()) return;
-      spawn('drop', new THREE.Vector3(-0.05, slotY + FLOOR + 1.6, 0), new THREE.Vector3(0, -1, 0));
+      spawn('drop', new THREE.Vector3(slotX, slotY + FLOOR + 1.6, 0), new THREE.Vector3(0, -1, 0));
     },
     burst() {
       if (broken) return;
@@ -399,11 +400,11 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
       renderer.dispose();
     },
   };
-  // wczytanie gotowego modelu: realistyczna świnia (Meshy), a gdy się nie uda - skarbonka z poly.pizza (CC0); do tego czasu (i gdy
+  // wczytanie gotowego modelu: realistyczna świnia (Meshy); do tego czasu (i gdy
   // nic się nie wczyta) widać model proceduralny. `face` = obrót, który kieruje ryjek na +x, `len` = długość po skali.
   let disposed = false;
-  const PIG = { url: pigUrl, real: true, face: Math.PI / 2, len: 4.0 };
-  const BANK = { url: bankUrl, real: false, face: Math.PI / 2, len: 3.3 };
+  // slotZ = srodek szczeliny modelu na osi dlugosci (w jednostkach modelu przed skala; ryjek na +)
+  const PIG = { url: pigUrl, real: true, face: Math.PI / 2, len: 4.0, slotZ: -0.155 };
   function loadModel(cfg: typeof PIG, onFail?: () => void) {
     new GLTFLoader().load(cfg.url, gltf => {
       if (disposed) return;
@@ -450,13 +451,13 @@ export function createPiggyScene(canvas: HTMLCanvasElement): PiggyScene {
         let top = 0;
         const gp = geo.attributes.position;
         for (let i = 0; i < gp.count; i++) if (Math.hypot(gp.getX(i), gp.getZ(i)) < Math.min(size.x, size.z) * 0.14) top = Math.max(top, gp.getY(i));
-        model = { root, k, h: size.y * k, top: top * k, real: cfg.real, overlay: { tex: oc.tex, draw: oc.draw, mat: omat } };
+        model = { root, k, h: size.y * k, top: top * k, slotZ: cfg.slotZ * k, real: cfg.real, overlay: { tex: oc.tex, draw: oc.draw, mat: omat } };
         procedural.forEach(o => { o.visible = false; });
-        slot.visible = true;
+        slot.visible = !cfg.real;   // pelna swinia ma wlasna, wyrzezbiona szczeline - czarna skrzynka dawalaby druga dziurke
         oc.draw(target.crack);
       } catch { onFail?.(); }
     }, undefined, () => { onFail?.(); });
   }
-  loadModel(PIG, () => loadModel(BANK));
+  loadModel(PIG);
   return api;
 }
