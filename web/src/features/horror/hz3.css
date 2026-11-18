@@ -1,0 +1,94 @@
+/* MGŁA: gra (three/horrorScene.ts). Kontener `.hz3` leży w <body> (portal z HorrorPage.tsx) na całym oknie nad wszystkim,
+   a w pełnym ekranie jest elementem pełnoekranowym. Własny wygląd kasety VHS, niezależny od motywu. Animacje `hz3-*`. */
+html.hz3-open, html.hz3-open body { overflow: hidden; }
+.hz3 {
+  position: fixed; inset: 0; z-index: 2147483000; background: #000; color: #efeadf; overflow: hidden;
+  container-type: size; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  font: 700 16px / 1.2 ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace; letter-spacing: .06em;
+}
+.hz3[hidden] { display: none; }
+.hz3:fullscreen { width: 100vw; height: 100vh; }
+.hz3 .hz3-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hz3 .hz3-pad { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
+.hz3 .hz3-hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; text-shadow: 2px 0 #ff2a2a80, -2px 0 #2affff60, 0 0 6px #000; }
+.hz3 .hz3-tl, .hz3 .hz3-tr { position: absolute; top: max(16px, env(safe-area-inset-top)); display: flex; gap: 16px; align-items: center; font-size: clamp(14px, 2.4cqmin, 22px); }
+.hz3 .hz3-tl { left: max(20px, env(safe-area-inset-left)); }
+.hz3 .hz3-tr { right: max(20px, env(safe-area-inset-right)); gap: 6px; }
+.hz3 .hz3-tr b { font-size: 1.25em; }
+.hz3 .hz3-rec i { display: inline-block; width: .7em; height: .7em; margin-right: .45em; border-radius: 50%; background: #ff3b30; vertical-align: -.02em; animation: hz3-blink 1.2s steps(1) infinite; }
+.hz3 .hz3-date { position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); font-size: clamp(13px, 2.2cqmin, 20px); opacity: .85; }
+.hz3 .hz3-bars { position: absolute; left: max(20px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom)); display: grid; gap: 8px; font-size: 12px; }
+.hz3 .hz3-bar { display: grid; grid-template-columns: 7.5em 140px; align-items: center; gap: 8px; }
+.hz3 .hz3-bar i { display: block; height: 8px; border: 1px solid #efeadfaa; padding: 1px; }
+.hz3 .hz3-bar b { display: block; height: 100%; width: 100%; background: #efeadf; transition: width .2s linear; }
+.hz3 .hz3-bar.low b { background: #ff4a3d; }
+.hz3 .hz3-bar.low span { color: #ff8a80; }
+.hz3 .hz3-msg {
+  position: absolute; left: 50%; top: 22%; transform: translateX(-50%); width: min(90%, 760px); text-align: center;
+  font-size: clamp(16px, 3.2cqmin, 30px); letter-spacing: .18em; opacity: 0; transition: opacity .6s;
+}
+.hz3 .hz3-msg.on { opacity: 1; transition-duration: .15s; }
+.hz3 .hz3-hint { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); font-size: 13px; padding: 8px 14px; background: #000a; opacity: 0; transition: opacity .3s; white-space: nowrap; }
+.hz3 .hz3-hint.on { opacity: 1; }
+.hz3.hz3-scaring .hz3-hud, .hz3.hz3-scaring .hz3-touch { display: none; }
+
+/* telefon: joystick (pojawia się tam, gdzie dotkniesz lewej połowy) i przyciski */
+.hz3 .hz3-touch { display: none; position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.hz3.hz3-touchon .hz3-touch { display: block; }
+.hz3.hz3-touchon .hz3-bars { bottom: auto; top: calc(max(16px, env(safe-area-inset-top)) + 34px); }
+.hz3.hz3-touchon .hz3-hint, .hz3.hz3-touchon .hz3-date { display: none; }
+.hz3 .hz3-stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid #efeadf55; background: #0005; opacity: 0; transition: opacity .15s; }
+.hz3 .hz3-stick.on { opacity: 1; }
+.hz3 .hz3-stick i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: #efeadf55; }
+.hz3 .hz3-tbtns { position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); display: grid; gap: 10px; justify-items: end; pointer-events: auto; }
+.hz3 .hz3-tbtns button {
+  min-width: 96px; min-height: 48px; padding: 0 14px; border: 2px solid #efeadf88; border-radius: 12px; background: #000a;
+  color: #efeadf; font: inherit; font-size: 13px; letter-spacing: .1em; touch-action: none;
+}
+.hz3 .hz3-tbtns button[aria-pressed="true"] { background: #efeadf; color: #111; }
+.hz3 .hz3-tbtns [data-a="pause"] { min-width: 64px; min-height: 40px; font-size: 11px; }
+
+/* jumpscare: krótkie rozbłyski (bez nich przy ograniczonym ruchu i w trybie wydajności) */
+.hz3 .hz3-scare { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; background: #fff; mix-blend-mode: difference; }
+.hz3 .hz3-scare.on { animation: hz3-scare .12s steps(1) 8; }
+
+/* menu: pauza i koniec gry */
+.hz3 .hz3-menu { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: #0008; }
+.hz3 .hz3-menu[hidden] { display: none; }
+.hz3 .hz3-card {
+  width: min(100%, 460px); padding: 26px 28px; border: 2px solid #efeadf66; background: #07090bdd; text-align: center;
+  box-shadow: 0 0 0 6px #00000080, 0 30px 80px #000;
+}
+.hz3 .hz3-card h2 { margin: 0 0 6px; font-size: clamp(28px, 6cqmin, 44px); letter-spacing: .16em; color: #f4efe4; text-shadow: 3px 0 #ff2a2a99, -3px 0 #2affff77; }
+.hz3 .hz3-card p { margin: 0 0 16px; color: #bdb7aa; font-weight: 500; font-size: 14px; }
+.hz3 .hz3-card .hz3-rec2 { color: #ffd166; font-weight: 700; letter-spacing: .14em; }
+.hz3 .hz3-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 18px; }
+.hz3 .hz3-stats div { padding: 8px; border: 1px solid #efeadf26; }
+.hz3 .hz3-stats dt { font-size: 11px; color: #9f998c; letter-spacing: .12em; font-weight: 500; }
+.hz3 .hz3-stats dd { margin: 4px 0 0; font-size: 20px; }
+.hz3 .hz3-acts { display: grid; gap: 10px; }
+.hz3 .hz3-acts button {
+  min-height: 46px; border: 2px solid #efeadf66; background: transparent; color: #efeadf; font: inherit; font-size: 15px; letter-spacing: .12em; cursor: pointer;
+}
+.hz3 .hz3-acts button:hover, .hz3 .hz3-acts button:focus-visible { background: #efeadf22; outline: none; border-color: #efeadf; }
+.hz3 .hz3-acts .hz3-main { background: #efeadf; color: #0b0b0b; }
+.hz3 .hz3-acts .hz3-main:hover, .hz3 .hz3-acts .hz3-main:focus-visible { background: #fff; color: #000; }
+.hz3 .hz3-keys { margin: 14px 0 0 !important; font-size: 11px !important; letter-spacing: .04em; }
+.hz3.hz3-touchon .hz3-keys { display: none; }
+
+@keyframes hz3-blink { 50% { opacity: 0; } }
+@keyframes hz3-scare { 0% { opacity: .9; } 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .hz3 .hz3-rec i { animation: none; }
+  .hz3 .hz3-scare.on { animation: none; }
+  .hz3 .hz3-msg { transition: none; }
+}
+@container (max-height: 420px) {
+  .hz3 .hz3-card { padding: 14px 18px; }
+  .hz3 .hz3-card p { margin-bottom: 8px; }
+  .hz3 .hz3-stats { margin-bottom: 10px; gap: 6px; }
+  .hz3 .hz3-acts { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+@container (max-width: 520px) {
+  .hz3 .hz3-bar { grid-template-columns: 6.5em 90px; }
+}
