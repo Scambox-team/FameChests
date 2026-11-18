@@ -600,6 +600,11 @@ pub async fn count_open(c: &mut Conn, uid: i64, crate_id: &str, n: i64, persons:
 /// Gra w kasynie rozegrana (won: Some(true) wygrana / Some(false) przegrana / None remis, zwrot); cards = postawione
 /// karty. Seria wygranych z rzędu (streak:<gra>, najlepsza: beststreak:<gra>) - przegrana ją zeruje.
 pub async fn count_casino(c: &mut Conn, uid: i64, game: &str, won: Option<bool>, cards: &[(String, String)]) -> sqlx::Result<()> {
+    // skarbonka (routes/piggy.rs): wartość postawionych kart
+    let stake: i64 = crate::state::global_catalog()
+        .map(|cat| cards.iter().map(|(p, v)| cat.person(p).map_or(0, |x| x.value(v))).sum())
+        .unwrap_or(0);
+    crate::routes::piggy::add(c, uid, crate::routes::piggy::Ev::Casino { stake, won: won == Some(true) }).await?;
     let wd = chrono::Local::now().weekday().num_days_from_monday();
     let mut keys = play_events(game, wd);
     if won == Some(true) {

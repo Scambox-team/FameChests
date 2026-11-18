@@ -247,6 +247,7 @@ const VR_SOURCES = {
   pinball: { chip: "pinball", title: "Nagroda za wynik w Pinballu" },
   snake: { chip: "snake", title: "Nagroda za wynik w Snake'u" },
   turbo: { chip: "turbo", title: "Nagroda za wynik w grach Super Turbo" },
+  piggy: { chip: "skarbonka", title: "Nagroda ze Skarbonki (quest wspólny): miejsca 1-3 = 500 / 200 / 100 zł, reszta uczestników = 50 zł" },
 };
 function vrExtraHTML(v) {
   const V = vrV(v), src = VR_SOURCES[V.extraSource];

@@ -8,7 +8,8 @@
 //! losowana ze skrzynek, które dziś są w sklepie (rotacja), a gdy ich nie ma - z domyślnych (stałych i sezonowych).
 //! `pick_card` z tym samym wzorem używa też Snake (`snake.rs`, wariant Pikselowa).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::{LazyLock, Mutex};
 
 use axum::extract::State;
 use rand::seq::SliceRandom;
@@ -23,7 +24,12 @@ use crate::db::{lock_me, now};
 use crate::error::{bad, Res};
 use crate::game::{add_state, balance, insert_for};
 use crate::pinball_sim::{self, TICK};
+use crate::live::Live;
 use crate::state::AppState;
+use super::snake::CommitRequest;
+
+/// Ziarna gier wydawane odcinkami (`live.rs`): numer gry -> (gracz, bilet). Bez wpisu (np. po restarcie) gra nie daje nagrody.
+static LIVE: LazyLock<Mutex<HashMap<i64, (i64, Live)>>> = LazyLock::new(Default::default);
 
 /// Progi kart z nazwami rzadkości (dla przeglądarki)
 pub fn tiers_json(tiers: &[CardTier]) -> Vec<serde_json::Value> {
@@ -90,7 +96,9 @@ pub async fn pinball_start(State(st): State<AppState>, Me(me): Me, JsonBody(req)
     if level > pinball_sim::level_count() {
         return bad("Nie ma takiego poziomu");
     }
-    let seed: u32 = rand::random();
+    let live = Live::new(u64::from(pinball_sim::SEG), TICK, 2);
+    let (seeds, seg) = (live.released(), live.seg);
+    let seed = seeds[0];
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
     sqlx::query("DELETE FROM pinball_runs WHERE user_id = $1 AND finished_at = 0").bind(me.id).execute(&mut *tx).await?;
@@ -102,18 +110,46 @@ pub async fn pinball_start(State(st): State<AppState>, Me(me): Me, JsonBody(req)
         .fetch_one(&mut *tx)
         .await?;
     tx.commit().await?;
+    {
+        let mut l = LIVE.lock().unwrap_or_else(|e| e.into_inner());
+        l.retain(|_, (uid, lv)| *uid != me.id && lv.at.elapsed().as_secs() < 3 * 3600);
+        l.insert(id, (me.id, live));
+    }
     let mut v = info();
     v["run"] = json!(id);
-    v["seed"] = json!(seed);
+    v["seeds"] = json!(seeds);
+    v["seg"] = json!(seg);
     ok(v)
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct Commit {
+    run: i64,
+    #[serde(flatten)]
+    part: CommitRequest,
+}
+
+/// W trakcie gry: zatwierdza zapis do początku odcinka i wydaje kolejne ziarna (`live.rs`)
+pub async fn pinball_commit(Me(me): Me, JsonBody(req): JsonBody<Commit>) -> Res {
+    let mut l = LIVE.lock().unwrap_or_else(|e| e.into_inner());
+    let Some((_, live)) = l.get_mut(&req.run).filter(|(uid, _)| *uid == me.id) else { return bad("Gra nie została rozpoczęta") };
+    match live.commit(req.part.upto, &req.part.log) {
+        Ok(seeds) => ok(json!({"seeds": seeds})),
+        Err(why) => {
+            tracing::warn!(user = me.id, why, "pinball: odrzucony odcinek gry");
+            l.remove(&req.run);
+            bad("Nieprawidłowy zapis gry")
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct Finish {
     run: i64,
-    /// zapis gry: naprzemiennie tick i kod zdarzenia (`INPUT_CODES` w core.ts)
-    log: Vec<u64>,
+    /// reszta zapisu po ostatnim zatwierdzonym odcinku: naprzemiennie tick i kod zdarzenia (`INPUT_CODES` w core.ts)
+    log: Vec<i64>,
     /// ile ticków trwała gra według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
     ticks: u64,
 }
@@ -129,11 +165,20 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
             .bind(me.id)
             .fetch_optional(&mut *tx)
             .await?;
-    let Some((started, seed, level)) = run else { return ok(json!({"reward": 0, "reason": "no_run"})) };
+    let Some((started, _seed, level)) = run else { return ok(json!({"reward": 0, "reason": "no_run"})) };
     let elapsed = now() - started;
-    // odtwarzanie to praca dla procesora (do minuty gry na milisekundy, ale zapis bywa długi) - poza wątkami asynchronicznymi
-    let (log, seed32, level_n) = (req.log, seed as u32, level.max(1) as usize);
-    let outcome = tokio::task::spawn_blocking(move || pinball_sim::replay(level_n, seed32, &log)).await.ok().flatten();
+    let live = LIVE.lock().unwrap_or_else(|e| e.into_inner()).remove(&req.run).filter(|(uid, _)| *uid == me.id);
+    let full = live.and_then(|(_, l)| l.finish(&req.log)).filter(|(log, _)| log.iter().all(|v| *v >= 0));
+    // odtwarzanie to praca dla procesora (do minuty gry na milisekundy, ale zapis bywa długi) - poza wątkami asynchronicznymi;
+    // gra, która sięgnęła po ziarno niewydane przeglądarce, jest odrzucana
+    let level_n = level.max(1) as usize;
+    let outcome = match full {
+        Some((log, seeds)) => {
+            let log: Vec<u64> = log.into_iter().map(|v| v as u64).collect();
+            tokio::task::spawn_blocking(move || pinball_sim::replay(level_n, &seeds, &log)).await.ok().flatten()
+        }
+        None => None,
+    };
     let (score, reward, reason) = match outcome {
         None => (0, 0, "invalid"),
         Some(o) if !o.over => (o.score.max(0), 0, "invalid"),
@@ -167,6 +212,7 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
         .await?;
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
+        super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     }
     let card = match &card_pid {
         Some(pid) => {

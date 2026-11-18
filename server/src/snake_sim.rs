@@ -15,6 +15,10 @@ const VEC: [(i32, i32); 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 /// najdłuższa gra (kroków) - po niej odtwarzanie się poddaje
 const MAX_STEPS: u64 = 400_000;
 const MAX_EVENTS: usize = 100_000;
+/// kroków w odcinku losowania (`live.rs`; to samo `SEG` w core.ts)
+pub const SEG: u64 = 16;
+/// najkrótszy krok w sekundach (do sprawdzania tempa przy zatwierdzaniu odcinków)
+pub const MIN_TICK: f64 = MIN_MS / 1000.0;
 
 pub struct Outcome {
     /// zjedzone jabłka
@@ -39,12 +43,13 @@ fn place_apple(rng: &mut Rng, snake: &[(i32, i32)]) -> (i32, i32) {
     free[(rng.next() * free.len() as f64).floor() as usize]
 }
 
-/// Odtwarza grę: `log` = naprzemiennie numer kroku i kod kierunku (0-3). None = zapis nie do przyjęcia.
-pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
+/// Odtwarza grę: `seeds` = ziarna kolejnych odcinków po `SEG` kroków (gra, która doszła do odcinka bez ziarna, jest
+/// odrzucana), `log` = naprzemiennie numer kroku i kod kierunku (0-3). None = zapis nie do przyjęcia.
+pub fn replay(seeds: &[u32], log: &[u64]) -> Option<Outcome> {
     if !log.len().is_multiple_of(2) || log.len() / 2 > MAX_EVENTS {
         return None;
     }
-    let mut rng = Rng::new(seed);
+    let mut rng = Rng::new(*seeds.first()?);
     let y = ROWS / 2;
     let mut snake = vec![(6, y), (5, y), (4, y)];
     let mut apple = place_apple(&mut rng, &snake);
@@ -86,6 +91,10 @@ pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
         } else {
             snake.pop();
         }
+        // nowy odcinek losowania (jak `step` w core.ts: po kroku)
+        if steps.is_multiple_of(SEG) {
+            rng = Rng::new(*seeds.get((steps / SEG) as usize)?);
+        }
     }
     Some(Outcome { score, steps, min_ms })
 }
@@ -107,16 +116,20 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/snake_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.seed, &f.log).expect("zapis");
+            let o = replay(&crate::live::test_seeds(f.seed, f.steps / SEG + 1), &f.log).expect("zapis");
             assert_eq!((o.score, o.steps), (f.score, f.steps), "ziarno {}", f.seed);
         }
     }
 
     #[test]
     fn going_straight_hits_the_wall() {
-        let o = replay(1, &[]).unwrap();
+        let seeds = crate::live::test_seeds(1, 4);
+        let o = replay(&seeds, &[]).unwrap();
         assert_eq!(o.steps, 14); // od x = 6 do ściany (x = 20)
-        assert!(replay(1, &[5]).is_none());
-        assert!(replay(1, &[3, 9]).is_none());
+        assert!(replay(&seeds, &[5]).is_none());
+        assert!(replay(&seeds, &[3, 9]).is_none());
+        // gra dłuższa niż wydane ziarna: odrzucona (kręcenie się w kółko 2 x 2)
+        let circle: Vec<u64> = (0..40u64).flat_map(|i| [i, [1, 2, 3, 0][(i % 4) as usize]]).collect();
+        assert!(replay(&seeds[..1], &circle).is_none());
     }
 }

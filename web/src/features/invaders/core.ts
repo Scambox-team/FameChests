@@ -22,6 +22,9 @@ const INVADE_Y = 470;
 const EXTRA_LIFE = 1500;
 
 /** mulberry32: 32-bitowy generator z ziarnem; liczy tak samo w JS i w Rust */
+/** kroków w odcinku losowania (`SEG` w invaders_sim.rs) - 2 s gry */
+export const SEG = 120;
+
 export class Rng {
   private a: number;
   constructor(seed: number) { this.a = seed | 0; }
@@ -80,9 +83,11 @@ export class InvadersSim {
   /** zdarzenia dla dźwięku i efektów (przeglądarka je zbiera i czyści) */
   events: { k: string; x: number; y: number; n?: number }[] = [];
   private rng: Rng;
+  private seeds: (k: number) => number;
 
-  constructor(seed: number) {
-    this.rng = new Rng(seed);
+  /** `seeds(k)` = ziarno odcinka `k` (po SEG kroków; features/games/liveSeeds.ts) */
+  constructor(seeds: (k: number) => number) {
+    this.seeds = seeds; this.rng = new Rng(seeds(0));
     this.saucerT = 900 + this.rng.int(900);
     this.setupWave();
   }
@@ -143,6 +148,12 @@ export class InvadersSim {
 
   /** Jeden krok gry (1/60 s) z wciśniętymi klawiszami `mask` (zmiana trafia do zapisu) */
   step(mask: number) {
+    this.stepInner(mask);
+    // nowy odcinek losowania (jak w invaders_sim.rs)
+    if (!this.over && this.tick % SEG === 0) this.rng = new Rng(this.seeds(this.tick / SEG));
+  }
+
+  private stepInner(mask: number) {
     if (this.over) return;
     if (mask !== this.mask) { this.log.push(this.tick, mask); this.mask = mask; }
     this.tick++;

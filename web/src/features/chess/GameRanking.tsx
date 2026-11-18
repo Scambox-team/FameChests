@@ -6,10 +6,13 @@ import { fmtNum } from '../../lib/format';
 import './gameRanking.css';
 
 // Ranking jednej gry z zakładki Gry (serwer: routes/game_rankings.rs): szachy = wygrane z ludźmi, pinball = najlepszy sprawdzony
-// wynik na danym poziomie. Pokazuje pierwsze miejsca, a gdy gracz jest dalej - jego miejsce na końcu.
+// wynik na danym poziomie, Snake / Snake 3D / Run / Obrona Orbity / AIMPULSE = najlepszy wynik odtworzony przez serwer. Pokazuje pierwsze miejsca, a gdy gracz jest dalej - jego miejsce na końcu.
 type Row = { place: number; user: string; me: boolean; wins?: number; games?: number; losses?: number; draws?: number; best?: number };
 
-export function GameRanking({ game, level, title, refresh }: { game: 'chess' | 'pinball' | 'aim'; level?: number; title: string; refresh?: unknown }) {
+/** Jednostka wyniku w rankingach gier liczonych przez serwer (`game_scores`) */
+const UNIT: Record<string, string> = { snake: 'jabł.', snake3d: 'jabł.', run: 'm' };
+
+export function GameRanking({ game, level, title, refresh }: { game: 'chess' | 'pinball' | 'aim' | 'snake' | 'snake3d' | 'run' | 'invaders' | 'aimpulse'; level?: number; title: string; refresh?: unknown }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -32,7 +35,7 @@ export function GameRanking({ game, level, title, refresh }: { game: 'chess' | '
               <Link className="gr-name" to={`/player/${encodeURIComponent(r.user)}`}>{r.user}</Link>
               {game === 'chess'
                 ? <span className="gr-val"><b>{r.wins}</b> <small>{`wygr. z ${r.games}`}</small></span>
-                : <span className="gr-val"><b>{fmtNum(r.best ?? 0)}</b> <small>pkt</small></span>}
+                : <span className="gr-val"><b>{fmtNum(r.best ?? 0)}</b> <small>{UNIT[game] ?? 'pkt'}</small></span>}
             </li>
           ))}
         </ol>}

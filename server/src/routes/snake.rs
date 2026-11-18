@@ -14,7 +14,6 @@
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
-use std::time::Instant;
 
 use axum::extract::{Multipart, Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -29,6 +28,7 @@ use crate::data::g;
 use crate::db::{lock_me, Conn};
 use crate::error::{bad, AppError, Res};
 use crate::game::{add_state, get_state, insert_for, log_admin, set_state};
+use crate::live::Live;
 use crate::images::{file_mtime, mimetype, sniff, Kind};
 use crate::state::AppState;
 use crate::web::send_file;
@@ -49,13 +49,10 @@ const REWARD: &[(&str, &str, i64, i64)] = &[
     ("snake_reward_per_game", "perGame", 300, 100_000),
     ("snake_reward_daily", "daily", 900, 1_000_000),
 ];
-/// Najszybciej, jak da się zjeść jabłko (krok węża trwa co najmniej 65 ms, jabłko jest zwykle kilka kratek dalej)
-
-/// Bilet gry: chwila startu i to, czy gra daje karty (zwykły Snake 2D; Snake 3D tylko grosze)
+/// Bilet gry: ziarna wydawane odcinkami (`live.rs`) i to, czy gra daje karty (zwykły Snake 2D; Snake 3D kartę RGB)
 struct Ticket {
-    at: Instant,
-    /// ziarno gry (jedzenie losuje rdzeń z tego ziarna, także przy odtwarzaniu)
-    seed: u32,
+    /// zegar startu, ziarna odcinków i zatwierdzony zapis
+    live: Live,
     cards: bool,
     /// Super Turbo Snake 3D: zamiast Pikselowej wypada karta RGB (`turbo_run::turbo_card`)
     turbo: bool,
@@ -237,17 +234,47 @@ pub struct StartRequest {
 
 pub async fn snake_start(Me(me): Me, JsonBody(req): JsonBody<StartRequest>) -> Res {
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
-    t.retain(|_, k| k.at.elapsed().as_secs() < 3 * 3600);
-    let seed: u32 = rand::random();
-    t.insert(me.id, Ticket { at: Instant::now(), seed, cards: req.cards, turbo: req.turbo });
-    ok(json!({"ok": true, "seed": seed}))
+    t.retain(|_, k| k.live.at.elapsed().as_secs() < 3 * 3600);
+    let live = if req.turbo {
+        Live::new(crate::snake3d_sim::SEG, crate::snake3d_sim::MIN_TICK, 2)
+    } else {
+        Live::new(crate::snake_sim::SEG, crate::snake_sim::MIN_TICK, 2)
+    };
+    let (seeds, seg) = (live.released(), live.seg);
+    t.insert(me.id, Ticket { live, cards: req.cards, turbo: req.turbo });
+    ok(json!({"ok": true, "seeds": seeds, "seg": seg}))
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct CommitRequest {
+    /// zapis jest kompletny do początku tego odcinka
+    pub upto: u64,
+    /// zdarzenia od poprzedniego zatwierdzenia (te same liczby co w zapisie gry)
+    pub log: Vec<i64>,
+}
+
+/// W trakcie gry: zatwierdza zapis do początku odcinka i wydaje kolejne ziarna (`live.rs`). Zły zapis albo za szybkie tempo
+/// unieważnia bilet.
+pub async fn snake_commit(Me(me): Me, JsonBody(req): JsonBody<CommitRequest>) -> Res {
+    let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(tk) = t.get_mut(&me.id) else { return bad("Gra nie została rozpoczęta") };
+    match tk.live.commit(req.upto, &req.log) {
+        Ok(seeds) => ok(json!({"seeds": seeds})),
+        Err(why) => {
+            tracing::warn!(user = me.id, why, "snake: odrzucony odcinek gry");
+            t.remove(&me.id);
+            bad("Nieprawidłowy zapis gry")
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct FinishRequest {
-    /// zapis gry: naprzemiennie numer kroku i kierunek (2D: kod 0-3) albo skręt (3D: 1 w prawo, 0 w lewo)
-    log: Vec<u64>,
+    /// reszta zapisu gry po ostatnim zatwierdzonym odcinku: naprzemiennie numer kroku i kierunek (2D: kod 0-3) albo skręt
+    /// (3D: 1 w prawo, 0 w lewo)
+    log: Vec<i64>,
     /// liczba kroków według przeglądarki (tylko do porównania w logu; liczy się odtworzenie)
     steps: u64,
 }
@@ -255,14 +282,20 @@ pub struct FinishRequest {
 /// Koniec gry: grosze za wynik (w limicie gry i dnia). Bilet jest jednorazowy.
 pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<FinishRequest>) -> Res {
     let started = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&me.id);
-    let Some(ticket) = started else { return bad("Gra nie została rozpoczęta") };
-    // serwer odtwarza grę z ziarna i zapisu (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy jabłka
-    let (seed, turbo, log) = (ticket.seed, ticket.turbo, req.log);
+    let Some(Ticket { live, cards, turbo }) = started else { return bad("Gra nie została rozpoczęta") };
+    let at = live.at;
+    let Some((log, seeds)) = live.finish(&req.log) else { return bad("Nieprawidłowy zapis gry") };
+    if log.iter().any(|v| *v < 0) {
+        return bad("Nieprawidłowy zapis gry");
+    }
+    let log: Vec<u64> = log.into_iter().map(|v| v as u64).collect();
+    // serwer odtwarza grę z ziaren i zapisu (praca dla procesora - poza wątkami asynchronicznymi) i sam liczy jabłka; gra, która
+    // sięgnęła po ziarno niewydane przeglądarce, jest odrzucana
     let replayed = tokio::task::spawn_blocking(move || {
         if turbo {
-            crate::snake3d_sim::replay(seed, &log).map(|o| (o.foods, o.ticks, o.min_secs))
+            crate::snake3d_sim::replay(&seeds, &log).map(|o| (o.foods, o.ticks, o.min_secs))
         } else {
-            crate::snake_sim::replay(seed, &log).map(|o| (o.score, o.steps, o.min_ms / 1000.0))
+            crate::snake_sim::replay(&seeds, &log).map(|o| (o.score, o.steps, o.min_ms / 1000.0))
         }
     })
     .await
@@ -272,11 +305,12 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     if steps != req.steps {
         tracing::warn!(user = me.id, claimed = req.steps, steps, turbo, "snake: przeglądarka i serwer policzyły różną długość gry");
     }
-    if ticket.at.elapsed().as_secs_f64() + 3.0 < min_secs * 0.9 {
+    if at.elapsed().as_secs_f64() + 3.0 < min_secs * 0.9 {
         return bad("Nieprawidłowy wynik");   // zapis dłuższy niż czas, który naprawdę minął
     }
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    super::game_rankings::record_score(&mut tx, me.id, if turbo { "snake3d" } else { "snake" }, score).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
     let base = reward_for(&r, score);
@@ -290,9 +324,9 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     // karta za wynik, BEZ limitu na dobę: Snake 2D daje Pikselową, Snake 3D (Super Turbo) kartę RGB; progi jak w Pinballu
     let cfg = &g().snake;
     let mut card = None;
-    if ticket.turbo {
+    if turbo {
         card = super::turbo_run::turbo_card(&mut tx, &st.cat(), &me, &g().turbo.snake_tiers, score).await?;
-    } else if ticket.cards {
+    } else if cards {
         let cat = st.cat();
         if let Some(pid) = super::pinball::pick_card(&cat, &cfg.card_tiers, score) {
             let item = insert_for(&mut tx, &cat, me.id, me.hidden_from_ranking(), &pid, &cfg.card_variant, "snake").await?;
@@ -300,6 +334,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
             card = Some(json!({"id": item.id, "person": pid, "variant": cfg.card_variant, "name": p.name, "rarity": p.rarity}));
         }
     }
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({

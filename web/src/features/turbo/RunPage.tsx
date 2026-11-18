@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import { LiveSeeds, startLive } from '../games/liveSeeds';
+import { SEED_SEG } from './runCore';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { variantName } from '../../game/rules';
@@ -11,6 +13,7 @@ import { Sound } from '../../sound/sound';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import type { Run3D } from '../../three/runScene';
 import { Button } from '../../ui/Button';
+import { GameRanking } from '../chess/GameRanking';
 import { toast } from '../../ui/Toaster';
 import './run3d.css';
 import './turbo.css';
@@ -28,7 +31,7 @@ interface Reward {
 export function RunPage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Run3D | null>(null);
-  const ticket = useRef(false);   // serwer przyjął start biegu: po końcu prosimy o nagrodę
+  const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start biegu: po końcu prosimy o nagrodę
   const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);
   const [failed, setFailed] = useState(false);
   const { data: look, refetch } = useQuery({ queryKey: ['run3d-look'], queryFn: () => api<{ reward?: Reward }>('/api/games/run'), staleTime: 60_000 });
@@ -49,18 +52,19 @@ export function RunPage() {
           onStart: async () => {
             Sound.unlock();
             setWon(null);
-            ticket.current = false;
-            try {
-              const r = await api<{ seed: number }>('/api/games/run/start', {});
-              ticket.current = true;
-              return r.seed;
-            } catch { return undefined; /* bieg bez nagrody */ }
+            ticket.current = null;
+            const { live } = await startLive('/api/games/run/start', {}, '/api/games/run/commit', SEED_SEG);
+            if (live.online) ticket.current = live;
+            return live;
           },
           onOver: async ({ log, ticks }) => {
-            if (!ticket.current) return;
-            ticket.current = false;
+            const live = ticket.current;
+            ticket.current = null;
+            if (!live) return;
             try {
-              const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/run/finish', { log, ticks });   // serwer odtwarza bieg i sam liczy dystans
+              const rest = await live.rest(log);
+              if (!rest) return toast('Super Turbo Run: połączenie z serwerem przerwane - ten bieg jest bez nagrody', true);
+              const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/run/finish', { log: rest, ticks });   // serwer odtwarza bieg i sam liczy dystans
               applyState(r.state);
               setWon({ reward: r.reward, capped: r.capped, card: r.card });
               if (r.reward > 0) { Sound.coin(1); toast(`Super Turbo Run: +${fmt(r.reward)}`); }
@@ -112,6 +116,7 @@ export function RunPage() {
             <span>Karta w wariancie {variantName(rw.cardVariant)} za dystans: {rw.cardTiers.map(t => `${fmt(t.score)} m: ${t.name}`).join(', ')}, bez limitu.</span>
           </div>
         )}
+        <GameRanking game="run" title="Ranking Run 3D: dystans" refresh={won} />
         <div className="tb-help">
           <h3>Sterowanie</h3>
           <p><kbd>A</kbd> <kbd>D</kbd> albo <kbd>←</kbd> <kbd>→</kbd> bieg po ścianach tunelu, <kbd>Spacja</kbd> skok (przytrzymaj, żeby skoczyć wyżej), <kbd>P</kbd> pauza, <kbd>M</kbd> dźwięk, <kbd>F</kbd> pełny ekran</p>

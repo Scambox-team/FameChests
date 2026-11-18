@@ -11,11 +11,18 @@ use super::{ok, JsonBody};
 use crate::aim_sim::{self, ROUND_TICKS, TICK};
 use crate::auth::Me;
 use crate::db::{lock_me, now};
-use crate::error::Res;
+use crate::error::{bad, Res};
 use crate::state::AppState;
+
+/// Strzelnica jest wyłączona (`AIM_ON` w ChessPage.tsx). Póki tak jest, serwer nie przyjmuje rund - inaczej do rankingu dało się
+/// wpisać wynik spreparowanym zapytaniem, choć gry nie ma. Przed włączeniem przejść na ziarna odcinkami (`live.rs`), jak Snake.
+const AIM_ON: bool = false;
 
 /// Początek rundy: serwer zapisuje czas i losuje ziarno (jedna otwarta runda na gracza)
 pub async fn aim_start(State(st): State<AppState>, Me(me): Me) -> Res {
+    if !AIM_ON {
+        return bad("Strzelnica jest wyłączona");
+    }
     let seed: u32 = rand::random();
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
@@ -40,6 +47,9 @@ pub struct Finish {
 
 /// Koniec rundy: serwer odtwarza zapis i sam liczy wynik; do rankingu trafia, jeśli runda trwała tyle, co jej zapis
 pub async fn aim_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<Finish>) -> Res {
+    if !AIM_ON {
+        return bad("Strzelnica jest wyłączona");
+    }
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
     let run: Option<(f64, i64)> = sqlx::query_as("SELECT started_at, seed FROM aim_runs WHERE id = $1 AND user_id = $2 AND finished_at = 0")

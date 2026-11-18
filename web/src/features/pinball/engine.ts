@@ -6,7 +6,8 @@
 import { Sound } from '../../sound/sound';
 import { baseTheme } from '../../styles/theme';
 import { SKINS, type PinSkin } from './skins';
-import { ARC, AXIS, BALLS, DIVIDERS, FR0, FR1, GATE, INPUT_CODES, LANE_X, R, Sim, TICK, W, geoOf, mirror, type Ball, type Flip, type Fx, type Input } from './core';
+import { LiveSeeds } from '../games/liveSeeds';
+import { SEG, ARC, AXIS, BALLS, DIVIDERS, FR0, FR1, GATE, INPUT_CODES, LANE_X, R, Sim, TICK, W, geoOf, mirror, type Ball, type Flip, type Fx, type Input } from './core';
 
 export { W };
 const VH = 840;             // wysokość widoku: wyższy stół przewija się za kulką
@@ -16,16 +17,17 @@ type Spark = { x: number; y: number; vx: number; vy: number; life: number; max: 
 type Pop = { x: number; y: number; text: string; life: number; color: string };
 
 export type PinHud = { level: number; phase: 'attract' | 'play' | 'over'; score: number; ball: number; balls: number; mult: number; best: number; multiball: boolean; save: boolean; tilt: boolean };
-/** Zapis gry do sprawdzenia przez serwer: ziarno od serwera, zdarzenia (tick, kod) i liczba ticków do końca gry */
-export type PinRun = { seed: number; ticks: number; log: number[]; verified: boolean };
+/** Zapis gry do sprawdzenia przez serwer: ziarna odcinków od serwera (features/games/liveSeeds.ts), zdarzenia (tick, kod) i liczba
+ *  ticków do końca gry */
+export type PinRun = { live: LiveSeeds; ticks: number; log: number[]; verified: boolean };
 export type PinballGame = {
   destroy(): void; start(): void; resize(): void; zoom(delta: number): boolean; resetZoom(): void;
   getRun(): PinRun | null;
   state(): { balls: { x: number; y: number; vx: number; vy: number }[]; score: number; phase: string; ball: number; tick: number };
 };
 export type PinOptions = {
-  /** Wołane przy starcie gry: zwraca ziarno od serwera (gra od razu po tym) albo null = gra bez weryfikacji i bez nagród */
-  begin?: () => Promise<number | null>;
+  /** Wołane przy starcie gry: zwraca ziarna od serwera (gra od razu po tym) albo null = gra bez weryfikacji i bez nagród */
+  begin?: () => Promise<LiveSeeds | null>;
   /** Tylko do testów: stały generator czasu (ms) zamiast requestAnimationFrame */
   seed?: number;
 };
@@ -81,7 +83,7 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
   };
 
   // ---------- gra ----------
-  let sim = new Sim(level, 0, fx);              // pusty stół na ekranie startowym; prawdziwa gra dostaje ziarno od serwera
+  let sim = new Sim(level, () => 0, fx);              // pusty stół na ekranie startowym; prawdziwa gra dostaje ziarno od serwera
   let run: PinRun | null = null;
   let starting = false, destroyed = false;
   const held = { l: false, r: false };           // klawisze naprawdę wciśnięte (żeby przenieść je do nowej gry)
@@ -119,9 +121,9 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     run.log.push(sim.tick, INPUT_CODES.indexOf(code));
     sim.input(code);
   }
-  function beginGame(seed: number, verified: boolean) {
-    sim = new Sim(level, seed, fx);
-    run = { seed, ticks: 0, log: [], verified };
+  function beginGame(live: LiveSeeds, verified: boolean) {
+    sim = new Sim(level, live.seed, fx);
+    run = { live, ticks: 0, log: [], verified };
     bind();
     sim.start();
     sparks.length = 0; pops.length = 0;
@@ -135,12 +137,12 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     starting = true;
     Sound.unlock();
     msg = { text: 'ŁĄCZĘ…', sub: '', t: 0, dur: 8, color: C.cyan };
-    let seed: number | null = null;
-    try { seed = opts.begin ? await opts.begin() : null; } catch { seed = null; }
+    let live: LiveSeeds | null = null;
+    try { live = opts.begin ? await opts.begin() : null; } catch { live = null; }
     starting = false;
     if (destroyed) return;
     msg = null;
-    beginGame(seed ?? (opts.seed ?? Math.floor(Math.random() * 4294967296)) >>> 0, seed !== null);
+    beginGame(live ?? (opts.seed !== undefined ? new LiveSeeds(null, [opts.seed], 1e12) : LiveSeeds.local(SEG)), live !== null && live.online);
   }
 
   // ---------- rysowanie ----------
@@ -660,7 +662,11 @@ export function createPinball(canvas: HTMLCanvasElement, onHud: (h: PinHud) => v
     if (sim.phase !== 'attract') {
       acc += dt;
       let n = 0;
-      while (acc >= TICK && n < 40) { sim.step(); acc -= TICK; n++; }
+      while (acc >= TICK && n < 40) {
+        if (run && sim.phase === 'play' && !run.live.canStep(sim.tick)) { acc = Math.min(acc, TICK); break; }   // czekamy na ziarno
+        sim.step(); acc -= TICK; n++;
+      }
+      if (run && sim.phase === 'play') run.live.pump(sim.tick, run.log);
       if (n >= 40) acc = 0;
     } else acc = 0;
     visuals(dt);

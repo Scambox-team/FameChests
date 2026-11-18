@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Minus, Play, Plus, RotateCcw, Square } from 'lucide-react';
 import { api } from '../../api/client';
+import { startLive } from '../games/liveSeeds';
+import { SEG } from './core';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { syncInventory } from '../../game/session';
@@ -58,7 +60,11 @@ export function PinballPage() {
       runId.current = null;
       if (rec?.verified && id) {
         setChecking(true);
-        api<Rewards & Result & { balance: number; score: number }>('/api/pinball/finish', { run: id, level, ticks: rec.ticks, log: rec.log })
+        rec.live.rest(rec.log)
+          .then(rest => {
+            if (!rest) throw new Error('offline');
+            return api<Rewards & Result & { balance: number; score: number }>('/api/pinball/finish', { run: id, level, ticks: rec.ticks, log: rest });
+          })
           .then(r => {
             setRewards(r);
             setResult(r);
@@ -80,11 +86,10 @@ export function PinballPage() {
     const g = createPinball(canvas.current!, setHud, level, {
       // ziarno gry daje serwer; bez niego (błąd sieci) gra się normalnie, ale bez nagród
       begin: async () => {
-        try {
-          const r = await api<Rewards & { run: number; seed: number }>('/api/pinball/start', { level });
-          runId.current = r.run; setRewards(r);
-          return r.seed;
-        } catch { runId.current = null; return null; }
+        const { live, data } = await startLive<Rewards & { run: number }>('/api/pinball/start', { level }, '/api/pinball/commit', SEG, r => ({ run: r.run }));
+        if (!data) { runId.current = null; return null; }
+        runId.current = data.run; setRewards(data);
+        return live;
       },
     });
     game.current = g;

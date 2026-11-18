@@ -7,7 +7,6 @@
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
-use std::time::Instant;
 
 use axum::extract::{Path, State};
 use serde::Deserialize;
@@ -19,7 +18,9 @@ use crate::auth::{Admin, Me};
 use crate::db::{lock_me, Conn};
 use crate::error::{bad, Res};
 use crate::game::{add_state, get_state, log_admin, set_state};
+use crate::live::Live;
 use crate::state::AppState;
+use super::snake::CommitRequest;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Arcade {
@@ -68,8 +69,8 @@ impl Arcade {
 }
 
 struct Ticket {
-    at: Instant,
-    seed: u32,
+    /// zegar startu, ziarna odcinków (`live.rs`) i zatwierdzony zapis
+    live: Live,
     diff: usize,
     dur: u32,
 }
@@ -146,17 +147,36 @@ pub async fn arcade_start(Me(me): Me, Path(name): Path<String>, JsonBody(req): J
     if game == Arcade::Aimpulse && (req.diff > 2 || !crate::aimpulse_sim::DURS.contains(&req.dur)) {
         return bad("Wybierz poziom i czas rundy");
     }
-    let seed: u32 = rand::random();
+    let live = match game {
+        Arcade::Invaders => Live::new(crate::invaders_sim::SEG, 1.0 / 60.0, 2),
+        Arcade::Aimpulse => Live::new(crate::aimpulse_sim::SEG as u64, 1.0 / 60.0, 4),
+    };
+    let (seeds, seg) = (live.released(), live.seg);
     let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
-    t.retain(|_, tk| tk.at.elapsed().as_secs() < 3 * 3600);
-    t.insert((me.id, game), Ticket { at: Instant::now(), seed, diff: req.diff, dur: req.dur });
-    ok(json!({"ok": true, "seed": seed}))
+    t.retain(|_, tk| tk.live.at.elapsed().as_secs() < 3 * 3600);
+    t.insert((me.id, game), Ticket { live, diff: req.diff, dur: req.dur });
+    ok(json!({"ok": true, "seeds": seeds, "seg": seg}))
+}
+
+/// W trakcie gry: zatwierdza zapis do początku odcinka i wydaje kolejne ziarna (`live.rs`)
+pub async fn arcade_commit(Me(me): Me, Path(name): Path<String>, JsonBody(req): JsonBody<CommitRequest>) -> Res {
+    let game = game_of(&name)?;
+    let mut t = TICKETS.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(tk) = t.get_mut(&(me.id, game)) else { return bad("Gra nie została rozpoczęta") };
+    match tk.live.commit(req.upto, &req.log) {
+        Ok(seeds) => ok(json!({"seeds": seeds})),
+        Err(why) => {
+            tracing::warn!(user = me.id, game = game.key(), why, "arcade: odrzucony odcinek gry");
+            t.remove(&(me.id, game));
+            bad("Nieprawidłowy zapis gry")
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct FinishRequest {
-    /// Obrona Orbity: (krok, maska klawiszy)...; AIMPULSE: (krok, x, y, z)...
+    /// reszta zapisu po ostatnim zatwierdzonym odcinku. Obrona Orbity: (krok, maska klawiszy)...; AIMPULSE: (krok, x, y, z)...
     log: Vec<i64>,
     /// Obrona Orbity: ile kroków zrobiła gra w przeglądarce
     ticks: u64,
@@ -169,17 +189,17 @@ struct Played {
     extra: serde_json::Value,
 }
 
-fn replay(game: Arcade, tk: &Ticket, log: &[i64], ticks: u64) -> Option<Played> {
+fn replay(game: Arcade, seeds: &[u32], diff: usize, dur: u32, log: &[i64], ticks: u64) -> Option<Played> {
     match game {
         Arcade::Invaders => {
             if log.iter().any(|v| *v < 0) {
                 return None;
             }
             let log: Vec<u64> = log.iter().map(|v| *v as u64).collect();
-            crate::invaders_sim::replay(tk.seed, &log, ticks).map(|o| Played { score: o.score, ticks: o.ticks, extra: json!({"wave": o.wave}) })
+            crate::invaders_sim::replay(seeds, &log, ticks).map(|o| Played { score: o.score, ticks: o.ticks, extra: json!({"wave": o.wave}) })
         }
-        Arcade::Aimpulse => crate::aimpulse_sim::replay(tk.seed, tk.diff, tk.dur, log)
-            .map(|o| Played { score: o.score, ticks: u64::from(tk.dur) * 60, extra: json!({"hits": o.hits, "shots": o.shots}) }),
+        Arcade::Aimpulse => crate::aimpulse_sim::replay(seeds, diff, dur, log)
+            .map(|o| Played { score: o.score, ticks: u64::from(dur) * 60, extra: json!({"hits": o.hits, "shots": o.shots}) }),
     }
 }
 
@@ -188,9 +208,10 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
     let game = game_of(&name)?;
     let tk = TICKETS.lock().unwrap_or_else(|e| e.into_inner()).remove(&(me.id, game));
     let Some(tk) = tk else { return bad("Gra nie została rozpoczęta") };
-    let elapsed = tk.at.elapsed().as_secs_f64();
-    let (log, ticks) = (req.log, req.ticks);
-    let played = tokio::task::spawn_blocking(move || replay(game, &tk, &log, ticks)).await.ok().flatten();
+    let elapsed = tk.live.at.elapsed().as_secs_f64();
+    let (diff, dur, ticks) = (tk.diff, tk.dur, req.ticks);
+    let Some((log, seeds)) = tk.live.finish(&req.log) else { return bad("Nieprawidłowy zapis gry") };
+    let played = tokio::task::spawn_blocking(move || replay(game, &seeds, diff, dur, &log, ticks)).await.ok().flatten();
     let Some(p) = played else { return bad("Nieprawidłowy zapis gry") };
     if !plausible(p.ticks, elapsed) {
         tracing::warn!(user = me.id, game = game.key(), ticks = p.ticks, elapsed, "arcade: zapis dłuższy niż czas gry");
@@ -199,6 +220,7 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
     let score = p.score.clamp(0, game.max_score());
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    super::game_rankings::record_score(&mut tx, me.id, game.key(), score).await?;
     let r = reward_cfg(&mut tx, game).await?;
     let earned = earned_today(&mut tx, me.id, game).await?;
     let base = reward_for(&r, score);
@@ -209,6 +231,7 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
         set_state(&mut tx, me.id, &format!("{}_day", game.key()), today()).await?;
         set_state(&mut tx, me.id, &format!("{}_today", game.key()), earned + reward).await?;
     }
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({"score": score, "game": p.extra, "reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "state": state}))

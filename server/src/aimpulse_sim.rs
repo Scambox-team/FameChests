@@ -299,11 +299,15 @@ impl Sim {
 }
 
 /// Odtwarza rundę: `log` = po cztery liczby (krok, x, y, z kierunku ×1e6). None = zapis nie do przyjęcia.
-pub fn replay(seed: u32, diff: usize, dur: u32, log: &[i64]) -> Option<Outcome> {
+/// kroków w odcinku losowania (`live.rs`; to samo `SEG` w aimCore.ts) - 2 s gry
+pub const SEG: i64 = 120;
+
+/// `seeds` = ziarna odcinków po `SEG` kroków; runda, która doszła do odcinka bez ziarna, jest odrzucana
+pub fn replay(seeds: &[u32], diff: usize, dur: u32, log: &[i64]) -> Option<Outcome> {
     if diff >= DIFFS.len() || !DURS.contains(&dur) || !log.len().is_multiple_of(4) || log.len() / 4 > MAX_SHOTS {
         return None;
     }
-    let mut sim = Sim::new(seed, diff, dur);
+    let mut sim = Sim::new(*seeds.first()?, diff, dur);
     let mut ev = 0;
     while !sim.over {
         while ev < log.len() && log[ev] == sim.tick {
@@ -317,6 +321,9 @@ pub fn replay(seed: u32, diff: usize, dur: u32, log: &[i64]) -> Option<Outcome> 
             return None;
         }
         sim.step();
+        if !sim.over && sim.tick % SEG == 0 {
+            sim.rng = Rng::new(*seeds.get((sim.tick / SEG) as usize)?);
+        }
     }
     if ev < log.len() {
         return None;
@@ -343,20 +350,23 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/aimpulse_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.seed, f.diff, f.dur, &f.log).expect("zapis");
+            let o = replay(&crate::live::test_seeds(f.seed, u64::from(f.dur) * 60 / SEG as u64 + 1), f.diff, f.dur, &f.log).expect("zapis");
             assert_eq!((o.score, o.hits), (f.score, f.hits), "ziarno {}", f.seed);
         }
     }
 
     #[test]
     fn bad_logs_are_rejected() {
-        assert!(replay(1, 3, 60, &[]).is_none());
-        assert!(replay(1, 1, 45, &[]).is_none());
-        assert!(replay(1, 1, 30, &[5, 0, 0]).is_none());
+        let s = crate::live::test_seeds(1, 40);
+        assert!(replay(&s, 3, 60, &[]).is_none());
+        assert!(replay(&s, 1, 45, &[]).is_none());
+        assert!(replay(&s, 1, 30, &[5, 0, 0]).is_none());
         // dwa strzały w odstępie krótszym niż SHOT_GAP
-        assert!(replay(1, 1, 30, &[10, 0, 0, -1_000_000, 11, 0, 0, -1_000_000]).is_none());
+        assert!(replay(&s, 1, 30, &[10, 0, 0, -1_000_000, 11, 0, 0, -1_000_000]).is_none());
         // strzał po końcu rundy
-        assert!(replay(1, 1, 30, &[30 * 60, 0, 0, -1_000_000]).is_none());
-        assert_eq!(replay(1, 1, 30, &[]).unwrap().score, 0);
+        assert!(replay(&s, 1, 30, &[30 * 60, 0, 0, -1_000_000]).is_none());
+        assert_eq!(replay(&s, 1, 30, &[]).unwrap().score, 0);
+        // runda dłuższa niż wydane ziarna
+        assert!(replay(&s[..3], 1, 30, &[]).is_none());
     }
 }

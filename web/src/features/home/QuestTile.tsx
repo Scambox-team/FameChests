@@ -66,7 +66,7 @@ export function QuestTile() {
 
 /** Quest Wanted: list gończy (karta w wariancie Wanted) przybity gwoździem do deski.
  *  Wykonany quest zrywa kartę z gwoździa, zostają strzępki; po wejściu na stronę z wykonanym questem są już tylko strzępki. */
-function WantedSlide({ quest: q }: { quest: any }) {
+export function WantedSlide({ quest: q }: { quest: any }) {
   const done = !!q?.done;
   const [phase, setPhase] = useState<Phase>(done ? 'torn' : 'pinned');
   const was = useRef(done);

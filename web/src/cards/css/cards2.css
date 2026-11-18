@@ -3366,6 +3366,132 @@ pre.vx-deco.asc-box { position: absolute; inset: 0; margin: 0; color: #bdbdbd; f
 .pick.v-dowod { box-shadow: inset 0 0 0 3px #e6d6ee, inset 0 0 0 5px #8a6aa8, inset 0 -26px 26px -18px var(--rc); }
 .pick.v-dowod img, .avv-dowod img { filter: grayscale(1) contrast(1.08); }
 
+/* Banknoty 50 / 100 / 200 / 500 zł (nagrody Skarbonki) - jak Dowód: cała karta to warstwa .bn-card (banknoteCard w cardHtml.ts),
+   na pionowej karcie obrócona o 90°, w podglądzie karta jest pozioma (proporcje banknotu 2:1). .bn-card jest kontenerem
+   (cqw = szerokość banknotu, wysokość = 50cqw). Kolory nominału w zmiennych --bn-*. Klasy bn-. */
+.card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) { --frame: var(--bn-ink); --spin: initial; background: var(--bn-ink); box-shadow: 0 6px 18px #0008; }
+.card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) :is(.card-inner, .sc-frame, .sc-border),
+.card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) > .var-tag { visibility: hidden; }
+:is(.v-banknote50, .avv-banknote50, .bn-50) { --bn-ink: #1f3f78; --bn-num: #28508f; --bn-mid: #6f9fd6; --bn-pale: #dfeaf5; --bn-paper: #e9f1f2; --bn-band: #3d5fa8; --bn-ovi: #2f8f4a; --bn-ovi2: #a9e07e; --bn-tint: #274a8a; --bn-serial: #222; --bn-acc: #8fc4cf; }
+:is(.v-banknote100, .avv-banknote100, .bn-100) { --bn-ink: #46583f; --bn-num: #3d4f3d; --bn-mid: #9fb88a; --bn-pale: #e8f0dc; --bn-paper: #f1f4e6; --bn-band: #7b6b72; --bn-ovi: #c96a1c; --bn-ovi2: #ffc468; --bn-tint: #4a6a48; --bn-serial: #222; --bn-acc: #c3b0dc; }
+:is(.v-banknote200, .avv-banknote200, .bn-200) { --bn-ink: #6a5f4f; --bn-num: #4d4a47; --bn-mid: #e2bd6a; --bn-pale: #f6ecd6; --bn-paper: #f8f0df; --bn-band: #8c8a8e; --bn-ovi: #b58f22; --bn-ovi2: #e8d65f; --bn-tint: #5d5b5e; --bn-serial: #222; --bn-acc: #ecc878; }
+:is(.v-banknote500, .avv-banknote500, .bn-500) { --bn-ink: #6d5645; --bn-num: #b02a5c; --bn-mid: #a9c8e0; --bn-pale: #e6eff6; --bn-paper: #eef4f8; --bn-band: #aaa3b4; --bn-ovi: #1f9a5e; --bn-ovi2: #8af0c0; --bn-tint: #6a5444; --bn-serial: #222; --bn-acc: #c9dff0; }
+.vx-deco.bn-card { position: absolute; inset: auto; left: 50%; top: 50%; width: 139.68%; height: 50%; transform: translate(-50%, -50%) rotate(90deg);
+  container-type: inline-size; z-index: 4; overflow: hidden; color: var(--bn-ink); font-family: Georgia, "Times New Roman", serif; border-radius: .6cqw; }
+.vf .card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) { aspect-ratio: 2 / 1; border-radius: 1.2% / 2.4%; background: var(--bn-paper); }
+.vf .card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) .vx-deco.bn-card { left: 0; top: 0; width: 100%; height: 100%; transform: none; }
+.viewer-stage:has(.card:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500)) { width: min(820px, 94vw, calc((100vh - 60px) * 2)); aspect-ratio: 2 / 1; }
+.bn-card > * { position: absolute; display: block; }
+/* papier, giloszowanie (trzy rodziny linii o różnym skoku), drobne plamki farby */
+.bn-card > .bn-paper { inset: 0; background: radial-gradient(ellipse at 62% 45%, var(--bn-pale), var(--bn-paper) 72%); }
+.bn-card > .bn-guil { inset: 0; opacity: .6;
+  background: repeating-radial-gradient(circle at 30% 50%, #0000 0 .42cqw, color-mix(in srgb, var(--bn-mid) 26%, #0000) .42cqw .52cqw),
+    repeating-radial-gradient(circle at 88% 30%, #0000 0 .6cqw, color-mix(in srgb, var(--bn-ink) 14%, #0000) .6cqw .7cqw),
+    repeating-radial-gradient(circle at 55% 120%, #0000 0 .8cqw, color-mix(in srgb, var(--bn-acc) 22%, #0000) .8cqw .9cqw),
+    repeating-linear-gradient(115deg, #0000 0 1cqw, color-mix(in srgb, var(--bn-mid) 12%, #0000) 1cqw 1.12cqw); }
+.bn-card > .bn-guil2 { left: 22cqw; top: -6cqw; width: 70cqw; height: 62cqw; border-radius: 50%; opacity: .38;
+  background: repeating-conic-gradient(from 7deg at 50% 50%, color-mix(in srgb, var(--bn-mid) 55%, #0000) 0 .7deg, #0000 .7deg 3deg),
+    repeating-radial-gradient(circle at 50% 50%, #0000 0 1.4cqw, color-mix(in srgb, var(--bn-ink) 18%, #0000) 1.4cqw 1.5cqw);
+  -webkit-mask: radial-gradient(circle closest-side, #0000 30%, #000 60%, #0000 100%); mask: radial-gradient(circle closest-side, #0000 30%, #000 60%, #0000 100%); }
+.bn-card > .bn-lead { left: 0; top: 0; bottom: 0; width: 14cqw; background: linear-gradient(90deg, #fff, #fffe 70%, #fff0); }
+.bn-card > .bn-flecks { inset: 0; opacity: .35; mix-blend-mode: multiply;
+  background: radial-gradient(circle, color-mix(in srgb, var(--bn-mid) 60%, #0000) .12cqw, #0000 .14cqw) 0 0 / 1.9cqw 1.7cqw,
+    radial-gradient(circle, color-mix(in srgb, var(--bn-acc) 70%, #0000) .1cqw, #0000 .12cqw) .9cqw .8cqw / 2.3cqw 2.1cqw; }
+.bn-card > .bn-frame { inset: 1.1cqw; border: .16cqw solid color-mix(in srgb, var(--bn-ink) 38%, #0000); pointer-events: none; }
+/* znak wodny (blady portret) w jasnym pasie */
+.bn-card > .bn-water { left: 12cqw; top: 0; bottom: 0; width: 10cqw; background: linear-gradient(90deg, #fff0, #fffd 30%, #fffd 70%, #fff0); }
+.bn-card > .bn-water img { position: absolute; left: 1cqw; top: 22cqw; width: 8cqw; height: 10cqw; object-fit: cover; filter: grayscale(1) contrast(.6) brightness(1.4); opacity: .4; border-radius: 50%; mix-blend-mode: multiply; }
+/* nominał pionowo po lewej (obrysowane cyfry) i słownie */
+.bn-card > .bn-big { left: 6.3cqw; top: 25cqw; transform: translate(-50%, -50%) rotate(-90deg); white-space: nowrap;
+  font: 900 11cqw/1 "Arial Black", Arial, sans-serif; letter-spacing: -.02em; color: var(--bn-pale);
+  -webkit-text-stroke: .34cqw var(--bn-num); paint-order: stroke; text-shadow: .28cqw .28cqw 0 color-mix(in srgb, var(--bn-mid) 50%, #0000), 0 0 1.4cqw #fff; }
+.bn-card > .bn-words { left: 12cqw; top: 25cqw; transform: translate(-50%, -50%) rotate(-90deg); white-space: nowrap; font-size: 1.5cqw; letter-spacing: .14em; color: color-mix(in srgb, var(--bn-ink) 70%, #fff); }
+.bn-card > .bn-dots { left: 14.5cqw; top: 3.5cqw; width: 7cqw; height: 6cqw; background: radial-gradient(circle, #0000 .3cqw, #5fb85f .31cqw .42cqw, #0000 .43cqw) 0 0 / 1.5cqw 1.4cqw; opacity: .8; }
+.bn-card > .bn-dots.b { top: auto; bottom: 9cqw; left: 3cqw; width: 8cqw; height: 5cqw; }
+.bn-card > .bn-blind { left: 3.5cqw; bottom: 3cqw; width: 5cqw; height: 5cqw; color: var(--bn-ink); }
+.bn-blind.dia { border: .5cqw solid currentColor; transform: rotate(45deg) scale(.7); box-sizing: border-box; }
+.bn-blind.cross { background: linear-gradient(currentColor, currentColor) center / 1.3cqw 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1.3cqw no-repeat; }
+.bn-blind.tri { background: currentColor; clip-path: polygon(0 100%, 50% 10%, 100% 100%, 82% 100%, 50% 42%, 18% 100%); }
+.bn-card > .bn-blind.bars { display: flex; gap: .8cqw; justify-content: center; }
+.bn-blind.bars b { width: .9cqw; height: 100%; background: currentColor; }
+/* nazwa banku i tarcza SB (zamiast godła) */
+.bn-card > .bn-crest { left: 23.5cqw; top: 3.2cqw; width: 4.4cqw; height: 5.2cqw; background: linear-gradient(160deg, color-mix(in srgb, var(--bn-ink) 80%, #fff), var(--bn-ink));
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%); display: grid; place-items: center; }
+.bn-crest b { font: 800 1.8cqw/1 Georgia, serif; color: var(--bn-pale); margin-top: -.6cqw; }
+.bn-card > .bn-crest.big { left: 24.5cqw; top: 20cqw; width: 9.5cqw; height: 11cqw; }
+.bn-crest.big b { font-size: 3.5cqw; }
+.bn-card > .bn-bank { left: 28.8cqw; top: 2.8cqw; font: 500 2.5cqw/1.08 Georgia, "Times New Roman", serif; letter-spacing: .01em; color: var(--bn-ink); }
+.bn-50 > .bn-bank { left: 23.5cqw; font-size: 2.8cqw; }
+/* rozeta (100), tarcza (500), wieniec (200) */
+.bn-card > .bn-rosette { left: 24cqw; top: 19.5cqw; width: 13cqw; height: 13cqw; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, #e6a8c8 0 6deg, #a8d8e8 6deg 12deg, #f0e098 12deg 18deg);
+  -webkit-mask: radial-gradient(circle closest-side, #000 0 22%, #0000 23% 30%, #000 31% 68%, #0000 70%); mask: radial-gradient(circle closest-side, #000 0 22%, #0000 23% 30%, #000 31% 68%, #0000 70%); opacity: .9; }
+.bn-card > .bn-shield { left: 25cqw; top: 19cqw; width: 11cqw; height: 13.5cqw; background: linear-gradient(135deg, #f4f6f8, #8e98a4 45%, #e8ecf0 55%, #6a7480);
+  clip-path: polygon(8% 0, 92% 0, 100% 10%, 100% 55%, 50% 100%, 0 55%, 0 10%); display: grid; place-items: center; }
+.bn-shield b { font: 800 3.2cqw/1 Georgia, serif; color: #5a6470; margin-top: -1.5cqw; }
+.bn-card > .bn-laurel { left: 23.5cqw; top: 19cqw; width: 14cqw; height: 14cqw; border-radius: 50%;
+  background: repeating-conic-gradient(from 200deg at 50% 50%, color-mix(in srgb, var(--bn-mid) 65%, #0000) 0 4deg, #0000 4deg 9deg);
+  -webkit-mask: radial-gradient(circle closest-side, #0000 52%, #000 53% 72%, #0000 73%); mask: radial-gradient(circle closest-side, #0000 52%, #000 53% 72%, #0000 73%); }
+/* hologram (200 i 500): pionowy pasek z kwadratami, który mieni się przy poruszaniu */
+.bn-card > .bn-holo { left: 21cqw; top: 5cqw; width: 2.6cqw; height: 36cqw; overflow: hidden;
+  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--bn-ovi) 85%, #000) 0 1.5cqw, var(--bn-ovi2) 1.5cqw 3cqw, color-mix(in srgb, var(--bn-mid) 70%, #fff) 3cqw 4.5cqw);
+  box-shadow: 0 0 0 .2cqw #fff8, 0 .2cqw .5cqw #0004; }
+.bn-holo::after { content: ""; position: absolute; inset: -30% -60%; background: linear-gradient(105deg, #0000 38%, #fffb 50%, #0000 62%); animation: bnOvi 5s ease-in-out infinite; will-change: transform; }
+/* pas z nominałem w prawym górnym rogu i mikrodruk pod nim */
+.bn-card > .bn-band { right: 3.2cqw; top: 3.4cqw; width: 33cqw; height: 9cqw; background: linear-gradient(90deg, color-mix(in srgb, var(--bn-band) 0%, #0000), var(--bn-band) 25%, var(--bn-band));
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 2cqw; box-sizing: border-box; }
+.bn-band b { font: 900 8.4cqw/1 "Arial Black", Arial, sans-serif; color: #f4f1ee; -webkit-text-stroke: .3cqw var(--bn-num); paint-order: stroke; letter-spacing: .02em; }
+.bn-card > .bn-micro { right: 3.2cqw; top: 12.6cqw; width: 33cqw; height: 1cqw; overflow: hidden; white-space: nowrap; font: 700 .72cqw/1 Arial, sans-serif; color: color-mix(in srgb, var(--bn-ink) 70%, #fff); letter-spacing: .02em; }
+.bn-card > .bn-micro.b { top: 2.2cqw; width: 22cqw; right: 14cqw; }
+/* medalion z portretem: duży, rycina (szarość + farba nominału + linie), promienie, imię po łuku z lewej strony pierścienia */
+.bn-card > .bn-medal { left: 37cqw; top: 2.6cqw; width: 46cqw; height: 46cqw; border-radius: 50%; }
+.bn-medal > * { position: absolute; display: block; }
+.bn-medal > .bn-ring { inset: 0; border-radius: 50%; background: radial-gradient(circle closest-side, #0000 80%, var(--bn-ink) 80.4% 81.2%, color-mix(in srgb, var(--bn-mid) 42%, var(--bn-pale)) 81.8% 98.4%, var(--bn-ink) 98.8%);
+  -webkit-mask: linear-gradient(90deg, #000 49.5%, #0000 50.5%); mask: linear-gradient(90deg, #000 49.5%, #0000 50.5%); }   /* tylko lewy półokrąg: z imieniem, bez zasłaniania nominału z prawej */
+.bn-medal > .bn-rays { inset: 0; border-radius: 50%; opacity: .5;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--bn-ink) 40%, #0000) 0 .5deg, #0000 .5deg 3deg);
+  -webkit-mask: linear-gradient(90deg, #000 49.5%, #0000 50.5%); mask: linear-gradient(90deg, #000 49.5%, #0000 50.5%); }
+.bn-medal > img { left: 10%; top: 10%; width: 80%; height: 80%; border-radius: 50%; object-fit: cover; filter: grayscale(1) contrast(1.3) brightness(1.18); }
+.bn-medal > .bn-engrave { left: 10%; top: 10%; width: 80%; height: 80%; border-radius: 50%; mix-blend-mode: multiply; opacity: .85;
+  background: repeating-linear-gradient(-38deg, #0000 0 .24cqw, #0003 .24cqw .32cqw),
+    repeating-linear-gradient(52deg, #0000 0 .5cqw, #0000001a .5cqw .55cqw),
+    linear-gradient(135deg, color-mix(in srgb, var(--bn-mid) 50%, #fff), var(--bn-tint)); }
+.bn-medal > .bn-fade { left: 10%; top: 10%; width: 80%; height: 80%; border-radius: 50%; background: radial-gradient(circle closest-side, #0000 78%, var(--bn-pale) 100%); }
+.bn-medal > .bn-name { inset: 0; width: 100%; height: 100%; overflow: visible; }
+.bn-name text { font-family: Georgia, serif; font-weight: 700; letter-spacing: .5px; fill: var(--bn-ink); }
+/* farba zmienna optycznie: połysk przesuwa się po elemencie */
+.bn-card > .bn-ovi { right: 3.6cqw; top: 29cqw; width: 10cqw; height: 10cqw; background: linear-gradient(135deg, var(--bn-ovi), var(--bn-ovi2) 45%, var(--bn-ovi) 70%); overflow: hidden; }
+.bn-card > .bn-ovi.quatre { -webkit-mask: radial-gradient(circle at 50% 27%, #000 22%, #0000 23%), radial-gradient(circle at 27% 50%, #000 22%, #0000 23%), radial-gradient(circle at 73% 50%, #000 22%, #0000 23%), radial-gradient(circle at 50% 73%, #000 22%, #0000 23%), radial-gradient(circle, #000 30%, #0000 31%);
+  mask: radial-gradient(circle at 50% 27%, #000 22%, #0000 23%), radial-gradient(circle at 27% 50%, #000 22%, #0000 23%), radial-gradient(circle at 73% 50%, #000 22%, #0000 23%), radial-gradient(circle at 50% 73%, #000 22%, #0000 23%), radial-gradient(circle, #000 30%, #0000 31%); }
+.bn-card > .bn-ovi.mono { display: grid; place-items: center; clip-path: polygon(0 18%, 18% 18%, 18% 0, 34% 12%, 50% 0, 66% 12%, 82% 0, 82% 18%, 100% 18%, 100% 100%, 0 100%); }
+.bn-ovi.mono b { font: 900 6.4cqw/1 Georgia, serif; color: #fffa; margin-top: 1.5cqw; position: relative; }
+.bn-ovi::after { content: ""; position: absolute; inset: -20%; background: linear-gradient(105deg, #0000 35%, #fff9 50%, #0000 65%); animation: bnOvi 4.5s ease-in-out infinite; will-change: transform; }
+@keyframes bnOvi { 0%, 100% { transform: translateX(-60%); } 50% { transform: translateX(60%); } }
+/* prostokąt z mikrowzorem w prawym dolnym rogu */
+.bn-card > .bn-win { right: 3.2cqw; bottom: 2.6cqw; width: 14cqw; height: 6.5cqw; overflow: hidden; display: grid; place-items: center;
+  background: repeating-linear-gradient(0deg, #0000 0 .3cqw, color-mix(in srgb, var(--bn-ink) 14%, #0000) .3cqw .36cqw), linear-gradient(90deg, color-mix(in srgb, var(--bn-mid) 26%, var(--bn-pale)), var(--bn-pale)); }
+.bn-win b { font: 800 4.2cqw/1 Georgia, serif; color: color-mix(in srgb, var(--bn-mid) 50%, #fff); opacity: .8; }
+/* napisy na dole: miasto i data, podpisy, numery seryjne, rytownik */
+.bn-card > .bn-city { left: 23.5cqw; top: 35cqw; font: 700 1.5cqw/1.25 Arial, sans-serif; color: var(--bn-ink); }
+.bn-card > .bn-sign { left: 23.5cqw; font: 700 1.1cqw/1.1 Arial, sans-serif; color: var(--bn-ink); display: flex; gap: 1.2cqw; align-items: center; }
+.bn-card > .bn-sign.a { top: 39.4cqw; }
+.bn-card > .bn-sign.b { top: 42.8cqw; }
+.bn-sign small { width: 6.5cqw; font-size: 1.05cqw; }
+.bn-sign i { font: italic 400 2.1cqw/1 "Brush Script MT", "Segoe Script", cursive; color: #1a1a1a; white-space: nowrap; max-width: 12cqw; overflow: hidden; }
+/* detale z prawdziwych banknotów: ukośne kreski w narożnikach, promienisty wzór za tarczą (500), owalne okienko z linią */
+.bn-card > .bn-ticks { left: 2.2cqw; top: 2.2cqw; width: 6cqw; height: 9cqw; background: repeating-linear-gradient(115deg, var(--bn-num) 0 .32cqw, #0000 .32cqw 1.3cqw); opacity: .75; }
+.bn-card > .bn-ticks.b { top: auto; bottom: 2.2cqw; left: 2.2cqw; height: 7cqw; }
+.bn-card > .bn-burst { left: 20cqw; top: 14cqw; width: 22cqw; height: 22cqw; border-radius: 50%; opacity: .75;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--bn-mid) 70%, #fff) 0 5deg, color-mix(in srgb, var(--bn-mid) 25%, #fff) 5deg 10deg);
+  -webkit-mask: radial-gradient(circle closest-side, #000 60%, #0000 100%); mask: radial-gradient(circle closest-side, #000 60%, #0000 100%); }
+.bn-card > .bn-kc { right: 17cqw; top: 15cqw; width: 8cqw; height: 5.5cqw; border-radius: 50%; border: .18cqw solid color-mix(in srgb, var(--bn-ink) 60%, #fff); opacity: .8;
+  background: radial-gradient(ellipse at 30% 40%, #0000 30%, color-mix(in srgb, var(--bn-ink) 40%, #0000) 32% 36%, #0000 38%), repeating-radial-gradient(ellipse at 70% 60%, #0000 0 .5cqw, color-mix(in srgb, var(--bn-mid) 50%, #0000) .5cqw .6cqw); }
+/* nitka zabezpieczająca */
+.bn-card > .bn-strip { left: 35.2cqw; top: 0; bottom: 0; width: .5cqw; background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--bn-ovi) 70%, #fff) 0 1.2cqw, #fff6 1.2cqw 1.6cqw); opacity: .5; }
+.pick:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) { box-shadow: inset 0 0 0 3px var(--bn-pale), inset 0 0 0 5px var(--bn-ink), inset 0 -26px 26px -18px var(--rc); }
+.pick:is(.v-banknote50, .v-banknote100, .v-banknote200, .v-banknote500) img, :is(.avv-banknote50, .avv-banknote100, .avv-banknote200, .avv-banknote500) img { filter: grayscale(1) sepia(.5) contrast(1.1); }
+@media (prefers-reduced-motion: reduce) { .bn-ovi::after, .bn-holo::after { animation: none; } }
+
 /* Żelkowy (makieta Żelkowy 3 „Zatopione w żelce”) - półprzezroczysta arbuzowa żelka (różowa czerwień u góry, zieleń u dołu): ramka i wnętrze
    prześwitują (karta bez własnego tła, ramka na ::before z przezroczystością), jasność zdjęcia nałożona na kolorową galaretkę (luminosity),
    brzegi zdjęcia rozmyte; zatopiony cukier = dwa obrazki z kryształkami (--jly-sugar-a/b) migoczące na zmianę; karta lekko się trzęsie

@@ -75,6 +75,7 @@ export function startPanel() {
     quiet(loadSkins);
     quiet(loadQuests);
     quiet(loadCtf);
+    quiet(loadPiggy);
     renderEgg();
     if (!A.crate || !tabCrates().some(c => c.id === A.crate)) A.crate = tabCrates().find(c => !c.hidden)?.id || null;
     render();
@@ -804,6 +805,36 @@ export function startPanel() {
       `<li><b>${q.startsAt ? msgWhen(q.startsAt) : esc(q.day)}</b>: ${esc(q.target)} · ${q.winner ? `${esc(q.winner)} (+${q.money} gr${q.wonAt ? `, wykonał(a) ${msgWhen(q.wonAt)}` : ""})` : "nikt"}</li>`).join("")}</ul>` : "");
   }
   
+  // ================================================================ SKARBONKA (routes/piggy.rs)
+
+  async function loadPiggy() {
+    let d;
+    try { d = await api("/api/admin/quests/piggy"); } catch (e) { return toast(e.message, true); }
+    const st = d.settings, f = $("#piggyForm");
+    $("#piggyOn").checked = !!st.enabled;
+    f.elements.base.value = st.base; f.elements.hits.value = st.hits; f.elements.breakers.value = st.breakers; f.elements.playerPct.value = st.playerPct;
+    const kind = $("#piggyKind"), rar = $("#piggyRarity");
+    if (kind.options.length <= 1) kind.insertAdjacentHTML("beforeend", d.kinds.map(k => `<option value="${esc(k.kind)}">${esc(k.title)}</option>`).join(""));
+    if (rar.options.length <= 1) rar.insertAdjacentHTML("beforeend", d.rarities.map(r => `<option value="${esc(r)}">${esc(A.cat?.rarities?.[r]?.name || r)}</option>`).join(""));
+    const t = d.today, kindName = k => d.kinds.find(x => x.kind === k)?.title || k;
+    const nm = k => d.kinds.find(x => x.kind === k)?.title || k;
+    const rn = r => A.cat?.rarities?.[r]?.name || r;
+    $("#piggyPct").innerHTML = `<div><b>Mnożniki zadań (%)</b> ${d.kinds.map(k => `<label style="margin-right:12px">${esc(nm(k.kind))} <input type="number" min="1" max="100000" data-kpct="${esc(k.kind)}" value="${d.kindPct[k.kind]}" style="width:6em"></label>`).join("")}</div>`
+      + `<div><b>Mnożniki rzadkości nagrody (%)</b> ${d.rarities.map(r => `<label style="margin-right:12px">${esc(rn(r))} <input type="number" min="1" max="100000" data-rpct="${esc(r)}" value="${d.rarityPct[r]}" style="width:6em"></label>`).join("")}</div>`;
+    $("#piggyInfo").innerHTML = !t ? (st.enabled ? "Dzisiejsza skarbonka powstanie przy pierwszym wejściu gracza." : "Skarbonka jest wyłączona.")
+      : `Dziś: <b>${esc(kindName(t.kind))}</b>, nagroda ${esc(A.cat?.rarities?.[t.rarity]?.name || t.rarity)} · ${(t.total / 100).toFixed(2)} z ${(t.target / 100).toFixed(2)} zł`
+        + (t.brokenAt ? " · rozbita" : t.filledAt ? ` · pełna, uderzeń ${t.hits} / ${t.needHits}` : "");
+    $("#piggyTargets").innerHTML = `Cele przy obecnej podstawie (zł): <ul>${d.targets.map(k => `<li>${esc(k.title)}: ${k.targets.map(x => `${esc(A.cat?.rarities?.[x.rarity]?.name || x.rarity)} ${(x.target / 100).toFixed(0)}`).join(" · ")}</li>`).join("")}</ul>`;
+  }
+
+  async function savePiggy(body, msg) {
+    try {
+      await api("/api/admin/quests/piggy", { method: "POST", json: body });
+      toast(msg);
+      loadPiggy(); loadLog();
+    } catch (err) { toast(err.message, true); loadPiggy(); }
+  }
+
   // ================================================================ QUEST CTF
 
   async function loadCtf() {
@@ -1098,6 +1129,17 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       const n = Math.floor(Number($("#questDailyLimit").value));
       if (!Number.isFinite(n) || n < 0 || n > 1000) return toast("Limit questów: liczba od 0 do 1000", true);
       saveQuests({ dailyLimit: n }, `Limit wykonanych questów na dobę: ${n}`);
+    });
+    $("#piggyOn").addEventListener("change", e => savePiggy({ enabled: e.target.checked ? 1 : 0 }, e.target.checked ? "Skarbonka włączona" : "Skarbonka wyłączona"));
+    $("#piggyForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const f = e.target, n = k => Math.floor(Number(f.elements[k].value));
+      const pct = attr => Object.fromEntries([...document.querySelectorAll(`#piggyPct [${attr}]`)].map(i => [i.getAttribute(attr), Math.floor(Number(i.value))]));
+      savePiggy({ base: n("base"), hits: n("hits"), breakers: n("breakers"), playerPct: n("playerPct"), kindPct: pct("data-kpct"), rarityPct: pct("data-rpct") }, "Zapisano ustawienia skarbonki");
+    });
+    $("#piggyReroll").addEventListener("click", () => {
+      if (!confirm("Zmienić dzisiejszą skarbonkę? Jeśli ktoś już wpłacił, jego wpłaty zostają i liczą się do nowego celu.")) return;
+      savePiggy({ reroll: true, kind: $("#piggyKind").value || null, rarity: $("#piggyRarity").value || null }, "Nowa skarbonka na dziś");
     });
     $("#ctfOn").addEventListener("change", e => saveCtf({ enabled: e.target.checked }, e.target.checked ? "Quest CTF włączony" : "Quest CTF wyłączony"));
     $("#ctfReroll").addEventListener("click", () => saveCtf({ reroll: true, challenge: $("#ctfPick").value }, "Nowe zadanie CTF"));

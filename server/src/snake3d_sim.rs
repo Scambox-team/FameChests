@@ -10,6 +10,10 @@ const BOOST_MULT: f64 = 1.85;
 const GOLD_TICKS: i32 = 45;
 const MAX_TICKS: u64 = 400_000;
 const MAX_EVENTS: usize = 200_000;
+/// kroków w odcinku losowania (`live.rs`; to samo `SEG` w core3d.ts)
+pub const SEG: u64 = 32;
+/// najkrótszy krok w sekundach (pełna prędkość z turbo)
+pub const MIN_TICK: f64 = 1.0 / (12.5 * BOOST_MULT);
 
 pub struct Outcome {
     /// zjedzone kule (zwykłe i złote)
@@ -123,14 +127,15 @@ impl Sim {
     }
 }
 
-/// Odtwarza grę: `log` = naprzemiennie numer kroku i skręt (1 = w prawo, 0 = w lewo). None = zapis nie do przyjęcia.
-pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
+/// Odtwarza grę: `seeds` = ziarna odcinków po `SEG` kroków, `log` = naprzemiennie numer kroku i skręt (1 = w prawo, 0 = w lewo).
+/// None = zapis nie do przyjęcia (także gra, która doszła do odcinka bez ziarna).
+pub fn replay(seeds: &[u32], log: &[u64]) -> Option<Outcome> {
     if !log.len().is_multiple_of(2) || log.len() / 2 > MAX_EVENTS {
         return None;
     }
     let (sx, sz) = (N / 2, N / 2 + 3);
     let mut s = Sim {
-        rng: Rng::new(seed),
+        rng: Rng::new(*seeds.first()?),
         cells: (0..4).map(|i| Cell { x: sx, z: sz + i }).collect(),
         dir: Cell { x: 0, z: -1 },
         pending: 0,
@@ -161,6 +166,9 @@ pub fn replay(seed: u32, log: &[u64]) -> Option<Outcome> {
         if ticks > MAX_TICKS {
             return None;
         }
+        if ticks.is_multiple_of(SEG) {
+            s.rng = Rng::new(*seeds.get((ticks / SEG) as usize)?);
+        }
     }
     Some(Outcome { foods: s.foods, ticks, min_secs })
 }
@@ -182,15 +190,16 @@ mod tests {
         let fixtures: Vec<Rec> = serde_json::from_str(include_str!("../tests/fixtures/snake3d_replays.json")).unwrap();
         assert!(!fixtures.is_empty());
         for f in fixtures {
-            let o = replay(f.seed, &f.log).expect("zapis");
+            let o = replay(&crate::live::test_seeds(f.seed, f.ticks / SEG + 1), &f.log).expect("zapis");
             assert_eq!((o.foods, o.ticks), (f.foods, f.ticks), "ziarno {}", f.seed);
         }
     }
 
     #[test]
     fn going_straight_hits_the_wall() {
-        let o = replay(3, &[]).unwrap();
+        let seeds = crate::live::test_seeds(3, 2);
+        let o = replay(&seeds, &[]).unwrap();
         assert_eq!(o.ticks, 14); // z = 14 do ściany z = -1
-        assert!(replay(3, &[2, 5]).is_none());
+        assert!(replay(&seeds, &[2, 5]).is_none());
     }
 }

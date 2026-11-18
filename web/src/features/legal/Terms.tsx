@@ -83,7 +83,14 @@ export function Terms({ info }: { info: LegalInfo | null }) {
       <h2>§ 11. Zakończenie korzystania</h2>
       <p>Możesz w każdej chwili przestać korzystać z Serwisu. Usunięcia konta i danych możesz zażądać pod adresem <Mail info={info} />. Usługodawca może zakończyć świadczenie usługi lub zablokować konto z powodu naruszenia Regulaminu (§ 4).</p>
 
-      <h2>§ 12. Postanowienia końcowe</h2>
+      <h2>§ 12. Materiały osób trzecich i licencje</h2>
+      <ol>
+        <li>W Serwisie używamy materiałów udostępnionych na wolnych licencjach (m.in. zdjęć z Wikimedia Commons, nagrań z freesound.org i pakietów Kenney na licencji CC0, danych Natural Earth). Autorów i licencje wskazuje strona <Link to="/o-stronie">O stronie</Link>.</li>
+        <li>Model 3D świni w Skarbonce został wygenerowany w narzędziu Meshy (meshy.ai) i jest używany na licencji <a href="https://creativecommons.org/licenses/by/4.0/deed.pl" target="_blank" rel="noopener noreferrer">Creative Commons Uznanie autorstwa 4.0 (CC BY 4.0)</a>. Autor: Meshy. Model zmieniliśmy: zmniejszyliśmy tekstury, przeskalowaliśmy go i dodaliśmy efekty w grze.</li>
+        <li>Licencje te dotyczą wyłącznie wskazanych materiałów i nie dają graczom praw do pozostałych elementów Serwisu. Nie wyłączają też praw osób, których dotyczą karty (§ 6).</li>
+      </ol>
+
+      <h2>§ 13. Postanowienia końcowe</h2>
       <ol>
         <li>Do Regulaminu stosuje się prawo polskie. Jeśli jesteś konsumentem, obowiązkowe przepisy chroniące konsumentów nadal przysługują Ci w pełnym zakresie.</li>
         <li>Spory rozstrzygają sądy właściwe według przepisów powszechnych.</li>

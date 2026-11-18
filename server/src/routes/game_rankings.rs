@@ -1,4 +1,5 @@
-//! Rankingi gier z zakładki Gry: szachy (wygrane z ludźmi), pinball (najlepszy sprawdzony wynik na każdym poziomie) i strzelnica.
+//! Rankingi gier z zakładki Gry: szachy (wygrane z ludźmi), pinball (najlepszy sprawdzony wynik na każdym poziomie), strzelnica
+//! i gry liczone przez serwer zapisujące wyniki w `game_scores` (Snake, Snake 3D, Super Turbo Run, Obrona Orbity, AIMPULSE).
 //! Bez graczy zablokowanych, ukrytych przez admina i z pieniędzmi od admina (jak ranking główny). W pinballu liczą się tylko
 //! gry odtworzone przez serwer (`pinball_runs.verified`), więc wyniku nie da się wpisać z przeglądarki.
 
@@ -10,9 +11,22 @@ use sqlx::Row;
 use super::ok;
 use crate::auth::Me;
 use crate::data::g;
+use crate::db::{now, Conn};
 use crate::error::{bad, Res};
 use crate::pinball_sim;
 use crate::state::AppState;
+
+/// Gry z rankingiem w `game_scores` (klucz w `?game=`, jednostka wyniku)
+pub const SCORE_GAMES: &[&str] = &["snake", "snake3d", "run", "invaders", "aimpulse"];
+
+/// Zapisuje wynik gry odtworzonej przez serwer do rankingu (wołać w transakcji gracza po sprawdzeniu gry; wynik 0 się nie liczy)
+pub async fn record_score(c: &mut Conn, uid: i64, game: &str, score: i64) -> sqlx::Result<()> {
+    if score <= 0 || !SCORE_GAMES.contains(&game) {
+        return Ok(());
+    }
+    sqlx::query("INSERT INTO game_scores (user_id, game, score, at) VALUES ($1, $2, $3, $4)").bind(uid).bind(game).bind(score).bind(now()).execute(c).await?;
+    Ok(())
+}
 
 /// Ile miejsc pokazuje lista
 const TOP: usize = 15;
@@ -95,6 +109,27 @@ pub async fn game_ranking(State(st): State<AppState>, Me(me): Me, Query(q): Quer
                 })
                 .collect();
             ok(json!({"game": "aim", "rows": top_and_me(&all)}))
+        }
+        game if SCORE_GAMES.contains(&game) => {
+            // najlepszy sprawdzony wynik gracza (tylko gry odtworzone przez serwer), remis rozstrzyga wcześniejszy wynik
+            let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+                "SELECT u.id, u.username, MAX(s.score) AS best, COUNT(*) AS games
+                 FROM game_scores s JOIN users u ON u.id = s.user_id
+                 WHERE s.game = $1 AND {NOT_HIDDEN}
+                 GROUP BY u.id, u.username ORDER BY best DESC, MIN(s.at) ASC"
+            )))
+            .bind(game)
+            .fetch_all(&mut *c)
+            .await?;
+            let all: Vec<_> = rows
+                .iter()
+                .enumerate()
+                .map(|(i, r)| {
+                    json!({"place": i + 1, "user": r.get::<String, _>("username"), "me": r.get::<i64, _>("id") == me.id,
+                           "best": r.get::<i64, _>("best"), "games": r.get::<i64, _>("games")})
+                })
+                .collect();
+            ok(json!({"game": game, "rows": top_and_me(&all)}))
         }
         _ => bad("Nie ma rankingu tej gry"),
     }

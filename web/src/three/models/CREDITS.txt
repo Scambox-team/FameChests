@@ -1,0 +1,1 @@
+pig.glb - "Penny Pig" wygenerowany w Meshy (meshy.ai) na zlecenie wlasciciela projektu (darmowy plan Meshy), licencja CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/) z uznaniem autorstwa Meshy. Zmiany: tekstury zmniejszone do 1024 px, model przeskalowany i ustawiony w scenie. Uznanie jest w Regulaminie (§ 12) i na stronie "O stronie" (web/src/features/legal).

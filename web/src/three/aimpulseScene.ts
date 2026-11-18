@@ -9,12 +9,13 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { AimSim, BAD, DIFFS, DURS, EYE as EYE0, GOLD, GOOD, QUANT, TICK } from '../features/turbo/aimCore';
+import { LiveSeeds } from '../features/games/liveSeeds';
+import { SEG, AimSim, BAD, DIFFS, DURS, EYE as EYE0, GOLD, GOOD, QUANT, TICK } from '../features/turbo/aimCore';
 
 export interface AimOver { score: number; hits: number; shots: number; diff: number; dur: number; log: number[]; record: boolean }
 export interface AimHooks {
   /** start rundy: ziarno od serwera (undefined = runda bez nagrody) */
-  onStart: (diff: number, dur: number) => Promise<number | undefined>;
+  onStart: (diff: number, dur: number) => Promise<LiveSeeds | undefined>;
   /** koniec rundy: zwraca napis z nagrodą do pokazania na ekranie wyników */
   onOver: (r: AimOver) => Promise<string | undefined>;
   volume: () => number;
@@ -125,6 +126,7 @@ export function createAimpulse(root: HTMLElement, hooks: AimHooks): Aim3D {
   if (!DURS.includes(G.dur)) G.dur = 60;
   G.sens = clamp(+G.sens || 2, 0.2, 8);
   /** runda (rdzeń liczący punkty) i runda pokazowa w menu */
+  let live = LiveSeeds.local(SEG);
   let sim = null, demo = null, acc = 0, starting = 0;
 
   /* ===================================================================== audio (synteza, bez plików) */
@@ -821,8 +823,9 @@ export function createAimpulse(root: HTMLElement, hooks: AimHooks): Aim3D {
     let seed;
     try { seed = await hooks.onStart(G.diff, G.dur); } catch { seed = undefined; }
     if (token !== starting) return;
-    if (seed === undefined) toast('Runda bez nagrody: serwer nie przyjął startu');
-    sim = new AimSim(seed ?? ((Math.random() * 2 ** 32) >>> 0), G.diff, G.dur);
+    if (!(seed instanceof LiveSeeds) || !seed.online) toast('Runda bez nagrody: serwer nie przyjął startu');
+    live = seed instanceof LiveSeeds ? seed : LiveSeeds.local(SEG);
+    sim = new AimSim(live.seed, G.diff, G.dur);
   }
   function updateCountdown(dt) {
     G.cdT -= dt; const n = Math.ceil(G.cdT);
@@ -835,7 +838,11 @@ export function createAimpulse(root: HTMLElement, hooks: AimHooks): Aim3D {
   function updateGame(dt) {
     acc += dt;
     let n = 0;
-    while (acc >= TICK && n < 8 && !sim.over) { sim.step(); acc -= TICK; n++; }
+    while (acc >= TICK && n < 8 && !sim.over) {
+      if (!live.canStep(sim.tick)) { acc = Math.min(acc, TICK); break; }   // czekamy na ziarno od serwera
+      sim.step(); acc -= TICK; n++;
+    }
+    live.pump(sim.tick, sim.log, 4);
     if (n === 8) acc = 0;
     handleEvents(sim, false);
     const remaining = Math.max(0, (sim.total - sim.tick) * TICK - acc);
@@ -901,7 +908,7 @@ export function createAimpulse(root: HTMLElement, hooks: AimHooks): Aim3D {
   function updateDemo(dt) {
     const f = 1 - Math.exp(-dt * 1.5);
     G.yaw += (Math.sin(T * 0.17) * 0.2 - G.yaw) * f; G.pitch += (0.06 + Math.sin(T * 0.11) * 0.035 - G.pitch) * f;
-    if (!demo || demo.over) demo = new AimSim((Math.random() * 2 ** 32) >>> 0, 0, 120);
+    if (!demo || demo.over) demo = new AimSim(LiveSeeds.local(SEG).seed, 0, 120);
     demoAcc += dt;
     while (demoAcc >= TICK) { demo.step(); demoAcc -= TICK; }
     handleEvents(demo, true);

@@ -158,6 +158,33 @@
       </div>
 
       <div class="panel" data-sec="questy">
+        <h3>Skarbonka (quest główny)</h3>
+        <p class="muted small">Wspólny cel wszystkich graczy na dobę (od północy do północy). Codziennie losuje się zadanie (skrzynki, gra w kasynie, wygrane w kasynie,
+          grosze z gier albo wszystko naraz) i rzadkość nagrody. Wszystko liczy się w złotówkach: cena skrzynek, wartość postawionych kart, grosze za wynik w grach.
+          Cel = podstawa × trudność zadania × mnożnik rzadkości. Pełną świnkę gracze muszą razem rozbić (uderzenia od kilku osób); niezrobiona do północy pęka sama.
+          Każdy, kto wpłacił, dostaje kartę tej rzadkości: 1. miejsce w wariancie Banknot 500 zł, 2. - 200 zł, 3. - 100 zł, pozostali - 50 zł (warianty wypadają stąd, nawet wyłączone).</p>
+        <label class="chk"><input type="checkbox" id="piggyOn"> Skarbonka włączona</label>
+        <form id="piggyForm" autocomplete="off" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+          <label>Podstawa celu (gr; 1 000 000 = 10 000 zł) <input type="number" name="base" min="1000" step="1000" style="width:11em"></label>
+          <label>Limit wkładu jednego gracza (% celu) <input type="number" name="playerPct" min="1" max="100" style="width:5em"></label>
+          <label>Uderzeń do rozbicia <input type="number" name="hits" min="1" max="100000" style="width:6em"></label>
+          <label>Najmniej osób rozbijających <input type="number" name="breakers" min="1" max="100" style="width:5em"></label>
+          <button class="btn" type="submit">Zapisz</button>
+        </form>
+        <div id="piggyPct" class="small" style="display:grid;gap:6px;margin:8px 0"></div>
+        <p class="muted small">Cel = podstawa × mnożnik zadania × mnożnik rzadkości (w procentach, 100 = bez zmiany). Zadanie „grosze z gier” ma domyślnie mały mnożnik, bo gry płacą niewiele na dobę.
+          Zapisz podstawę i mnożniki przyciskiem „Zapisz”; zmiana nie rusza dzisiejszej skarbonki - do tego służy „Ustaw dzisiejszą skarbonkę od nowa”.</p>
+        <div id="piggyInfo" class="muted small"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="piggyKind" aria-label="Zadanie dzisiejszej skarbonki"><option value="">Losowe zadanie</option></select>
+          <select id="piggyRarity" aria-label="Rzadkość nagrody"><option value="">Losowa rzadkość</option></select>
+          <button class="btn" id="piggyReroll" type="button">Ustaw dzisiejszą skarbonkę od nowa</button>
+        </div>
+        <p class="muted small">Przed pierwszą wpłatą skarbonka losuje się od nowa. Gdy ktoś już wpłacił, zmieniasz zadanie, rzadkość i cel na miejscu: wpłaty i uderzenia graczy zostają (liczą się do nowego celu), a pełna świnka wraca do zbierania, jeśli nowy cel jest wyższy. Rozbitej skarbonki zmienić nie można.</p>
+        <div id="piggyTargets" class="muted small"></div>
+      </div>
+
+      <div class="panel" data-sec="questy">
         <h3>Quest CTF (capture the flag)</h3>
         <p class="muted small">Drugi quest na stronie startowej (gracz przełącza strzałką z Wanted). Wszyscy dostają to samo zadanie w stylu TryHackMe:
           strona z dziurą (komentarz w źródle, ciasteczko, robots.txt, nagłówki, cudze notatki, hasło w JavaScripcie) albo zakodowana wiadomość (Base64 + ROT13, szyfr Cezara, skrót hasła).

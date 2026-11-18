@@ -8,6 +8,8 @@ export const N = 22;
 export const BOOST_MULT = 1.85;
 /** złota kula znika po tylu krokach węża */
 export const GOLD_TICKS = 45;
+/** kroków w odcinku losowania: każdy odcinek ma własne ziarno od serwera (features/games/liveSeeds.ts, `SEG` w snake3d_sim.rs) */
+export const SEG = 32;
 export type Cell = { x: number; z: number };
 export type Food = { cell: Cell; active: boolean; life: number };
 
@@ -42,9 +44,11 @@ export class Snake3DSim {
   /** zapis skrętów dla serwera: (numer kroku, przed którym skręt działa; 1 = w prawo, 0 = w lewo) */
   log: number[] = [];
   private rng: Rng;
+  private seeds: (k: number) => number;
 
-  constructor(seed: number) {
-    this.rng = new Rng(seed);
+  /** `seeds(k)` = ziarno odcinka `k` */
+  constructor(seeds: (k: number) => number) {
+    this.seeds = seeds; this.rng = new Rng(seeds(0));
     const sx = Math.floor(N / 2), sz = Math.floor(N / 2) + 3;
     this.cells = [];
     for (let i = 0; i < 4; i++) this.cells.push({ x: sx, z: sz + i });
@@ -110,6 +114,8 @@ export class Snake3DSim {
       this.foods++;
       g.active = false;
     }
+    // nowy odcinek losowania (jak w snake3d_sim.rs)
+    if (this.ticks % SEG === 0) this.rng = new Rng(this.seeds(this.ticks / SEG));
     return res;
   }
 }

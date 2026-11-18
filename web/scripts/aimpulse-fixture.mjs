@@ -8,12 +8,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
+
+// ziarna odcinków (to samo co segSeed w features/games/liveSeeds.ts i live::test_seeds w Rust)
+const segSeeds = base => k => { let a = (base ^ Math.imul(k, 0x9E3779B9)) | 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return (((t ^ (t >>> 14)) >>> 0) / 4294967296 * 4294967296) >>> 0; };
 const tmp = mkdtempSync(join(tmpdir(), 'aimp-'));
 copyFileSync(join(here, '..', 'src', 'features', 'turbo', 'aimCore.ts'), join(tmp, 'aimCore.ts'));
 const { AimSim, EYE, QUANT, BAD } = await import(pathToFileURL(join(tmp, 'aimCore.ts')).href);
 
 function bot(seed, diff, dur, noise, avoid) {
-  const sim = new AimSim(seed, diff, dur);
+  const sim = new AimSim(segSeeds(seed), diff, dur);
   let r = (seed * 2654435761) >>> 0;
   const rnd = () => { r = (Math.imul(r, 1664525) + 1013904223) >>> 0; return r / 4294967296; };
   while (!sim.over) {

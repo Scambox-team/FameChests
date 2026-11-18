@@ -6,7 +6,7 @@ import { getTheme, isDeepTheme, setTheme, type Theme } from '../styles/theme';
 import { useGame } from '../game/store';
 import { deepDefault2D, hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
-import { epicOff, setEpicOff } from '../fx/epicPref';
+import { confettiOff, epicOff, setConfettiOff, setEpicOff } from '../fx/epicPref';
 import { liteOn, setLite } from '../fx/perf';
 import { RadioSettings } from './RadioSettings';
 import styles from './Settings.module.css';
@@ -22,6 +22,7 @@ export function SettingsPanel({ className }: { className?: string }) {
   const indepOpen = game.themes.includes('independence');
   const [birds, setBirds] = useState(() => !casinoIntroOff());
   const [epic, setEpic] = useState(() => !epicOff());
+  const [confetti, setConfetti] = useState(() => !confettiOff());
   const webgl = hasWebGL();
 
   const change = (v: number) => {
@@ -66,6 +67,10 @@ export function SettingsPanel({ className }: { className?: string }) {
         <label className={styles.check}>
           <input type="checkbox" checked={epic} onChange={e => { setEpic(e.target.checked); setEpicOff(!e.target.checked); }} />
           <span><b>Animacje lepszych kart</b><small>Wielkie odsłonięcie kart od Legendarnej wzwyż. Po wyłączeniu karta pokazuje się od razu, jak każda inna.</small></span>
+        </label>
+        <label className={styles.check}>
+          <input type="checkbox" checked={confetti} onChange={e => { setConfetti(e.target.checked); setConfettiOff(!e.target.checked); }} />
+          <span><b>Konfetti przy otwieraniu skrzynek</b><small>Wyłącz, jeśli konfetti przeszkadza albo spowalnia grę. Reszta animacji zostaje.</small></span>
         </label>
         <label className={styles.check}>
           <input type="checkbox" checked={!user3DOff() && webgl} disabled={!webgl} onChange={e => toggle3d(e.target.checked)} />

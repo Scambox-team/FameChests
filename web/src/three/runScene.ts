@@ -13,12 +13,13 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { APO, COMBO_T, DTH, LC, LS, N, ROWS_AHEAD, ROWS_BEHIND, TAU, TL, TT, TURBO_DIST, TW, V0, clamp, createRunCore, mod } from '../features/turbo/runCore';
+import { LiveSeeds } from '../features/games/liveSeeds';
+import { SEED_SEG, APO, COMBO_T, DTH, LC, LS, N, ROWS_AHEAD, ROWS_BEHIND, TAU, TL, TT, TURBO_DIST, TW, V0, clamp, createRunCore, mod } from '../features/turbo/runCore';
 
 export interface RunOver { distance: number; score: number; gems: number; zone: number; record: boolean; log: number[]; ticks: number }
 export interface RunHooks {
   /** start biegu: ziarno tunelu od serwera (undefined = bieg bez nagrody na losowym ziarnie) */
-  onStart: () => Promise<number | undefined>;
+  onStart: () => Promise<LiveSeeds | undefined>;
   onOver: (r: RunOver) => void;
   volume: () => number;
   soundOn: () => boolean;
@@ -559,9 +560,9 @@ async function startGame() {
   try { seed = await hooks.onStart(); } catch (e) { seed = undefined; }
   starting = false;
   if (dead) return;
-  if (seed === undefined) seed = (Math.random() * 4294967296) >>> 0;
+  live = seed instanceof LiveSeeds ? seed : LiveSeeds.local(SEED_SEG);
   Snd.setMode('game'); Snd.setZone(0); Snd.click();
-  core.start(seed);
+  core.start(live.seed, c => live.canStep(c));
   pLife.fill(0); setPalette(0, true);
   player.visible = true; rig.visible = true;
   ui.menu.classList.add('rn-hidden'); ui.over.classList.add('rn-hidden'); ui.pause.classList.add('rn-hidden'); ui.hud.classList.remove('rn-hidden');
@@ -842,6 +843,7 @@ root.addEventListener('contextmenu', e => e.preventDefault());
    ===================================================================== */
 if (G.best > 0) $('menuBest').textContent = '★ REKORD: ' + fmt(G.best) + ' ★';
 resetGen(true); ensureRows();
+let live = LiveSeeds.local(SEED_SEG);
 let last = performance.now();
 function frame(now) {
   if (dead) return;
@@ -850,6 +852,7 @@ function frame(now) {
   if (G.state !== 'paused') {
     const dt = raw * (G.state === 'dying' ? 0.4 : 1);
     update(dt); syncScene(dt); syncHud(raw);
+    if (G.state === 'playing') live.pump(core.run.tick, core.run.log);
   }
   composer.render();
 }

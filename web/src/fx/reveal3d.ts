@@ -9,7 +9,7 @@ import { baseVariant, isSpecial, person, variantName } from '../game/rules';
 import { S } from '../game/store';
 import { esc, fmt, sleep } from '../lib/format';
 import { Sound } from '../sound/sound';
-import { cardBackHTML, confetti, GOLDS, RAINBOW, SECRET_COLORS, SPECIAL_COLORS } from './effects';
+import { cardBackHTML, crateConfetti, GOLDS, RAINBOW, SECRET_COLORS, SPECIAL_COLORS } from './effects';
 import './css/reveal3d.css';
 
 const TIERS = {
@@ -74,7 +74,7 @@ export function epicReveal3d(drop, { fast = false, auto = false, look }: { fast?
       el.classList.add('burst');
       Sound.boom(tierKey !== 'gold');
       if (tierKey === 'secret') Sound.choir(); else if (tierKey === 'ultra') Sound.ultra(true); else Sound.gold();
-      if (tierKey !== 'gold') setTimeout(() => confetti(T.colors, tierKey === 'ultra' ? 220 : 140), 500 * speed);
+      if (tierKey !== 'gold') setTimeout(() => crateConfetti(T.colors, tierKey === 'ultra' ? 220 : 140), 500 * speed);
       // Tajna: kamera wraca na wprost skrzynki w następnej klatce, dopiero wtedy wiadomo, gdzie jest otwór
       if (T.orbit) requestAnimationFrame(() => requestAnimationFrame(launch)); else launch();
     }

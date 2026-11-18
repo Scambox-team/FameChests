@@ -9,6 +9,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
+
+// ziarna odcinków (to samo co segSeed w features/games/liveSeeds.ts i live::test_seeds w Rust)
+const segSeeds = base => k => { let a = (base ^ Math.imul(k, 0x9E3779B9)) | 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return (((t ^ (t >>> 14)) >>> 0) / 4294967296 * 4294967296) >>> 0; };
 const src = join(here, '..', 'src', 'features', 'pinball');
 const out = join(here, '..', '..', 'server', 'tests', 'fixtures', 'pinball_replays.json');
 const tmp = mkdtempSync(join(tmpdir(), 'pinball-'));
@@ -20,7 +23,7 @@ copyFileSync(join(src, 'levels.json'), join(tmp, 'levels.json'));
 const { Sim, INPUT_CODES } = await import(pathToFileURL(join(tmp, 'core.ts')).href);
 
 function bot(level, seed) {
-  const sim = new Sim(level, seed);
+  const sim = new Sim(level, segSeeds(seed));
   sim.start();
   const log = [];
   const inp = c => { log.push(sim.tick, INPUT_CODES.indexOf(c)); sim.input(c); };

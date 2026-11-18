@@ -23,6 +23,9 @@ export const GOOD = 0, BAD = 1, GOLD = 2;
 export type TType = 0 | 1 | 2;
 
 /** mulberry32: 32-bitowy generator z ziarnem; liczy tak samo w JS i w Rust */
+/** kroków w odcinku losowania (`SEG` w aimpulse_sim.rs) - 2 s gry */
+export const SEG = 120;
+
 export class Rng {
   private a: number;
   constructor(seed: number) { this.a = seed | 0; }
@@ -80,9 +83,11 @@ export class AimSim {
   private lastShot = -1000;
   private nextId = 1;
   private rng: Rng;
+  private seeds: (k: number) => number;
 
-  constructor(seed: number, diff: number, dur: number) {
-    this.rng = new Rng(seed);
+  /** `seeds(k)` = ziarno odcinka `k` (po SEG kroków; features/games/liveSeeds.ts) */
+  constructor(seeds: (k: number) => number, diff: number, dur: number) {
+    this.seeds = seeds; this.rng = new Rng(seeds(0));
     this.diff = DIFFS[diff];
     this.total = dur * 60;
     this.badT = Math.floor(this.rng.range(1.5, 3) * 60);
@@ -148,6 +153,12 @@ export class AimSim {
 
   /** Jeden krok rundy (1/60 s) */
   step() {
+    this.stepInner();
+    // nowy odcinek losowania (jak w aimpulse_sim.rs)
+    if (!this.over && this.tick % SEG === 0) this.rng = new Rng(this.seeds(this.tick / SEG));
+  }
+
+  private stepInner() {
     if (this.over) return;
     this.tick++;
     if (this.tick >= this.total) { this.over = true; return; }
