@@ -101,6 +101,7 @@ pub fn router(st: AppState) -> Router {
         .route("/games/turbo/run", get(index))
         .route("/games/turbo/aimpulse", get(index))
         .route("/games/invaders", get(index))
+        .route("/games/mgla", get(index))
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))

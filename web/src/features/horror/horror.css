@@ -1,0 +1,76 @@
+/* MGŁA (zakładka Gry -> Mgła): strona przed grą. Plakat to własna ciemna „klatka z kasety” (stałe kolory, wygląda tak samo
+   w każdym motywie), panel z pomocą bierze kolory z motywu (tokens.css). Sama gra: hz3.css. Prefiks `hz-` (`hr` = wyścigi). */
+.hz-page { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.hz-poster {
+  position: relative; overflow: hidden; isolation: isolate; min-height: min(560px, calc(100dvh - 220px));
+  border-radius: var(--radius-m); color: #e9e4d8;
+  background: radial-gradient(120% 80% at 50% 85%, #2a3138 0%, #151a1f 45%, #07090b 100%);
+  box-shadow: 0 0 0 1px #ffffff12, 0 24px 60px #0008;
+  display: flex; align-items: flex-end;
+}
+/* pnie: kilka warstw pionowych pasów o różnej szerokości i ciemności (bliżej = ciemniej i szerzej) */
+.hz-trees, .hz-trees::before, .hz-trees::after { position: absolute; inset: 0; content: ""; }
+.hz-trees {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 7%, #0b0e1199 7% 8.2%, transparent 8.2% 13%, #0b0e1166 13% 13.6%, transparent 13.6% 19%),
+    linear-gradient(180deg, transparent 55%, #05060799 100%);
+  filter: blur(1.5px);
+}
+.hz-trees::before {
+  background: repeating-linear-gradient(90deg, transparent 0 11%, #050607 11% 13.5%, transparent 13.5% 27%, #050607 27% 30.5%, transparent 30.5% 41%);
+  background-position: 3% 0; opacity: .92;
+}
+.hz-trees::after {
+  background: repeating-linear-gradient(90deg, transparent 0 21%, #020303 21% 26%, transparent 26% 58%, #020303 58% 64%, transparent 64% 100%);
+  background-position: -8% 0;
+}
+/* sylwetka między drzewami: wysoka, chuda, bez twarzy */
+.hz-figure {
+  position: absolute; left: 63%; bottom: 22%; width: 2.2%; height: 46%; min-width: 9px; z-index: 0; opacity: .55;
+  background:
+    radial-gradient(50% 9% at 50% 5%, #c9c3b6 0 98%, transparent 100%),
+    linear-gradient(90deg, transparent 22%, #23272b 22% 78%, transparent 78%) 0 12% / 100% 88% no-repeat;
+  filter: blur(.6px); animation: hz-flicker 5s steps(1) infinite;
+}
+.hz-lines {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px), radial-gradient(130% 100% at 50% 50%, transparent 55%, #000a 100%);
+}
+.hz-osd {
+  position: absolute; top: 16px; left: 18px; right: 18px; display: flex; justify-content: space-between;
+  font: 700 15px / 1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .12em; color: #f2efe6; text-shadow: 2px 0 #ff2a2a88, -2px 0 #2affff66;
+}
+.hz-osd i { display: inline-block; width: .7em; height: .7em; margin-right: .4em; border-radius: 50%; background: #ff3b30; animation: hz-blink 1.2s steps(1) infinite; }
+.hz-title { position: relative; z-index: 1; padding: 28px; max-width: 520px; }
+.hz-title h2 {
+  margin: 0 0 6px; font: 800 clamp(48px, 8vw, 96px) / .9 var(--display); letter-spacing: .04em; text-transform: uppercase;
+  color: #f1ece0; text-shadow: 3px 0 #ff26264d, -3px 0 #26f0ff40, 0 0 30px #0009;
+}
+.hz-title p { margin: 0 0 18px; color: #cfc9bd; font-size: 15px; line-height: 1.5; text-shadow: 0 1px 8px #000; }
+.hz-title small { display: flex; gap: 6px; align-items: center; margin-top: 10px; color: #a9a397; font-size: 12px; }
+.hz-play {
+  display: inline-flex; gap: 8px; align-items: center; padding: 13px 26px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--hue); color: var(--on-hue); font: 700 16px / 1 var(--body); box-shadow: 0 10px 30px #0008;
+}
+.hz-play:hover:not(:disabled) { filter: brightness(1.12); }
+.hz-play:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hz-play:disabled { opacity: .6; cursor: progress; }
+.hz-side { display: flex; flex-direction: column; gap: 14px; }
+.hz-help h3 { margin: 6px 0; font-size: 15px; }
+.hz-help p, .hz-help ul { margin: 0 0 10px; }
+.hz-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
+.hz-help li { margin-bottom: 4px; }
+.hz-help kbd { padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--text) 10%, transparent); font: 600 12px var(--body); }
+.hz-best { display: flex; gap: 8px; align-items: flex-start; }
+.hz-best svg { flex: none; margin-top: 2px; color: var(--hue); }
+.hz-warn { display: flex; gap: 8px; margin: 0; padding: 10px 12px; border-radius: var(--radius-s); font-size: 13px; color: var(--muted); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.hz-warn svg { flex: none; margin-top: 1px; color: var(--warn); }
+@keyframes hz-flicker { 0%, 61%, 64%, 100% { opacity: .55; } 62% { opacity: 0; } 63% { opacity: .9; } }
+@keyframes hz-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .hz-figure, .hz-osd i { animation: none; }
+}
+@media (max-width: 900px) {
+  .hz-page { grid-template-columns: 1fr; }
+  .hz-poster { min-height: 420px; }
+}
