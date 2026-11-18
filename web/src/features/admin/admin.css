@@ -217,6 +217,7 @@ fieldset.a-special { border-color: #19e6ff66; }
 .a-msg-form .wide { grid-column: 1 / -1; }
 .a-msg-form textarea { resize: vertical; font: inherit; }
 .a-msg-body { white-space: pre-wrap; font-size: 13px; }
+.a-msg-img { flex: none; width: 72px; height: 56px; object-fit: cover; border-radius: 6px; }
 .a-msg-state { font-size: 12px; font-weight: 700; }
 .a-msg-state.now { color: var(--good, #3ddc84); } .a-msg-state.later { color: #19e6ff; } .a-msg-state.past { color: var(--muted); }
 

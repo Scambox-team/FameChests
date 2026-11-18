@@ -740,11 +740,13 @@ export function startPanel() {
     $("#msgList").innerHTML = A.messages.map(m => {
       const state = now < m.start ? ["later", "zaplanowana"] : now < m.end ? ["now", "wyświetla się teraz"] : ["past", "zakończona"];
       return `<div class="a-link${state[0] === "past" ? " off" : ""}" data-msg="${m.id}">
+        <img class="a-msg-img" src="${esc(m.image || "/static/img/notice-default.webp")}" alt="" title="${m.image ? "Własne zdjęcie" : "Domyślny obrazek"}">
         <div class="a-link-main"><b>${esc(m.title)}</b>
           <span class="a-msg-body">${esc(m.body)}</span>
           <small class="muted"><span class="a-msg-state ${state[0]}">${state[1]}</span> · ${msgWhen(m.start)} – ${msgWhen(m.end)} ·
             dodał ${esc(m.admin || "?")} · zobaczyło: <b>${m.seen}</b></small></div>
-        <span class="a-link-actions"><button class="btn tiny danger" data-mact="delete">Usuń</button></span>
+        <span class="a-link-actions"><label class="btn tiny">${m.image ? "Zmień zdjęcie" : "Dodaj zdjęcie"}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-mimg hidden></label>
+          ${m.image ? '<button class="btn tiny" data-mact="noimg">Usuń zdjęcie</button>' : ""}<button class="btn tiny danger" data-mact="delete">Usuń</button></span>
       </div>`;
     }).join("") || '<div class="muted small">Brak wiadomości.</div>';
   }
@@ -870,7 +872,7 @@ export function startPanel() {
   
   const LOG_ACTIONS = {
     money: "Pieniądze", chests: "Skrzynki", cards_delete: "Usunięte karty", access: "Dostęp do skrzynek",
-    ban: "Blokada", unban: "Odblokowanie", admin_grant: "Dał admina", admin_revoke: "Odebrał admina", role_save: "Zapisał rangę", radio_album_save: "Zapis albumu radia", radio_album_delete: "Usunięcie albumu radia", radio_track_add: "Dodanie utworu radia", radio_track_save: "Zapis utworu radia", radio_track_delete: "Usunięcie utworu radia", radio_order: "Kolejność w radiu", theme_save: "Ustawienia motywu", role_delete: "Usunął rangę", role_assign: "Nadał rangę",
+    ban: "Blokada", unban: "Odblokowanie", message_image: "Zdjęcie wiadomości", message_image_delete: "Usunięcie zdjęcia wiadomości", admin_grant: "Dał admina", admin_revoke: "Odebrał admina", role_save: "Zapisał rangę", radio_album_save: "Zapis albumu radia", radio_album_delete: "Usunięcie albumu radia", radio_track_add: "Dodanie utworu radia", radio_track_save: "Zapis utworu radia", radio_track_delete: "Usunięcie utworu radia", radio_order: "Kolejność w radiu", theme_save: "Ustawienia motywu", role_delete: "Usunął rangę", role_assign: "Nadał rangę",
     password: "Zmiana hasła (stara akcja)", password_link: "Link do resetu hasła", email_change: "Zmiana emaila gracza", email_template_save: "Zapis szablonu maila", email_template_reset: "Przywrócenie szablonu maila",user_delete: "Usunięte konto", ranking_hide: "Ukrył w rankingu", ranking_show: "Pokazał w rankingu",
     crate_save: "Zapis skrzynki", crate_delete: "Usunięcie skrzynki", crate_restore: "Przywrócenie skrzynki",
     card_save: "Zapis karty", card_delete: "Usunięcie karty", card_restore: "Przywrócenie karty",
@@ -1139,14 +1141,32 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
       e.preventDefault();
       const f = e.target.elements, start = new Date(f.start.value).getTime() / 1000, end = new Date(f.end.value).getTime() / 1000;
       try {
-        await api("/api/admin/messages", { method: "POST", json: { title: f.title.value, body: f.body.value, start, end } });
+        const r = await api("/api/admin/messages", { method: "POST", json: { title: f.title.value, body: f.body.value, start, end } });
+        const file = f.image.files[0];
+        if (file && r.id) {
+          const fd = new FormData(); fd.append("image", file);
+          await api(`/api/admin/messages/${r.id}/image`, { method: "POST", form: fd });
+        }
         toast("Wiadomość zaplanowana");
         resetMessageForm(); loadMessages(); loadLog();
       } catch (err) { toast(err.message, true); }
     });
+    // zdjęcie wiadomości: wybór pliku od razu je zapisuje, „Usuń zdjęcie” wraca do domyślnego obrazka
+    $("#msgList").addEventListener("change", async e => {
+      const inp = e.target.closest("[data-mimg]"); if (!inp || !inp.files[0]) return;
+      const id = inp.closest("[data-msg]").dataset.msg, fd = new FormData(); fd.append("image", inp.files[0]);
+      try { await api(`/api/admin/messages/${id}/image`, { method: "POST", form: fd }); toast("Zdjęcie zapisane"); loadMessages(); loadLog(); }
+      catch (err) { toast(err.message, true); }
+    });
     $("#msgList").addEventListener("click", async e => {
       const b = e.target.closest("[data-mact]"); if (!b) return;
       const m = A.messages.find(x => String(x.id) === b.closest("[data-msg]").dataset.msg);
+      if (b.dataset.mact === "noimg") {
+        const fd = new FormData(); fd.append("remove", "1");
+        try { await api(`/api/admin/messages/${m.id}/image`, { method: "POST", form: fd }); toast("Zdjęcie usunięte"); loadMessages(); loadLog(); }
+        catch (err) { toast(err.message, true); }
+        return;
+      }
       if (!confirm(`Usunąć wiadomość „${m.title}”?`)) return;
       try {
         await api(`/api/admin/messages/${m.id}`, { method: "DELETE" });

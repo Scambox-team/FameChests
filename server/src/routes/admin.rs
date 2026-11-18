@@ -70,7 +70,53 @@ async fn mark_money_generated(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
 
 // ---------------------------------------------------------------- wiadomości do graczy
 // Admin wybiera od kiedy do kiedy wiadomość jest aktywna (przeglądarka wysyła gotowe znaczniki czasu); każdy gracz,
-// który wejdzie do gry w tym czasie, zobaczy ją raz.
+// który wejdzie do gry w tym czasie, zobaczy ją raz. Wiadomość może mieć własne zdjęcie (image_cache/__msg_<id>.webp,
+// adres /msgimg/<id>); bez niego gra pokazuje domyślny obrazek okienek (static/img/notice-default.webp).
+
+fn message_image_id(mid: i64) -> String {
+    format!("__msg_{mid}")
+}
+
+/// Adres zdjęcia wiadomości (z wersją, żeby po podmianie przeglądarka pobrała nowe) - None, gdy go nie ma
+pub fn message_image_url(st: &AppState, mid: i64) -> Option<String> {
+    let path = st.images.find(&message_image_id(mid), &crate::images::Kind::Main)?;
+    Some(format!("/msgimg/{mid}?v={}", crate::images::file_mtime(&path) as i64 % 1_000_000_000))
+}
+
+/// /msgimg/<id> - zdjęcie wiadomości (dla zalogowanych)
+pub async fn message_image(
+    State(st): State<AppState>,
+    crate::auth::Me(_): crate::auth::Me,
+    Path(mid): Path<i64>,
+    Query(q): Query<HashMap<String, String>>,
+    headers: HeaderMap,
+) -> Res {
+    let path = st.images.find(&message_image_id(mid), &crate::images::Kind::Main).ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
+    let cache = format!("public, max-age={}", if q.contains_key("v") { 30 * 86400 } else { 0 });
+    crate::web::send_file(&path, crate::images::mimetype(&path), &headers, &cache).await
+}
+
+/// Zdjęcie wiadomości: plik `image` (zapis jako WebP) albo `remove=1`
+pub async fn admin_message_image(State(st): State<AppState>, Admin(me): Admin, Path(mid): Path<i64>, mp: Multipart) -> Res {
+    let form = super::variants::Form::read(mp).await?;
+    let mut tx = st.db.begin().await?;
+    let title = sqlx::query_scalar!("SELECT title FROM admin_messages WHERE id = $1", mid)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(|| not_found("Nie ma takiej wiadomości"))?;
+    let action = if let Some(blob) = form.upload("image") {
+        st.images.save(&message_image_id(mid), blob, &crate::images::Kind::Main).map_err(AppError::bad)?;
+        "message_image"
+    } else if form.fields.get("remove").map(String::as_str) == Some("1") {
+        st.images.delete(&message_image_id(mid), &crate::images::Kind::Main);
+        "message_image_delete"
+    } else {
+        return bad("Wybierz plik");
+    };
+    log_admin(&mut tx, &me, action, None, &title).await?;
+    tx.commit().await?;
+    ok(json!({"ok": true, "image": message_image_url(&st, mid)}))
+}
 
 #[derive(Serialize)]
 struct MessageView {
@@ -92,6 +138,14 @@ pub async fn admin_messages_list(State(st): State<AppState>, Admin(_): Admin) ->
     )
     .fetch_all(&st.db)
     .await?;
+    let messages: Vec<Value> = messages
+        .iter()
+        .map(|m| {
+            let mut v = json!(m);
+            v["image"] = json!(message_image_url(&st, m.id));
+            v
+        })
+        .collect();
     ok(json!({"messages": messages}))
 }
 
@@ -121,20 +175,20 @@ pub async fn admin_messages_add(State(st): State<AppState>, Admin(me): Admin, Js
         return bad("Ta wiadomość już by się skończyła - wybierz późniejszy koniec");
     }
     let mut tx = st.db.begin().await?;
-    sqlx::query!(
-        "INSERT INTO admin_messages (title, body, starts_at, ends_at, created_at, admin_name) VALUES ($1, $2, $3, $4, $5, $6)",
-        title,
-        body,
-        start,
-        end,
-        now(),
-        me.username
+    let id: i64 = sqlx::query_scalar(
+        "INSERT INTO admin_messages (title, body, starts_at, ends_at, created_at, admin_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
     )
-    .execute(&mut *tx)
+    .bind(&title)
+    .bind(&body)
+    .bind(start)
+    .bind(end)
+    .bind(now())
+    .bind(&me.username)
+    .fetch_one(&mut *tx)
     .await?;
     log_admin(&mut tx, &me, "message_add", None, &title).await?;
     tx.commit().await?;
-    ok(json!({"ok": true}))
+    ok(json!({"ok": true, "id": id}))
 }
 
 pub async fn admin_messages_delete(State(st): State<AppState>, Admin(me): Admin, Path(mid): Path<i64>) -> Res {
@@ -147,6 +201,7 @@ pub async fn admin_messages_delete(State(st): State<AppState>, Admin(me): Admin,
     sqlx::query!("DELETE FROM admin_messages WHERE id = $1", mid).execute(&mut *tx).await?;
     log_admin(&mut tx, &me, "message_delete", None, &title).await?;
     tx.commit().await?;
+    st.images.delete(&message_image_id(mid), &crate::images::Kind::Main);
     ok(json!({"ok": true}))
 }
 

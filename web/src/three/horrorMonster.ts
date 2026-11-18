@@ -6,16 +6,34 @@
 //    poniżej (np. '/static/models/potwor.glb'). Model wczytuje GLTFLoader z pakietu three (three/examples/jsm, bez nowych bibliotek),
 //    dopiero gdy adres jest ustawiony. Do czasu wczytania (i przy błędzie) widać potwora proceduralnego.
 //    Wymagania: przód modelu w stronę +Z (standard glTF), stopy na dole - wysokość i położenie skalujemy sami do MONSTER_HEIGHT.
-//    Jeśli plik ma animacje, gra odtwarza klip o nazwie zawierającej MONSTER_CLIP (np. "walk"), a gdy takiego nie ma - pierwszy.
+//    Animacje: MONSTER_CLIPS mówi, który klip (fragment nazwy) grać w danej chwili: chód, bieg, chwiejny chód w świetle latarki,
+//    stanie w miejscu i atak w jumpscare. Brakujący klip zastępuje chód, a gdy nie ma żadnego pasującego - pierwszy klip w pliku.
+//    Klipy muszą być „w miejscu” (bez przesuwania bioder do przodu) - przesuwa go gra.
+//    Obecny model: „The Black Tie Wraith” zrobiony w Meshy AI, animacje z Mixamo (static/models/wraith.glb, tekstury zmniejszone
+//    do 1024 px i bez dwóch klipów z tańcami, żeby plik był mniejszy).
 // 2) Własny potwór z prymitywów: zmień funkcję buildProcedural() - ma zwrócić { object, update, dispose }.
 //    `object` stoi stopami w y = 0 i patrzy w +Z. `update(s)` dostaje stan z MonsterState (czas, prędkość, czy gracz go widzi...).
 // Przy licencjach plików 3D trzymaj się tych samych zasad co przy zdjęciach: CC0 / CC BY, autor dopisany w „O stronie”.
 import * as THREE from 'three';
 
 /** Adres własnego modelu GLB / GLTF ('' = potwór proceduralny z prymitywów) */
-export const MONSTER_MODEL_URL = '';
-/** Fragment nazwy klipu animacji w pliku modelu, który odtwarzamy w ruchu */
-export const MONSTER_CLIP = 'walk';
+export const MONSTER_MODEL_URL = '/static/models/wraith.glb';
+/** Klipy animacji: fragment nazwy klipu w pliku i prędkość (m/s), przy której stopy nie ślizgają się (tempo klipu = prędkość / ta wartość) */
+export const MONSTER_CLIPS = {
+  walk: { name: 'walking', speed: 2.1 },
+  run: { name: 'running', speed: 4.6 },
+  stagger: { name: 'unsteady', speed: 1.1 },   // gdy gracz świeci na niego latarką (wtedy idzie wolniej)
+  idle: { name: 'alert', speed: 0 },
+  attack: { name: 'attack', speed: 0 },
+};
+/** Od tej prędkości potwór biegnie zamiast iść */
+const RUN_FROM = 3.3;
+/** Wysokość twarzy modelu w ataku (tam patrzy kamera w jumpscare); model pochyla się w zamachu, więc niżej niż na stojąco */
+const MODEL_FACE_Y = 2.05;
+/** Jak daleko od kamery staje model w jumpscare: bliżej zamach ręki zasłania cały ekran */
+const MODEL_SCARE_DIST = 1.7;
+/** Jumpscare: atak od tej chwili klipu i w tym tempie - ręce zostają uniesione po bokach głowy (pełny zamach zasłaniał twarz) */
+const MODEL_ATTACK_FROM = 0.2, MODEL_ATTACK_SPEED = 0.5;
 /** Wysokość potwora w metrach (gracz ma oczy na 1,62 m) */
 export const MONSTER_HEIGHT = 2.75;
 
@@ -37,10 +55,16 @@ export interface MonsterState {
 export interface Monster {
   object: THREE.Object3D;
   height: number;
+  /** wysokość twarzy w jumpscare (kamera patrzy w nią) */
+  readonly faceY: number;
+  /** odległość od kamery w jumpscare */
+  readonly scareDist: number;
+  /** wpisuje do `out` położenie twarzy w świecie (kość głowy modelu albo głowa sylwetki) - w jumpscare kamera w nią celuje */
+  face: (out: THREE.Vector3) => THREE.Vector3;
   update: (s: MonsterState) => void;
   dispose: () => void;
 }
-interface Part { object: THREE.Object3D; update: (s: MonsterState) => void; dispose: () => void }
+interface Part { object: THREE.Object3D; update: (s: MonsterState) => void; dispose: () => void; faceY?: number; scareDist?: number; head?: THREE.Object3D }
 
 export function createMonster(): Monster {
   const root = new THREE.Group();
@@ -58,6 +82,12 @@ export function createMonster(): Monster {
   return {
     object: root,
     height: MONSTER_HEIGHT,
+    get faceY() { return part.faceY ?? MONSTER_HEIGHT * 0.9; },
+    get scareDist() { return part.scareDist ?? 1.2; },
+    face: out => {
+      if (part.head) { part.head.getWorldPosition(out); return out; }
+      root.getWorldPosition(out); out.y += MONSTER_HEIGHT * 0.9; return out;
+    },
     update: s => part.update(s),
     dispose: () => { dead = true; part.dispose(); },
   };
@@ -145,12 +175,13 @@ function buildProcedural(): Part {
   };
   return {
     object: fig,
+    head: skull,
     update,
     dispose: () => { geos.forEach(x => x.dispose()); body.dispose(); skin.dispose(); },
   };
 }
 
-/** Wczytuje model GLB / GLTF, skaluje do MONSTER_HEIGHT i stawia stopami w y = 0 */
+/** Wczytuje model GLB / GLTF, skaluje do MONSTER_HEIGHT i stawia stopami w y = 0; klipy z MONSTER_CLIPS przenika płynnie */
 async function loadModel(url: string): Promise<Part> {
   const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
   const gltf = await new GLTFLoader().loadAsync(url);
@@ -161,19 +192,60 @@ async function loadModel(url: string): Promise<Part> {
   model.scale.setScalar(k);
   const c = box.getCenter(new THREE.Vector3());
   model.position.set(-c.x * k, -box.min.y * k, -c.z * k);
+  model.traverse((o: any) => {
+    if (!o.isMesh) return;
+    o.frustumCulled = false;   // animacja wychodzi poza ramkę liczoną z pozy spoczynkowej
+    // metal bez mapy otoczenia wychodzi czarny: sylwetka ma być ciemna, ale widoczna w świetle latarki
+    for (const m of [].concat(o.material || []) as any[]) if ('metalness' in m) m.metalness = Math.min(m.metalness, 0.2);
+  });
   const wrap = new THREE.Group();
   wrap.add(model);
+  // kość głowy (Mixamo: „mixamorig:Head”, three usuwa dwukropek); bez niej - górna część modelu
+  let head: THREE.Object3D | undefined;
+  model.traverse((o: any) => { if (!head && o.isBone && /head$/i.test(o.name)) head = o; });
+
   const mixer = gltf.animations.length ? new THREE.AnimationMixer(model) : null;
-  const clip = gltf.animations.find(a => a.name.toLowerCase().includes(MONSTER_CLIP)) || gltf.animations[0];
-  if (mixer && clip) mixer.clipAction(clip).play();
+  type Kind = keyof typeof MONSTER_CLIPS;
+  const actions: Partial<Record<Kind, THREE.AnimationAction>> = {};
+  if (mixer) for (const kind of Object.keys(MONSTER_CLIPS) as Kind[]) {
+    const clip = gltf.animations.find(a => a.name.toLowerCase().includes(MONSTER_CLIPS[kind].name));
+    if (clip) actions[kind] = mixer.clipAction(clip);
+  }
+  if (mixer && !actions.walk) actions.walk = mixer.clipAction(gltf.animations[0]);
+  if (actions.attack) { actions.attack.setLoop(THREE.LoopOnce, 1); actions.attack.clampWhenFinished = true; }
+  let cur: Kind | null = null;
+  const play = (kind: Kind) => {
+    const want = actions[kind] ? kind : 'walk';
+    if (want === cur) return;
+    const next = actions[want]!;
+    next.reset().setEffectiveWeight(1).play();
+    if (want === 'attack') next.time = MODEL_ATTACK_FROM;
+    const prev = cur ? actions[cur] : null;
+    if (prev) next.crossFadeFrom(prev, want === 'attack' ? 0.08 : 0.3, false);
+    cur = want;
+  };
+  play('idle');
   return {
     object: wrap,
-    update: s => { mixer?.update(s.dt * (s.speed > 0.1 ? Math.max(0.6, s.speed / 2.2) : 0.25)); },
+    faceY: MODEL_FACE_Y * MONSTER_HEIGHT / 2.75,
+    head,
+    scareDist: MODEL_SCARE_DIST,
+    update: s => {
+      if (!mixer) return;
+      const kind: Kind = s.attack ? 'attack' : s.speed < 0.15 ? 'idle' : s.seen && s.speed < RUN_FROM ? 'stagger' : s.speed >= RUN_FROM ? 'run' : 'walk';
+      play(kind);
+      const a = actions[cur!]!, ref = MONSTER_CLIPS[cur!].speed;
+      a.timeScale = ref ? Math.max(0.5, Math.min(1.8, s.speed / ref)) : cur === 'attack' ? MODEL_ATTACK_SPEED : 1;
+      mixer.update(s.dt);
+    },
     dispose: () => {
       mixer?.stopAllAction();
       model.traverse((o: any) => {
         o.geometry?.dispose?.();
-        for (const m of [].concat(o.material || [])) (m as THREE.Material).dispose();
+        for (const m of [].concat(o.material || []) as any[]) {
+          for (const v of Object.values(m)) if ((v as any)?.isTexture) (v as THREE.Texture).dispose();
+          (m as THREE.Material).dispose();
+        }
       });
     },
   };

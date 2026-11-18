@@ -868,6 +868,8 @@ struct AdminMessage {
     title: String,
     body: String,
     at: f64,
+    /// własne zdjęcie wiadomości (bez niego gra pokazuje domyślny obrazek okienek)
+    image: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -984,7 +986,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         jackpot_lobby: super::casino::my_lobby(&mut c, uid).await?.map(|l| l.id),
         jackpot_invites,
         patch_notes: crate::data::base_game().patch_notes.iter().filter(|n| n["v"].as_i64().unwrap_or(0) > seen).take(3).collect(),
-        messages: active_messages(&mut c, uid).await?,
+        messages: active_messages(&mut c, &st, uid).await?,
         ach_unseen: crate::achievements::unseen(&mut c, uid).await?,
         horse_news: super::horses::horse_news(&mut c, uid).await?,
         referral: super::referral::notes(&mut c, &cx.cat, uid).await?,
@@ -1008,7 +1010,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
 }
 
 /// Wiadomości od adminów, które gracz ma teraz zobaczyć: trwa ich czas i jeszcze ich nie widział
-async fn active_messages(c: &mut Conn, uid: i64) -> sqlx::Result<Vec<AdminMessage>> {
+async fn active_messages(c: &mut Conn, st: &AppState, uid: i64) -> sqlx::Result<Vec<AdminMessage>> {
     let rows = sqlx::query!(
         "SELECT id, title, body, starts_at FROM admin_messages m WHERE starts_at <= $1 AND ends_at > $1 AND NOT EXISTS
          (SELECT 1 FROM admin_message_seen s WHERE s.message_id = m.id AND s.user_id = $2) ORDER BY starts_at",
@@ -1017,7 +1019,10 @@ async fn active_messages(c: &mut Conn, uid: i64) -> sqlx::Result<Vec<AdminMessag
     )
     .fetch_all(c)
     .await?;
-    Ok(rows.into_iter().map(|r| AdminMessage { id: r.id, title: r.title, body: r.body, at: r.starts_at }).collect())
+    Ok(rows
+        .into_iter()
+        .map(|r| AdminMessage { image: super::admin::message_image_url(st, r.id), id: r.id, title: r.title, body: r.body, at: r.starts_at })
+        .collect())
 }
 
 #[derive(Deserialize, Default)]

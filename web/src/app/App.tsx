@@ -98,6 +98,7 @@ function Game() {
           <Route path="/arena" element={<ArenaPage />} />
           <Route path="/games" element={<ChessPage />} />
           <Route path="/games/snake3d" element={<Navigate to="/games/turbo/snake" replace />} />
+          <Route path="/games/mgla" element={<Navigate to="/games/scamrooms" replace />} />
           <Route path="/games/:tab" element={<ChessPage />} />
           <Route path="/games/:tab/:sub" element={<ChessPage />} />
           <Route path="/passport" element={<PassportPage />} />

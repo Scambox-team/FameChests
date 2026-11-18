@@ -32,6 +32,12 @@
 .upg-quick .chip { height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--raised); color: var(--muted); }
 .upg-quick .chip.active { background: #fff; color: #000; font-weight: 600; }
 .upg-quick .chip:disabled { opacity: .4; }
+/* gdzie na kole leży pole wygranej (tylko wygląd) */
+.upg-arcpos { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.upg-arcpos .chip { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 13px; cursor: pointer; }
+.upg-arcpos .chip.active { background: #fff; color: #000; font-weight: 600; }
+.upg-arcpos .chip:disabled { opacity: .5; cursor: default; }
+.upg-arcpos > span { margin-right: 4px; }
 .upg-result .card { width: 120px; --cw: 120px; }
 .jp-anim h2 { font: 800 30px/36px var(--display); letter-spacing: -.02em; }
 .jp-anim-ok { display: flex; justify-content: center; margin-top: 12px; }

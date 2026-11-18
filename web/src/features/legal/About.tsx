@@ -32,6 +32,8 @@ export function About({ info }: { info: LegalInfo | null }) {
         <li>Postacie historyczne i karty własne: grafiki w domenie publicznej lub nasze rysunki.</li>
         <li>Motyw Niepodległość: subtelne tekstury kafelków na stronie startowej to przedwojenne plakaty (podpisane m.in. Manon, Bogdan Nowakowski, H. Langer, Lit. Art. W. Głowczewski), dostarczone przez twórcę gry; kotylion i wstęgi są narysowane w CSS. Jeśli jesteś właścicielem praw do któregoś z nich, <a href="/zglos">napisz</a>, a usuniemy go.</li>
         <li>Grafiki w motywie Frutiger Aero: dwa zdjęcia z Wikimedia Commons, przycięte i zmniejszone (Olivier Dugornay / Ifremer, CC BY 4.0; José Lodos Benavente, CC0), oraz tapety dostarczone przez twórcę gry, o nieustalonym autorstwie. Pełna lista: plik CREDITS-photos.txt w repozytorium.</li>
+        <li>Obrazek w okienkach z wiadomościami i listą zmian (jeździec z latarnią): obraz dostarczony przez twórcę gry, o nieustalonym autorstwie. Jeśli jesteś właścicielem praw, <a href="/zglos">napisz</a>, a usuniemy go.</li>
+        <li>ScamRooms: model potwora „The Black Tie Wraith” został wygenerowany w Meshy AI (meshy.ai) i jest udostępniony na licencji CC BY 4.0. Animacje ruchu pochodzą z Mixamo (Adobe). W grze używamy kopii ze zmniejszonymi teksturami.</li>
         <li>Paszport: granice państw to dane Natural Earth (domena publiczna, naturalearthdata.com), a obrys Watykanu pochodzi z geoBoundaries (domena publiczna, źródło: Wikimedia Commons). Symbole na pieczątkach to ikony Lucide (licencja ISC); same stemple rysuje kod.</li>
       </ul>
 

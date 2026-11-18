@@ -18,7 +18,17 @@ html.hz3-open, html.hz3-open body { overflow: hidden; }
 .hz3 .hz3-rec i { display: inline-block; width: .7em; height: .7em; margin-right: .45em; border-radius: 50%; background: #ff3b30; vertical-align: -.02em; animation: hz3-blink 1.2s steps(1) infinite; }
 .hz3 .hz3-date { position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); font-size: clamp(13px, 2.2cqmin, 20px); opacity: .85; }
 .hz3 .hz3-bars { position: absolute; left: max(20px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom)); display: grid; gap: 8px; font-size: 12px; }
-.hz3 .hz3-bar { display: grid; grid-template-columns: 7.5em 140px; align-items: center; gap: 8px; }
+.hz3 .hz3-bar { display: grid; grid-template-columns: 9.5em 140px; align-items: center; gap: 8px; }
+.hz3 .hz3-bar em { font-style: normal; opacity: .6; }
+/* kucanie: napis nad paskami */
+.hz3 .hz3-pose { display: none; position: absolute; left: max(20px, env(safe-area-inset-left)); bottom: calc(max(16px, env(safe-area-inset-bottom)) + 52px); font-size: 12px; letter-spacing: .14em; padding: 3px 8px; border: 1px solid #efeadf88; }
+.hz3.hz3-crouching .hz3-pose { display: block; }
+.hz3.hz3-touchon .hz3-pose { bottom: auto; top: calc(max(16px, env(safe-area-inset-top)) + 92px); }
+.hz3.hz3-touchon .hz3-bar em { display: none; }
+/* latarka wyłączona: przygaszony pasek baterii i napis WYŁ. */
+.hz3 .hz3-bar.off b { opacity: .3; }
+.hz3 .hz3-bar.off em { display: inline; opacity: 1; color: #ff8a80; font-size: 0; }
+.hz3 .hz3-bar.off em::after { content: "WYŁ."; font-size: 12px; }
 .hz3 .hz3-bar i { display: block; height: 8px; border: 1px solid #efeadfaa; padding: 1px; }
 .hz3 .hz3-bar b { display: block; height: 100%; width: 100%; background: #efeadf; transition: width .2s linear; }
 .hz3 .hz3-bar.low b { background: #ff4a3d; }
@@ -90,5 +100,5 @@ html.hz3-open, html.hz3-open body { overflow: hidden; }
   .hz3 .hz3-acts { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 }
 @container (max-width: 520px) {
-  .hz3 .hz3-bar { grid-template-columns: 6.5em 90px; }
+  .hz3 .hz3-bar { grid-template-columns: 8.5em 90px; }
 }

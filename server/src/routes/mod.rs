@@ -101,6 +101,7 @@ pub fn router(st: AppState) -> Router {
         .route("/games/turbo/aimpulse", get(index))
         .route("/games/invaders", get(index))
         .route("/games/mgla", get(index))
+        .route("/games/scamrooms", get(index))
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))
@@ -348,6 +349,8 @@ pub fn router(st: AppState) -> Router {
         // panel admina
         .route("/api/admin/messages", get(admin_messages_list).post(admin_messages_add))
         .route("/api/admin/messages/{mid}", delete(admin_messages_delete))
+        .route("/api/admin/messages/{mid}/image", post(admin::admin_message_image))
+        .route("/msgimg/{mid}", get(admin::message_image))
         .route("/api/admin/log", get(admin_log_list))
         .route("/api/admin/catalog", get(admin_catalog))
         .route("/api/admin/crates", post(admin_save_crate))

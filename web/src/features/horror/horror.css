@@ -1,76 +1,160 @@
-/* MGŁA (zakładka Gry -> Mgła): strona przed grą. Plakat to własna ciemna „klatka z kasety” (stałe kolory, wygląda tak samo
-   w każdym motywie), panel z pomocą bierze kolory z motywu (tokens.css). Sama gra: hz3.css. Prefiks `hz-` (`hr` = wyścigi). */
-.hz-page { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
-.hz-poster {
-  position: relative; overflow: hidden; isolation: isolate; min-height: min(560px, calc(100dvh - 220px));
-  border-radius: var(--radius-m); color: #e9e4d8;
-  background: radial-gradient(120% 80% at 50% 85%, #2a3138 0%, #151a1f 45%, #07090b 100%);
-  box-shadow: 0 0 0 1px #ffffff12, 0 24px 60px #0008;
+/* SCAMROOMS (zakładka Gry -> ScamRooms): strona przed grą. Plakat to własna ciemna „klatka z kasety” (stałe kolory, wygląda tak
+   samo w każdym motywie): korytarz 3D z CSS (cztery płaszczyzny w perspektywie, kamera idzie w głąb pętlą - animuje się tylko
+   transform), mgła na końcu z sylwetką, nakładka VHS i licznik taśmy. Karty pod plakatem biorą kolory z motywu (tokens.css).
+   Sama gra: hz3.css. Prefiks `hz-` (`hr` = wyścigi). */
+.hz-page { display: grid; gap: 18px; }
+.hz-hero {
+  position: relative; overflow: hidden; isolation: isolate; min-height: clamp(400px, 62vh, 640px);
+  border-radius: var(--radius-m); color: #ece6d6; background: #050403;
+  box-shadow: 0 0 0 1px #ffffff14, 0 24px 60px #0009;
   display: flex; align-items: flex-end;
 }
-/* pnie: kilka warstw pionowych pasów o różnej szerokości i ciemności (bliżej = ciemniej i szerzej) */
-.hz-trees, .hz-trees::before, .hz-trees::after { position: absolute; inset: 0; content: ""; }
-.hz-trees {
+
+/* korytarz: szerokość 360, wysokość 300, długość 4800 px; tekstury powtarzają się co 600 px, kamera przesuwa się o 600 px w pętli */
+.hz-tunnel { position: absolute; inset: 0; perspective: 420px; perspective-origin: 50% 44%; overflow: hidden; }
+.hz-cam { position: absolute; left: 50%; top: 44%; transform-style: preserve-3d; animation: hz-walk 7s linear infinite; }
+.hz-cam > i { position: absolute; display: block; backface-visibility: hidden; }
+.hz-floor, .hz-ceil { width: 360px; height: 4800px; margin: -2400px 0 0 -180px; }
+.hz-left, .hz-right { width: 4800px; height: 300px; margin: -150px 0 0 -2400px; }
+.hz-floor {
+  transform: translate3d(0, 150px, -2100px) rotateX(90deg);
   background:
-    repeating-linear-gradient(90deg, transparent 0 7%, #0b0e1199 7% 8.2%, transparent 8.2% 13%, #0b0e1166 13% 13.6%, transparent 13.6% 19%),
-    linear-gradient(180deg, transparent 55%, #05060799 100%);
-  filter: blur(1.5px);
+    repeating-linear-gradient(180deg, #00000000 0 220px, #fff3c414 300px, #00000000 380px 600px),
+    repeating-linear-gradient(90deg, #00000010 0 2px, #0000 2px 9px),
+    linear-gradient(90deg, #3c3218, #6b5a2c 30%, #6b5a2c 70%, #3c3218);
 }
-.hz-trees::before {
-  background: repeating-linear-gradient(90deg, transparent 0 11%, #050607 11% 13.5%, transparent 13.5% 27%, #050607 27% 30.5%, transparent 30.5% 41%);
-  background-position: 3% 0; opacity: .92;
-}
-.hz-trees::after {
-  background: repeating-linear-gradient(90deg, transparent 0 21%, #020303 21% 26%, transparent 26% 58%, #020303 58% 64%, transparent 64% 100%);
-  background-position: -8% 0;
-}
-/* sylwetka między drzewami: wysoka, chuda, bez twarzy */
-.hz-figure {
-  position: absolute; left: 63%; bottom: 22%; width: 2.2%; height: 46%; min-width: 9px; z-index: 0; opacity: .55;
+.hz-ceil {
+  transform: translate3d(0, -150px, -2100px) rotateX(-90deg);
   background:
-    radial-gradient(50% 9% at 50% 5%, #c9c3b6 0 98%, transparent 100%),
-    linear-gradient(90deg, transparent 22%, #23272b 22% 78%, transparent 78%) 0 12% / 100% 88% no-repeat;
-  filter: blur(.6px); animation: hz-flicker 5s steps(1) infinite;
+    repeating-linear-gradient(180deg, #0000 0 250px, #fff6d8 250px 330px, #0000 330px 600px) center 0 / 34% 600px repeat-y,
+    repeating-linear-gradient(180deg, #5f5838 0 2px, #0000 2px 60px),
+    repeating-linear-gradient(90deg, #5f5838 0 2px, #0000 2px 60px),
+    #a69c72;
 }
-.hz-lines {
+.hz-left, .hz-right {
+  background:
+    linear-gradient(0deg, #3d3119 0 7%, #6a5631 7% 8%, #0000 8%),
+    repeating-linear-gradient(90deg, #0000 0 220px, #fff1c00f 300px, #0000 380px 600px),
+    repeating-linear-gradient(90deg, #a8964d 0 52px, #8f7f3e 52px 56px, #a8964d 56px 60px),
+    #a8964d;
+}
+.hz-left { transform: translate3d(-180px, 0, -2100px) rotateY(90deg); }
+.hz-right { transform: translate3d(180px, 0, -2100px) rotateY(-90deg); }
+
+/* mgła na końcu korytarza i winieta; w niej co jakiś czas pojawia się wysoka, chuda sylwetka */
+.hz-fog {
   position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px), radial-gradient(130% 100% at 50% 50%, transparent 55%, #000a 100%);
+  background:
+    radial-gradient(circle at 50% 44%, #060504 0 5%, #06050400 20%),
+    linear-gradient(12deg, #000000d9 0%, #00000080 30%, #0000 58%),
+    radial-gradient(130% 100% at 50% 50%, #0000 45%, #000d 100%);
+  animation: hz-dim 9s steps(1) infinite;
 }
+.hz-figure {
+  position: absolute; left: 50%; top: 44%; width: 1.2%; min-width: 7px; height: 13%; transform: translate(-50%, -62%);
+  background:
+    radial-gradient(50% 8% at 50% 6%, #b9b3a6 0 96%, #0000 100%),
+    linear-gradient(90deg, #0000 18%, #17191b 18% 82%, #0000 82%) 0 13% / 100% 87% no-repeat;
+  opacity: 0; filter: blur(.5px); animation: hz-figure 11s steps(1) infinite;
+}
+
+/* nakładka kasety: linie, ziarno, rozjechane kolory przy krawędziach */
+.hz-vhs { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hz-vhs::before {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, #ffffff08 0 1px, #0000 1px 3px), linear-gradient(90deg, #ff2a2a10, #0000 12%, #0000 88%, #2affff10);
+}
+.hz-vhs::after {
+  content: ""; position: absolute; inset: -50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  opacity: .12; mix-blend-mode: overlay; animation: hz-grain .6s steps(4) infinite;
+}
+
 .hz-osd {
-  position: absolute; top: 16px; left: 18px; right: 18px; display: flex; justify-content: space-between;
+  position: absolute; z-index: 2; top: 16px; left: 18px; right: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
   font: 700 15px / 1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .12em; color: #f2efe6; text-shadow: 2px 0 #ff2a2a88, -2px 0 #2affff66;
 }
-.hz-osd i { display: inline-block; width: .7em; height: .7em; margin-right: .4em; border-radius: 50%; background: #ff3b30; animation: hz-blink 1.2s steps(1) infinite; }
-.hz-title { position: relative; z-index: 1; padding: 28px; max-width: 520px; }
+.hz-osd span { display: inline-flex; align-items: center; gap: 6px; }
+.hz-rec i { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: #ff3b30; animation: hz-blink 1.2s steps(1) infinite; }
+.hz-tape b { font-weight: 700; min-width: 6.5ch; }
+
+.hz-title { position: relative; z-index: 2; padding: clamp(20px, 3.5vw, 40px); max-width: 640px; }
+.hz-kicker { margin: 0 0 10px; font: 700 13px / 1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .22em; text-transform: uppercase; color: #e8d68f; text-shadow: 0 1px 6px #000; }
 .hz-title h2 {
-  margin: 0 0 6px; font: 800 clamp(48px, 8vw, 96px) / .9 var(--display); letter-spacing: .04em; text-transform: uppercase;
-  color: #f1ece0; text-shadow: 3px 0 #ff26264d, -3px 0 #26f0ff40, 0 0 30px #0009;
+  position: relative; margin: 0 0 12px; font: 800 clamp(46px, 8.5vw, 112px) / .88 var(--display); letter-spacing: .01em; text-transform: uppercase;
+  color: #f3eee2; text-shadow: 0 0 34px #000c;
 }
-.hz-title p { margin: 0 0 18px; color: #cfc9bd; font-size: 15px; line-height: 1.5; text-shadow: 0 1px 8px #000; }
-.hz-title small { display: flex; gap: 6px; align-items: center; margin-top: 10px; color: #a9a397; font-size: 12px; }
+/* rozjechane kanały tytułu: dwie kopie w czerwieni i błękicie drżą co kilka sekund */
+.hz-title h2::before, .hz-title h2::after { content: attr(data-text); position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; }
+.hz-title h2::before { color: #ff2b2b; opacity: .5; transform: translateX(-3px); animation: hz-split 5s steps(1) infinite; }
+.hz-title h2::after { color: #2be7ff; opacity: .45; transform: translateX(3px); animation: hz-split 5s steps(1) infinite reverse; }
+/* znak wersji beta przy tytule i informacja o braku nagród */
+.hz-name { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.hz-beta {
+  margin-top: .4em; padding: 5px 10px; border: 2px solid #e8d68f; border-radius: 4px; color: #e8d68f; background: #0009;
+  font: 800 14px / 1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .2em; text-transform: uppercase;
+}
+.hz-betanote {
+  display: flex; gap: 8px; align-items: flex-start; max-width: 54ch; margin: 0 0 14px; padding: 9px 12px; border-left: 3px solid #e8d68f;
+  border-radius: 4px; background: #000a; color: #f0e7c4; font-size: 14px; line-height: 1.45;
+}
+.hz-betanote svg { flex: none; margin-top: 2px; color: #e8d68f; }
+.hz-lead { margin: 0 0 22px; max-width: 54ch; color: #d6cfc0; font-size: 15px; line-height: 1.55; text-shadow: 0 1px 8px #000; }
+.hz-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.hz-cta small { display: inline-flex; gap: 6px; align-items: center; color: #b3ac9e; font-size: 12px; }
 .hz-play {
-  display: inline-flex; gap: 8px; align-items: center; padding: 13px 26px; border: 0; border-radius: 999px; cursor: pointer;
-  background: var(--hue); color: var(--on-hue); font: 700 16px / 1 var(--body); box-shadow: 0 10px 30px #0008;
+  display: inline-flex; gap: 10px; align-items: center; padding: 14px 30px; border: 2px solid #f3eee2; border-radius: 4px; cursor: pointer;
+  background: #f3eee2; color: #0b0a08; font: 800 16px / 1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .18em; text-transform: uppercase;
+  box-shadow: 0 0 0 4px #f3eee21a, 0 12px 30px #000a;
 }
-.hz-play:hover:not(:disabled) { filter: brightness(1.12); }
-.hz-play:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hz-play:hover:not(:disabled) { background: transparent; color: #f3eee2; }
+.hz-play:focus-visible { outline: 3px solid #e8d68f; outline-offset: 3px; }
 .hz-play:disabled { opacity: .6; cursor: progress; }
-.hz-side { display: flex; flex-direction: column; gap: 14px; }
-.hz-help h3 { margin: 6px 0; font-size: 15px; }
-.hz-help p, .hz-help ul { margin: 0 0 10px; }
-.hz-help ul { padding-left: 18px; color: var(--muted); font-size: 14px; }
-.hz-help li { margin-bottom: 4px; }
-.hz-help kbd { padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--text) 10%, transparent); font: 600 12px var(--body); }
-.hz-best { display: flex; gap: 8px; align-items: flex-start; }
-.hz-best svg { flex: none; margin-top: 2px; color: var(--hue); }
+
+/* karty pod plakatem */
+.hz-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.hz-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 16px; }
+.hz-card h3 svg { color: var(--hue); }
+.hz-keys { display: grid; gap: 8px; margin: 0 0 12px; }
+.hz-keys div { display: grid; grid-template-columns: 9.5em 1fr; gap: 10px; align-items: center; }
+.hz-keys dt { display: flex; gap: 4px; flex-wrap: wrap; }
+.hz-keys dd { margin: 0; font-size: 14px; color: var(--muted); }
+.hz-keys kbd {
+  min-width: 26px; padding: 3px 7px; border-radius: 6px; text-align: center;
+  background: color-mix(in srgb, var(--text) 9%, transparent); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--text) 18%, transparent);
+  font: 700 12px / 1.3 var(--body);
+}
+.hz-phone { display: flex; gap: 8px; align-items: flex-start; margin: 0; }
+.hz-phone svg { flex: none; margin-top: 2px; }
+.hz-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.hz-rules li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.hz-rules svg { margin-top: 1px; color: var(--hue); }
+.hz-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.hz-stats div { display: grid; gap: 4px; padding: 12px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.hz-stats b { font: 800 26px / 1 var(--display); }
+.hz-stats b small { font-size: 14px; color: var(--muted); }
+.hz-stats span { font-size: 12px; color: var(--muted); }
+.hz-card > p { margin: 0 0 10px; }
 .hz-warn { display: flex; gap: 8px; margin: 0; padding: 10px 12px; border-radius: var(--radius-s); font-size: 13px; color: var(--muted); background: color-mix(in srgb, var(--warn) 12%, transparent); }
 .hz-warn svg { flex: none; margin-top: 1px; color: var(--warn); }
-@keyframes hz-flicker { 0%, 61%, 64%, 100% { opacity: .55; } 62% { opacity: 0; } 63% { opacity: .9; } }
+
+@keyframes hz-walk { from { transform: translateZ(0); } to { transform: translateZ(600px); } }
+@keyframes hz-figure { 0%, 34%, 58%, 100% { opacity: 0; } 35%, 41% { opacity: .75; } 42% { opacity: 0; } 43%, 57% { opacity: .7; } }
+@keyframes hz-dim { 0%, 71%, 74%, 100% { opacity: 1; } 72% { opacity: .55; } 73% { opacity: .85; } }
+@keyframes hz-split { 0%, 88%, 100% { transform: translateX(-3px); } 89% { transform: translate(-9px, 2px); } 92% { transform: translate(6px, -1px); } }
+@keyframes hz-grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-6%, 4%); } 50% { transform: translate(5%, -3%); } 75% { transform: translate(-3%, -6%); } }
 @keyframes hz-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .hz-figure, .hz-osd i { animation: none; }
+  .hz-cam, .hz-fog, .hz-figure, .hz-rec i, .hz-vhs::after, .hz-title h2::before, .hz-title h2::after { animation: none; }
 }
-@media (max-width: 900px) {
-  .hz-page { grid-template-columns: 1fr; }
-  .hz-poster { min-height: 420px; }
+@media (max-width: 1100px) {
+  .hz-cards { grid-template-columns: 1fr 1fr; }
+  .hz-cards > :nth-child(2) { grid-column: 1 / -1; grid-row: 1; }
+}
+@media (max-width: 700px) {
+  .hz-cards { grid-template-columns: 1fr; }
+  .hz-hero { min-height: 440px; }
+  .hz-osd { font-size: 12px; }
+  .hz-tape { display: none !important; }
+  .hz-keys div { grid-template-columns: 8em 1fr; }
 }

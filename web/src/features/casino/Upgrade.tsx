@@ -32,7 +32,10 @@ function poolValues() {
   return [...out].sort((a, b) => a - b);
 }
 const goalOf = (stake: number, mult: number, values: number[]) => stake ? values.find(v => v >= stake * mult && v > stake) || 0 : 0;
-const arcStart = (chance: number) => -chance * 180;   // łuk wyśrodkowany u góry
+// łuk wygranej wyśrodkowany u góry albo na dole koła (wybór gracza, tylko wygląd: wynik i szansa się nie zmieniają)
+type ArcPos = 'top' | 'bottom';
+const arcStart = (chance: number, pos: ArcPos) => (pos === 'bottom' ? 180 : 0) - chance * 180;
+const readArcPos = (): ArcPos => { try { return localStorage.getItem('upgArc') === 'bottom' ? 'bottom' : 'top'; } catch { return 'top'; } };
 const CIRC = 2 * Math.PI * 128;
 
 export function Upgrade() {
@@ -40,6 +43,8 @@ export function Upgrade() {
   const U = CS.upg, cfg = game.cfg;
   const wheel = useRef<HTMLDivElement>(null), arc = useRef<SVGCircleElement>(null), pointer = useRef<HTMLDivElement>(null), pctBox = useRef<HTMLDivElement>(null);
   const [outcome, setOutcome] = useState<any>(null);
+  const [arcPos, setArcPos] = useState<ArcPos>(readArcPos);
+  const pickArc = (p: ArcPos) => { setArcPos(p); Sound.click(); try { localStorage.setItem('upgArc', p); } catch { /* bez zapisu */ } };
   const owned = new Set(items().map(i => i.id));
   [...U.inputs].forEach(id => { if (!owned.has(id) && !U.busy) U.inputs.delete(id); });
   const stake = game.items.filter(i => U.inputs.has(i.id)).reduce((a, i) => a + i.value, 0);
@@ -74,7 +79,7 @@ export function Upgrade() {
       res = await api('/api/upgrade', { ids, mult: U.mult });
       if (res.discovered?.length) await refreshConfig();
     } catch (e: any) { U.busy = false; S.spinning = false; Sound.error(); toast(e.message, true); return touch(); }
-    const w = wheel.current!, ch = res.chance, a0 = arcStart(ch);
+    const w = wheel.current!, ch = res.chance, a0 = arcStart(ch, arcPos);
     w.classList.add('spinning');
     arc.current!.style.strokeDasharray = `${ch * CIRC} ${CIRC}`;
     arc.current!.setAttribute('transform', `rotate(${a0 - 90} 150 150)`);
@@ -150,7 +155,7 @@ export function Upgrade() {
             <svg viewBox="0 0 300 300">
               <defs><linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3ddc84" /><stop offset="1" stop-color="#b6ff5c" /></linearGradient></defs>
               <circle className="upg-track" cx="150" cy="150" r="128" />
-              <circle className="upg-arc" ref={arc} cx="150" cy="150" r="128" style={{ strokeDasharray: `${shown.current * CIRC} ${CIRC}` }} transform={`rotate(${arcStart(shown.current) - 90} 150 150)`} />
+              <circle className="upg-arc" ref={arc} cx="150" cy="150" r="128" style={{ strokeDasharray: `${shown.current * CIRC} ${CIRC}` }} transform={`rotate(${arcStart(shown.current, arcPos) - 90} 150 150)`} />
               {Array.from({ length: 60 }, (_, k) => <line key={k} className={`upg-tick${k % 5 ? '' : ' big'}`} x1="150" y1="44" x2="150" y2={k % 5 ? 50 : 56} transform={`rotate(${k * 6} 150 150)`} />)}
             </svg>
             <div className="upg-pointer" ref={pointer} style={{ transform: `rotate(${U.angle}deg)` }}><i /></div>
@@ -179,6 +184,10 @@ export function Upgrade() {
           </div>
           <div className="upg-quick">
             {cfg.upgradeMults.map((m: number) => <button key={m} type="button" className={`chip${m === U.mult ? ' active' : ''}`} disabled={U.busy || (stake > 0 && !goalOf(stake, m, values))} onClick={() => { U.mult = m; Sound.click(); touch(); }}>×{String(m).replace('.', ',')}</button>)}
+          </div>
+          <div className="upg-arcpos" role="group" aria-label="Pole wygranej">
+            <span className="muted small">Pole wygranej</span>
+            {(['top', 'bottom'] as ArcPos[]).map(p => <button key={p} type="button" className={`chip${arcPos === p ? ' active' : ''}`} aria-pressed={arcPos === p} disabled={U.busy} onClick={() => pickArc(p)}>{p === 'top' ? 'U góry' : 'Na dole'}</button>)}
           </div>
           <div className="muted small upg-note">{!stake ? 'Wybierz karty do postawienia.' : goal ? <>Wygrasz losową kartę wartą <b>{fmt(goal)}</b>. Jaką, zobaczysz dopiero po wygranej.{joker > 0 && <><br />Szansa na kartę specjalną przy wygranej: <b>{csPct(joker)}</b></>}</> : 'Nie ma tak drogiej karty, wybierz mniejszy mnożnik.'}</div>
           <Button kind="hue" big disabled={U.busy || !goal || !chance} onClick={run}>Ulepsz{chance ? ` (${pct(chance)})` : ''}</Button>

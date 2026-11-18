@@ -12,9 +12,16 @@ import { TermsDialog } from '../legal/TermsDialog';
 import styles from './Notices.module.css';
 
 // Okienka gry pokazywane jedno po drugim: wiadomości od adminów, lista zmian, codzienna skrzynka.
+// Wiadomości, lista zmian i nagrody za polecenia mają u góry obrazek: własne zdjęcie wiadomości (panel admina) albo domyślny.
 type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' } | { kind: 'referral'; list: any[] };
 
 const seenMessages = new Set<number>();
+const DEFAULT_IMAGE = '/static/img/notice-default.webp';
+
+/** Obrazek u góry okienka */
+function Banner({ src }: { src?: string | null }) {
+  return <img className={styles.banner} src={src || DEFAULT_IMAGE} alt="" loading="eager" />;
+}
 const seenReferrals = new Set<string>();
 
 /** Nagrody za polecenia (reflinki) z /api/me: okienko raz na nagrodę */
@@ -60,8 +67,10 @@ function Messages({ list, onClose }: { list: any[]; onClose: () => void }) {
   useEffect(() => { api('/api/messages/seen', { ids: list.map(m => m.id) }).catch(() => {}); }, [list]);
   return (
     <Modal title={list.length > 1 ? 'Wiadomości od ScamBox' : 'Wiadomość od ScamBox'} onClose={onClose}>
-      {list.map(m => (
+      <Banner src={list[0]?.image} />
+      {list.map((m, i) => (
         <article key={m.id} className={styles.note}>
+          {i > 0 && m.image && <Banner src={m.image} />}
           <header><b>{m.title}</b><span className="muted small">{new Date(m.at * 1000).toLocaleDateString('pl-PL')}</span></header>
           <p>{m.body}</p>
         </article>
@@ -79,6 +88,7 @@ function Referral({ list, onClose }: { list: any[]; onClose: () => void }) {
   }, [list]);
   return (
     <Modal title="Nagroda za polecenie" onClose={onClose}>
+      <Banner />
       {list.map(n => (
         <article key={`${n.role}:${n.referredId}`} className={styles.note}>
           <header><b><Gift size={16} aria-hidden="true" /> {n.role === 'referrer' ? 'Twój znajomy dołączył do gry' : 'Witamy z polecenia'}</b></header>
@@ -97,6 +107,7 @@ export function PatchNotes({ notes, onClose }: { notes: any[]; onClose: () => vo
   useEffect(() => { api('/api/patchnotes/seen', {}).catch(() => {}); }, []);
   return (
     <Modal title="Co nowego w ScamBox" onClose={onClose} wide>
+      <Banner />
       {notes.map((n, i) => (
         <article key={i} className={styles.note}>
           <header><b>{n.title}</b><span className="muted small">{new Date(n.date).toLocaleDateString('pl-PL')}</span></header>
