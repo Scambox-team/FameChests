@@ -4,7 +4,7 @@
 
 import { EmbedBuilder } from 'discord.js';
 import * as game from './game.js';
-import { clip } from './format.js';
+import { clip, gr, rel } from './format.js';
 import { renderCard } from './render.js';
 import { ROLE_DEFS, ROLE_ORDER, rolesFor } from './roles.js';
 
@@ -86,6 +86,66 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
       await ch.send({ allowedMentions: { parse: [] }, embeds: [embed], files });
       state.dropAfter = d.id;
       save();
+    }
+  }
+
+  // ------------------------------------------------------------ powiadomienia na DM
+
+  /** Wpis z /api/bot/notifications -> wiadomość prywatna (embed + przycisk-link do gry, jeśli gra zna swój adres) */
+  function dmPayload(n) {
+    const d = n.data ?? {};
+    const e = new EmbedBuilder().setTimestamp(n.at * 1000);
+    if (n.kind === 'bid') {
+      const card = `**${d.card}**${d.variant ? ` (${d.variant})` : ''}`;
+      e.setColor(GOLD).setTitle('🔨 Nowa oferta w licytacji')
+        .setDescription(`**${clip(String(d.bidder), 40)}** daje **${gr(d.amount)}** za ${card}.${d.endsAt ? `\nKoniec licytacji ${rel(d.endsAt)}.` : ''}`)
+        .setFooter({ text: 'Obserwujesz tę licytację. Dzwonek przy licytacji na Rynku wyłącza powiadomienia.' });
+    } else if (n.kind === 'friend') {
+      e.setColor(0x5865f2).setTitle('👋 Zaproszenie do znajomych')
+        .setDescription(`**${clip(String(d.from), 40)}** zaprasza Cię do znajomych w ScamBox.`)
+        .setFooter({ text: 'Powiadomienia wyłączysz w grze: Ustawienia → Discord.' });
+    } else if (n.kind === 'trade') {
+      const msg = d.message ? `\n> ${clip(String(d.message), 140)}` : '';
+      e.setColor(0x2ecc71).setTitle('🔄 Propozycja wymiany')
+        .setDescription(`**${clip(String(d.from), 40)}** proponuje Ci wymianę: daje ${d.give} ${d.give === 1 ? 'kartę' : 'karty'}, chce ${d.want}.${msg}`)
+        .setFooter({ text: 'Powiadomienia wyłączysz w grze: Ustawienia → Discord.' });
+    } else {
+      return null;
+    }
+    const url = n.url || (GAME_PUBLIC_URL ? `${GAME_PUBLIC_URL}${n.kind === 'bid' ? '/market' : '/friends'}` : null);
+    if (url) e.setURL(url);
+    return { embeds: [e], allowedMentions: { parse: [] } };
+  }
+
+  let dmBusy = false;
+  /** Wysyła zaległe powiadomienia. Gracz z zamkniętymi DM (błąd 50007) jest pomijany - nie blokuje kolejki. */
+  async function dms() {
+    if (dmBusy) return;
+    dmBusy = true;
+    try {
+      const r = await game.notifications(state.notifyAfter);
+      if (state.notifyAfter == null) {
+        state.notifyAfter = r.max;
+        save();
+        return;
+      }
+      for (const n of r.items ?? []) {
+        const payload = dmPayload(n);
+        if (payload) {
+          try {
+            const user = await client.users.fetch(n.discordId);
+            await user.send(payload);
+          } catch (e) {
+            if (e.code !== 50007) console.error(`[dm] ${n.kind} do ${n.discordId}:`, e.message);
+          }
+        }
+        state.notifyAfter = n.id;
+        save();
+      }
+    } catch (e) {
+      console.error('[dm]', e.message);
+    } finally {
+      dmBusy = false;
     }
   }
 
@@ -229,6 +289,6 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     }
   }
 
-  return { patch, drops, health, linkReply, syncRoles, ensureRoles };
+  return { patch, drops, dms, health, linkReply, syncRoles, ensureRoles };
 }
 

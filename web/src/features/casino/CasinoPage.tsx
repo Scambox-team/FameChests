@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronsUp, Cherry, Club, Dices, Disc3, Flag, Spade, Swords, type LucideIcon } from 'lucide-react';
+import { ChevronsUp, Cherry, Club, Dices, Disc3, Flag, Spade, Swords, Triangle, type LucideIcon } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 import { S, touch, useGame } from '../../game/store';
 import { Sound } from '../../sound/sound';
@@ -9,6 +9,7 @@ import { CasinoIntro } from './CasinoIntro';
 import { casinoIntroWanted, markCasinoIntroSeen } from './introPref';
 import { Horses } from './Horses';
 import { Jackpot } from './Jackpot';
+import { Plinko } from './Plinko';
 import { Poker } from './Poker';
 import { Roulette } from './Roulette';
 import { Slots } from './Slots';
@@ -23,6 +24,7 @@ const GAMES: { id: string; label: string; sub: string; icon: LucideIcon }[] = [
   { id: 'blackjack', label: 'Blackjack', sub: 'Do 21 z krupierem', icon: Spade },
   { id: 'poker', label: 'Poker', sub: "Hold'em, 2-6 graczy", icon: Club },
   { id: 'slots', label: 'Jednoręki bandyta', sub: 'Trzy bębny, jedna linia', icon: Cherry },
+  { id: 'plinko', label: 'Plinko', sub: 'Kulka i mnożniki do ×170', icon: Triangle },
   { id: 'horses', label: 'Wyścigi konne', sub: 'Obstaw konia', icon: Flag },
   { id: 'upgrade', label: 'Ulepszacz', sub: 'Mnożnik w ciemno', icon: ChevronsUp },
   { id: 'jackpot', label: 'Jackpot', sub: 'Pojedynek 2 graczy', icon: Swords }
@@ -91,6 +93,7 @@ export function CasinoPage() {
       {CS.tab === 'roulette' && <Roulette />}
       {CS.tab === 'blackjack' && <Blackjack />}
       {CS.tab === 'slots' && <Slots />}
+      {CS.tab === 'plinko' && <Plinko />}
       {CS.tab === 'horses' && horsesVisible() && <Horses />}
       {CS.tab === 'upgrade' && <Upgrade />}
       {CS.tab === 'jackpot' && <Jackpot />}

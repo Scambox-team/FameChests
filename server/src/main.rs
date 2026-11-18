@@ -35,6 +35,8 @@ mod snake_sim;
 mod snake3d_sim;
 mod run_sim;
 mod pinball_sim;
+mod invaders_sim;
+mod aimpulse_sim;
 mod routes;
 mod startup;
 mod state;

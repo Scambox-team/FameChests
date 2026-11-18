@@ -21,6 +21,7 @@
 .tb-tile .tb-go { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--text); }
 .tb-run { --tb-a: #ff4fd8; --tb-b: #4df3ff; }
 .tb-snk { --tb-a: #00c8d8; --tb-b: #7b5cff; }
+.tb-aim { --tb-a: #19e6ff; --tb-b: #ff2d78; }
 
 .tb-page { --tb-size: min(calc(100dvh - 180px), 920px); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; justify-content: center; align-items: start; }
 .tb-board {

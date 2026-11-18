@@ -9,11 +9,11 @@ Bot dla serwera społeczności scambox.pl. Działa w Dockerze obok gry i co minu
 |---|---|
 | Liczba kont i graczy online w nazwach kanałów **głosowych** (`👥 \| Konta: 2 524`, `🟢 \| Online: 37`), odświeżane co 10 min | `DISCORD_CH_ACCOUNTS`, `DISCORD_CH_ONLINE` |
 | Ranking (wartość kolekcji, karty, otwarte skrzynki) - jedna wiadomość, którą bot edytuje | `DISCORD_CH_RANKING` |
-| Aktualny quest i jego koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja | `DISCORD_CH_QUESTS` |
+| Aktualne questy (Wanted i CTF, każdy osobną wiadomością) i ich koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja. Z CTF tylko tytuł, kategoria, poziom i nagroda - zadanie, podpowiedzi i flaga zostają w grze | `DISCORD_CH_QUESTS` |
 | Eventy: wiadomość na event, edytowana do końca, potem oznaczona jako zakończona | `DISCORD_CH_EVENTS` |
 | Skrzynki w sklepie: nowa wiadomość po każdej rotacji (o północy czasu serwera) | `DISCORD_CH_CRATES` |
 | Aktualizacje gry: nowy wpis z listy zmian (`patchNotes`), gdy wzrośnie numer wersji. Pierwszy start tylko zapamiętuje obecną | `DISCORD_CH_PATCH` |
-| Rzadkie dropy: Legendarna, ULTRA i Tajna karta ze skrzynki, z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
+| Wyjątkowe dropy: karta ze skrzynki warta co najmniej 30 cen tej skrzynki (3 razy rzadziej niż „Ostatnie najlepsze dropy” w sklepie, `DISCORD_DROP_MULT` w `server/src/routes/shop.rs`), z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
 | Alert, gdy gra nie odpowiada 3 minuty (ping właściciela serwera, potem komunikat o powrocie) | `DISCORD_CH_ALERTS` (bez niego: wiadomość prywatna do właściciela) |
 | Komendy `/profil`, `/ranking`, `/karta`, `/quest`, `/skrzynki`, `/polacz` | `DISCORD_CH_COMMANDS` (gdy ustawiony i `DISCORD_COMMANDS_ONLY=1`, publiczne komendy działają tylko tam) |
 
@@ -49,7 +49,7 @@ Gra i bot muszą mieć ten sam `DISCORD_BOT_GAME_TOKEN` - to hasło, którym bot
 | `/profil gracz` | wartość kolekcji, zebrane karty, otwarte skrzynki, miejsca w rankingu, kontrakty, ulepszacz, najcenniejsze karty; nazwę gracza podpowiada Discord |
 | `/ranking wedlug` | top 10 według wartości, kart albo skrzynek |
 | `/karta nazwa wariant` | obrazek karty dokładnie jak w grze (CSS wariantu, zdjęcie, napisy) z wartością; nazwę i wariant podpowiada Discord. Tajne i specjalne karty są pomijane |
-| `/quest` | aktualny quest |
+| `/quest` | aktualne questy: Wanted i CTF |
 | `/skrzynki` | skrzynki w sklepie i następna rotacja |
 | `/polacz` | kod do połączenia konta Discord z kontem w grze (widoczny tylko dla Ciebie) |
 
@@ -69,8 +69,8 @@ Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze je
 
 | Grupa | Role (od najlepszej) |
 |---|---|
-| Wyjątkowa | **🟡 RZUŁTY**: tylko dla tych, którzy mają w grze kartę **Jan Paweł II w wariancie Rzulty**. Jaskrawożółta, osobna sekcja na liście członków, najwyżej wśród ról bota |
-| Ranking wartości | 👑 Top 1, 🥇 Top 3, 🏆 Top 10 (osobne sekcje na liście członków) |
+| Wyjątkowa | **🟡 RZUŁTY**: dla tych, którzy wylosowali ze skrzynki **Jana Pawła II w wariancie Rzulty** (rola zostaje także po sprzedaży karty) albo mają taką kartę teraz. Jaskrawożółta, osobna sekcja na liście członków, najwyżej wśród ról bota |
+| Ranking wartości | 👑 Top 1, 🥇 Top 3, 🥈 Top 5, 🏆 Top 10 (osobne sekcje na liście członków), 🎖️ Top 20, 🏅 Top 50, 📈 Top 100 |
 | Najrzadsze karty | 🔮 Posiadacz Tajnej, 🌈 Łowca ULTRA, ⭐ Łowca Legend |
 | Majątek | 💰 Milioner (1 000 000 gr wartości kolekcji), 💵 Bogacz (100 000 gr) |
 | Kolekcja | 🏛️ Kompletna kolekcja (100% kart), 📚 Kolekcjoner (50%), 🃏 Zbieracz (25%) |
@@ -80,6 +80,18 @@ Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze je
 | Połączenie | 🔗 Połączony |
 
 Progi, kolory i nazwy ról są w `src/roles.js`. Gracz poza rankingiem (zablokowany, ukryty przez admina) dostaje tylko `🔗 Połączony`.
+
+## Powiadomienia na DM
+
+Gracz z połączonym kontem może dostawać od bota wiadomości prywatne (domyślnie wszystko wyłączone):
+
+| Co | Gdzie się włącza |
+|---|---|
+| Nowa oferta w obserwowanej licytacji (własnej albo cudzej; nie dostaje jej sam licytujący) | dzwonek przy licytacji na Rynku |
+| Zaproszenie do znajomych | gra: Ustawienia → Discord |
+| Propozycja wymiany | gra: Ustawienia → Discord |
+
+Gra zapisuje powiadomienia w kolejce (`discord_notifications`), bot co 15 s pobiera nowe z `/api/bot/notifications` i wysyła DM. Nic nie trzeba dopisywać do `.env`. Gracz z zamkniętymi wiadomościami prywatnymi z serwera po prostu ich nie dostanie (bot to pomija). Powiadomienia starsze niż 6 h (np. po dłuższej awarii bota) nie są już wysyłane. Link w wiadomości prowadzi do gry, gdy gra ma ustawione `PUBLIC_URL` (albo bot `GAME_PUBLIC_URL`).
 
 ## Ping przy nowym queście, evencie i aktualizacji
 

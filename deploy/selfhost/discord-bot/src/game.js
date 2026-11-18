@@ -49,3 +49,6 @@ export const cardSearch = async (q) => (await get(`/api/bot/cards?q=${encodeURIC
 
 /** Karta z możliwymi wariantami: { found, id, name, rarity, variants: [{ key, name, value }] } */
 export const card = (id) => get(`/api/bot/cards?id=${encodeURIComponent(id)}`);
+
+/** Powiadomienia na DM po id (bez `after`: tylko { max }, nic do wysłania) */
+export const notifications = (after) => get(`/api/bot/notifications${after == null ? '' : `?after=${after}`}`);

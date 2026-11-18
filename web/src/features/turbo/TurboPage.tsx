@@ -1,21 +1,23 @@
 import { lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Rocket, Worm, Zap } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Crosshair, Rocket, Worm, Zap } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
 import './turbo.css';
 
-// Zakładka Gry -> Gry Super Turbo: kafelki gier z serii (adresy /games/turbo, /games/turbo/run, /games/turbo/snake).
+// Zakładka Gry -> Gry Super Turbo: kafelki gier z serii (adresy /games/turbo, /games/turbo/run, /games/turbo/snake, /games/turbo/aimpulse).
 // Każda gra to osobna scena 3D ładowana dopiero po wybraniu kafelka; nowa gra z serii = nowy wpis w GAMES i w PAGES.
 const RunPage = lazy(() => import('./RunPage').then(m => ({ default: m.RunPage })));
+const AimpulsePage = lazy(() => import('./AimpulsePage').then(m => ({ default: m.AimpulsePage })));
 const Snake3DPage = lazy(() => import('../snake/Snake3DPage').then(m => ({ default: m.Snake3DPage })));
 
 const GAMES = [
   { id: 'run', cls: 'tb-run', icon: Rocket, title: 'Super Turbo Run 3D', text: 'Biegnij po ścianach neonowego tunelu, skacz nad dziurami, zbieraj kryształy i rozbijaj przeszkody w turbo. Grosze za przebiegnięty dystans.' },
   { id: 'snake', cls: 'tb-snk', icon: Worm, title: 'Super Turbo Snake 3D', text: 'Neonowy wąż na arenie 3D: turbo, hamulec, combo i złote kule. Grosze za zjedzone jabłka.' },
+  { id: 'aimpulse', cls: 'tb-aim', icon: Crosshair, title: 'Super Turbo AIMPULSE 3D', text: 'Neonowa strzelnica: trafiaj kule jak najszybciej, omijaj miny, łap złote bonusy i nabijaj combo. Grosze za punkty.' },
 ] as const;
-const PAGES: Record<string, React.ReactNode> = { run: <RunPage />, snake: <Snake3DPage /> };
+const PAGES: Record<string, React.ReactNode> = { run: <RunPage />, snake: <Snake3DPage />, aimpulse: <AimpulsePage /> };
 
 export function TurboPage({ sub }: { sub?: string }) {
   const navigate = useNavigate();

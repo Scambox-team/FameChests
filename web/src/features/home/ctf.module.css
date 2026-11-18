@@ -113,3 +113,9 @@
 @media (prefers-reduced-motion: reduce) {
   .scan, .leds i, .cursor, .owned b, .term > span, .prize { animation: none; }
 }
+
+/* po zdobyciu flagi: zabrana karta-nagroda zostaje na ekranie, przygaszona, z pieczątką */
+.taken { position: relative; animation: none; filter: grayscale(.55) brightness(.75) drop-shadow(0 0 6px #ff2e5544); }
+.stamp { position: absolute; left: 50%; top: 50%; translate: -50% -50%; rotate: -14deg; padding: 2px 5px; border: 2px solid #ff5470;
+         border-radius: 3px; background: #0009; color: #ff5470; font: 800 9px/1 Verdana, sans-serif; letter-spacing: .1em;
+         font-style: normal; white-space: nowrap; text-shadow: 0 0 6px #ff2e55; pointer-events: none; }

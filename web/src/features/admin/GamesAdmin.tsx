@@ -4,7 +4,8 @@ import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import s from './GamesAdmin.module.css';
 
-// Zakładka panelu admina „Gry”: wygląd Snake'a (routes/snake.rs) - kolor węża i tła, obrazki PNG.
+// Zakładka panelu admina „Gry”: wygląd Snake'a (routes/snake.rs) - kolor węża i tła, obrazki PNG; nagrody Snake'a, Super Turbo Run,
+// AIMPULSE i Obrony Orbity (routes/arcade.rs).
 interface Reward { perApple: number; minScore: number; perGame: number; daily: number }
 interface RunReward { per100m: number; minDist: number; perGame: number; daily: number }
 const RUN_FIELDS: [keyof RunReward, string, string][] = [
@@ -23,6 +24,42 @@ const SLOTS: [string, string, string][] = [
   ['apple', 'Jabłko', 'Kwadrat z przezroczystym tłem.'],
   ['bg', 'Tło planszy', 'Kwadratowa plansza, obrazek wypełnia ją całą (przycięty jak tapeta). Pod nim kolor tła.'],
 ];
+
+interface ArcadeReward { per: number; unit: number; min: number; perGame: number; daily: number }
+const ARCADE_FIELDS: [keyof ArcadeReward, string, string][] = [
+  ['per', 'Groszy', 'gr'], ['unit', 'Za każde', 'pkt'], ['min', 'Od ilu punktów', 'pkt'], ['perGame', 'Najwyżej za jedną grę', 'gr'], ['daily', 'Najwyżej na dzień (gracz)', 'gr'],
+];
+
+/** Nagroda w groszach za punkty w grze, którą serwer odtwarza i sam liczy (routes/arcade.rs): Obrona Orbity, AIMPULSE */
+function ArcadeRewardPanel({ game, title, text, example }: { game: string; title: string; text: string; example: number }) {
+  const [v, setV] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const apply = (r: ArcadeReward) => setV(Object.fromEntries(ARCADE_FIELDS.map(([k]) => [k, String(r[k])])));
+  useEffect(() => { api<{ reward: ArcadeReward }>(`/api/admin/arcade/${game}`).then(d => apply(d.reward)).catch(e => toast(e.message, true)); }, [game]);
+  const save = async () => {
+    setBusy(true);
+    try { apply((await api<{ reward: ArcadeReward }>(`/api/admin/arcade/${game}`, Object.fromEntries(ARCADE_FIELDS.map(([k]) => [k, +(v[k] || 0)])))).reward); toast(`Nagroda ${title} zapisana`); }
+    catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
+  const n = (k: string) => +(v[k] || 0);
+  const ex = example < n('min') ? 0 : Math.min(Math.floor(example / Math.max(1, n('unit'))) * n('per'), n('perGame'));
+  return (
+    <div className="panel">
+      <h3>{title}: nagroda w groszach</h3>
+      <p className="muted small">{text} Punktów z przeglądarki serwer nie przyjmuje: odtwarza grę z zapisu i sam je liczy, a grę krótszą niż jej zapis odrzuca. 0 groszy albo 0 na dzień = bez nagród.</p>
+      <div className={s.reward}>
+        {ARCADE_FIELDS.map(([k, label, unit]) => (
+          <label key={k}>{label}
+            <span><input type="number" min={k === 'unit' ? 1 : 0} step={1} value={v[k] ?? ''} onChange={e => setV(r => ({ ...r, [k]: e.target.value }))} /> {unit}</span>
+          </label>
+        ))}
+      </div>
+      <p className="muted small">Przykład: {example.toLocaleString('pl-PL')} pkt = {ex} gr{example < n('min') ? ' (za mało punktów)' : ''}.</p>
+      <div className={s.btns}><Button kind="hue" disabled={busy} onClick={save}>Zapisz nagrodę</Button></div>
+    </div>
+  );
+}
 
 export default function GamesAdmin() {
   const [look, setLook] = useState<Look | null>(null);
@@ -163,6 +200,10 @@ export default function GamesAdmin() {
         <p className="muted small">Przykład: 1000 m = {Math.min(Math.floor(1000 * +(run.per100m || 0) / 100), +(run.perGame || 0))} gr{1000 < +(run.minDist || 0) ? ' (za krótko - 0 gr)' : ''}.</p>
         <div className={s.btns}><Button kind="hue" disabled={busy} onClick={saveRun}>Zapisz nagrodę</Button></div>
       </div>
+      <ArcadeRewardPanel game="aimpulse" title="Super Turbo AIMPULSE 3D" example={40000}
+        text="Po rundzie trenera celności (30, 60 albo 120 s) gracz dostaje grosze za punkty. Dobra runda 60 s na poziomie normalnym to ok. 30-60 tys. pkt." />
+      <ArcadeRewardPanel game="invaders" title="Obrona Orbity" example={1000}
+        text="Po grze w strzelankę (zakładka Gry) gracz dostaje grosze za punkty. Cała pierwsza fala to ok. 900 pkt." />
     </section>
   );
 }

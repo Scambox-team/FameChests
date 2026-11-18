@@ -27,6 +27,8 @@ const MAX_BULK_CONTRACTS: usize = 50; // ile kontraktów naraz
 /// „Ostatnie najlepsze dropy” w sklepie: karta warta co najmniej tyle cen skrzynki
 const TOP_DROP_MULT: i64 = 10;
 const TOP_DROPS_SHOWN: i64 = 12;
+/// Ogłoszenie dropu na kanale Discorda (bot_events): 3 razy rzadziej niż „Ostatnie najlepsze dropy”
+const DISCORD_DROP_MULT: i64 = 3 * TOP_DROP_MULT;
 
 fn one() -> i64 {
     1
@@ -289,6 +291,19 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
             .bind(d.created)
             .execute(&mut *tx)
             .await?;
+        }
+        // ogłoszenie dla bota Discorda; gracze poza rankingiem (admin, testy) pomijani
+        if !cx.me.hidden_from_ranking() {
+            for d in drops.iter().filter(|d| d.value >= DISCORD_DROP_MULT * cr.price) {
+                sqlx::query("INSERT INTO bot_events (user_id, person_id, variant, rarity, created_at) VALUES ($1, $2, $3, $4, $5)")
+                    .bind(cx.uid())
+                    .bind(&d.person)
+                    .bind(&d.variant)
+                    .bind(&cx.cat.people[&d.person].rarity)
+                    .bind(d.created)
+                    .execute(&mut *tx)
+                    .await?;
+            }
         }
     }
     let skins = super::chess::drop_skins(&mut tx, cx.uid(), cr, req.count).await?;

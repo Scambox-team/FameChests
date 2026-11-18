@@ -7,6 +7,7 @@ import { useGame } from '../game/store';
 import { deepDefault2D, hasWebGL, setUser3DOff, user3DOff } from '../three/support';
 import { casinoIntroOff, setCasinoIntroOff } from '../features/casino/introPref';
 import { epicOff, setEpicOff } from '../fx/epicPref';
+import { liteOn, setLite } from '../fx/perf';
 import { RadioSettings } from './RadioSettings';
 import styles from './Settings.module.css';
 
@@ -34,6 +35,10 @@ export function SettingsPanel({ className }: { className?: string }) {
     setUser3DOff(!want);
     location.reload();
   };
+  const toggleLite = (want: boolean) => {
+    if (!confirm('Zmiana trybu wydajności przeładuje stronę. Kontynuować?')) return;
+    setLite(want);
+  };
   const pickTheme = (t: Theme) => {
     const prev = getTheme();
     setThemeState(t); setTheme(t);
@@ -54,6 +59,10 @@ export function SettingsPanel({ className }: { className?: string }) {
       </label>
       <div className={`${styles.row} ${styles.sep}`}><b>Język</b><LangSwitch /></div>
       <div className={styles.sep}>
+        <label className={styles.check}>
+          <input type="checkbox" checked={liteOn()} onChange={e => toggleLite(e.target.checked)} />
+          <span><b>Tryb wydajności</b><small>Mniej lagów na słabszym sprzęcie: bez kurzu w tle i rozmyć szkła, karty w listach stoją w miejscu (animuje się tylko karta w podglądzie), prostsze animacje i sceny. Przy dużych lagach wyłącz też Grafikę 3D.</small></span>
+        </label>
         <label className={styles.check}>
           <input type="checkbox" checked={epic} onChange={e => { setEpic(e.target.checked); setEpicOff(!e.target.checked); }} />
           <span><b>Animacje lepszych kart</b><small>Wielkie odsłonięcie kart od Legendarnej wzwyż. Po wyłączeniu karta pokazuje się od razu, jak każda inna.</small></span>

@@ -30,8 +30,10 @@ const FLAPPY_ON = false;   // Flappy jest gotowy, ale na razie wyłączony (zak�
 const FlappyPage = lazy(() => import('../flappy/FlappyPage').then(m => ({ default: m.FlappyPage })));
 const PinballPage = lazy(() => import('../pinball/PinballPage').then(m => ({ default: m.PinballPage })));
 const OldPinballPage = lazy(() => import('../oldpinball/OldPinballPage').then(m => ({ default: m.OldPinballPage })));
+const InvadersPage = lazy(() => import('../invaders/InvadersPage').then(m => ({ default: m.InvadersPage })));
 const SnakePage = lazy(() => import('../snake/SnakePage').then(m => ({ default: m.SnakePage })));
 const TurboPage = lazy(() => import('../turbo/TurboPage').then(m => ({ default: m.TurboPage })));
+const HorrorPage = lazy(() => import('../horror/HorrorPage').then(m => ({ default: m.HorrorPage })));   // Mgła: horror 3D na pełnym ekranie (/games/mgla)
 
 let openId: number | null = null;     // otwarta partia zostaje po wyjściu z ekranu
 const rewarded = new Set<number>();   // nagrodę ogłaszamy raz
@@ -338,16 +340,16 @@ export function ChessPage() {
   const navigate = useNavigate();
   const open = (n: number | null) => { openId = n; setId(n); };
   useEffect(() => { document.title = 'Gry · ScamBox'; }, []);
-  // gry: Szachy (podzakładki Partie / Figury), Pinball, Stary Pinball (/games/old-pinball), Strzelnica, Snake, Gry Super Turbo (kafelki: Run i Snake 3D) i wyłączony Flappy; adresy /games, /games/figures, /games/pinball, /games/aim, /games/snake, /games/turbo[/run|/snake] (stary /games/snake3d przekierowuje w App.tsx)
-  const view = tab === 'figures' || tab === 'pinball' || tab === 'old-pinball' || tab === 'snake' || tab === 'turbo' || (AIM_ON && tab === 'aim') || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
+  // gry: Szachy (podzakładki Partie / Figury), Pinball, Stary Pinball (/games/old-pinball), Strzelnica, Snake, Gry Super Turbo (kafelki: Run i Snake 3D) i wyłączony Flappy; adresy /games, /games/figures, /games/pinball, /games/aim, /games/snake, /games/invaders, /games/turbo[/run|/snake|/aimpulse] (stary /games/snake3d przekierowuje w App.tsx)
+  const view = tab === 'figures' || tab === 'pinball' || tab === 'old-pinball' || tab === 'snake' || tab === 'invaders' || tab === 'turbo' || tab === 'mgla' || (AIM_ON && tab === 'aim') || (FLAPPY_ON && tab === 'flappy') ? tab : 'games';
   const game = view === 'figures' ? 'games' : view;
   const go = (v: string) => { Sound.click(); navigate(v === 'games' ? '/games' : `/games/${v}`); };
   if (id && view === 'games') return <div id="view-games"><Game key={id} id={id} onBack={() => open(null)} /></div>;
-  const PAGES: Record<string, ReactNode> = { pinball: <PinballPage />, 'old-pinball': <OldPinballPage />, aim: <AimPage />, snake: <SnakePage />, turbo: <TurboPage sub={sub} />, flappy: <FlappyPage /> };
+  const PAGES: Record<string, ReactNode> = { pinball: <PinballPage />, 'old-pinball': <OldPinballPage />, aim: <AimPage />, snake: <SnakePage />, invaders: <InvadersPage />, turbo: <TurboPage sub={sub} />, mgla: <HorrorPage />, flappy: <FlappyPage /> };
   return (
     <div id="view-games">
       <Tabs label="Gry" value={game} onChange={go}
-        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, { id: 'old-pinball', label: 'Stary Pinball' }, ...(AIM_ON ? [{ id: 'aim', label: 'Strzelnica' }] : []), { id: 'snake', label: 'Snake' }, { id: 'turbo', label: 'Gry Super Turbo' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
+        items={[{ id: 'games', label: 'Szachy' }, { id: 'pinball', label: 'Pinball' }, { id: 'old-pinball', label: 'Stary Pinball' }, ...(AIM_ON ? [{ id: 'aim', label: 'Strzelnica' }] : []), { id: 'snake', label: 'Snake' }, { id: 'invaders', label: 'Obrona Orbity' }, { id: 'turbo', label: 'Gry Super Turbo' }, { id: 'mgla', label: 'Mgła' }, ...(FLAPPY_ON ? [{ id: 'flappy', label: 'Flappy' }] : [])]} />
       {game === 'games' && (
         <div className="ch-subtabs">
           <Tabs label="Szachy" value={view} onChange={go} items={[{ id: 'games', label: 'Partie' }, { id: 'figures', label: 'Figury' }]} />

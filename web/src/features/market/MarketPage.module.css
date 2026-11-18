@@ -50,3 +50,8 @@
 }
 
 @media (max-width: 600px) { .picks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } }
+/* obserwowanie licytacji: DM od bota Discorda przy nowej ofercie */
+.watch { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--rule); border-radius: var(--radius-s, 8px); background: var(--raised); color: var(--muted); cursor: pointer; flex: none; }
+.watch:hover:not(:disabled) { border-color: var(--hue); color: var(--text); }
+.watch.on { color: var(--hue); border-color: var(--hue); }
+.watch:disabled { opacity: .5; cursor: default; }

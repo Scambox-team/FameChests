@@ -15,7 +15,6 @@ import { Button } from '../../ui/Button';
 import { Tabs } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
 import { Avatar } from '../../ui/UserLink';
-import { arChallenge } from '../arena/arena';
 import { Binder, collectedOwned, type BinderOwned } from '../binder/BinderPage';
 import { PatchNotes } from '../notices/Notices';
 import { AvatarPicker, EmailDialog, PasswordDialog } from './Account';
@@ -118,7 +117,7 @@ export function ProfilePage() {
           {d.relation === 'outgoing' && <><span className={s.tag}><Clock size={15} aria-hidden="true" /> Zaproszenie wysłane</span><Button onClick={remove}>Anuluj</Button></>}
           {d.relation === 'incoming' && <Button kind="hue" onClick={() => act(() => api('/api/friends/respond', { username: u.username, accept: true }), 'Nowy znajomy')}>Przyjmij zaproszenie</Button>}
           {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button><Button onClick={remove}>Usuń ze znajomych</Button></>}
-          {!mine && S.cfg.arena && u.isAdmin && <Button title="Arena jest na razie tylko dla adminów" onClick={() => arChallenge(u.username)}>Wyzwij na pojedynek</Button>}
+          {!mine && S.cfg.arena && u.isAdmin && <Button title="Arena jest na razie tylko dla adminów" onClick={() => import('../arena/arena').then(m => m.arChallenge(u.username))}>Wyzwij na pojedynek</Button>}
         </div>
       </section>
 

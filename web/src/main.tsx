@@ -1,3 +1,4 @@
+import './fx/liteInit';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -21,6 +22,7 @@ import './styles/theme-aero.css';
 import './styles/theme-warm.css';
 import './styles/theme-independence.css';
 import './styles/theme-vapor.css';
+import './styles/lite.css';
 
 import { App } from './app/App';
 import { startI18n } from './i18n/i18n';

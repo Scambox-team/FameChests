@@ -218,6 +218,99 @@ pub async fn casino_slots(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     ok(SlotsResponse { reels, win, pays, stake, payout, consumed, state })
 }
 
+// ---------------------------------------------------------------- plinko
+// Kulka spada przez PLINKO_ROWS rzędów kołków; w każdym rzędzie SERWER losuje lewo/prawo, przeglądarka tylko odtwarza
+// tę drogę. Przegródka = liczba odbić w prawo, mnożnik z tabeli ryzyka w dziesiątych częściach (5 = ×0,5).
+// Postawione karty zawsze przepadają, a wraca stawka × mnożnik (karty z kasyna + reszta w pieniądzach), więc ×0,5 to
+// zwrot połowy, a ×1 to zwrot całej stawki. Zwrot dla gracza: ok. 94% (niskie), 94% (średnie), 92% (wysokie ryzyko).
+// Jedno rzucenie może puścić kilka kulek naraz (1..=PLINKO_MAX_BALLS): stawka dzieli się po równo między kulki, więc wraca
+// stawka × średni mnożnik kulek (ten sam średni zwrot, mniejsze wahania).
+
+pub const PLINKO_ROWS: usize = 12;
+pub const PLINKO_MAX_BALLS: usize = 20;
+/// ryzyko -> mnożniki przegródek 0..=PLINKO_ROWS w dziesiątych częściach
+pub const PLINKO_RISKS: [(&str, [i64; PLINKO_ROWS + 1]); 3] = [
+    ("low", [80, 30, 16, 13, 11, 9, 5, 9, 11, 13, 16, 30, 80]),
+    ("mid", [260, 90, 35, 18, 11, 6, 3, 6, 11, 18, 35, 90, 260]),
+    ("high", [1700, 220, 70, 22, 6, 2, 1, 2, 6, 22, 70, 220, 1700]),
+];
+
+fn plinko_table(risk: &str) -> Option<&'static [i64; PLINKO_ROWS + 1]> {
+    PLINKO_RISKS.iter().find(|(k, _)| *k == risk).map(|(_, t)| t)
+}
+
+/// Droga kulki (0 = w lewo, 1 = w prawo) i przegródka, do której wpadła
+fn plinko_drop() -> (Vec<u8>, usize) {
+    let mut rng = rand::thread_rng();
+    let path: Vec<u8> = (0..PLINKO_ROWS).map(|_| u8::from(rng.gen_bool(0.5))).collect();
+    let slot = path.iter().map(|&b| usize::from(b)).sum();
+    (path, slot)
+}
+
+/// Ustawienia dla strony gry (tabele mnożników i limit kart)
+pub async fn casino_plinko_config() -> Res {
+    let risks: serde_json::Map<String, serde_json::Value> = PLINKO_RISKS.iter().map(|(k, t)| ((*k).to_owned(), json!(t))).collect();
+    ok(json!({"rows": PLINKO_ROWS, "risks": risks, "maxCards": g().slots.max_cards, "maxBalls": PLINKO_MAX_BALLS}))
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct PlinkoRequest {
+    ids: Vec<i64>,
+    vabank: bool,
+    risk: String,
+    /// ile kulek naraz (0 = jedna)
+    balls: usize,
+}
+
+#[derive(Serialize)]
+struct PlinkoResponse {
+    /// drogi kulek (0 = w lewo, 1 = w prawo w każdym rzędzie), przegródki i ich mnożniki (w dziesiątych częściach)
+    paths: Vec<Vec<u8>>,
+    slots: Vec<usize>,
+    mults: Vec<i64>,
+    /// średni mnożnik wszystkich kulek w setnych częściach (np. 135 = ×1,35)
+    avg: i64,
+    /// wróciło więcej, niż postawiono
+    win: bool,
+    stake: i64,
+    #[serde(flatten)]
+    payout: Option<Payout>,
+    consumed: Vec<i64>,
+    state: GameState,
+}
+
+pub async fn casino_plinko(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<PlinkoRequest>) -> Res {
+    let cx = Ctx::new(st, me);
+    let Some(table) = plinko_table(&req.risk) else { return bad("Wybierz ryzyko") };
+    let balls = req.balls.max(1);
+    if balls > PLINKO_MAX_BALLS {
+        return bad(format!("Najwyżej {PLINKO_MAX_BALLS} kulek naraz"));
+    }
+    let mut tx = cx.st.db.begin().await?;
+    lock_me(&mut tx, cx.uid()).await?;
+    stake_error(&mut tx, &cx, &req.ids, g().slots.max_cards, req.vabank, 1).await?;
+    let rows = take_my_items(&mut tx, &cx.cat, cx.uid(), &req.ids, Use::Stake).await?;
+    let stake: i64 = rows.iter().map(|r| row_value(&cx.cat, r)).sum();
+    let staked: Vec<(String, String)> = rows.iter().map(|r| (r.person_id.clone(), r.variant.clone())).collect();
+    let (paths, slots): (Vec<Vec<u8>>, Vec<usize>) = (0..balls).map(|_| plinko_drop()).unzip();
+    let mults: Vec<i64> = slots.iter().map(|&s| table[s]).collect();
+    let sum: i64 = mults.iter().sum();
+    // każda kulka niesie 1/balls stawki: wraca stawka × suma mnożników / liczba kulek
+    let back = stake * sum / (10 * balls as i64);
+    let avg = sum * 10 / balls as i64;
+    let win = back > stake;
+    crate::achievements::count_casino(&mut tx, cx.uid(), "plinko", Some(win), &staked).await?;
+    // postawione karty zawsze przepadają, wraca stawka × mnożnik
+    delete_items(&mut tx, cx.uid(), &req.ids).await?;
+    let payout = if back > 0 { Some(pay_out(&mut tx, &cx, back, "casino").await?) } else { None };
+    let state = get_state(&mut tx, cx.uid()).await?;
+    tx.commit().await?;
+    metrics::counter!("scambox_casino_games_total", "game" => "plinko", "result" => if win { "win" } else { "lose" })
+        .increment(1);
+    ok(PlinkoResponse { paths, slots, mults, avg, win, stake, payout, consumed: req.ids, state })
+}
+
 // ---------------------------------------------------------------- blackjack
 // Gracz przeciw krupierowi, stawką są karty (jak w ruletce). Rozdanie trwa kilka zapytań (dobierz / stój / podwój),
 // więc czeka w blackjack_games, a postawione karty są w ESCROW - w tym czasie nie da się ich sprzedać ani zużyć.
@@ -1291,5 +1384,22 @@ mod tests {
         assert!(matches!(n, Names::Text(_)));
         let n: Names = serde_json::from_str(r#"["ala"]"#).unwrap();
         assert!(matches!(n, Names::List(_)));
+    }
+
+    #[test]
+    fn plinko_returns_less_than_the_stake_on_average() {
+        // prawdopodobieństwo przegródki k = C(12, k) / 4096
+        let mut c = [1u64; PLINKO_ROWS + 1];
+        for k in 1..=PLINKO_ROWS {
+            c[k] = c[k - 1] * (PLINKO_ROWS + 1 - k) as u64 / k as u64;
+        }
+        for (risk, t) in PLINKO_RISKS {
+            assert!(t.iter().zip(t.iter().rev()).all(|(a, b)| a == b), "{risk}: tabela symetryczna");
+            let rtp = c.iter().zip(t).map(|(n, m)| *n as f64 * m as f64 / 10.0).sum::<f64>() / 4096.0;
+            assert!((0.88..0.97).contains(&rtp), "{risk}: zwrot {rtp}");
+        }
+        let (path, slot) = plinko_drop();
+        assert_eq!(path.len(), PLINKO_ROWS);
+        assert_eq!(slot, path.iter().filter(|&&b| b == 1).count());
     }
 }

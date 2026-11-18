@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Gavel, Tag, Trophy } from 'lucide-react';
+import { Bell, BellOff, Gavel, Tag, Trophy } from 'lucide-react';
 import { Store } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 
@@ -87,6 +87,15 @@ export function ListingCard({ l, m, showSeller = true, onAsk }: { l: any; m: Mar
     toast(`Kupiono: ${person(res.item.person).name}, karta jest w ekwipunku`);
     noteMarketBonus(res.bonus);
   };
+  const watching = auction && (m.data.watching ?? []).includes(l.id);
+  const watch = async () => {
+    try {
+      await api(`/api/market/${l.id}/watch`, { on: !watching });
+      Sound.click();
+      toast(watching ? 'Nie obserwujesz już tej licytacji' : 'Bot Discorda napisze do Ciebie przy każdej nowej ofercie');
+    } catch (e: any) { Sound.error(); toast(e.message, true); }
+    finally { m.refresh(); }
+  };
   const cancel = async () => {
     if (!confirm('Wycofać ofertę? Karta wróci do ekwipunku.')) return;
     const res = await m.act(() => api(`/api/market/${l.id}/cancel`, {}), 'Oferta wycofana, karta wróciła do ekwipunku');
@@ -101,6 +110,13 @@ export function ListingCard({ l, m, showSeller = true, onAsk }: { l: any; m: Mar
         <div className="muted small">wartość karty {fmt(l.value)} <span className={diff > 0 ? styles.up : styles.down}>{diff > 0 ? '+' : ''}{diff}%</span>{auction ? ` · ${l.bids} ${plural(l.bids, 'oferta', 'oferty', 'ofert')} · przebicie min. ${fmt(l.step)}` : ''}</div>
         {showSeller && l.seller && <div className={styles.seller}><UserLink user={l.seller} /><span className="muted small">{timeAgo(l.created)}</span></div>}
         <div className={styles.acts}>
+          {auction && m.data.discord && (
+            <button type="button" className={`${styles.watch}${watching ? ` ${styles.on}` : ''}`} onClick={watch} aria-pressed={watching}
+              title={watching ? 'Obserwujesz: bot Discorda pisze przy nowej ofercie. Kliknij, żeby przestać' : 'Powiadamiaj mnie na Discordzie o nowych ofertach'}
+              aria-label={watching ? 'Przestań obserwować licytację' : 'Obserwuj licytację na Discordzie'}>
+              {watching ? <Bell size={16} aria-hidden="true" /> : <BellOff size={16} aria-hidden="true" />}
+            </button>
+          )}
           {l.mine ? <>
             <span className="muted small">Twoja oferta</span>
             {(!auction || !l.topBid) && <Button onClick={cancel}>Wycofaj</Button>}

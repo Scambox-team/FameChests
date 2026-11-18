@@ -108,6 +108,7 @@ pub async fn friend_request(State(st): State<AppState>, Me(me): Me, JsonBody(req
     )
     .execute(&mut *tx)
     .await?;
+    super::bot::notify_user(&mut tx, &st, other.id, super::bot::Pref::Friends, "friend", json!({"from": me.username}), "/friends").await?;
     tx.commit().await?;
     ok(json!({"ok": true, "status": Relation::Outgoing}))
 }
@@ -580,6 +581,9 @@ pub async fn trade_create(State(st): State<AppState>, Me(me): Me, JsonBody(req):
         .execute(&mut *tx)
         .await?;
     }
+    let wanted: i64 = req.want.iter().map(|w| w.count).sum();
+    let data = json!({"from": cx.me.username, "give": rows.len(), "want": wanted, "message": clean(&req.message, 140)});
+    super::bot::notify_user(&mut tx, &cx.st, other.id, super::bot::Pref::Trades, "trade", data, "/friends").await?;
     tx.commit().await?;
     ok(json!({"ok": true, "id": tid}))
 }

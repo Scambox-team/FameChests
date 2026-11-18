@@ -2,7 +2,7 @@
 // Co minutę pyta grę o stan (jedno zapytanie /api/bot/snapshot) i wypełnia kanały, których id podasz w .env (sam nic nie zakłada):
 //   statystyki  - nazwy kanałów głosowych z liczbą kont i graczy online (Discord: zmiana nazwy najwyżej 2 razy / 10 min)
 //   ranking     - jedna wiadomość, którą bot edytuje
-//   questy      - nowy quest = nowa wiadomość, wykonany / skończony = edycja
+//   questy      - quest Wanted i quest CTF: nowy quest = nowa wiadomość, wykonany / skończony = edycja
 //   eventy      - wiadomość na event, edytowana aż do końca
 //   skrzynki    - nowa wiadomość po każdej rotacji sklepu (o północy)
 //   komendy     - /profil gracz, /ranking, /quest, /skrzynki (wymagają zakresu applications.commands przy zaproszeniu)
@@ -25,6 +25,7 @@ const PING_ROLE = env('DISCORD_PING_ROLE_ID');
 const COMMANDS_ONLY = env('COMMANDS_ONLY', '1') !== '0';
 const STATE_FILE = path.join(env('DATA_DIR', '/data'), 'state.json');
 const TICK_MS = 60_000;
+const DM_EVERY_MS = 15_000;
 // Discord pozwala na 2 zmiany nazwy kanału na 10 minut - 10 minut to bezpieczny odstęp
 const STATS_EVERY_MS = Math.max(10, Number(env('STATS_EVERY_MIN', '10')) || 10) * 60_000;
 const GOLD = 0xe5b94a;
@@ -40,7 +41,7 @@ if (env('BOT_TOKEN').length < 16) {
 
 // ---------------------------------------------------------------- stan (przeżywa restart)
 
-let state = { ranking: null, quest: null, events: {}, crates: null, statsAt: 0 };
+let state = { ranking: null, quest: null, ctf: null, events: {}, crates: null, statsAt: 0 };
 try {
   state = { ...state, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) };
 } catch { /* pierwszy start */ }
@@ -195,28 +196,65 @@ function questEmbed(q) {
   return e;
 }
 
-async function quests(snap) {
-  const q = snap.quest;
+const LEVEL = ['', '🟢 łatwe', '🟡 średnie', '🔴 trudne'];
+
+/** Quest CTF: tylko tytuł, kategoria, poziom i nagroda; zadanie, dane i podpowiedzi są w grze */
+function ctfEmbed(q) {
+  const e = new EmbedBuilder().setColor(q.done ? 0x59c27a : 0x2fd3a0).setTitle(q.done ? '✅ Quest CTF wykonany' : `🚩 Quest CTF: ${q.title}`);
+  const cat = q.category;
+  e.setDescription(
+    `Zadanie hakerskie${cat ? ` (${cat})` : ''}: znajdź flagę i wpisz ją w grze na stronie startowej (kafelek questa, strzałka w prawo). ` +
+      'Pierwsza osoba z poprawną flagą wygrywa.',
+  );
+  e.addFields({ name: '📊 Poziom', value: LEVEL[q.level] ?? String(q.level), inline: true });
+  if (q.personName) e.addFields({ name: '🎁 Nagroda', value: `${q.personName} w wariancie Cyfrowa${q.reward ? ` + ${gr(q.reward)}` : ''}`, inline: true });
+  if (q.done) {
+    e.addFields(
+      { name: '🏅 Wykonał(a)', value: q.winner ?? '—', inline: true },
+      { name: '⏭️ Następny quest CTF', value: rel(q.nextAt), inline: true },
+    );
+  } else {
+    e.addFields({ name: '⏰ Koniec', value: `${rel(q.endsAt)} (${full(q.endsAt)})`, inline: true });
+    const hints = `${q.hintsOpen} / ${q.hintsTotal}${q.nextHintAt ? `, następna ${rel(q.nextHintAt)}` : ''}`;
+    e.addFields({ name: '💡 Podpowiedzi w grze', value: hints, inline: true });
+  }
+  return e;
+}
+
+/**
+ * Jedna wiadomość na quest: nowy quest = nowa wiadomość (z pingiem), zmiany = edycja, wykonanie = osobna krótka informacja.
+ * `key` to miejsce w stanie bota (quest / ctf), `id` - co odróżnia kolejne questy.
+ */
+async function postQuest(q, key, id, embed, watch, doneText) {
   if (!q) return;
   const ch = await channel('quests');
   if (!ch) return;
-  const st = state.quest;
+  const st = state[key];
 
-  if (!st || st.day !== q.day) {
-    const msg = await ch.send({ ...mention(), embeds: [questEmbed(q)] });
-    state.quest = { day: q.day, id: msg.id, hash: stamp(q), done: !!q.done };
+  if (!st || st.day !== id) {
+    const msg = await ch.send({ ...mention(), embeds: [embed(q)] });
+    state[key] = { day: id, id: msg.id, hash: stamp(watch(q)), done: !!q.done };
     save();
     return;
   }
-  const h = stamp([q.done, q.winner, q.wonPerson, q.crateNames, q.endsAt, q.nextAt]);
+  const h = stamp(watch(q));
   if (st.hash === h) return;
-  st.id = await upsert(ch, st.id, { embeds: [questEmbed(q)] });
+  st.id = await upsert(ch, st.id, { embeds: [embed(q)] });
   st.hash = h;
   if (q.done && !st.done) {
     st.done = true;
-    await ch.send({ content: `🎉 Quest wykonany przez **${q.winner ?? 'gracza'}**. Następny ${rel(q.nextAt)}.`, allowedMentions: { parse: [] } });
+    await ch.send({ content: doneText(q), allowedMentions: { parse: [] } });
   }
   save();
+}
+
+async function quests(snap) {
+  const q = snap.quest;
+  await postQuest(q, 'quest', q?.day, questEmbed, (q) => [q.done, q.winner, q.wonPerson, q.crateNames, q.endsAt, q.nextAt],
+    (q) => `🎉 Quest wykonany przez **${q.winner ?? 'gracza'}**. Następny ${rel(q.nextAt)}.`);
+  const c = snap.ctf;
+  await postQuest(c, 'ctf', c?.key, ctfEmbed, (c) => [c.done, c.winner, c.endsAt, c.nextAt, c.hintsOpen],
+    (c) => `🚩 Flaga zdobyta przez **${c.winner ?? 'gracza'}**. Następny quest CTF ${rel(c.nextAt)}.`);
 }
 
 // ---------------------------------------------------------------- eventy
@@ -312,7 +350,7 @@ const COMMANDS = [
       { name: 'wariant', description: 'Wariant karty (domyślnie zwykły)', type: ApplicationCommandOptionType.String, autocomplete: true },
     ],
   },
-  { name: 'quest', description: 'Aktualny quest' },
+  { name: 'quest', description: 'Aktualne questy (Wanted i CTF)' },
   { name: 'skrzynki', description: 'Skrzynki w sklepie i następna rotacja' },
   { name: 'polacz', description: 'Połącz konto Discord z kontem w grze (nagroda + role za miejsce w rankingu)' },
 ];
@@ -417,7 +455,8 @@ client.on('interactionCreate', async (i) => {
       const lines = list.map((p, k) => `${MEDAL[k] ?? `**${k + 1}.**`} ${clip(p.username, 24)} — ${fmt(p)}`).join('\n') || 'Brak graczy';
       await i.editReply({ embeds: [new EmbedBuilder().setColor(GOLD).setTitle(`🏆 Ranking: ${title}`).setDescription(lines)] });
     } else if (i.commandName === 'quest') {
-      await i.editReply(snap.quest ? { embeds: [questEmbed(snap.quest)] } : 'Questy są teraz wyłączone.');
+      const embeds = [snap.quest && questEmbed(snap.quest), snap.ctf && ctfEmbed(snap.ctf)].filter(Boolean);
+      await i.editReply(embeds.length ? { embeds } : 'Questy są teraz wyłączone.');
     } else if (i.commandName === 'skrzynki') {
       await i.editReply({ embeds: [cratesEmbed(snap)] });
     }
@@ -470,6 +509,8 @@ client.once('ready', async () => {
   await features.ensureRoles();
   await tick();
   setInterval(tick, TICK_MS);
+  // powiadomienia na DM częściej niż reszta: przy licytacji liczy się czas
+  setInterval(features.dms, DM_EVERY_MS);
 });
 
 for (const sig of ['SIGTERM', 'SIGINT']) {
