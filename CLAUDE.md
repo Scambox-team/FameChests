@@ -1,5 +1,11 @@
 # ScamBox (repo: FameChests, folder: Skrzynki)
 
+> **DLA AGENTÓW AI (Claude, Gemini, Codex...): ZAINSTALUJ graphify i aktualizuj graf po KAŻDEJ zmianie.**
+> Graf wiedzy repozytorium jest w `graphify-out/` (zacznij od `graphify-out/GRAPH_REPORT.md`, nie czytaj całego repo).
+> Instalacja (obowiązkowa): `pip install "graphifyy[sql]"` (podwójne y), potem `graphify install --platform <twoja platforma>`.
+> Po każdej zmianie: `graphify update .` i commituj `graphify-out/` razem ze zmianą. Pełna instrukcja: [AGENTS.md](AGENTS.md).
+
+
 ScamBox – gra webowa w otwieranie skrzynek (jak w CS) z kartami znanych osób. UI po polsku, bez monetyzacji.
 Serwer w Rust (`server/`: axum + tokio + sqlx, PostgreSQL) + frontend w React (`web/`: React, Vite, TypeScript); aplikacja i pliki statyczne są wbudowane w `scambox.exe`. Repo: https://github.com/CebularzPawel/FameChests
 

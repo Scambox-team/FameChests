@@ -37,3 +37,8 @@ web/dist/
 /.env
 /deploy/selfhost/.env
 /deploy/selfhost/discord-bot/node_modules/
+
+# graphify: lokalne i tymczasowe pliki (graph.json, GRAPH_REPORT.md, graph.html, wiki/, manifest.json SA w repo)
+graphify-out/cache/
+graphify-out/.graphify_*
+graphify-out/cost.json
