@@ -3805,3 +3805,130 @@ b.an-sfx.b { color: #ffd21a; }
 :is(.card, .r-secret):is(.v-diamond, .v-emerald, .v-ruby, .v-amethyst, .v-sapphire, .v-blackdiamond) :is(.card-photo, .sc-art)::after {
   will-change: transform;
 }
+
+/* Pryzmat `prism` i Antymateria `antimatter` (domyślnie wyłączone; wybrane z makiet: Pryzmat 4 „Fasety, rozmyte” i Antymateria 1 „Anty-złoto”).
+   Wykończenia jak holo / metale / kamienie, bez napisów. Światło reaguje na przechył karty (--mx / --my z Card.tsx). Pryzmat: tęczowa folia z ukośnymi,
+   miękko rozmytymi pasami (rozmycie zrobione miękkimi przejściami gradientu, nie filtrem blur - karty są w długich listach), druga warstwa pasów
+   w przeciwną stronę, smuga światła i poświata z trzech warstw o różnej barwie przenikających się przezroczystością (tylko opacity).
+   Antymateria: szczotkowany metal w indygo z cyjanowym światłem. Klasy pzm- (Pryzmat), anm- (Antymateria). */
+@keyframes pzmAura { 0% { opacity: 0; } 33% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes pzmGlide { 0%, 100% { transform: translateX(-30%) skewX(-18deg); } 50% { transform: translateX(300%) skewX(-18deg); } }
+@keyframes pzmFlare { 0%, 100% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(90deg); } }
+@keyframes anmSweep { 0%, 100% { transform: translateX(-16%); } 50% { transform: translateX(16%); } }
+@keyframes anmAura { 50% { opacity: .68; } }
+
+.card.v-prism { --frame: linear-gradient(115deg, #ff3b9a, #ffb21f, #f6ff4a, #34ff8a, #2ad8ff, #7a5cff, #ff3b9a); --spin: initial; box-shadow: 0 6px 18px #000a; }
+.card.v-prism .card-inner { background: #120d1c; color: #fff; }
+.card.v-prism .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-prism :is(.card-sub, .card-attack, .card-stats, .card-foot) { border: .22cqw solid #ffffff44; border-radius: .3cqw; box-shadow: inset 0 .25cqw 0 #ffffff40, inset 0 -.25cqw 0 #00000055, 0 0 1.4cqw #b88bff55;
+  background: linear-gradient(90deg, #ff3b9a22, #ffd23d18, #3dff9a18, #3dc8ff22, #9b6bff26), linear-gradient(#160e2aec, #0a0616ec); }
+.card.v-prism .card-sub { background: linear-gradient(90deg, #ff3b9a66, #ffd23d55, #3dff9a55, #3dc8ff66, #9b6bff66), #0e0818e0; }
+.card.v-prism :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #fff; text-shadow: none; }
+.card.v-prism .card-name { color: #fff; text-shadow: 0 0 1cqw #000c; }
+.card.v-prism .card-photo { position: relative; overflow: hidden; isolation: isolate; border: .5cqw solid #ffffffee; border-image: none; border-radius: .2cqw; box-shadow: 0 0 2.4cqw #fff6; }
+.card.v-prism .card-photo > img, .r-secret.v-prism .sc-art img, .pick.v-prism img, .avv-prism img { filter: contrast(1.06) saturate(1.1); }
+.vx-bg > .pzm-a { inset: -4%; background: repeating-linear-gradient(115deg, #ff3b9a 1% 3%, #ffb21f 5% 7%, #f6ff4a 9% 11%, #34ff8a 13% 15%, #2ad8ff 17% 19%, #7a5cff 21% 23%, #ff3b9a 25% 27%);
+  background-size: 260% 100%; background-position: var(--mx, 50%) 0; filter: brightness(.92) saturate(1.25); }
+.vx-bg > .pzm-b { inset: -4%; mix-blend-mode: overlay; background: repeating-linear-gradient(65deg, transparent 0 5%, #ffffff55 6.2%, #ffffff88 6.6%, #0004 8%, transparent 10% 13%);
+  background-size: 240% 100%; background-position: calc(100% - var(--mx, 50%)) 0; }
+.vx-photo.pzm-tint { mix-blend-mode: color; opacity: .34; background: repeating-linear-gradient(65deg, #ff3b9a 1% 3%, #ffb21f 5% 7%, #f6ff4a 9% 11%, #34ff8a 13% 15%, #2ad8ff 17% 19%, #7a5cff 21% 23%, #ff3b9a 25% 27%);
+  background-size: 240% 100%; background-position: calc(100% - var(--mx, 50%)) 0; }
+.vx-photo > .pzm-flare, .vx-deco > .pzm-flare { position: absolute; display: block; width: calc(3.4cqw * var(--s, 1)); aspect-ratio: 1; margin: calc(-1.7cqw * var(--s, 1)) 0 0 calc(-1.7cqw * var(--s, 1)); mix-blend-mode: screen; animation: pzmFlare 3.4s ease-in-out infinite;
+  background: linear-gradient(#fff0, #fff, #fff0) 50% 50% / 13% 100% no-repeat, linear-gradient(90deg, #fff0, #fff, #fff0) 50% 50% / 100% 13% no-repeat; filter: drop-shadow(0 0 .6cqw #fff); }
+.vx-deco.pzm-aura { z-index: 0; }
+.pzm-aura > i { inset: 0; border-radius: 4.5% / 3.2%; opacity: 0; animation: pzmAura 9s linear infinite; }
+.pzm-aura > i.a { box-shadow: 0 0 2.4cqw #ff4fd8, 0 0 7cqw #ff4fd8a0, 0 0 16cqw #ff4fd850; }
+.pzm-aura > i.b { box-shadow: 0 0 2.4cqw #f4ff6a, 0 0 7cqw #5dffa0a0, 0 0 16cqw #5dffa050; animation-delay: -3s; }
+.pzm-aura > i.c { box-shadow: 0 0 2.4cqw #54d7ff, 0 0 7cqw #a78bffa0, 0 0 16cqw #a78bff50; animation-delay: -6s; }
+.vx-deco > .pzm-glare { inset: -10% auto -10% -30%; width: 30%; mix-blend-mode: soft-light; background: linear-gradient(90deg, transparent, #fff, transparent);
+  translate: calc((var(--mx, 50%) - 50%) * 3.2) 0; animation: pzmGlide 11s ease-in-out infinite; opacity: .9; }
+.r-secret.v-prism .sc-border { background: linear-gradient(115deg, #ff3b9a, #ffb21f, #f6ff4a, #34ff8a, #2ad8ff, #7a5cff, #ff3b9a); animation: none; }
+.r-secret.v-prism { box-shadow: 0 6px 18px #000c, 0 0 26px #ff4fd8aa, 0 0 60px #54d7ff55; }
+.var-tag.vt-prism, .ph.vt-prism { background: linear-gradient(90deg, #ff3b9a, #ffb21f, #f6ff4a, #34ff8a, #2ad8ff, #7a5cff, #ff3b9a); background-size: 200% 100%; color: #fff; text-shadow: 0 0 .4em #000a; box-shadow: 0 0 .7em #ff4fd8aa; animation: rainbowSlide 4s linear infinite; }
+.pick.v-prism { box-shadow: inset 0 0 0 2px #fff, 0 0 10px #ff4fd899, inset 0 -26px 26px -18px var(--rc); }
+.avv-prism img { box-shadow: 0 0 0 2px #fff, 0 0 12px #ff4fd8 !important; }
+.vdot.vt-prism { background: linear-gradient(90deg, #ff3b9a, #f6ff4a, #34ff8a, #2ad8ff, #7a5cff); box-shadow: 0 0 6px #ff4fd8; }
+.odd.odd-v.vt-prism { border-left-color: #ff4fd8; }
+.av-vname.vt-prism { background: linear-gradient(90deg, #ff3b9a, #ffb21f, #34ff8a, #2ad8ff, #7a5cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.card.v-antimatter { --frame: linear-gradient(145deg, #bfe9ff, #1c46d8 25%, #061a7a 50%, #3a8dff 78%, #e6f6ff); --spin: initial; box-shadow: 0 6px 18px #000a; }
+.card.v-antimatter .card-inner { background: linear-gradient(160deg, #0f2fb0, #06145a 60%, #0a2790); color: #eaf4ff; }
+.card.v-antimatter .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-antimatter :is(.card-sub, .card-attack, .card-stats, .card-foot) { border: .25cqw solid #8fd0ff66; border-radius: .4cqw; background: linear-gradient(180deg, #1c46d866, #04115add 60%);
+  box-shadow: inset 0 .3cqw 0 #ffffff55, inset 0 -.3cqw 0 #00000066, 0 0 1.4cqw #2ad8ff77; }
+.card.v-antimatter .card-sub { background: linear-gradient(90deg, #0a2790, #2ad8ff66 50%, #0a2790); }
+.card.v-antimatter :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #eaf4ff; text-shadow: none; }
+.card.v-antimatter .card-name { color: #fff; text-shadow: 0 0 1.4cqw #2ad8ff; }
+.card.v-antimatter .card-photo { position: relative; overflow: hidden; isolation: isolate; border: .45cqw solid #9fdcff; border-image: none; border-radius: .3cqw; box-shadow: 0 0 3cqw #2ad8ffcc; }
+.card.v-antimatter .card-photo > img, .r-secret.v-antimatter .sc-art img, .pick.v-antimatter img, .avv-antimatter img { filter: sepia(.5) hue-rotate(185deg) saturate(1.6) brightness(.95) contrast(1.1); }
+.vx-bg > .anm-brush { inset: 0; background: repeating-linear-gradient(90deg, #ffffff10 0 .2cqw, transparent .2cqw .6cqw), repeating-linear-gradient(0deg, #0000 0 1.1cqw, #ffffff08 1.1cqw 1.2cqw); }
+.vx-bg > .anm-sheen { inset: -10% -50%; translate: calc((var(--mx, 50%) - 50%) * 1.8) 0; will-change: transform; animation: anmSweep 7s ease-in-out infinite;
+  background: linear-gradient(115deg, transparent 36%, #2ad8ff44 44%, #ffffffaa 50%, #2ad8ff44 56%, transparent 64%); }
+.vx-bg > .anm-sheen.b { animation-delay: -3.5s; opacity: .55; background: linear-gradient(115deg, transparent 46%, #ffffff77 50%, transparent 54%); }
+.vx-photo.anm-glow { mix-blend-mode: screen; box-shadow: inset 0 0 3cqw #2ad8ff88; background: linear-gradient(160deg, #2ad8ff33, transparent 50%); }
+.vx-deco.anm-aura { z-index: 0; }
+.anm-aura > i { inset: 0; border-radius: 4.5% / 3.2%; box-shadow: 0 0 2.4cqw #2ad8ff, 0 0 7cqw #3a6dffaa, 0 0 16cqw #1c46d866; animation: anmAura 4.4s ease-in-out infinite; }
+.r-secret.v-antimatter .sc-border { background: linear-gradient(145deg, #bfe9ff, #1c46d8 25%, #061a7a 50%, #3a8dff 78%, #e6f6ff); animation: none; }
+.r-secret.v-antimatter { box-shadow: 0 6px 18px #000c, 0 0 26px #2ad8ffaa, 0 0 60px #3a6dff55; }
+.var-tag.vt-antimatter, .ph.vt-antimatter { background: linear-gradient(90deg, #0a2790, #2ad8ff, #e6f6ff, #2ad8ff, #0a2790); background-size: 200% 100%; color: #fff; text-shadow: 0 0 .4em #000a; box-shadow: 0 0 .7em #2ad8ffaa; animation: rainbowSlide 4s linear infinite; }
+.pick.v-antimatter { box-shadow: inset 0 0 0 2px #9fdcff, 0 0 10px #2ad8ff99, inset 0 -26px 26px -18px var(--rc); }
+.avv-antimatter img { box-shadow: 0 0 0 2px #9fdcff, 0 0 12px #2ad8ff !important; }
+.vdot.vt-antimatter { background: linear-gradient(90deg, #0a2790, #2ad8ff); box-shadow: 0 0 6px #2ad8ff; }
+.odd.odd-v.vt-antimatter { border-left-color: #2ad8ff; }
+.av-vname.vt-antimatter { color: #2ad8ff; }
+@media (prefers-reduced-motion: reduce) { .pzm-aura > i, .vx-deco > .pzm-glare, .pzm-flare, .vx-bg > .anm-sheen, .anm-aura > i { animation: none; } .pzm-aura > i.a, .anm-aura > i { opacity: 1; } }
+
+/* Lonsdaleit `lonsdaleite` (domyślnie wyłączony; wybrany z makiet: „Warstwy, pośrednia 4”) - złoty heks, wariant LEPSZY od Negatywu (x40).
+   Złota paleta, siatka sześciokątów na warstwach (jedna główna na całą kartę + fragmentaryczne pod nią i nad nią), ciągła na tle i na zdjęciu,
+   bardzo delikatnie przesuwana za kursorem (--mx / --my z Card.tsx), złoty pył, błyski i BARDZO mocna poświata wokół karty. Bez napisów.
+   Obrazki warstw to zmienne --lns-* wstrzykiwane raz przez ensureLonsdaleitStyle (cards/lonsdaleit.ts). 1cqw = 1% szerokości zawartości KARTY.
+   Klasy lns-. */
+@keyframes lnsGlow { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
+@keyframes lnsSweep { 0%, 100% { transform: translateX(-16%); } 50% { transform: translateX(16%); } }
+@keyframes lnsFlare { 0%, 100% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(90deg); } }
+@keyframes lnsDust { 0% { opacity: 0; transform: translateY(2cqw) scale(.5); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-9cqw) scale(1); } }
+
+.card.v-lonsdaleite { --frame: linear-gradient(135deg, #fff6c8, #ffc43d 30%, #fff2b0 50%, #d98a00 75%, #fff0b0); --spin: initial; box-shadow: 0 6px 18px #000a; }
+.card.v-lonsdaleite .card-inner { background: linear-gradient(160deg, #5a3200, #b87400 45%, #6b4000); color: #fff3d6; }
+.card.v-lonsdaleite .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-lonsdaleite :is(.card-sub, .card-attack, .card-stats, .card-foot) { border: .25cqw solid #ffe29a77; border-radius: .5cqw; background: linear-gradient(180deg, #ffc43d33, #2a1800dd 62%);
+  box-shadow: inset 0 .3cqw 0 #fff3c466, inset 0 -.3cqw 0 #00000066, 0 0 1.4cqw #ffb21f77; }
+.card.v-lonsdaleite .card-sub { background: linear-gradient(90deg, #6b4000e0, #ffc43d77 50%, #6b4000e0); }
+.card.v-lonsdaleite :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #fff3d6; text-shadow: none; }
+.card.v-lonsdaleite .card-name { color: #fff; text-shadow: 0 0 1.6cqw #ffb21f; }
+.card.v-lonsdaleite .card-photo { position: relative; overflow: hidden; isolation: isolate; border: .45cqw solid #ffe9a8; border-image: none; border-radius: .3cqw; box-shadow: 0 0 3cqw #ffc43dcc; }
+.card.v-lonsdaleite .card-photo > img, .r-secret.v-lonsdaleite .sc-art img, .pick.v-lonsdaleite img, .avv-lonsdaleite img { filter: sepia(.35) saturate(1.3) brightness(1.05); }
+
+/* warstwy siatki: element 240 x 260cqw o rogu w (-70, -85)cqw względem wnętrza karty (na zdjęciu przesunięty o jego położenie, więc siatka jest ciągła) */
+.lns-lyr { position: absolute; display: block; left: -70cqw; top: -85cqw; width: 240cqw; height: 260cqw; }
+.lns-lyr.ph { left: -75.43cqw; top: -99.02cqw; mix-blend-mode: overlay; opacity: .34; }
+.lns-lyr > i { position: absolute; display: block; inset: 0; }
+.lns-lm { translate: calc((var(--mx, 50%) - 50%) * .03) calc((var(--my, 50%) - 50%) * .03); }
+.lns-fu { translate: calc((var(--mx, 50%) - 50%) * .015) calc((var(--my, 50%) - 50%) * .015); }
+.lns-fo { translate: calc((var(--mx, 50%) - 50%) * .07) calc((var(--my, 50%) - 50%) * .07); }
+.lns-cells { background: var(--lns-hex) 0 0 / var(--lns-tw) var(--lns-th) repeat; opacity: .5; }
+.lns-glint { -webkit-mask: var(--lns-mask) 0 0 / var(--lns-tw) var(--lns-th) repeat; mask: var(--lns-mask) 0 0 / var(--lns-tw) var(--lns-th) repeat; mix-blend-mode: screen; opacity: .425;
+  background: linear-gradient(115deg, transparent 38%, #fff8 46%, #ffd25a 50%, #fff8 54%, transparent 62%) calc(35% + var(--mx, 50%) * .3) 0 / 300% 100% repeat; }
+.lns-fu > i { background: var(--lns-fu) 0 0 / 100% 100% no-repeat; opacity: .3; }
+.lns-fo > i { background: var(--lns-fo) 0 0 / 100% 100% no-repeat; opacity: .4; }
+.vx-bg > .lns-sheen { inset: -10% -50%; translate: calc((var(--mx, 50%) - 50%) * 1.8) 0; will-change: transform; animation: lnsSweep 7s ease-in-out infinite; background: linear-gradient(115deg, transparent 40%, #fff6c8aa 50%, transparent 60%); }
+.vx-photo > .lns-tint { position: absolute; display: block; inset: 0; mix-blend-mode: color; opacity: .3; background: linear-gradient(160deg, #ffc43d, #fff2b0); }
+.vx-photo.lns-ph { box-shadow: inset 0 0 3cqw #ffc43d55; }
+.lns-flare { position: absolute; display: block; width: calc(3.4cqw * var(--s, 1)); aspect-ratio: 1; margin: calc(-1.7cqw * var(--s, 1)) 0 0 calc(-1.7cqw * var(--s, 1)); mix-blend-mode: screen; animation: lnsFlare 3.4s ease-in-out infinite;
+  background: linear-gradient(#fff0, #fff6cf, #fff0) 50% 50% / 13% 100% no-repeat, linear-gradient(90deg, #fff0, #fff6cf, #fff0) 50% 50% / 100% 13% no-repeat; filter: drop-shadow(0 0 .6cqw #fff6cf); }
+.vx-photo > .lns-flare, .vx-deco > .lns-flare { z-index: 3; }
+.lns-mote { position: absolute; display: block; width: calc(var(--d) * 1cqw); aspect-ratio: 1; border-radius: 50%; background: #fff3c4; box-shadow: 0 0 1cqw #ffd25a, 0 0 2cqw #ffb21f; opacity: 0; animation: lnsDust var(--t) ease-in-out infinite; }
+/* BARDZO mocna poświata (mocniejsza i większa niż w kamieniach szlachetnych): .a trzy warstwy złotego blasku, .b ciasna biała krawędź; pulsuje tylko przezroczystość */
+.vx-deco.lns-glow { z-index: 0; }
+.lns-glow > i { inset: 0; border-radius: 4.5% / 3.2%; animation: lnsGlow 3.6s ease-in-out infinite; }
+.lns-glow > i.a { box-shadow: 0 0 3cqw 1cqw #ffe9a0, 0 0 10cqw 3cqw #ffc43d, 0 0 26cqw 6cqw #ff9a1aaa, 0 0 50cqw 12cqw #ffb21f55; }
+.lns-glow > i.b { box-shadow: 0 0 1.2cqw .5cqw #fff6cf, inset 0 0 1.4cqw #fff6cf88; animation-direction: reverse; }
+.r-secret.v-lonsdaleite .sc-border { background: linear-gradient(135deg, #fff6c8, #ffc43d 30%, #fff2b0 50%, #d98a00 75%, #fff0b0); animation: none; }
+.r-secret.v-lonsdaleite { box-shadow: 0 6px 18px #000c, 0 0 26px #ffc43dcc, 0 0 60px #ff9a1a77; }
+.var-tag.vt-lonsdaleite, .ph.vt-lonsdaleite { background: linear-gradient(90deg, #6b4000, #ffc43d, #fff6c8, #ffc43d, #6b4000); background-size: 200% 100%; color: #3a2000; text-shadow: none; box-shadow: 0 0 .7em #ffc43daa; animation: rainbowSlide 4s linear infinite; }
+.pick.v-lonsdaleite { box-shadow: inset 0 0 0 2px #ffe9a8, 0 0 10px #ffc43d99, inset 0 -26px 26px -18px var(--rc); }
+.avv-lonsdaleite img { box-shadow: 0 0 0 2px #ffe9a8, 0 0 12px #ffc43d !important; }
+.vdot.vt-lonsdaleite { background: linear-gradient(90deg, #6b4000, #ffc43d); box-shadow: 0 0 6px #ffc43d; }
+.odd.odd-v.vt-lonsdaleite { border-left-color: #ffc43d; }
+.av-vname.vt-lonsdaleite { color: #ffc43d; }
+@media (prefers-reduced-motion: reduce) { .vx-bg > .lns-sheen, .lns-flare, .lns-mote, .lns-glow > i { animation: none; } .lns-glow > i, .lns-mote { opacity: 1; } .lns-mote { display: none; } }

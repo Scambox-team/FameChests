@@ -267,6 +267,27 @@
    "chance": 0.001,
    "mult": 30.0
   },
+  "prism": {
+   "name": "Pryzmat",
+   "chance": 0.0011,
+   "mult": 28.0,
+   "off": true,
+   "desc": "Tęczowa folia z ukośnymi, miękko rozmytymi pasami spektrum: kolory przesuwają się za przechyłem karty, po zdjęciu ślizga się smuga światła, a wokół karty świeci tęczowa poświata."
+  },
+  "antimatter": {
+   "name": "Antymateria",
+   "chance": 0.0012,
+   "mult": 26.0,
+   "off": true,
+   "desc": "Anty-złoto: szczotkowany metal w głębokim indygo z cyjanowymi refleksami, zimne światło przesuwające się za przechyłem i chłodna poświata wokół karty."
+  },
+  "lonsdaleite": {
+   "name": "Lonsdaleit",
+   "chance": 0.0007,
+   "mult": 40.0,
+   "off": true,
+   "desc": "Złoty kryształ z sześciokątną siecią na kilku warstwach, ciągłą na tle i na zdjęciu: bardzo delikatnie przesuwa się za przechyłem karty, a wokół lśni złoty pył i bardzo mocna poświata."
+  },
   "cheese": {
    "name": "Serowa",
    "chance": 0.02,
@@ -872,7 +893,7 @@
   "rzulty": {
    "name": "Rzulty",
    "chance": 0.000999803501417597,
-   "mult": 31.0,
+   "mult": 100.0,
    "exclusive": true,
    "cards": [
     "pl_secret"

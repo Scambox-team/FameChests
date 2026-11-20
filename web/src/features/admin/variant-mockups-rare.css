@@ -1,0 +1,138 @@
+/* LONSDALEIT (ln-): makiety ponad Negatywem (variant-mockups-rare.ts). „Złoty heks” z ruchem sieci sześciokątów za kursorem (--mx / --my)
+   i lekką aurą. Pryzmat i Antymateria są już w grze (cards2.css), więc tu ich nie ma. Karty mają klasę vmx (panele ze zmiennych --x-*). */
+
+/* Zmienne przechyłu są zarejestrowane, żeby dało się je animować: po zjechaniu kursorem światło i przechył wracają płynnie
+   (bez tego --mx skakało do 50%). Podczas ruchu kursora przejście jest krótkie, po zjechaniu długie. */
+@property --mx { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --my { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --rx { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+@property --ry { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+@property --rr-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.card.vm { transition: --mx 1s cubic-bezier(.2, .7, .2, 1), --my 1s cubic-bezier(.2, .7, .2, 1), --rx .8s ease-out, --ry .8s ease-out, box-shadow .2s; }
+.card.vm.tilting { transition: --mx .2s linear, --my .2s linear, --rx .12s linear, --ry .12s linear, box-shadow .2s; }
+
+@keyframes rrAura { 50% { opacity: .65; } }
+@keyframes rrSweep { 0%, 100% { transform: translateX(-16%); } 50% { transform: translateX(16%); } }
+@keyframes rrFlare { 0%, 100% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(90deg); } }
+@keyframes rrA { to { --rr-a: 360deg; } }
+@keyframes rrGlow { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
+@keyframes lnTw { 50% { fill-opacity: calc(var(--o) * var(--k, 1) * 2.4 + .1 * var(--k, 1)); } }
+
+/* poświata (lekka): element wielkości karty z samym box-shadow; kolory --a1..--a3 ustawia karta */
+.rr-aura i { inset: 0; border-radius: 4.5% / 3.2%; box-shadow: 0 0 2cqw var(--a1), 0 0 6cqw var(--a2), 0 0 12cqw var(--a3, #0000); animation: rrAura 5s ease-in-out infinite; }
+/* błysk: gwiazdka czteroramienna */
+.rr-flare { position: absolute; display: block; width: calc(3.4cqw * var(--s, 1)); aspect-ratio: 1; margin: calc(-1.7cqw * var(--s, 1)) 0 0 calc(-1.7cqw * var(--s, 1)); animation: rrFlare 3.4s ease-in-out infinite; mix-blend-mode: screen;
+  background: linear-gradient(#fff0, var(--fl, #fff), #fff0) 50% 50% / 13% 100% no-repeat, linear-gradient(90deg, #fff0, var(--fl, #fff), #fff0) 50% 50% / 100% 13% no-repeat; filter: drop-shadow(0 0 .6cqw var(--fl, #fff)); }
+.vm-photo > .rr-flare, .vm-deco > .rr-flare { z-index: 3; }
+
+/* ================================================================ LONSDALEIT: złoty heks */
+.card.vm-lonsdaleite { --fl: #fff6cf; --a1: #ffc43d88; --a2: #ff9a1a55; --a3: #fff0a033;
+  --x-frame: linear-gradient(135deg, #fff6c8, #ffc43d 30%, #fff2b0 50%, #d98a00 75%, #fff0b0); --x-in: linear-gradient(160deg, #5a3200, #b87400 45%, #6b4000);
+  --x-panel: linear-gradient(180deg, #ffc43d33, #2a1800dd 62%); --x-line: .25cqw solid #ffe29a77; --x-rad: .5cqw; --x-ink: #fff3d6; --x-name: #fff; --x-name-sh: 0 0 1.6cqw #ffb21f;
+  --x-panel-sh: inset 0 .3cqw 0 #fff3c466, inset 0 -.3cqw 0 #00000066, 0 0 1.4cqw #ffb21f77;
+  --x-ph-line: .45cqw solid #ffe9a8; --x-ph-rad: .3cqw; --x-ph-sh: 0 0 3cqw #ffc43dcc; --x-ph-f: sepia(.35) saturate(1.3) brightness(1.05); }
+.card.vm-lonsdaleite .card-sub { background: linear-gradient(90deg, #6b4000e0, #ffc43d77 50%, #6b4000e0); }
+.ln-sheen { inset: -10% -50%; translate: calc((var(--mx) - 50%) * 1.8) 0; animation: rrSweep 7s ease-in-out infinite; background: linear-gradient(115deg, transparent 40%, #fff6c8aa 50%, transparent 60%); }
+.ln-tint { inset: 0; mix-blend-mode: color; opacity: .3; background: linear-gradient(160deg, #ffc43d, #fff2b0); }
+.ln-photo { box-shadow: inset 0 0 3cqw #ffc43d55; }
+
+/* sieć sześciokątów: warstwa większa od karty, przesuwana za kursorem (translate w % własnego rozmiaru), w środku kafel SVG (komórki)
+   i ruchome światło maskowane tym samym kafelkiem, więc rozbłyskują tylko komórki */
+.ln-shift { inset: -35%; --tw: 72.75cqw; --th: 63cqw; }
+.ln-shift > i { position: absolute; display: block; inset: 0; }
+.ln-shift.back { translate: calc((var(--mx) - 50%) * .22) calc((var(--my) - 50%) * .22); }
+.ln-shift.front { translate: calc((var(--mx) - 50%) * .34) calc((var(--my) - 50%) * .34); opacity: .55; }
+.ln-cells { background: var(--hex) 0 0 / var(--tw) var(--th) repeat; }
+.ln-glint { -webkit-mask: var(--hexm) 0 0 / var(--tw) var(--th) repeat; mask: var(--hexm) 0 0 / var(--tw) var(--th) repeat; mix-blend-mode: screen; }
+.ln-glint.band { background: linear-gradient(115deg, transparent 38%, #fff8 46%, #ffd25a 50%, #fff8 54%, transparent 62%); background-size: 300% 100%; background-position: var(--mx) 0; opacity: .85; }
+.ln-glint.spot { background: radial-gradient(circle at calc(20.6% + var(--mx) * .588) calc(20.6% + var(--my) * .588), #fff 0, #ffe9a0aa 12%, #ffc43d44 24%, transparent 42%); }
+.vm-photo > .ln-shift { mix-blend-mode: overlay; opacity: .55; }
+
+/* MOCNA poświata (mocniejsza i większa niż w kamieniach szlachetnych, które mają 26px + 60px): .a = trzy warstwy złotego blasku, .b = ciasna,
+   biała krawędź; pulsuje tylko przezroczystość */
+.rr-aura.strong i.a { box-shadow: 0 0 3cqw 1cqw #ffe9a0, 0 0 10cqw 3cqw #ffc43d, 0 0 26cqw 6cqw #ff9a1aaa, 0 0 50cqw 12cqw #ffb21f55; animation: rrGlow 3.6s ease-in-out infinite; }
+.rr-aura.strong i.b { box-shadow: 0 0 1.2cqw .5cqw #fff6cf, inset 0 0 1.4cqw #fff6cf88; animation: rrGlow 3.6s ease-in-out infinite reverse; }
+
+/* stopnie widoczności heksagonów: --k mnoży przezroczystość fasetek, obrysów i światła w komórkach (100% = pierwotne, nigdy więcej) */
+.card.lnk100 { --k: 1; } .card.lnk70 { --k: .7; } .card.lnk45 { --k: .45; } .card.lnk25 { --k: .25; }
+/* fasety statyczne (SVG) */
+.ln-svg .lnc { stroke: var(--ls, #fff3c4); stroke-width: .2; stroke-opacity: calc(.6 * var(--k, 1)); }
+.lnc.hl { fill: #fff; fill-opacity: calc(var(--o) * var(--k, 1)); }
+.lnc.hd { fill: #000; fill-opacity: calc(var(--o) * .9 * var(--k, 1)); }
+.lnc.hm { fill: #ffd25a; fill-opacity: calc(var(--o) * var(--k, 1)); }
+.lnc.tw { animation: lnTw 3.6s ease-in-out infinite; }
+.vm-photo > .ln-svg { mix-blend-mode: overlay; opacity: .6; }
+.vm-photo .lnc.hd { fill-opacity: calc(var(--o) * .35 * var(--k, 1)); }
+.vm-photo .lnc.hl { fill-opacity: calc(var(--o) * .8 * var(--k, 1)); }
+/* sieć ruchoma: widoczność komórek i światła w nich też z --k */
+.ln-cells { opacity: var(--k, 1); }
+.ln-glint.band { opacity: calc(.85 * var(--k, 1)); }
+
+/* ================================================================ dodatkowe efekty (makiety 2-8) */
+/* 2. bardzo delikatny ruch sieci: przesunięcie i pas światła kilka razy słabsze niż w ruchomych wersjach z poprzedniej rundy */
+.card.lnsub .ln-shift.back { translate: calc((var(--mx) - 50%) * .035) calc((var(--my) - 50%) * .035); }
+.card.lnsub .ln-shift.front { translate: calc((var(--mx) - 50%) * .07) calc((var(--my) - 50%) * .07); }
+.card.lnsub .ln-glint.band { background-position: calc(35% + var(--mx) * .3) 0; }
+
+/* 3. pył */
+@keyframes lnDust { 0% { opacity: 0; transform: translateY(2cqw) scale(.5); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-9cqw) scale(1); } }
+.ln-mote { position: absolute; display: block; width: calc(var(--d) * 1cqw); aspect-ratio: 1; border-radius: 50%; background: #fff3c4; box-shadow: 0 0 1cqw #ffd25a, 0 0 2cqw #ffb21f; opacity: 0; animation: lnDust var(--t) ease-in-out infinite; }
+
+/* 4. światło na ramce: cienki pierścień wzdłuż krawędzi karty, po którym biegnie jasny stożek */
+.vm-deco.ln-edge > i { inset: 0; border: 1.3cqw solid transparent; border-radius: 4.5% / 3.2%; filter: drop-shadow(0 0 .8cqw #fff6cf);
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); }
+.ln-edge .e1 { animation: rrA 5s linear infinite; background: conic-gradient(from var(--rr-a), transparent 0 62%, #ffe9a066 80%, #fff 98%, transparent 100%) border-box; }
+.ln-edge .e2 { animation: rrA 8s linear infinite reverse; opacity: .7; background: conic-gradient(from var(--rr-a), transparent 0 75%, #fff6cf88 92%, #fff 99%, transparent 100%) border-box; }
+
+/* 5. scyntylacja: komórki rozbłyskują na biało */
+@keyframes lnFlash { 0%, 62%, 100% { fill-opacity: 0; } 70% { fill-opacity: .85; } 80% { fill-opacity: 0; } }
+.ln-svg .lnc-flash { fill: #fff; fill-opacity: 0; stroke: #fff; stroke-opacity: .0; animation: lnFlash 4s ease-in-out infinite; }
+
+/* 6. promienie za kartą: pierścień poza kartą (maska exclude), w nim obracające się miękkie promienie zanikające z odległością */
+.vm-deco.ln-rays { inset: -26cqw; padding: 26cqw; box-sizing: border-box;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.ln-rays > i { inset: 0; mix-blend-mode: screen; animation: rrA 90s linear infinite;
+  background: repeating-conic-gradient(from var(--rr-a) at 50% 50%, #ffe9a0cc 0deg, #ffe9a000 6deg, #ffe9a000 14deg, #ffe9a0cc 20deg);
+  -webkit-mask: radial-gradient(closest-side, #000 62%, transparent 100%); mask: radial-gradient(closest-side, #000 62%, transparent 100%); }
+
+/* 7. przebiegający połysk */
+@keyframes lnGloss { 0% { transform: translateX(-130%) skewX(-18deg); } 55%, 100% { transform: translateX(330%) skewX(-18deg); } }
+.vm-deco.ln-gloss { overflow: hidden; border-radius: 4.5% / 3.2%; }
+.ln-gloss > i { inset: -10% auto -10% -30%; width: 22%; mix-blend-mode: screen; animation: lnGloss 6.5s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, #ffffff88, #ffe9a0cc 50%, #ffffff88, transparent); }
+.ln-gloss > i.g2 { width: 7%; opacity: .8; animation-delay: .22s; }
+.ln-gloss > i.g3 { width: 30%; opacity: .55; animation-delay: -.14s; background: linear-gradient(90deg, transparent, #ff9ad855, #ffe98a55, #8affc455, #8ad0ff55, transparent); }
+
+/* 8. orbitujące iskry: kropki jadą po prostokącie z zaokrąglonymi rogami tuż za krawędzią karty (offset-path: inset) */
+@keyframes lnOrbit { to { offset-distance: 100%; } }
+.vm-deco.ln-orbit > i { left: 0; top: 0; width: calc(var(--d) * 1cqw); aspect-ratio: 1; border-radius: 50%; background: #fff; opacity: var(--o);
+  box-shadow: 0 0 1.2cqw #ffe9a0, 0 0 2.6cqw #ffc43d; offset-path: inset(-2.4cqw round 6cqw); offset-rotate: 0deg; animation: lnOrbit 9s linear infinite; }
+.vm-photo > .ln-svg.scn { mix-blend-mode: screen; opacity: 1; }
+
+/* ================================================================ wersja 3: warstwy i ciągła siatka (wspólny układ współrzędnych karty) */
+.ln-shift.ln-frame { --u: 1cqw; inset: auto; left: calc(-70 * var(--u)); top: calc(-85 * var(--u)); width: calc(240 * var(--u)); height: calc(260 * var(--u)); }
+.ln-shift.ln-frame.ph { left: calc(-75.43 * var(--u)); top: calc(-99.02 * var(--u)); }
+.ln-frame .ln-cells { background-size: calc(var(--twn) * var(--u)) calc(var(--thn) * var(--u)); }
+.ln-frame .ln-glint { -webkit-mask-size: calc(var(--twn) * var(--u)) calc(var(--thn) * var(--u)); mask-size: calc(var(--twn) * var(--u)) calc(var(--thn) * var(--u)); }
+
+/* ================================================================ wersje 3-8: warstwy główna + fragmentaryczne (ciągła siatka) */
+.card.lnk65 { --k: .65; } .card.lnk60 { --k: .6; } .card.lnk55 { --k: .55; } .card.lnk50 { --k: .5; }
+.ln-frame.lm { translate: calc((var(--mx) - 50%) * .03) calc((var(--my) - 50%) * .03); }
+.ln-frame.fu { translate: calc((var(--mx) - 50%) * .015) calc((var(--my) - 50%) * .015); }
+.ln-frame.fu2 { translate: calc((var(--mx) - 50%) * .025) calc((var(--my) - 50%) * .025); }
+.ln-frame.fo { translate: calc((var(--mx) - 50%) * .07) calc((var(--my) - 50%) * .07); }
+.card.lnstat .ln-frame { translate: none; }
+.ln-frame.lm .ln-glint.band { background-position: calc(35% + var(--mx) * .3) 0; }
+.ln-frame > svg { opacity: 1; }
+.ln-frame.fu > svg, .ln-frame.fu2 > svg { opacity: var(--fu, .4); }
+.ln-frame.fo > svg { opacity: var(--fo, .5); }
+/* przezroczystość fragmentów (--fu pod, --fo nad główną) i warstw na zdjęciu (--pv) w czterech wariantach */
+.card.lnA { --fu: .45; --fo: .55; --pv: .55; }
+.card.lnB { --fu: .35; --fo: .4; --pv: .4; }
+.card.lnC { --fu: .3; --fo: .6; --pv: .5; }
+.card.lnD { --fu: .3; --fo: .35; --pv: .3; }
+.vm-photo > .ln-shift.ln-frame { opacity: var(--pv, .55); }
+.card.lnM1 { --fu: .3; --fo: .55; --pv: .46; }
+.card.lnM2 { --fu: .3; --fo: .5; --pv: .42; }
+.card.lnM3 { --fu: .3; --fo: .45; --pv: .38; }
+.card.lnM4 { --fu: .3; --fo: .4; --pv: .34; }

@@ -4,7 +4,7 @@ export const VARIANT_COLORS: Record<string, string[]> = {
       diamond: ["#e8fbff", "#9ff6ff", "#c9b8ff", "#ffffff"], emerald: ["#00c853", "#6dffb0", "#c6ffe0", "#ffffff"],
       ruby: ["#ff1744", "#ff8a9c", "#ffd0d8", "#ffffff"], amethyst: ["#9b3dff", "#c99bff", "#ecdcff", "#ffffff"],
       sapphire: ["#1c46d8", "#5a86ff", "#a8c0ff", "#ffffff"], blackdiamond: ["#0a0a0e", "#6a6a7c", "#c8c8d8", "#ffffff"], steel: ["#d2d9df", "#8c969f", "#3e464d"], clear: ["#ffffff", "#e0f7ff", "#bfefff"],
-      negative: ["#000000", "#ffffff", "#7a7a7a", "#00e5ff"], gold: ["#ffc531", "#fff3b0", "#fff"], holo: ["#9ff6ff", "#ff9ff3", "#fff"],
+      negative: ["#000000", "#ffffff", "#7a7a7a", "#00e5ff"], prism: ["#ff3b9a", "#ffb21f", "#f6ff4a", "#34ff8a", "#2ad8ff", "#7a5cff"], antimatter: ["#2ad8ff", "#1c46d8", "#bfe9ff", "#ffffff"], lonsdaleite: ["#ffc43d", "#fff6c8", "#d98a00", "#ffffff"], gold: ["#ffc531", "#fff3b0", "#fff"], holo: ["#9ff6ff", "#ff9ff3", "#fff"],
       silver: ["#e6ebf2", "#b8c2d0", "#ffffff"], platinum: ["#ffffff", "#e6ebff", "#c8cede", "#f1eeff"], bronze: ["#cd7f32", "#f0b27a", "#ffe0c0"], pearl: ["#ffffff", "#ffd1e4", "#d3fff1", "#d3e2ff"],
       pixel: ["#3a5bd0", "#ffffff", "#7dff5a", "#ffe13b"], glass: ["#2f7fc0", "#3fa0a0", "#6a5aa8", "#e8a33a", "#ffffff"],
       neon: ["#ff3df0", "#3de0ff", "#ffe63c", "#ffffff"], thermal: ["#2a0a6a", "#d8303a", "#f07a1a", "#ffd23f", "#fffbe8"],

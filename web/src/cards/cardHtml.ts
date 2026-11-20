@@ -1,6 +1,7 @@
 // @ts-nocheck -- kod rysujący na canvasie i w DOM-ie, przeniesiony bez zmian; typy dochodzą przy dalszym porządkowaniu
 // Rysowanie kart. To wierne przeniesienie starego cardHTML: warianty są gotowym HTML-em, a ich wygląd daje cards/css.
 // Komponent <Card> wstawia ten HTML; animacje i warstwy wariantów zostają w CSS, tak jak były.
+import { ensureLonsdaleitStyle, lonsdaleitLayers, lonsdaleitFlares, lonsdaleitDust } from './lonsdaleit';
 import { S } from '../game/store';
 import {
   GEMS, abilitiesOf, baseVariant, cardValue, crateOf, flagUrl, imgUrl, isBlank, isSpecial, person, rand, rarityIdx, rarityShare,
@@ -11,7 +12,7 @@ import { drawingVersions } from './drawingVersions';
 import { use3D } from '../three/support';
 import { warmFont } from '../styles/theme';
 
-const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", banknote50: "💵 50 ZŁ", banknote100: "💵 100 ZŁ", banknote200: "💵 200 ZŁ", banknote500: "💵 500 ZŁ", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", rzulty: "💛 RZULTY" };
+const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", banknote50: "💵 50 ZŁ", banknote100: "💵 100 ZŁ", banknote200: "💵 200 ZŁ", banknote500: "💵 500 ZŁ", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", prism: "◇ PRYZMAT", antimatter: "⚛ ANTYMATERIA", lonsdaleite: "⬢ LONSDALEIT", rzulty: "💛 RZULTY" };
 
 const drawUrl = (uid, layer) => `/drawing/${uid}/${layer}?v=${drawingVersions[uid] || 0}`;
 const drawingBG = (variant, uid) => isBlank(variant) && +uid > 0 ? `<img class="dr-flat" src="${drawUrl(uid, "flat")}" alt="" loading="lazy" draggable="false">` : "";
@@ -1013,6 +1014,9 @@ let hiDecoCache = null;   // ten sam rysunek na każdej karcie
 const hiDeco = () => hiDecoCache ||= hiFrond("f1", -40) + hiFrond("f2", 130) + hiFrond("f3", 40) +
   vxSvg(hiFlower(2, 86, 5, "#ff3d7f", 20) + hiFlower(62, 46, 4.6, "#ffcf3d", 60) + hiPlumeria(7, 88, 3.2, 10), "0 0 63 88", "hi-flowers");
 export const VX_BG = {
+  lonsdaleite: () => { ensureLonsdaleitStyle(); return `${lonsdaleitLayers('bg')}<i class="lns-sheen"></i>`; },
+  prism: () => '<i class="pzm-a"></i><i class="pzm-b"></i>',
+  antimatter: () => '<i class="anm-brush"></i><i class="anm-sheen"></i><i class="anm-sheen b"></i>',
   // Nocne niebo: Droga Mleczna i trzy warstwy mrugających gwiazd (obrazki w CSS), kilka jasnych gwiazd, spadająca gwiazda za zdjęciem
   nightsky: () => `<i class="nsk-milky"></i><i class="nsk-stars a"></i><i class="nsk-stars b"></i>${Array.from({ length: 5 }, () => `<i class="nsk-bright" style="left:${vxN(4, 96)}%;top:${vxN(3, 70)}%;--s:${vxN(.6, 1.2, 2)};animation-duration:${vxN(1.2, 2.4, 1)}s;animation-delay:-${vxN(0, 2, 1)}s"></i>`).join("")}`,
   jelly: () => '<i class="jly-glow a"></i><i class="jly-glow b"></i>',
@@ -1069,6 +1073,9 @@ export const VX_BG = {
   cheese: () => `${chHoles(15)}<i class="ch-mold"></i>`,
 };
 export const VX_PHOTO = {
+  lonsdaleite: () => `<div class="vx-photo lns-ph">${lonsdaleitLayers('ph')}<i class="lns-tint"></i>${lonsdaleitFlares(6, 1.2)}</div>`,
+  prism: () => `<i class="vx-photo pzm-tint"></i><div class="vx-photo">${Array.from({ length: 8 }, () => `<i class="pzm-flare" style="left:${vxN(2, 98)}%;top:${vxN(2, 98)}%;--s:${vxN(.6, 1.4, 2)};animation-delay:-${vxN(0, 6, 1)}s"></i>`).join("")}</div>`,
+  antimatter: '<i class="vx-photo anm-glow"></i>',
   jelly: '<i class="vx-photo jly-shine"></i>',
   crystal: '<i class="vx-photo cry-ice"></i><i class="vx-photo cry-facet"></i><i class="vx-photo cry-glow"></i><i class="vx-photo cry-shim"></i>',
   ice: '<i class="vx-photo ic-light"></i><i class="vx-photo ic-dark"></i><i class="vx-photo ic-glare"></i>',
@@ -1108,6 +1115,9 @@ export const VX_PHOTO = {
   fade: '<i class="vx-photo fd-tint"></i>',
 };
 export const VX_DECO = {
+  lonsdaleite: () => `<div class="vx-deco lns-glow"><i class="a"></i><i class="b"></i></div><div class="vx-deco">${lonsdaleitFlares(4, 1.5)}</div><div class="vx-deco">${lonsdaleitDust(20)}</div>`,
+  prism: () => '<div class="vx-deco pzm-aura"><i class="a"></i><i class="b"></i><i class="c"></i></div><div class="vx-deco vx-clip"><i class="pzm-glare"></i></div>',
+  antimatter: () => '<div class="vx-deco anm-aura"><i></i></div>',
   // Día de Muertos: płatki i konfetti, motyle, zygzak, chorągiewki, pas aksamitek
   tarot: () => `<div class="vx-deco">${trCorners()}<i class="tr-frame"></i></div>`,
   retroos: () => `<div class="vx-deco vx-clip">${w9Dialogs()}</div>`,
