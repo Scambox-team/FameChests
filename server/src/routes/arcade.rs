@@ -2,7 +2,7 @@
 //! (Gry Super Turbo). Tak jak Snake i Super Turbo Run: przy starcie serwer losuje ziarno (bilet `TICKETS` w pamięci procesu,
 //! jednorazowy), po grze dostaje tylko zapis klawiszy / strzałów i sam ODTWARZA grę (`invaders_sim`, `aimpulse_sim`), licząc
 //! punkty. Zapis dłuższy niż czas, który naprawdę minął od startu (zegar serwera, tolerancja 10% + 3 s), nie daje nic.
-//! Nagroda: `per` gr za każde `unit` punktów od `min` punktów, najwyżej `perGame` za grę i `daily` na dobę (klucze
+//! Nagroda: `per` gr za każde `unit` punktów od `min` punktów, bez limitu na grę i na dobę (klucze
 //! `<gra>_reward_*` w `state`, panel admina -> Gry). Zarobek dnia gracza: `user_state` `<gra>_day` / `<gra>_today`.
 
 use std::collections::HashMap;
@@ -52,10 +52,10 @@ impl Arcade {
     }
 
     /// (pole formularza, wartość domyślna, największa dozwolona); `unit` = za ile punktów płacimy `per` gr
-    fn fields(self) -> [(&'static str, i64, i64); 5] {
+    fn fields(self) -> [(&'static str, i64, i64); 3] {
         match self {
-            Arcade::Invaders => [("per", 10, 1000), ("unit", 100, 100_000), ("min", 200, 1_000_000), ("perGame", 300, 100_000), ("daily", 900, 1_000_000)],
-            Arcade::Aimpulse => [("per", 3, 1000), ("unit", 1000, 1_000_000), ("min", 5000, 10_000_000), ("perGame", 300, 100_000), ("daily", 900, 1_000_000)],
+            Arcade::Invaders => [("per", 10, 1000), ("unit", 100, 100_000), ("min", 200, 1_000_000)],
+            Arcade::Aimpulse => [("per", 3, 1000), ("unit", 1000, 1_000_000), ("min", 5000, 10_000_000)],
         }
     }
 
@@ -82,8 +82,6 @@ struct Reward {
     per: i64,
     unit: i64,
     min: i64,
-    per_game: i64,
-    daily: i64,
 }
 
 fn setting_key(game: Arcade, field: &str) -> String {
@@ -91,11 +89,11 @@ fn setting_key(game: Arcade, field: &str) -> String {
 }
 
 async fn reward_cfg(c: &mut Conn, game: Arcade) -> sqlx::Result<Reward> {
-    let mut v = [0i64; 5];
+    let mut v = [0i64; 3];
     for (i, (field, default, _)) in game.fields().iter().enumerate() {
         v[i] = setting(c, &setting_key(game, field), *default).await?;
     }
-    Ok(Reward { per: v[0], unit: v[1].max(1), min: v[2], per_game: v[3], daily: v[4] })
+    Ok(Reward { per: v[0], unit: v[1].max(1), min: v[2] })
 }
 
 async fn earned_today(c: &mut Conn, uid: i64, game: Arcade) -> sqlx::Result<i64> {
@@ -104,12 +102,12 @@ async fn earned_today(c: &mut Conn, uid: i64, game: Arcade) -> sqlx::Result<i64>
     Ok(if st.get(&day).copied() == Some(today()) { st.get(&sum).copied().unwrap_or(0) } else { 0 })
 }
 
-/// Nagroda za wynik (bez limitu dnia)
+/// Nagroda za wynik (bez limitu na grę i na dobę; wynik i tak jest ucinany do `max_score`)
 fn reward_for(r: &Reward, score: i64) -> i64 {
     if r.per <= 0 || score < r.min.max(1) {
         return 0;
     }
-    (score / r.unit * r.per).min(r.per_game)
+    score / r.unit * r.per
 }
 
 /// Czy zapis tylu kroków gry (po 1/60 s) mógł powstać w tym czasie
@@ -118,7 +116,7 @@ fn plausible(ticks: u64, elapsed_secs: f64) -> bool {
 }
 
 fn cfg_json(r: &Reward, today: i64) -> serde_json::Value {
-    json!({"per": r.per, "unit": r.unit, "min": r.min, "perGame": r.per_game, "daily": r.daily, "today": today})
+    json!({"per": r.per, "unit": r.unit, "min": r.min, "today": today})
 }
 
 fn game_of(name: &str) -> Res<Arcade> {
@@ -223,18 +221,17 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
     super::game_rankings::record_score(&mut tx, me.id, game.key(), score).await?;
     let r = reward_cfg(&mut tx, game).await?;
     let earned = earned_today(&mut tx, me.id, game).await?;
-    let base = reward_for(&r, score);
-    let reward = base.min((r.daily - earned).max(0));
+    let reward = reward_for(&r, score);
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
         set_state(&mut tx, me.id, &format!("{}_day", game.key()), today()).await?;
         set_state(&mut tx, me.id, &format!("{}_today", game.key()), earned + reward).await?;
     }
-    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
-    ok(json!({"score": score, "game": p.extra, "reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "state": state}))
+    ok(json!({"score": score, "game": p.extra, "reward": reward, "today": earned + reward, "state": state}))
 }
 
 /// Ustawienia nagrody dla panelu admina
@@ -245,7 +242,7 @@ pub async fn admin_arcade(State(st): State<AppState>, Admin(_me): Admin, Path(na
     ok(json!({"reward": cfg_json(&r, 0)}))
 }
 
-/// Panel admina (JSON): pola nagrody (`per`, `unit`, `min`, `perGame`, `daily`); odpowiedź = aktualne ustawienia
+/// Panel admina (JSON): pola nagrody (`per`, `unit`, `min`); odpowiedź = aktualne ustawienia
 pub async fn admin_arcade_save(
     State(st): State<AppState>,
     Admin(me): Admin,
@@ -279,12 +276,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reward_grows_with_score_and_is_capped() {
-        let r = Reward { per: 10, unit: 100, min: 200, per_game: 300, daily: 900 };
+    fn reward_grows_with_score() {
+        let r = Reward { per: 10, unit: 100, min: 200 };
         assert_eq!(reward_for(&r, 199), 0);
         assert_eq!(reward_for(&r, 250), 20);
         assert_eq!(reward_for(&r, 1_000), 100);
-        assert_eq!(reward_for(&r, 100_000), 300);
+        assert_eq!(reward_for(&r, 100_000), 10_000);   // bez limitu na grę
         assert_eq!(reward_for(&Reward { per: 0, ..r }, 1_000), 0);
     }
 

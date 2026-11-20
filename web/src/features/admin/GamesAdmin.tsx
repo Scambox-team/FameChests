@@ -6,17 +6,17 @@ import s from './GamesAdmin.module.css';
 
 // Zakładka panelu admina „Gry”: wygląd Snake'a (routes/snake.rs) - kolor węża i tła, obrazki PNG; nagrody Snake'a, Super Turbo Run,
 // AIMPULSE i Obrony Orbity (routes/arcade.rs).
-interface Reward { perApple: number; minScore: number; perGame: number; daily: number }
-interface RunReward { per100m: number; minDist: number; perGame: number; daily: number }
+interface Reward { perApple: number; minScore: number }
+interface RunReward { per100m: number; minDist: number }
 const RUN_FIELDS: [keyof RunReward, string, string][] = [
-  ['per100m', 'Groszy za każde 100 m', 'gr'], ['minDist', 'Od ilu metrów', 'm'], ['perGame', 'Najwyżej za jedną grę', 'gr'], ['daily', 'Najwyżej na dzień (gracz)', 'gr'],
+  ['per100m', 'Groszy za każde 100 m', 'gr'], ['minDist', 'Od ilu metrów', 'm'],
 ];
 interface Look {
   color: string; background: string; defaults: { color: string; background: string }; images: Record<string, string | null>;
   sounds: { id: string; url: string }[]; maxSounds: number; reward: Reward;
 }
 const REWARD_FIELDS: [keyof Reward, string, string][] = [
-  ['perApple', 'Groszy za jabłko', 'gr'], ['minScore', 'Od ilu jabłek', 'jabłek'], ['perGame', 'Najwyżej za jedną grę', 'gr'], ['daily', 'Najwyżej na dzień (gracz)', 'gr'],
+  ['perApple', 'Groszy za jabłko', 'gr'], ['minScore', 'Od ilu jabłek', 'jabłek'],
 ];
 const SLOTS: [string, string, string][] = [
   ['head', 'Głowa węża', 'Patrzy w prawo, gra obraca ją w stronę ruchu. Najlepiej kwadrat z przezroczystym tłem.'],
@@ -25,9 +25,9 @@ const SLOTS: [string, string, string][] = [
   ['bg', 'Tło planszy', 'Kwadratowa plansza, obrazek wypełnia ją całą (przycięty jak tapeta). Pod nim kolor tła.'],
 ];
 
-interface ArcadeReward { per: number; unit: number; min: number; perGame: number; daily: number }
+interface ArcadeReward { per: number; unit: number; min: number }
 const ARCADE_FIELDS: [keyof ArcadeReward, string, string][] = [
-  ['per', 'Groszy', 'gr'], ['unit', 'Za każde', 'pkt'], ['min', 'Od ilu punktów', 'pkt'], ['perGame', 'Najwyżej za jedną grę', 'gr'], ['daily', 'Najwyżej na dzień (gracz)', 'gr'],
+  ['per', 'Groszy', 'gr'], ['unit', 'Za każde', 'pkt'], ['min', 'Od ilu punktów', 'pkt'],
 ];
 
 /** Nagroda w groszach za punkty w grze, którą serwer odtwarza i sam liczy (routes/arcade.rs): Obrona Orbity, AIMPULSE */
@@ -43,11 +43,11 @@ function ArcadeRewardPanel({ game, title, text, example }: { game: string; title
     setBusy(false);
   };
   const n = (k: string) => +(v[k] || 0);
-  const ex = example < n('min') ? 0 : Math.min(Math.floor(example / Math.max(1, n('unit'))) * n('per'), n('perGame'));
+  const ex = example < n('min') ? 0 : Math.floor(example / Math.max(1, n('unit'))) * n('per');
   return (
     <div className="panel">
       <h3>{title}: nagroda w groszach</h3>
-      <p className="muted small">{text} Punktów z przeglądarki serwer nie przyjmuje: odtwarza grę z zapisu i sam je liczy, a grę krótszą niż jej zapis odrzuca. 0 groszy albo 0 na dzień = bez nagród.</p>
+      <p className="muted small">{text} Punktów z przeglądarki serwer nie przyjmuje: odtwarza grę z zapisu i sam je liczy, a grę krótszą niż jej zapis odrzuca. Bez limitu na grę i na dzień; 0 groszy = bez nagród.</p>
       <div className={s.reward}>
         {ARCADE_FIELDS.map(([k, label, unit]) => (
           <label key={k}>{label}
@@ -171,9 +171,9 @@ export default function GamesAdmin() {
       </div>
       <div className="panel">
         <h3>Snake: nagroda w groszach</h3>
-        <p className="muted small">Po skończonej grze gracz dostaje grosze za jabłka: od podanej liczby jabłek, z limitem na jedną grę i na dzień.
-          Wynik liczy przeglądarka, więc serwer odrzuca wyniki niemożliwe w czasie gry, a limit dzienny ogranicza ewentualne oszustwa.
-          0 groszy za jabłko albo 0 na dzień = bez nagród.</p>
+        <p className="muted small">Po skończonej grze gracz dostaje grosze za jabłka od podanej liczby jabłek, bez limitu na grę i na dzień.
+          Wynik liczy serwer: odtwarza grę z zapisu ruchów i odrzuca zapis dłuższy niż czas, który naprawdę minął.
+          0 groszy za jabłko = bez nagród.</p>
         <div className={s.reward}>
           {REWARD_FIELDS.map(([k, label, unit]) => (
             <label key={k}>{label}
@@ -181,15 +181,15 @@ export default function GamesAdmin() {
             </label>
           ))}
         </div>
-        <p className="muted small">Przykład: {reward.perApple || 0} gr × 30 jabłek = {Math.min(+(reward.perApple || 0) * 30, +(reward.perGame || 0))} gr
+        <p className="muted small">Przykład: {reward.perApple || 0} gr × 30 jabłek = {+(reward.perApple || 0) * 30} gr
           {30 < +(reward.minScore || 0) ? ' (za mało jabłek - 0 gr)' : ''}.</p>
         <p className="muted small">Karty w wariancie Pikselowa za wynik w zwykłym Snake'u (2D) dostaje się od progów jabłek z game.json (<code>snake.cardTiers</code>), bez limitu kart na dobę. Snake 3D (Super Turbo) daje zamiast Pikselowej kartę RGB.</p>
         <div className={s.btns}><Button kind="hue" disabled={busy} onClick={saveReward}>Zapisz nagrodę</Button></div>
       </div>
       <div className="panel">
         <h3>Gry Super Turbo: nagroda w groszach i karty RGB</h3>
-        <p className="muted small">Po skończonym biegu gracz dostaje grosze za przebiegnięty dystans: od podanej liczby metrów, z limitem na jedną grę i na dzień. Serwer
-          odrzuca dystans niemożliwy w czasie od startu gry. 0 groszy za 100 m albo 0 na dzień = bez nagród. Pola grosza dotyczą Super Turbo Run; Snake 3D płaci wg ustawień Snake'a. Za wysoki wynik (Run: dystans, Snake 3D: jabłka) wypada karta w wariancie Gamingowa RGB, progi w game.json (<code>turbo.runTiers</code> i <code>turbo.snakeTiers</code>), bez limitu kart na dobę.</p>
+        <p className="muted small">Po skończonym biegu gracz dostaje grosze za przebiegnięty dystans od podanej liczby metrów, bez limitu na grę i na dzień. Serwer
+          odrzuca dystans niemożliwy w czasie od startu gry. 0 groszy za 100 m = bez nagród. Pola grosza dotyczą Super Turbo Run; Snake 3D płaci wg ustawień Snake'a. Za wysoki wynik (Run: dystans, Snake 3D: jabłka) wypada karta w wariancie Gamingowa RGB, progi w game.json (<code>turbo.runTiers</code> i <code>turbo.snakeTiers</code>), bez limitu kart na dobę.</p>
         <div className={s.reward}>
           {RUN_FIELDS.map(([k, label, unit]) => (
             <label key={k}>{label}
@@ -197,7 +197,7 @@ export default function GamesAdmin() {
             </label>
           ))}
         </div>
-        <p className="muted small">Przykład: 1000 m = {Math.min(Math.floor(1000 * +(run.per100m || 0) / 100), +(run.perGame || 0))} gr{1000 < +(run.minDist || 0) ? ' (za krótko - 0 gr)' : ''}.</p>
+        <p className="muted small">Przykład: 1000 m = {Math.floor(1000 * +(run.per100m || 0) / 100)} gr{1000 < +(run.minDist || 0) ? ' (za krótko - 0 gr)' : ''}.</p>
         <div className={s.btns}><Button kind="hue" disabled={busy} onClick={saveRun}>Zapisz nagrodę</Button></div>
       </div>
       <ArcadeRewardPanel game="aimpulse" title="Super Turbo AIMPULSE 3D" example={40000}

@@ -19,7 +19,7 @@ import './invaders.css';
 /** liczba punktów (fmt dopisuje grosze) */
 export const pts = (n: number) => n.toLocaleString('pl-PL');
 
-export interface ArcadeReward { per: number; unit: number; min: number; perGame: number; daily: number; today: number }
+export interface ArcadeReward { per: number; unit: number; min: number; today: number }
 
 const KEYS: Record<string, number> = { ArrowLeft: LEFT, ArrowRight: RIGHT, a: LEFT, d: RIGHT, A: LEFT, D: RIGHT, ' ': FIRE, ArrowUp: FIRE, w: FIRE, W: FIRE };
 
@@ -28,7 +28,7 @@ export function InvadersPage() {
   const game = useRef<InvadersGame | null>(null);
   const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start gry: po końcu prosimy o nagrodę
   const [hud, setHud] = useState<InvHud | null>(null);
-  const [won, setWon] = useState<{ reward: number; capped: boolean; score: number } | null>(null);
+  const [won, setWon] = useState<{ reward: number; score: number } | null>(null);
   const { data: look, refetch } = useQuery({ queryKey: ['invaders-reward'], queryFn: () => api<{ reward: ArcadeReward }>('/api/games/arcade/invaders'), staleTime: 60_000 });
 
   useEffect(() => {
@@ -43,9 +43,9 @@ export function InvadersPage() {
           // serwer odtwarza grę z ziaren i zapisu klawiszy (część zatwierdził już w trakcie gry), sam liczy punkty
           const rest = await live.rest(run.log);
           if (!rest) return toast('Obrona Orbity: połączenie z serwerem przerwane - ta gra jest bez nagrody', true);
-          const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/invaders/finish', { log: rest, ticks: run.ticks });
+          const r = await api<{ score: number; reward: number; state: any }>('/api/games/arcade/invaders/finish', { log: rest, ticks: run.ticks });
           applyState(r.state);
-          setWon({ reward: r.reward, capped: r.capped, score: r.score });
+          setWon({ reward: r.reward, score: r.score });
           if (r.reward > 0) { Sound.coin(1); toast(`Obrona Orbity: +${fmt(r.reward)}`); }
           refetch();
         } catch (e: any) { toast(e.message, true); }
@@ -109,8 +109,7 @@ export function InvadersPage() {
         {phase !== 'play' && (
           <div className="iv-over">
             {phase === 'over' && <><b>Koniec gry</b><span>Wynik: {hud!.score} · fala {hud!.wave}{hud!.record ? ' · nowy rekord!' : ''}</span>
-              {won && won.reward > 0 && <span className="iv-won">+{fmt(won.reward)}</span>}
-              {won?.capped && <span>Osiągnięto limit nagród</span>}</>}
+              {won && won.reward > 0 && <span className="iv-won">+{fmt(won.reward)}</span>}</>}
             {phase === 'pause' && <b>Pauza</b>}
             {phase === 'idle' && <><b>Obrona Orbity</b><span>Zatrzymaj flotę najeźdźców, zanim dotrze do linii obrony.</span></>}
             <Button kind="hue" onClick={phase === 'pause' ? () => game.current?.pause() : start}>
@@ -133,11 +132,11 @@ export function InvadersPage() {
             <Button onClick={() => { if (confirm('Zakończyć grę? Zdobyte punkty się liczą.')) game.current?.quit(); }}><Flag size={16} aria-hidden="true" /> Zakończ</Button>
           </div>
         )}
-        {rw && rw.per > 0 && rw.daily > 0 && (
+        {rw && rw.per > 0 && (
           <div className="iv-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>Nagroda: <b>{fmt(rw.per)}</b> {`za każde ${pts(rw.unit)} pkt od ${pts(rw.min)} pkt, najwyżej ${fmt(rw.perGame)} za grę`}<br />
-              <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+            <span>Nagroda: <b>{fmt(rw.per)}</b> {`za każde ${pts(rw.unit)} pkt od ${pts(rw.min)} pkt, bez limitu`}<br />
+              <small className="muted">{`Dziś zarobione: ${fmt(rw.today)}`}</small></span>
           </div>
         )}
         <GameRanking game="invaders" title="Ranking Obrony Orbity: punkty" refresh={won} />

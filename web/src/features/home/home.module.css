@@ -150,5 +150,10 @@ a.casino:hover .wheel i { animation-duration: 4s; }
 .qDots .qDotOn::before { width: 22px; background: #fff; }
 .qDots button:focus-visible { outline: 2px solid var(--hue); border-radius: 6px; }
 .questCtf { background: #070b08; }
+/* link do zakładki Questy w rogu karuzeli */
+.qAll { position: absolute; top: 10px; right: 10px; z-index: 5; display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px;
+  background: #000a; color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; }
+.qAll:hover { background: #000d; }
+.qAll:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
 @media (max-width: 600px) { .tile.quest { --pad: 18px; } }
 @media (prefers-reduced-motion: reduce) { .qTrack { transition: none; } }

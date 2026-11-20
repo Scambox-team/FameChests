@@ -1,6 +1,6 @@
 //! Szachy (zakładka Gry): partie z graczami i trening z botem. Serwer zna zasady i pilnuje zegara - przeglądarka tylko
 //! rysuje stan i wysyła ruchy. Stan partii to wiersz `chess_games` (ruchy w UCI po spacji), zegar rozliczamy przy każdym
-//! zapytaniu: czas gracza na ruchu liczy się od `turn_at`. Za wygraną z graczem: daily + skrzynka szachów (limit w game.json).
+//! zapytaniu: czas gracza na ruchu liczy się od `turn_at`. Za wygraną z graczem: daily + skrzynka szachów (bez limitu na dobę).
 
 use std::collections::BTreeMap;
 
@@ -120,7 +120,7 @@ fn earns_reward(bot: i32, plies: usize) -> bool {
     (bot == 0 || bot == TEST_BOT) && plies >= g().chess.min_plies
 }
 
-/// Koniec partii: wynik + nagroda dla zwycięzcy (tylko partia z człowiekiem, nie za krótka, w limicie na dobę)
+/// Koniec partii: wynik + nagroda dla zwycięzcy (tylko partia z człowiekiem, nie za krótka; bez limitu na dobę)
 async fn finish(c: &mut Conn, x: &mut Game, winner: Option<Color>, reason: &str) -> sqlx::Result<()> {
     x.status = "finished".into();
     x.reason = reason.into();
@@ -134,17 +134,10 @@ async fn finish(c: &mut Conn, x: &mut Game, winner: Option<Color>, reason: &str)
     x.winner_id = winner.and_then(|w| x.player(w));
     if let Some(uid) = x.winner_id.filter(|_| earns_reward(x.bot, x.moves().len())) {
         let cfg = &g().chess;
-        let won: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM chess_games WHERE winner_id = $1 AND bot = 0 AND rewarded = 1 AND updated_at > $2")
-            .bind(uid)
-            .bind(now() - 86400.0)
-            .fetch_one(&mut *c)
-            .await?;
-        if won < cfg.rewards_per_day || x.bot == TEST_BOT {
-            add_chests(&mut *c, uid, "money_daily", 1).await?;
-            let chest = if winner == Some(Color::White) { &cfg.crate_white } else { &cfg.crate_black };
-            add_chests(&mut *c, uid, chest, 1).await?;
-            x.rewarded = 1;
-        }
+        add_chests(&mut *c, uid, "money_daily", 1).await?;
+        let chest = if winner == Some(Color::White) { &cfg.crate_white } else { &cfg.crate_black };
+        add_chests(&mut *c, uid, chest, 1).await?;
+        x.rewarded = 1;
     }
     save(c, x).await
 }
@@ -319,7 +312,7 @@ pub async fn chess_lobby(State(st): State<AppState>, Me(me): Me) -> Res {
     }
     tx.commit().await?;
     ok(json!({"open": open, "active": active, "training": training, "history": history, "minutes": cfg.minutes,
-              "rewardsLeft": (cfg.rewards_per_day - rewarded).max(0), "rewardsPerDay": cfg.rewards_per_day, "minPlies": cfg.min_plies}))
+              "rewardsToday": rewarded, "minPlies": cfg.min_plies}))
 }
 
 #[derive(Deserialize, Default)]

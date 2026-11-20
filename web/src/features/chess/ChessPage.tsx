@@ -300,7 +300,7 @@ function Lobby({ onOpen }: { onOpen: (id: number) => void }) {
   return (
     <div className="ch-lobby">
       <PageHero icon={Crown} title="Szachy" lead={<>Prawdziwe szachy: roszady, bicie w przelocie, promocje, mat, pat i remisy. Za wygraną z graczem dostajesz <b>skrzynkę daily</b> i <b>skrzynkę w kolorze, którym grałeś</b>: kartę w wariancie Biała albo Czarna oraz skin do figury. Kolor jest losowany przy starcie. Partia musi trwać co najmniej {d.minPlies} półruchów.</>}
-        stats={[['Nagrody dziś', `${d.rewardsLeft} / ${d.rewardsPerDay}`]]} />
+        stats={[['Nagrody dziś', String(d.rewardsToday ?? 0)]]} />
       {d.active && !mine && <div className="panel ch-resume"><b>Masz trwającą partię</b><Button kind="hue" onClick={() => onOpen(d.active)}>Wróć do gry</Button></div>}
       <div className="ch-grid">
         <div className="panel">
@@ -318,7 +318,7 @@ function Lobby({ onOpen }: { onOpen: (id: number) => void }) {
           <p className="muted small">Bez zegara i bez nagród. Nowa partia zastępuje poprzednią.</p>
           <div className="ch-bots">{BOTS.map(([n, t]) => <Button key={n} onClick={() => start('/api/games/chess/create', { bot: n })}>{t}</Button>)}</div>
           {d.training && <Button onClick={() => onOpen(d.training)}>Dokończ trening</Button>}
-          {me?.isAdmin && <Button title="Admin: partia rozgrywa się sama i wygrywasz ją matem. Daje prawdziwą nagrodę, bez limitu na dobę." onClick={() => start('/api/games/chess/test')}>Partia testowa</Button>}
+          {me?.isAdmin && <Button title="Admin: partia rozgrywa się sama i wygrywasz ją matem. Daje prawdziwą nagrodę." onClick={() => start('/api/games/chess/test')}>Partia testowa</Button>}
         </div>
       </div>
       <SkinMenu onChange={() => redraw(n => n + 1)} />

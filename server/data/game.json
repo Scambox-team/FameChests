@@ -1219,7 +1219,6 @@
   ],
   "incrementMs": 2000,
   "openHours": 2,
-  "rewardsPerDay": 5,
   "minPlies": 10,
   "crateWhite": "szachy",
   "crateBlack": "szachy_czarne"

@@ -3,7 +3,7 @@
 //! - wygląd: kolor węża i tła (tabela `state`, klucze `snake_color` / `snake_bg` jako 0xRRGGBB), obrazki PNG (głowa, ciało,
 //!   jabłko, tło) w image_cache jako `__snake_<miejsce>.png`;
 //! - dźwięki zjedzenia jabłka (najwyżej `MAX_SOUNDS`, gra losuje jeden): `image_cache/__snake_snd_<id>.<mp3|ogg|wav>`;
-//! - nagroda w groszach za wynik: `per_apple` gr za jabłko od `min_score` jabłek, najwyżej `per_game` za grę i `daily`
+//! - nagroda w groszach za wynik: `per_apple` gr za jabłko od `min_score` jabłek, bez limitu na grę i na dobę
 //!   na dobę (klucze `snake_reward_*` w `state`). Wyniku z przeglądarki serwer NIE przyjmuje: przy starcie losuje ziarno gry
 //!   (bilet `TICKETS` w pamięci procesu, jednorazowy), po grze dostaje zapis skrętów i sam ODTWARZA grę (`snake_sim` dla
 //!   Snake 2D, `snake3d_sim` dla Super Turbo Snake 3D), licząc jabłka i najkrótszy możliwy czas gry; gra krótsza niż
@@ -46,8 +46,6 @@ pub const SOUND_PREFIX: &str = "__snake_snd_";
 const REWARD: &[(&str, &str, i64, i64)] = &[
     ("snake_reward_per_apple", "perApple", 6, 1000),
     ("snake_reward_min_score", "minScore", 5, 400),
-    ("snake_reward_per_game", "perGame", 300, 100_000),
-    ("snake_reward_daily", "daily", 900, 1_000_000),
 ];
 /// Bilet gry: ziarna wydawane odcinkami (`live.rs`) i to, czy gra daje karty (zwykły Snake 2D; Snake 3D kartę RGB)
 struct Ticket {
@@ -138,16 +136,14 @@ pub async fn snake_sound(State(st): State<AppState>, Me(_): Me, Path(id): Path<S
 struct Reward {
     per_apple: i64,
     min_score: i64,
-    per_game: i64,
-    daily: i64,
 }
 
 async fn reward_cfg(c: &mut Conn) -> sqlx::Result<Reward> {
-    let mut v = [0i64; 4];
+    let mut v = [0i64; 2];
     for (i, (key, _, default, _)) in REWARD.iter().enumerate() {
         v[i] = setting(c, key, *default).await?;
     }
-    Ok(Reward { per_apple: v[0], min_score: v[1], per_game: v[2], daily: v[3] })
+    Ok(Reward { per_apple: v[0], min_score: v[1] })
 }
 
 pub(super) fn today() -> i64 {
@@ -160,12 +156,12 @@ async fn earned_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
     Ok(if st.get("snake_day").copied() == Some(today()) { st.get("snake_today").copied().unwrap_or(0) } else { 0 })
 }
 
-/// Nagroda za wynik (bez limitu dnia)
+/// Nagroda za wynik (bez limitu na grę i na dobę)
 fn reward_for(r: &Reward, score: i64) -> i64 {
     if r.per_apple <= 0 || score < r.min_score.max(1) {
         return 0;
     }
-    (score * r.per_apple).min(r.per_game)
+    score * r.per_apple
 }
 
 /// Wygląd, dźwięki i nagroda (uid = zarobek gracza dziś)
@@ -195,7 +191,7 @@ async fn look(st: &AppState, uid: Option<i64>) -> Res<Value> {
         "images": images,
         "sounds": sounds,
         "maxSounds": MAX_SOUNDS,
-        "reward": {"perApple": r.per_apple, "minScore": r.min_score, "perGame": r.per_game, "daily": r.daily, "today": today,
+        "reward": {"perApple": r.per_apple, "minScore": r.min_score, "today": today,
                    "cardVariant": cfg.card_variant, "cardTiers": super::pinball::tiers_json(&cfg.card_tiers)},
         "turbo": {"cardVariant": g().turbo.card_variant, "cardTiers": super::pinball::tiers_json(&g().turbo.snake_tiers)},
     }))
@@ -313,8 +309,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     super::game_rankings::record_score(&mut tx, me.id, if turbo { "snake3d" } else { "snake" }, score).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
-    let base = reward_for(&r, score);
-    let reward = base.min((r.daily - earned).max(0));
+    let reward = reward_for(&r, score);
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
@@ -334,15 +329,13 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
             card = Some(json!({"id": item.id, "person": pid, "variant": cfg.card_variant, "name": p.name, "rarity": p.rarity}));
         }
     }
-    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
     ok(json!({
         "score": score,
         "reward": reward,
-        "capped": reward < base,          // limit dnia zabrał część nagrody
         "today": earned + reward,
-        "daily": r.daily,
         "card": card,
         "state": state,
     }))
@@ -352,7 +345,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
 
 /// Panel admina (multipart): kolory (`color`, `background` jako #rrggbb, `reset=1` = domyślne), obrazki PNG (pola head /
 /// body / apple / bg), `remove` = usuń obrazek, `sound` = nowy dźwięk, `removeSound` = id dźwięku do usunięcia,
-/// nagroda (`perApple`, `minScore`, `perGame`, `daily`)
+/// nagroda (`perApple`, `minScore`)
 pub async fn admin_snake_save(State(st): State<AppState>, Admin(me): Admin, mp: Multipart) -> Res {
     let form = Form::read(mp).await?;
     let mut done: Vec<String> = Vec::new();
@@ -449,10 +442,10 @@ mod tests {
         assert_eq!(sniff_audio(b"OggS\0\x02").map(|a| a.0), Some("ogg"));
         assert_eq!(sniff_audio(b"RIFF\0\0\0\0WAVEfmt ").map(|a| a.0), Some("wav"));
         assert_eq!(sniff_audio(b"\x89PNG\r\n\x1a\n"), None);
-        let r = Reward { per_apple: 2, min_score: 5, per_game: 100, daily: 300 };
+        let r = Reward { per_apple: 2, min_score: 5 };
         assert_eq!(reward_for(&r, 4), 0);
         assert_eq!(reward_for(&r, 5), 10);
-        assert_eq!(reward_for(&r, 80), 100);
+        assert_eq!(reward_for(&r, 80), 160);   // bez limitu na grę
         assert_eq!(reward_for(&Reward { per_apple: 0, ..r }, 50), 0);
     }
 }

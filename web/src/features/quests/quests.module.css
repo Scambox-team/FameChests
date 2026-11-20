@@ -1,4 +1,4 @@
-/* Zakładka Questy (QuestsPage.tsx), Skarbonka (Piggy.tsx) i kafelek na stronie startowej (QuestsTile.tsx) */
+/* Zakładka Questy (QuestsPage.tsx), Skarbonka (Piggy.tsx) i Skarbonka w karuzeli questów na stronie startowej (home/QuestTile.tsx) */
 .page { display: grid; gap: var(--gap); }
 
 /* ---------- Skarbonka */
@@ -89,13 +89,6 @@
 .flatBurst i:nth-child(3n) { background: #e5b94a; border-radius: 50%; width: 12px; height: 12px; }
 @keyframes shard { 0% { opacity: 1; } to { transform: rotate(var(--a)) translateX(var(--d)) translateY(60px); opacity: .9; } }
 
-/* ---------- kafelek na stronie startowej */
-.tile { grid-column: span 4; min-height: 460px;
-  background: radial-gradient(70% 55% at 50% 28%, color-mix(in srgb, #ff7aa8 20%, transparent), transparent 70%), linear-gradient(#17141a, #0f0d10); }
-.tileArt { position: absolute; inset: 0 0 auto; height: 38%; display: grid; place-items: center; z-index: -1; }
-.tilePig { width: 92px; height: 92px; color: #ff9cc0; filter: drop-shadow(0 10px 22px #ff7aa855); transition: transform .3s; }
-a.tile:hover .tilePig { transform: translateY(-6px) rotate(-6deg); }
-.tilePoster { width: 84px; transform: rotate(-3deg); filter: drop-shadow(0 10px 18px #000a); }
 
 @media (prefers-reduced-motion: reduce) {
   .full .hint { animation: none; }
@@ -107,12 +100,11 @@ a.tile:hover .tilePig { transform: translateY(-6px) rotate(-6deg); }
 .tileTitle { margin: 0; font: 800 26px/1.05 var(--display); letter-spacing: -.02em; }
 .qTile { }
 
-/* ---------- Skarbonka w kafelku na stronie startowej */
-.tilePiggy { padding-top: 8px; justify-content: flex-start; gap: 8px; }
-.tileStage { position: relative; flex: 1 1 auto; min-height: 250px; margin: 0 -22px; }
+/* ---------- Skarbonka jako slajd karuzeli questów na stronie startowej (home/QuestTile.tsx) */
+.questPiggy.questPiggy { background: radial-gradient(70% 55% at 50% 22%, color-mix(in srgb, #ff7aa8 20%, transparent), transparent 70%), linear-gradient(#17141a, #0f0d10); }
+.slideStage { position: relative; height: 250px; flex: none; margin: 0 calc(-1 * var(--pad)); }
 .compact { position: absolute; inset: 0; width: 100%; min-height: 0; background: none; }
 .compact .canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .compact .hint { bottom: 6px; font-size: 12px; }
 .fCoin { background: #e5b94a !important; border-radius: 50% !important; width: 12px !important; height: 12px !important; }
 .fNote { background: #5f8f55 !important; width: 20px !important; height: 10px !important; }
-@media (max-width: 1260px) { .tile { grid-column: span 12; } }

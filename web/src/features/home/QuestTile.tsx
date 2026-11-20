@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Crosshair, Timer, Trophy } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Crosshair, PiggyBank, Timer, Trophy } from 'lucide-react';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { crateOf, person, variantName } from '../../game/rules';
 import { useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
+import { PiggyStage, ShareBar, usePiggy, type PiggyQuest } from '../quests/Piggy';
+import qs from '../quests/quests.module.css';
 import { CtfDialog, CtfSlide } from './CtfQuest';
 import s from './home.module.css';
 
@@ -24,22 +27,38 @@ export function questTime(at: number) {
 }
 
 type Phase = 'pinned' | 'tearing' | 'torn';
+type Slide = 'wanted' | 'ctf' | 'piggy';
+const SLIDE_NAMES: Record<Slide, string> = { wanted: 'Wanted', ctf: 'Capture the flag', piggy: 'Skarbonka' };
+/** co ile karuzela sama przechodzi do następnego questa (ms) */
+const AUTO_MS = 8000;
 
-/** Questy na stronie startowej: list gończy (Wanted) i, gdy admin go włączył, zadanie CTF. Domyślnie widać Wanted,
- *  strzałki (albo przesunięcie palcem) przełączają na CTF. */
+/** Questy na stronie startowej: karuzela - list gończy (Wanted), zadanie CTF i wspólna Skarbonka (te, które admin włączył).
+ *  Domyślnie widać pierwszy z nich (Wanted); co `AUTO_MS` karuzela sama przechodzi dalej (stoi, gdy kursor myszy albo fokus z klawiatury
+ *  jest na kafelku i gdy otwarte jest okno CTF; ręczna zmiana i dotyk liczą czas od nowa); strzałki, kropki albo przesunięcie palcem przełączają. Żaden quest nie jest
+ *  „główny”: w zakładce Questy Skarbonka stoi na górze, tutaj jest jednym ze slajdów (i da się ją szturchać i rozbijać). */
 export function QuestTile() {
   const { quest, ctf } = useGame();
+  const { data } = usePiggy(10_000);
+  const piggy = data?.quest;
   const [idx, setIdx] = useState(0);
   const [open, setOpen] = useState(false);
   const touchX = useRef<number | null>(null);
-  const many = !!ctf;
-  const at = many ? idx : 0;
-  const go = (d: number) => setIdx(i => (i + d + 2) % 2);
-  const names = ['Wanted', 'Capture the flag'];
-  const other = names[(at + 1) % 2];
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const [touched, setTouched] = useState(0);
+  const slides: Slide[] = [...(quest || (!ctf && !piggy) ? ['wanted' as const] : []), ...(ctf ? ['ctf' as const] : []), ...(piggy ? ['piggy' as const] : [])];
+  const n = slides.length, at = Math.min(idx, n - 1), many = n > 1, cur = slides[at];
+  const go = (d: number) => setIdx(i => (Math.min(i, n - 1) + d + n) % n);
+  useEffect(() => {
+    if (!many || hover || focus || open) return;
+    const t = setTimeout(() => setIdx(i => (Math.min(i, n - 1) + 1) % n), AUTO_MS);
+    return () => clearTimeout(t);
+  }, [at, n, many, hover, focus, open, touched]);
   return (
-    <section className={`${s.tile} ${s.quest}${at === 1 ? ` ${s.questCtf}` : ''}`} aria-label="Questy"
-      onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+    <section className={`${s.tile} ${s.quest}${cur === 'ctf' ? ` ${s.questCtf}` : ''}${cur === 'piggy' ? ` ${qs.questPiggy}` : ''}`} aria-label="Questy"
+      onPointerEnter={e => { if (e.pointerType === 'mouse') setHover(true); }} onPointerLeave={() => setHover(false)}
+      onFocus={e => { if ((e.target as Element).matches(':focus-visible')) setFocus(true); }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocus(false); }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; setTouched(t => t + 1); }}
       onTouchEnd={e => {
         if (touchX.current === null || !many) return;
         const dx = e.changedTouches[0].clientX - touchX.current;
@@ -47,20 +66,41 @@ export function QuestTile() {
         if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
       }}>
       <div className={s.qTrack} style={{ transform: `translateX(-${at * 100}%)` }}>
-        <div className={s.qSlide} inert={at !== 0} aria-hidden={at !== 0}><WantedSlide quest={quest} /></div>
-        {many && <div className={s.qSlide} inert={at !== 1} aria-hidden={at !== 1}><CtfSlide onOpen={() => setOpen(true)} /></div>}
+        {slides.map((k, i) => (
+          <div key={k} className={s.qSlide} inert={at !== i} aria-hidden={at !== i}>
+            {k === 'wanted' ? <WantedSlide quest={quest} /> : k === 'ctf' ? <CtfSlide onOpen={() => setOpen(true)} /> : <PiggySlide q={piggy!} />}
+          </div>
+        ))}
       </div>
+      <Link to="/quests" className={s.qAll}>Wszystkie questy<ArrowRight size={14} aria-hidden="true" /></Link>
       {many && (
         <>
-          <button type="button" className={`${s.qNav} ${s.qPrev}`} onClick={() => go(-1)} aria-label={`Pokaż quest: ${other}`}><ChevronLeft size={20} aria-hidden="true" /></button>
-          <button type="button" className={`${s.qNav} ${s.qNext}`} onClick={() => go(1)} aria-label={`Pokaż quest: ${other}`}><ChevronRight size={20} aria-hidden="true" /></button>
+          <button type="button" className={`${s.qNav} ${s.qPrev}`} onClick={() => go(-1)} aria-label={`Pokaż quest: ${SLIDE_NAMES[slides[(at - 1 + n) % n]]}`}><ChevronLeft size={20} aria-hidden="true" /></button>
+          <button type="button" className={`${s.qNav} ${s.qNext}`} onClick={() => go(1)} aria-label={`Pokaż quest: ${SLIDE_NAMES[slides[(at + 1) % n]]}`}><ChevronRight size={20} aria-hidden="true" /></button>
           <div className={s.qDots}>
-            {names.map((n, i) => <button key={n} type="button" aria-pressed={at === i} aria-label={`Quest: ${n}`} className={at === i ? s.qDotOn : ''} onClick={() => setIdx(i)} />)}
+            {slides.map((k, i) => <button key={k} type="button" aria-pressed={at === i} aria-label={`Quest: ${SLIDE_NAMES[k]}`} className={at === i ? s.qDotOn : ''} onClick={() => setIdx(i)} />)}
           </div>
         </>
       )}
       {open && <CtfDialog onClose={() => setOpen(false)} />}
     </section>
+  );
+}
+
+/** Skarbonka jako slajd karuzeli: świnka 3D (szturchanie i rozbijanie razem z innymi) i stan wspólnego celu */
+function PiggySlide({ q }: { q: PiggyQuest }) {
+  const left = useCountdown(q.endsAt);
+  return (
+    <>
+      <div className={qs.slideStage}><PiggyStage q={q} compact /></div>
+      <div className={s.copy}>
+        <span className={s.kicker}><PiggyBank size={14} aria-hidden="true" />Quest · Skarbonka</span>
+        <h2 className={s.name}>{q.title}</h2>
+        <p className={s.lead}>{q.brokenAt ? 'Skarbonka rozbita, nagrody rozdane. Nowa po północy.' : q.filledAt ? 'Skarbonka pełna - rozbijcie ją razem!' : `Wspólna skarbonka: ${fmt(q.total)} z ${fmt(q.target)}.`}</p>
+        <ShareBar q={q} compact />
+        {!q.brokenAt && <span className={s.timer}><Timer size={15} aria-hidden="true" />Kończy się za <b>{left}</b></span>}
+      </div>
+    </>
   );
 }
 

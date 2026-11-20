@@ -23,7 +23,7 @@ export function AimpulsePage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Aim3D | null>(null);
   const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start rundy: po końcu prosimy o nagrodę
-  const [won, setWon] = useState<{ reward: number; capped: boolean; score: number } | null>(null);
+  const [won, setWon] = useState<{ reward: number; score: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const { data: look, refetch } = useQuery({ queryKey: ['aimpulse-reward'], queryFn: () => api<{ reward: ArcadeReward }>('/api/games/arcade/aimpulse'), staleTime: 60_000 });
   const refetchRef = useRef(refetch);
@@ -55,12 +55,12 @@ export function AimpulsePage() {
               // serwer odtwarza rundę z ziaren i zapisu strzałów (część zatwierdził już w trakcie rundy), sam liczy punkty
               const rest = await live.rest(log);
               if (!rest) return 'RUNDA BEZ NAGRODY (PRZERWANE POŁĄCZENIE)';
-              const r = await api<{ score: number; reward: number; capped: boolean; state: any }>('/api/games/arcade/aimpulse/finish', { log: rest });
+              const r = await api<{ score: number; reward: number; state: any }>('/api/games/arcade/aimpulse/finish', { log: rest });
               applyState(r.state);
-              setWon({ reward: r.reward, capped: r.capped, score: r.score });
+              setWon({ reward: r.reward, score: r.score });
               refetchRef.current();
               if (r.reward > 0) { Sound.coin(1); toast(`AIMPULSE: +${fmt(r.reward)}`); }
-              return r.reward > 0 ? `NAGRODA: +${fmt(r.reward)}${r.capped ? ' (LIMIT)' : ''}` : r.capped ? 'OSIĄGNIĘTO DZIENNY LIMIT NAGRÓD' : 'ZA MAŁO PUNKTÓW NA NAGRODĘ';
+              return r.reward > 0 ? `NAGRODA: +${fmt(r.reward)}` : 'ZA MAŁO PUNKTÓW NA NAGRODĘ';
             } catch (e: any) { toast(e.message, true); return undefined; }
           },
         });
@@ -86,18 +86,17 @@ export function AimpulsePage() {
         <div ref={root} className="tb-root" />
       </div>
       <aside className="tb-side">
-        {won && (won.reward > 0 || won.capped) && (
+        {won && won.reward > 0 && (
           <div className="tb-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>{won.reward > 0 ? <>Nagroda za ostatnią rundę ({pts(won.score)} pkt): <b className="tb-won">+{fmt(won.reward)}</b></> : 'Osiągnięto dzienny limit nagród'}
-              {won.capped && won.reward > 0 && <><br /><small className="muted">Osiągnięto limit nagród</small></>}</span>
+            <span>Nagroda za ostatnią rundę ({pts(won.score)} pkt): <b className="tb-won">+{fmt(won.reward)}</b></span>
           </div>
         )}
-        {rw && rw.per > 0 && rw.daily > 0 && (
+        {rw && rw.per > 0 && (
           <div className="tb-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>Nagroda: <b>{fmt(rw.per)}</b> {`za każde ${pts(rw.unit)} pkt od ${pts(rw.min)} pkt, najwyżej ${fmt(rw.perGame)} za rundę`}<br />
-              <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+            <span>Nagroda: <b>{fmt(rw.per)}</b> {`za każde ${pts(rw.unit)} pkt od ${pts(rw.min)} pkt, bez limitu`}<br />
+              <small className="muted">{`Dziś zarobione: ${fmt(rw.today)}`}</small></span>
           </div>
         )}
         <GameRanking game="aimpulse" title="Ranking AIMPULSE: punkty" refresh={won} />

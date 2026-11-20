@@ -24,7 +24,7 @@ import './turbo.css';
 // i płaci wg ustawień z panelu admina (routes/turbo_run.rs, bilet z /api/games/run/start, bez kart).
 interface WonCard { id: number; person: string; variant: string; name: string; rarity: string }
 interface Reward {
-  per100m: number; minDist: number; perGame: number; daily: number; today: number;
+  per100m: number; minDist: number; today: number;
   cardVariant: string; cardTiers: { score: number; rarity: string; name: string }[];
 }
 
@@ -32,7 +32,7 @@ export function RunPage() {
   const root = useRef<HTMLDivElement>(null);
   const game = useRef<Run3D | null>(null);
   const ticket = useRef<LiveSeeds | null>(null);   // serwer przyjął start biegu: po końcu prosimy o nagrodę
-  const [won, setWon] = useState<{ reward: number; capped: boolean; card: WonCard | null } | null>(null);
+  const [won, setWon] = useState<{ reward: number; card: WonCard | null } | null>(null);
   const [failed, setFailed] = useState(false);
   const { data: look, refetch } = useQuery({ queryKey: ['run3d-look'], queryFn: () => api<{ reward?: Reward }>('/api/games/run'), staleTime: 60_000 });
   const refetchRef = useRef(refetch);
@@ -64,9 +64,9 @@ export function RunPage() {
             try {
               const rest = await live.rest(log);
               if (!rest) return toast('Super Turbo Run: połączenie z serwerem przerwane - ten bieg jest bez nagrody', true);
-              const r = await api<{ reward: number; capped: boolean; card: WonCard | null; state: any }>('/api/games/run/finish', { log: rest, ticks });   // serwer odtwarza bieg i sam liczy dystans
+              const r = await api<{ reward: number; card: WonCard | null; state: any }>('/api/games/run/finish', { log: rest, ticks });   // serwer odtwarza bieg i sam liczy dystans
               applyState(r.state);
-              setWon({ reward: r.reward, capped: r.capped, card: r.card });
+              setWon({ reward: r.reward, card: r.card });
               if (r.reward > 0) { Sound.coin(1); toast(`Super Turbo Run: +${fmt(r.reward)}`); }
               if (r.card) { syncInventory(); toast(`Super Turbo: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
               refetchRef.current();
@@ -95,19 +95,18 @@ export function RunPage() {
         <div ref={root} className="tb-root" />
       </div>
       <aside className="tb-side">
-        {won && (won.reward > 0 || won.capped || won.card) && (
+        {won && (won.reward > 0 || won.card) && (
           <div className="tb-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>{won.reward > 0 ? <>Nagroda za ostatni bieg: <b className="tb-won">+{fmt(won.reward)}</b></> : won.capped ? 'Osiągnięto dzienny limit nagród' : 'Nowa karta:'}
-              {won.capped && won.reward > 0 && <><br /><small className="muted">Osiągnięto dzienny limit nagród</small></>}</span>
+            <span>{won.reward > 0 ? <>Nagroda za ostatni bieg: <b className="tb-won">+{fmt(won.reward)}</b></> : 'Nowa karta:'}</span>
             {won.card && <span className="tb-card" onClick={() => openViewer(won.card!.person, won.card!.variant, won.card!.id)}><Card person={won.card.person} variant={won.card.variant} tilt={false} /></span>}
           </div>
         )}
-        {rw && rw.per100m > 0 && rw.daily > 0 && (
+        {rw && rw.per100m > 0 && (
           <div className="tb-reward">
             <Coins size={16} aria-hidden="true" />
-            <span>Nagroda: <b>{fmt(rw.per100m)}</b> {`za każde 100 m od ${fmt(rw.minDist)} m, najwyżej ${fmt(rw.perGame)} za bieg`}<br />
-              <small className="muted">{`Dziś: ${fmt(rw.today)} / ${fmt(rw.daily)}`}</small></span>
+            <span>Nagroda: <b>{fmt(rw.per100m)}</b> {`za każde 100 m od ${fmt(rw.minDist)} m, bez limitu`}<br />
+              <small className="muted">{`Dziś zarobione: ${fmt(rw.today)}`}</small></span>
           </div>
         )}
         {rw && rw.cardTiers?.length > 0 && (

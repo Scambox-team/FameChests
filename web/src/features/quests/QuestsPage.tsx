@@ -8,8 +8,8 @@ import h from '../home/home.module.css';
 import { PiggyQuestPanel } from './Piggy';
 import s from './quests.module.css';
 
-// Zakładka Questy (/quests): kafelki jak na stronie startowej. Pierwszy, szeroki kafelek to Skarbonka (quest główny, wspólny
-// cel), niżej w rzędzie: Wanted i CTF (te same widoki co dawniej na stronie startowej).
+// Zakładka Questy (/quests): kafelki jak na stronie startowej. Na samej górze szeroki kafelek Skarbonki (wspólny cel), niżej
+// w rzędzie: Wanted i CTF (te same widoki co w karuzeli na stronie startowej, home/QuestTile.tsx).
 export function QuestsPage() {
   const { quest, ctf } = useGame();
   const [ctfOpen, setCtfOpen] = useState(false);

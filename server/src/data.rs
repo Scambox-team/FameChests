@@ -121,7 +121,6 @@ pub struct ChessCfg {
     pub minutes: Vec<i64>,
     pub increment_ms: i64,
     pub open_hours: f64,
-    pub rewards_per_day: i64,
     pub min_plies: usize,
     /// skrzynka za wygraną białymi / czarnymi; czarna ma te same karty co biała (mirror w catalog.rs)
     pub crate_white: String,

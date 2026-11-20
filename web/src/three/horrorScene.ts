@@ -1292,10 +1292,15 @@ function buildWorld(): World {
 
   // ---------- przeszkody ----------
   const props = new Map<number, Prop[]>();
-  const addProp = (bx: number, bz: number, pr: Prop) => {
-    const id = bz * N + bx;
-    const list = props.get(id);
-    if (list) list.push(pr); else props.set(id, [pr]);
+  // przeszkoda trafia do KAŻDEGO bloku, na który zachodzi (kolizja patrzy na sąsiednie bloki, a groundAt tylko na blok gracza):
+  // zapisana w jednym bloku, długi balkon nie miał podłogi w pozostałych - gracz spadał i był wypychany przez ściany.
+  // Pierwsze dwa argumenty zostały dla czytelności wywołań, ale bloki liczą się z prostokąta.
+  const addProp = (_bx: number, _bz: number, pr: Prop) => {
+    const e = 1e-6;
+    for (let bz = Math.floor(pr.z0 / B); bz <= Math.floor((pr.z1 - e) / B); bz++) for (let bx = Math.floor(pr.x0 / B); bx <= Math.floor((pr.x1 - e) / B); bx++) {
+      const id = bz * N + bx, list = props.get(id);
+      if (list) list.push(pr); else props.set(id, [pr]);
+    }
   };
   // filary w halach: na rogach środkowego bloku (potwór chodzi środkami bloków i krawędzi, więc ich nie zahacza)
   const pillars: [number, number][] = [];

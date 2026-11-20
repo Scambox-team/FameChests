@@ -1,6 +1,6 @@
 //! Super Turbo Run 3D (zakładka Gry -> Gry Super Turbo): bieg po tunelu liczy się w przeglądarce (`three/runScene.ts`).
 //! Serwer wypłaca grosze za DYSTANS (metry biegu), tak jak Snake za jabłka: `per_100m` gr za każde 100 m od `min_dist` metrów,
-//! najwyżej `per_game` za grę i `daily` na dobę (klucze `run_reward_*` w `state`, ustawienia w panelu admina -> Gry).
+//! bez limitu na grę i na dobę (klucze `run_reward_*` w `state`, ustawienia w panelu admina -> Gry).
 //! Za wysoki dystans jest też karta w wariancie Gamingowa RGB (`turbo.runTiers` w game.json, jak w Pinballu; BEZ limitu kart, `turbo_card`,
 //! wspólne z Snake 3D, który ma własne progi `turbo.snakeTiers`). Dystansu z przeglądarki serwer NIE przyjmuje: przy starcie losuje
 //! ziarno tunelu (bilet `TICKETS` w pamięci procesu, jednorazowy), po biegu dostaje zapis klawiszy i sam ODTWARZA bieg (`run_sim`),
@@ -31,8 +31,6 @@ use super::snake::CommitRequest;
 pub const REWARD: &[(&str, &str, i64, i64)] = &[
     ("run_reward_per_100m", "per100m", 12, 1000),
     ("run_reward_min_dist", "minDist", 200, 100_000),
-    ("run_reward_per_game", "perGame", 300, 100_000),
-    ("run_reward_daily", "daily", 900, 1_000_000),
 ];
 /// Najszybszy możliwy bieg: prędkość tunelu rośnie do 46 m/s, z turbem x1,35 (około 62 m/s); zapas na skoki i start
 /// Największy dystans jednej gry (ok. 5 minut najszybszego biegu)
@@ -44,16 +42,14 @@ static TICKETS: LazyLock<Mutex<HashMap<i64, Live>>> = LazyLock::new(Default::def
 struct Reward {
     per_100m: i64,
     min_dist: i64,
-    per_game: i64,
-    daily: i64,
 }
 
 async fn reward_cfg(c: &mut Conn) -> sqlx::Result<Reward> {
-    let mut v = [0i64; 4];
+    let mut v = [0i64; 2];
     for (i, (key, _, default, _)) in REWARD.iter().enumerate() {
         v[i] = setting(c, key, *default).await?;
     }
-    Ok(Reward { per_100m: v[0], min_dist: v[1], per_game: v[2], daily: v[3] })
+    Ok(Reward { per_100m: v[0], min_dist: v[1] })
 }
 
 async fn earned_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
@@ -61,12 +57,12 @@ async fn earned_today(c: &mut Conn, uid: i64) -> sqlx::Result<i64> {
     Ok(if st.get("run_day").copied() == Some(today()) { st.get("run_today").copied().unwrap_or(0) } else { 0 })
 }
 
-/// Nagroda za dystans w metrach (bez limitu dnia)
+/// Nagroda za dystans w metrach (bez limitu na grę i na dobę; dystans i tak jest ucinany do `MAX_DIST`)
 fn reward_for(r: &Reward, dist: i64) -> i64 {
     if r.per_100m <= 0 || dist < r.min_dist.max(1) {
         return 0;
     }
-    (dist * r.per_100m / 100).min(r.per_game)
+    dist * r.per_100m / 100
 }
 
 /// Czy taki dystans dało się przebiec w tym czasie
@@ -77,7 +73,7 @@ fn plausible(ticks: u64, elapsed_secs: f64) -> bool {
 
 fn cfg_json(r: &Reward, today: i64) -> serde_json::Value {
     let t = &g().turbo;
-    json!({"per100m": r.per_100m, "minDist": r.min_dist, "perGame": r.per_game, "daily": r.daily, "today": today,
+    json!({"per100m": r.per_100m, "minDist": r.min_dist, "today": today,
            "cardVariant": t.card_variant,
            "cardTiers": super::pinball::tiers_json(&t.run_tiers)})
 }
@@ -157,8 +153,7 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     super::game_rankings::record_score(&mut tx, me.id, "run", distance).await?;
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
-    let base = reward_for(&r, distance);
-    let reward = base.min((r.daily - earned).max(0));
+    let reward = reward_for(&r, distance);
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
@@ -166,13 +161,13 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
         set_state(&mut tx, me.id, "run_today", earned + reward).await?;
     }
     let card = turbo_card(&mut tx, &st.cat(), &me, &g().turbo.run_tiers, distance).await?;
-    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(base)).await?;
+    super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
-    ok(json!({"distance": distance, "reward": reward, "capped": reward < base, "today": earned + reward, "daily": r.daily, "card": card, "state": state}))
+    ok(json!({"distance": distance, "reward": reward, "today": earned + reward, "card": card, "state": state}))
 }
 
-/// Panel admina (JSON): pola nagrody (`per100m`, `minDist`, `perGame`, `daily`); odpowiedź = aktualne ustawienia
+/// Panel admina (JSON): pola nagrody (`per100m`, `minDist`); odpowiedź = aktualne ustawienia
 pub async fn admin_run_save(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<serde_json::Map<String, serde_json::Value>>) -> Res {
     let mut tx = st.db.begin().await?;
     let mut log = Vec::new();
@@ -206,12 +201,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reward_grows_with_distance_and_is_capped() {
-        let r = Reward { per_100m: 12, min_dist: 200, per_game: 300, daily: 900 };
+    fn reward_grows_with_distance() {
+        let r = Reward { per_100m: 12, min_dist: 200 };
         assert_eq!(reward_for(&r, 199), 0);
         assert_eq!(reward_for(&r, 200), 24);
         assert_eq!(reward_for(&r, 1_000), 120);
-        assert_eq!(reward_for(&r, 10_000), 300);
+        assert_eq!(reward_for(&r, 10_000), 1_200);   // bez limitu na grę
         assert_eq!(reward_for(&Reward { per_100m: 0, ..r }, 1_000), 0);
     }
 

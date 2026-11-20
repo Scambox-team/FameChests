@@ -13,7 +13,7 @@ const OPP: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'l
 const ANGLE: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
 
 export interface SnakeReward {
-  perApple: number; minScore: number; perGame: number; daily: number; today: number;
+  perApple: number; minScore: number; today: number;
   cardVariant: string; cardTiers: { score: number; rarity: string; name: string }[];
 }
 export interface SnakeLook {
