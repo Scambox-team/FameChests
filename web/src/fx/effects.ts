@@ -5,6 +5,7 @@ import { S } from '../game/store';
 import { joinVariant, splitVariant } from '../game/rules';
 import { abilitiesOf, baseVariant, beerSub, cardValue, crateOf, crateVariants, isBlank, isCombo, isSpecial, isSpecialCard, sellableCard, person, plural, possibleVariants, rand, rarityIdx, rarityShare, variantChance, variantName, variantParts, vClass, vtClass, imgUrl } from '../game/rules';
 import { cardHTML, giftRewrappable, giftWrapHTML, giftWrapped, scratchable } from '../cards/cardHtml';
+import { tiltMove, tiltLeave } from '../cards/tilt';
 import { api } from '../api/client';
 import { touch } from '../game/store';
 import { toast } from '../ui/Toaster';
@@ -402,6 +403,12 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
   if (use3D() && variantParts(variant).includes("aero")) import("../three/aeroScene").then(m => m.mountAeroLive(el.querySelector(".vf-front .card"))).catch(() => {});
   Sound.whoosh();
 
+  // przechył karty za kursorem (jak na kartach w ekwipunku); po obróceniu na rewers nie działa
+  const stageEl = el.querySelector<HTMLElement>(".viewer-stage"), flipper = el.querySelector(".viewer-flipper");
+  const front = () => flipper?.classList.contains("flipped") ? null : el.querySelector<HTMLElement>(".vf-front .card");
+  stageEl?.addEventListener("pointermove", e => tiltMove(front(), e, 14));
+  stageEl?.addEventListener("pointerleave", () => tiltLeave(el.querySelector<HTMLElement>(".vf-front .card")));
+
   el.addEventListener("click", e => {
     const act = e.target.closest("[data-act]")?.dataset.act;
     const vb = e.target.closest("[data-vbase]")?.dataset.vbase, vl = e.target.closest("[data-vlayer]")?.dataset.vlayer;
@@ -425,6 +432,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     if (act === "unwrap" || (giftWrapped(variant, uid) && e.target.closest(".viewer-flipper"))) return giftPlay(el, pid, variant, +uid, true);
     if (act === "rewrap") return giftPlay(el, pid, variant, +uid, false);
     if (act === "flip" || e.target.closest(".viewer-flipper")) {
+      tiltLeave(el.querySelector(".vf-front .card"));
       el.querySelector(".viewer-flipper").classList.toggle("flipped");
       Sound.page();
     }
