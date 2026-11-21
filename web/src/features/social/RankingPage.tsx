@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Crown, Medal, Trophy, Users } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 import { api } from '../../api/client';
@@ -8,6 +9,7 @@ import { fmt, fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { SearchField, Tabs } from '../../ui/Field';
 import { UserLink } from '../../ui/UserLink';
+import { HallOfFame } from './HallOfFame';
 import s from './social.module.css';
 
 type By = 'value' | 'cards' | 'opened';
@@ -18,6 +20,18 @@ const MEDALS = ['#e5b94a', '#c2c6cf', '#c98a55'];
 let saved: { by: By; scope: 'all' | 'friends' } = { by: 'value', scope: 'all' };
 
 export function RankingPage() {
+  const hof = useParams().tab === 'hall-of-fame';
+  const navigate = useNavigate();
+  return (
+    <>
+      <Tabs label="Ranking" value={hof ? 'hof' : 'players'} onChange={v => { Sound.click(); navigate(v === 'hof' ? '/ranking/hall-of-fame' : '/ranking'); }}
+        items={[{ id: 'players', label: 'Gracze' }, { id: 'hof', label: 'Hall of Fame' }]} />
+      {hof ? <HallOfFame /> : <PlayersRanking />}
+    </>
+  );
+}
+
+function PlayersRanking() {
   const [by, setBy] = useState(saved.by);
   const [scope, setScope] = useState(saved.scope);
   const [search, setSearch] = useState('');

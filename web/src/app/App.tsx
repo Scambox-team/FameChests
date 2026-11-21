@@ -91,7 +91,7 @@ function Game() {
           <Route path="/crates" element={<CratesPage />} />
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/binder" element={<BinderPage />} />
-          <Route path="/binder/:tab" element={<BinderPage />} />
+          <Route path="/binder/hall-of-fame" element={<Navigate to="/ranking/hall-of-fame" replace />} />
           <Route path="/forge" element={<ForgePage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/casino" element={<CasinoPage />} />
@@ -105,6 +105,7 @@ function Game() {
           <Route path="/quests" element={<QuestsPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/ranking/:tab" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
           <Route path="/ustawienia" element={<SettingsPage />} />
           <Route path="/link/:token" element={<LinkClaim />} />

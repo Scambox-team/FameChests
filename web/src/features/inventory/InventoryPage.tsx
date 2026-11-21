@@ -165,8 +165,8 @@ export function InventoryPage() {
     touch();
     return ufoLeave;
   }, []);
-  // Hall of Fame jest teraz w klaserze, a figury w szachach
-  if (pathname.endsWith('/hall-of-fame')) return <Navigate to="/binder/hall-of-fame" replace />;
+  // Hall of Fame jest teraz w rankingu, a figury w szachach
+  if (pathname.endsWith('/hall-of-fame')) return <Navigate to="/ranking/hall-of-fame" replace />;
   if (pathname.endsWith('/figures')) return <Navigate to="/games/figures" replace />;
   return (
     <>

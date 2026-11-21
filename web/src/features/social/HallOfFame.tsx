@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Medal } from 'lucide-react';
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Medal } from 'lucide-react';
 
 import { api } from '../../api/client';
 import { openViewer } from '../../fx/effects';
@@ -9,9 +9,10 @@ import { crateList, crateOf, imgUrl, isSpecial, person, rarityIdx, varRank, vari
 import { S } from '../../game/store';
 import { SearchField, Select } from '../../ui/Field';
 import { timeAgo } from '../../lib/time';
-import styles from './InventoryPage.module.css';
+import styles from './hof.module.css';
 
 const SOURCES: Record<string, string> = { crate: 'Skrzynka', contract: 'Kontrakt', upgrade: 'Ulepszacz', casino: 'Kasyno', market: 'Rynek', trade: 'Wymiana', reward: 'Nagroda', link: 'Link', pinball: 'Pinball' };
+const day = (t: number) => new Date(t * 1000).toLocaleDateString('pl-PL');
 
 function Thumb({ pid }: { pid: string }) {
   const p = person(pid);
@@ -28,6 +29,9 @@ export function HallOfFame() {
   const [q, setQ] = useState('');
   const [show, setShow] = useState('all');
   const [sort, setSort] = useState('number');
+  const [open, setOpen] = useState<Set<string>>(new Set());
+
+  useEffect(() => { document.title = 'Hall of Fame · ScamBox'; }, []);
 
   const by = useMemo(() => {
     const m: Record<string, any[]> = {};
@@ -62,6 +66,11 @@ export function HallOfFame() {
     return !needle || (!p.masked && p.name.toLowerCase().includes(needle));
   }).sort(sorts[sort]);
 
+  const expandable = ids.filter(id => by[id]);
+  const allOpen = expandable.length > 0 && expandable.every(id => open.has(id));
+  const toggle = (id: string) => setOpen(o => { const n = new Set(o); if (!n.delete(id)) n.add(id); return n; });
+  const toggleAll = () => setOpen(allOpen ? new Set() : new Set(expandable));
+
   return (
     <>
       <section className={styles.hofHead}>
@@ -85,7 +94,7 @@ export function HallOfFame() {
           </div>
         </>}
       </section>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div className={styles.tools}>
         <SearchField value={q} onChange={e => setQ(e.target.value)} placeholder="Szukaj karty" aria-label="Szukaj karty" />
         <Select value={crate} onChange={e => setCrate(e.target.value)} aria-label="Skrzynka">
           <option value="all">Wszystkie skrzynki</option>
@@ -97,27 +106,49 @@ export function HallOfFame() {
         <Select value={sort} onChange={e => setSort(e.target.value)} aria-label="Sortowanie">
           <option value="number">Kolejność w skrzynce</option><option value="rarity">Najrzadsze</option><option value="most">Najwięcej zdobytych</option><option value="least">Najmniej zdobytych</option><option value="recent">Najnowsze odkrycia</option>
         </Select>
+        {expandable.length > 0 && (
+          <button type="button" className="btn" onClick={toggleAll}>
+            {allOpen ? <ChevronsDownUp size={16} aria-hidden="true" /> : <ChevronsUpDown size={16} aria-hidden="true" />} {allOpen ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'}
+          </button>
+        )}
       </div>
       <section className={styles.hofGrid}>
         {ids.map(id => {
           const p = person(id), R = S.cfg.rarities[p.rarity], c = crateOf(p.crate);
           const vars = [...(by[id] || [])].sort((a, b) => varRank(a.v) - varRank(b.v));
+          const first = vars.reduce<any>((a, r) => (!a || r.t < a.t ? r : a), null);
+          const isOpen = open.has(id);
           return (
             <article key={id} className={`${styles.hofCard}${vars.length ? '' : ` ${styles.hofNone}`}`}>
               <Thumb pid={id} />
               <div className={styles.hofInfo}>
                 <div><b>{p.masked ? '???' : p.name}</b> <small className="muted">{c.code} {String(p.number).padStart(3, '0')}</small></div>
-                <div className="small"><span style={{ color: R.color }}>{R.name}</span>{vars.length > 0 && <span className="muted"> · zdobyto łącznie {sum(id).toLocaleString('pl-PL')}×</span>}</div>
-                {vars.map(r => (
-                  <div key={r.v} className={styles.hofVar} title={`${SOURCES[r.s] || ''} · ${new Date(r.t * 1000).toLocaleString('pl-PL')}`}>
-                    <span><span className={`vdot ${vtClass(r.v)}`} />{variantName(r.v)}</span>
-                    <span>{user(r.u)}</span>
-                    <span className="muted">{new Date(r.t * 1000).toLocaleDateString('pl-PL')}</span>
-                    <span>×{r.n.toLocaleString('pl-PL')}</span>
-                  </div>
-                ))}
-                {!vars.length && <span className="muted small">Jeszcze nikt jej nie zdobył.</span>}
+                <div className="small"><span style={{ color: R.color }}>{R.name}</span></div>
+                {vars.length > 0 ? <>
+                  <div className="muted small">Wariantów: <b>{vars.length}</b> · zdobyto łącznie <b>{sum(id).toLocaleString('pl-PL')}×</b></div>
+                  {first && <div className="small"><Medal size={13} aria-hidden="true" style={{ verticalAlign: -2 }} /> Pierwszy: {user(first.u)} <span className="muted">· {day(first.t)}</span></div>}
+                </> : <span className="muted small">Jeszcze nikt jej nie zdobył.</span>}
               </div>
+              {vars.length > 0 && <>
+                <button type="button" className={styles.more} aria-expanded={isOpen} aria-controls={`hof-${id}`} onClick={() => toggle(id)}>
+                  <span className={styles.dots} aria-hidden="true">{vars.map(r => <i key={r.v} className={`vdot ${vtClass(r.v)}`} />)}</span>
+                  <span>{isOpen ? 'Zwiń warianty' : 'Pokaż warianty'}</span>
+                  <ChevronDown size={16} aria-hidden="true" className={styles.chev} />
+                </button>
+                {isOpen && (
+                  <ul className={styles.vars} id={`hof-${id}`}>
+                    {vars.map(r => (
+                      <li key={r.v} className={styles.hofVar}>
+                        <span className={styles.vName}><i className={`vdot ${vtClass(r.v)}`} />{variantName(r.v)}</span>
+                        <span className={styles.vCount}>×{r.n.toLocaleString('pl-PL')}</span>
+                        <span className={`${styles.vMeta} small`}>
+                          {user(r.u)} <span className="muted">· {day(r.t)}{SOURCES[r.s] ? ` · ${SOURCES[r.s]}` : ''}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>}
             </article>
           );
         })}

@@ -38,21 +38,6 @@
 .selInfo { margin-right: auto; font-weight: 500; }
 @media (max-width: 820px) { .sellbar { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); } .sort { margin-left: 0; } }
 
-/* Hall of Fame */
-.hofHead { padding: 16px; border-radius: var(--radius-m); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
-.hofHead h3 { font: 800 18px/24px var(--display); }
-.recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.recentItem { display: flex; gap: 10px; align-items: center; min-width: 0; }
-.thumb { width: 44px; height: 58px; flex: none; padding: 0; border: 2px solid var(--rc, #666); border-radius: 6px; overflow: hidden; background: var(--raised); }
-.thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
-.hofGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: var(--gap); }
-.hofCard { display: flex; gap: 12px; padding: 12px; border-radius: var(--radius-m); background: var(--surface); min-width: 0; content-visibility: auto; contain-intrinsic-size: auto 110px; }
-.hofNone { opacity: .6; }
-.hofInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.hofVar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; gap: 8px; font-size: 13px; align-items: center; }
-.hofVar span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 480px) { .hofGrid { grid-template-columns: minmax(0, 1fr); } }
-
 /* telefon: 3 karty w rzędzie na całą szerokość */
 @media (max-width: 600px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

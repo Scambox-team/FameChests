@@ -1,0 +1,32 @@
+/* Hall of Fame (zakładka rankingu) */
+.hofHead { padding: 16px; border-radius: var(--radius-m); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.hofHead h3 { font: 800 18px/24px var(--display); }
+.recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.recentItem { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.thumb { width: 44px; height: 58px; flex: none; padding: 0; border: 2px solid var(--rc, #666); border-radius: 6px; overflow: hidden; background: var(--raised); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tools :global(.btn) { display: inline-flex; align-items: center; gap: 6px; }
+
+/* karty: nagłówek (zdjęcie + opis), pod nim zwijana lista wariantów na całą szerokość karty; wiersze nigdy nie ucinają nazw */
+.hofGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); gap: var(--gap); align-items: start; }
+.hofCard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 12px; border-radius: var(--radius-m); background: var(--surface); min-width: 0; content-visibility: auto; contain-intrinsic-size: auto 150px; }
+.hofNone { opacity: .6; }
+.hofInfo { min-width: 0; display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; }
+
+.more { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: var(--radius-s, 8px); background: var(--raised); color: inherit; font: 600 13px/18px inherit; text-align: left; cursor: pointer; }
+.more:hover { filter: brightness(1.12); }
+.more > span:nth-child(2) { flex: none; }
+.dots { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.chev { flex: none; margin-left: auto; transition: transform .2s; }
+.more[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+.vars { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hofVar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-radius: var(--radius-s, 8px); background: var(--raised); font-size: 13px; line-height: 18px; }
+.vName { display: flex; align-items: flex-start; gap: 6px; min-width: 0; font-weight: 700; white-space: normal; overflow-wrap: anywhere; }
+.vName :global(.vdot) { flex: none; margin-top: 4px; }
+.vCount { font-weight: 700; white-space: nowrap; }
+.vMeta { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 480px) { .hofGrid { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
