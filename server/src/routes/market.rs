@@ -409,6 +409,9 @@ pub struct ListRequest {
 
 /// Wystawienie karty: stała cena albo licytacja (cena wywoławcza, min. przebicie, czas)
 pub async fn market_list(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<ListRequest>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     let rules = &g().market;
     settle_market(&cx.st.db, &cx.cat).await?;
@@ -471,6 +474,9 @@ async fn item_view(c: &mut Conn, cx: &Ctx, item_id: i64) -> sqlx::Result<Option<
 }
 
 pub async fn market_buy(State(st): State<AppState>, Me(me): Me, Path(lid): Path<i64>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     settle_market(&cx.st.db, &cx.cat).await?;
     let mut tx = cx.st.db.begin().await?;
@@ -519,6 +525,9 @@ pub async fn market_offer(
     Path(lid): Path<i64>,
     JsonBody(req): JsonBody<OfferRequest>,
 ) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     settle_market(&cx.st.db, &cx.cat).await?;
     let mut tx = cx.st.db.begin().await?;
@@ -583,6 +592,9 @@ async fn close_offer(c: &mut Conn, oid: i64, status: &str, now: f64) -> sqlx::Re
 
 /// accept / decline - sprzedający; cancel - kupujący wycofuje swoją propozycję
 pub async fn market_offer_action(State(st): State<AppState>, Me(me): Me, Path((oid, action)): Path<(i64, String)>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     if !matches!(action.as_str(), "accept" | "decline" | "cancel") {
         return Err(AppError::not_found());
     }
@@ -656,6 +668,9 @@ pub async fn market_bid(
     Path(lid): Path<i64>,
     JsonBody(req): JsonBody<BidRequest>,
 ) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     let rules = &g().market;
     settle_market(&cx.st.db, &cx.cat).await?;
@@ -780,6 +795,9 @@ pub struct WantedRequest {
 
 /// Zlecenie "Szukam": kupię tę kartę (w tym wariancie) za tyle - pieniądze są blokowane do realizacji / wycofania
 pub async fn market_wanted_create(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<WantedRequest>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     let rules = &g().market;
     settle_market(&cx.st.db, &cx.cat).await?;
@@ -854,6 +872,9 @@ pub async fn market_wanted_fill(
     Path(wid): Path<i64>,
     JsonBody(req): JsonBody<FillRequest>,
 ) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     settle_market(&cx.st.db, &cx.cat).await?;
     let mut tx = cx.st.db.begin().await?;

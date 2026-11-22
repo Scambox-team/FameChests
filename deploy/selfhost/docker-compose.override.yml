@@ -147,6 +147,7 @@ services:
       COMMANDS_ONLY: ${DISCORD_COMMANDS_ONLY:-1}
       CH_PATCH: ${DISCORD_CH_PATCH:-}
       CH_DROPS: ${DISCORD_CH_DROPS:-}
+      CH_BRAG: ${DISCORD_CH_BRAG:-}
       CH_ALERTS: ${DISCORD_CH_ALERTS:-}
     volumes:
       - discord-bot-data:/data

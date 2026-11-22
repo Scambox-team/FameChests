@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, Copy, ExternalLink, Flag, Lightbulb, Lock, Timer, Trophy } from 'lucide-react';
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
-import { confetti } from '../../fx/effects';
+import { confetti, openViewer } from '../../fx/effects';
 import { person, variantName } from '../../game/rules';
 import { syncInventory } from '../../game/session';
 import { S, touch, useGame } from '../../game/store';
@@ -115,6 +115,7 @@ export function CtfSlide({ onOpen }: { onOpen: () => void }) {
               : `Znajdź ukrytą flagę i wpisz ją jako pierwszy. Nagroda: ${prize?.name ?? '?'} w wariancie ${variantName(REWARD)}.`}</p>
             {q.limitReached && <p className={s.where}>{LIMIT_NOTE}</p>}
             <button type="button" className={c.go} onClick={onOpen}>Rozwiąż zadanie</button>
+            {q.person && <button type="button" className={c.link} onClick={() => openViewer(q.person, REWARD)}>Zobacz kartę do zdobycia</button>}
             <span className={s.timer}><Lightbulb size={15} aria-hidden="true" />Podpowiedzi: <b>{q.hintsOpen}/{q.hintsTotal}</b>{q.nextHintAt ? <> · następna za <b>{hintIn}</b></> : null}</span>
           </>
         ) : q.mine ? (
@@ -124,6 +125,7 @@ export function CtfSlide({ onOpen }: { onOpen: () => void }) {
             ? `Ktoś był szybszy. ${q.winner || '?'} zdobył flagę i zabrał kartę ${prize.name} w wariancie ${variantName(REWARD)}.`
             : `Ktoś był szybszy. Flagę zdobył ${q.winner || '?'}.`} <button type="button" className={c.link} onClick={onOpen}>Zobacz rozwiązanie</button></p>
         )}
+        {done && q.person && <button type="button" className={c.link} onClick={() => openViewer(q.person, REWARD)}>Zobacz kartę z tego questa</button>}
         {done && q.wonAt && <span className={s.timer}><CheckCircle2 size={15} aria-hidden="true" />Wykonano o <b>{questTime(q.wonAt)}</b></span>}
         <span className={s.timer}><Timer size={15} aria-hidden="true" />{done ? 'Nowy quest za' : 'Quest kończy się za'} <b>{left}</b></span>
       </div>

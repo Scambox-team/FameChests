@@ -62,9 +62,10 @@
   80% { filter: brightness(.2); }
   100% { filter: brightness(0); }
 }
-.owned { flex: 1; display: grid; place-content: center; gap: 5px; text-align: center; animation: ownedIn .5s both; }
-.owned b { color: #ff5470; font-size: 18px; letter-spacing: .08em; text-shadow: 0 0 8px #ff2e55; animation: blink 1.4s steps(1) infinite; }
-.owned small { color: #49ff8a99; font-size: 9.5px; }
+.owned { flex: 1; min-width: 0; display: grid; place-content: center; gap: 5px; text-align: center; animation: ownedIn .5s both; }
+.owned b { color: #ff5470; font-size: 12px; line-height: 1.2; letter-spacing: .04em; overflow-wrap: anywhere; text-shadow: 0 0 8px #ff2e55; }
+.owned small { color: #49ff8a99; font-size: 9px; line-height: 1.25; }
+.owned > span { font-size: 9px; overflow-wrap: anywhere; }
 @keyframes ownedIn { from { opacity: 0; } }
 
 /* opis pod monitorem */

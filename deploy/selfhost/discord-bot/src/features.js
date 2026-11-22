@@ -14,6 +14,7 @@ const ALERT_AFTER = Math.max(1, Number(process.env.ALERT_AFTER_MIN) || 3); // ty
 const ROLES_EVERY_MS = 5 * 60_000;
 
 const RARITY_COLOR = { gold: 0xf5c542, ultra: 0xff4fd8, secret: 0x9b59ff };
+const RZULTY = 0xffe600;
 
 /** HTML z listy zmian gry (<b>, emotki) -> tekst Discorda */
 const plain = (s) =>
@@ -69,7 +70,7 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     for (const d of r.drops) {
       const what = d.secret ? '**Tajna karta**' : `**${d.person}**${d.variant ? ` (${d.variant})` : ''}`;
       const embed = new EmbedBuilder()
-        .setColor(RARITY_COLOR[d.rarityKey] ?? GOLD)
+        .setColor(d.rzulty ? RZULTY : (RARITY_COLOR[d.rarityKey] ?? GOLD))
         .setTitle(`💎 ${d.rarity}!`)
         .setDescription(`Ze skrzynki gracza **${clip(d.username, 40)}** wypadła karta ${what}.`)
         .setTimestamp(d.at * 1000);
@@ -83,7 +84,16 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
           console.error('[dropy] nie narysowano karty:', e.message);
         }
       }
-      await ch.send({ allowedMentions: { parse: [] }, embeds: [embed], files });
+      if (d.rzulty) {
+        // Rzułty papież: ogłoszenie z pingiem roli powiadomień (DISCORD_PING_ROLE_ID, rola PING), nie wszystkich
+        await ch.send({
+          ...mention(),
+          content: (mention().content ? mention().content + ' ' : '') + '🟡 **RZUŁTY PAPIEŻ!** Gracz **' + clip(d.username, 40) + '** wylosował Jana Pawła II w wariancie Rzulty!',
+          embeds: [embed], files,
+        });
+      } else {
+        await ch.send({ allowedMentions: { parse: [] }, embeds: [embed], files });
+      }
       state.dropAfter = d.id;
       save();
     }
@@ -117,6 +127,32 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     return { embeds: [e], allowedMentions: { parse: [] } };
   }
 
+  /** „Pochwal się” z gry (kolejka powiadomień, rodzaj brag): karta gracza na kanale DISCORD_CH_BRAG */
+  async function brag(n) {
+    const d = n.data ?? {};
+    const ch = await channel('brag');
+    if (!ch) return;
+    const embed = new EmbedBuilder()
+      .setColor(RARITY_COLOR[d.rarityKey] ?? GOLD)
+      .setTitle(clip('🃏 ' + d.person + (d.variant ? ' (' + d.variant + ')' : ''), 250))
+      .setDescription('**' + d.rarity + '**' + (d.value ? ' · wartość **' + gr(d.value) + '**' : ''))
+      .setTimestamp(n.at * 1000);
+    let files;
+    if (d.personId) {
+      try {
+        files = [{ attachment: await renderCard(d.personId, d.variantKey || 'normal'), name: 'karta.png' }];
+        embed.setImage('attachment://karta.png');
+      } catch (e) {
+        console.error('[pochwal się] nie narysowano karty:', e.message);
+      }
+    }
+    // bez pingu: wzmianka tylko oznacza autora
+    await ch.send({
+      content: '🎉 <@' + n.discordId + '> (**' + clip(String(d.username), 40) + '**) chwali się kartą!',
+      allowedMentions: { parse: [] }, embeds: [embed], files,
+    });
+  }
+
   let dmBusy = false;
   /** Wysyła zaległe powiadomienia. Gracz z zamkniętymi DM (błąd 50007) jest pomijany - nie blokuje kolejki. */
   async function dms() {
@@ -130,6 +166,12 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
         return;
       }
       for (const n of r.items ?? []) {
+        if (n.kind === 'brag') {
+          try { await brag(n); } catch (e) { console.error('[pochwal się]', e.message); }
+          state.notifyAfter = n.id;
+          save();
+          continue;
+        }
         const payload = dmPayload(n);
         if (payload) {
           try {
@@ -196,6 +238,14 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     if (r.linked) return `Twoje konto Discord jest połączone z graczem **${r.username}**. Odłączysz je w grze: Ustawienia → Discord.`;
     const where = GAME_PUBLIC_URL ? `${GAME_PUBLIC_URL}/ustawienia` : 'w grze: Ustawienia → Discord';
     return `Twój kod: **\`${r.code}\`** (ważny ${Math.round(r.ttl / 60)} min).\nWpisz go ${where} w sekcji **Discord**. Za pierwsze połączenie dostaniesz nagrodę, a bot nada Ci rolę za miejsce w rankingu.`;
+  }
+
+  /** /odlacz: zdejmuje połączenie konta Discord z kontem w grze (role bot zabierze przy następnej synchronizacji) */
+  async function unlinkReply(discordId) {
+    const r = await game.unlink(discordId);
+    return r.unlinked
+      ? 'Odłączyłem Twoje konto Discord od gracza **' + r.username + '**. Role za ranking znikną w ciągu kilku minut. Ponownie połączysz je komendą /polacz (nagroda za pierwsze połączenie jest jednorazowa).'
+      : 'Twoje konto Discord nie jest połączone z żadnym graczem.';
   }
 
   /** Role z bota (tworzone, jeśli ich nie ma; id w stanie). Zwraca { klucz: Role } */
@@ -289,6 +339,6 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     }
   }
 
-  return { patch, drops, dms, health, linkReply, syncRoles, ensureRoles };
+  return { patch, drops, dms, health, linkReply, unlinkReply, syncRoles, ensureRoles };
 }
 

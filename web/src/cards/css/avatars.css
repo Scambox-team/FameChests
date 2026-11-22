@@ -113,3 +113,51 @@
 .av-vname.vt-mlg { color: #9cff00; }
 .avv-sketch img { filter: url(#inkSketch); box-shadow: 0 0 0 2px #1b1712, 0 0 0 4px #efe4c8 !important; }
 .avv-galaxy img { filter: saturate(1.3) hue-rotate(-15deg); box-shadow: 0 0 0 2px #7b4dff, 0 0 12px #1fb6ff !important; }
+
+/* ===== kolejne warianty na ikonie gracza: filtr zdjęcia + obwódka + (gdzie karta ma) wzór nałożony na zdjęcie ===== */
+.avv-prism img { filter: saturate(1.5) contrast(1.08); box-shadow: 0 0 0 2px #fff, 0 0 12px #7a5cff !important; }
+.avv-prism::after { background: repeating-linear-gradient(115deg, #ff3b9a55 0 14%, #ffb21f55 14% 28%, #34ff8a55 28% 42%, #2ad8ff55 42% 56%, #7a5cff55 56% 70%, #ff3b9a55 70% 84%); mix-blend-mode: color; opacity: .8; }
+.avv-antimatter img { filter: grayscale(1) sepia(.5) hue-rotate(205deg) saturate(2.2) brightness(.92) contrast(1.2); box-shadow: 0 0 0 2px #8f86ff, 0 0 12px #4a3fd8 !important; }
+.avv-antimatter::after { background: linear-gradient(115deg, transparent 38%, #c9c4ff99 50%, transparent 62%); background-size: 250% 100%; mix-blend-mode: overlay; animation: photoGlint 3s ease-in-out infinite; }
+/* Lonsdaleit: złoty kryształ, siatka sześciokątów na zdjęciu jak na karcie, mocna poświata */
+.avv-lonsdaleite img { filter: sepia(1) saturate(1.7) hue-rotate(-8deg) brightness(1.08) contrast(1.1); box-shadow: 0 0 0 2px #ffe08a, 0 0 8px #ffcf3f, 0 0 18px #ffb81a !important; }
+.avv-lonsdaleite::after { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z' fill='%23fff0b8' fill-opacity='.75' fill-rule='evenodd'/%3E%3C/svg%3E") center / 40% auto; mix-blend-mode: overlay; }
+.pf-av.avv-lonsdaleite::after { background-size: 22% auto; }
+.avv-rgb::after { inset: -3px; padding: 3px; border-radius: 50%; background: conic-gradient(from var(--ang, 0deg), #ff3b3b, #3bff6b, #3bd5ff, #ff3bd8, #ff3b3b);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: ultraSpin 2s linear infinite; }
+.pf-av.avv-rgb::after { inset: 0; padding: 4px; border-radius: 22px; }
+.avv-tabloid img { filter: saturate(1.5) contrast(1.15); box-shadow: 0 0 0 2px #ffe600, 0 0 0 4px #d8141f !important; }
+.avv-barbie img { filter: saturate(1.3) hue-rotate(-12deg) brightness(1.06); box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ff4fa8, 0 0 12px #ff9fd0 !important; }
+.avv-hawaii img { filter: saturate(1.4) brightness(1.05); box-shadow: 0 0 0 2px #ff8a3d, 0 0 0 4px #14b8a6 !important; }
+.avv-polaroid img { filter: sepia(.25) contrast(.95) brightness(1.06); box-shadow: 0 0 0 3px #f7f2e6, 0 0 0 4px #c9c0aa, 0 2px 8px #0008 !important; }
+.avv-wizytowka img { filter: grayscale(.3); box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1f2f4f !important; }
+.avv-analog img { filter: contrast(1.2) saturate(.7) brightness(.9); box-shadow: 0 0 0 2px #cfd6ff, 0 0 0 4px #14285a !important; }
+.avv-polska img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #dc143c !important; }
+.avv-independence img { filter: sepia(.2) saturate(1.1); box-shadow: 0 0 0 2px #e9dfd7, 0 0 0 4px #d91e3d !important; }
+.avv-sugarcane img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e0233a, 0 0 0 5px #fff !important; }
+.avv-snow img { filter: brightness(1.08) saturate(.85) hue-rotate(-8deg); box-shadow: 0 0 0 2px #fff, 0 0 10px #bfe6ff !important; }
+.avv-ice img { filter: grayscale(1) contrast(1.15) sepia(1) hue-rotate(170deg) saturate(2.2) brightness(1.1); box-shadow: 0 0 0 2px #e6f8ff, 0 0 10px #6fd0ff !important; }
+.avv-christmas img { filter: saturate(1.2); box-shadow: 0 0 0 2px #ffd75e, 0 0 0 4px #b3122b, 0 0 10px #ffd75e !important; }
+.avv-tree img { filter: saturate(1.15); box-shadow: 0 0 0 2px #ffd75e, 0 0 0 4px #1f7a3a !important; }
+.avv-gift img { box-shadow: 0 0 0 2px #ffd75e, 0 0 0 4px #d6202f !important; }
+.avv-ascii img { filter: grayscale(1) contrast(1.6) sepia(1) hue-rotate(70deg) saturate(3) brightness(.9); box-shadow: 0 0 0 2px #2bff70, 0 0 0 4px #031008 !important; }
+.avv-wood img { filter: sepia(.8) saturate(1.1) contrast(1.05) brightness(.95); box-shadow: 0 0 0 2px #b07a45, 0 0 0 4px #5a3a1f !important; }
+.avv-banknote50 img { filter: sepia(.5) saturate(1.2) hue-rotate(-18deg); box-shadow: 0 0 0 2px #e3a64f, 0 0 0 4px #7a4a14 !important; }
+.avv-banknote100 img { filter: sepia(.5) saturate(1.2) hue-rotate(60deg); box-shadow: 0 0 0 2px #9cc97a, 0 0 0 4px #2f5a1f !important; }
+.avv-banknote200 img { filter: sepia(.5) saturate(1.2) hue-rotate(-30deg); box-shadow: 0 0 0 2px #e0c070, 0 0 0 4px #8a5a14 !important; }
+.avv-banknote500 img { filter: sepia(.5) saturate(1.2) hue-rotate(160deg); box-shadow: 0 0 0 2px #7fc0e0, 0 0 0 4px #1f4a6a !important; }
+.avv-dowod img { filter: grayscale(.6) contrast(1.1); box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2f5fa8 !important; }
+.avv-jelly img { filter: saturate(1.5) brightness(1.05); opacity: .88; box-shadow: 0 0 0 2px #ff8ab4aa, 0 0 12px #ff5a8a88 !important; }
+.avv-crystal img { filter: brightness(1.12) contrast(1.1) saturate(.9) hue-rotate(-10deg); box-shadow: 0 0 0 2px #e0f7ff, 0 0 12px #6fe0ff !important; }
+.avv-nightsky img { filter: brightness(.85) contrast(1.15) hue-rotate(200deg) saturate(1.3); box-shadow: 0 0 0 2px #7aa0ff, 0 0 12px #1a2a6a !important; }
+.avv-hologram img { filter: grayscale(1) contrast(1.2) sepia(1) hue-rotate(160deg) saturate(3.5) brightness(1.05); box-shadow: 0 0 0 2px #5ad8ff, 0 0 12px #2aa8ff !important; }
+.avv-joker img { filter: saturate(1.3) contrast(1.1); box-shadow: 0 0 0 2px #ffd21a, 0 0 0 4px #7a2ae0 !important; }
+.avv-jeans img { filter: grayscale(.5) sepia(.6) hue-rotate(190deg) saturate(2.2); box-shadow: 0 0 0 2px #e8c27a, 0 0 0 4px #2a4a8a !important; }
+.avv-ufo img { filter: hue-rotate(100deg) saturate(1.5) contrast(1.1); box-shadow: 0 0 0 2px #7dff3a, 0 0 12px #3aff9a !important; }
+.avv-halloween img { filter: saturate(1.3) contrast(1.1) sepia(.2); box-shadow: 0 0 0 2px #ff7a00, 0 0 0 4px #1a0a12 !important; }
+.avv-lantern img { filter: sepia(.6) saturate(1.8) hue-rotate(-12deg); box-shadow: 0 0 0 2px #ffb347, 0 0 12px #ff7a00 !important; }
+.avv-devil img { filter: grayscale(.4) sepia(1) hue-rotate(-40deg) saturate(3.5) contrast(1.15); box-shadow: 0 0 0 2px #ff2b2b, 0 0 12px #a00000 !important; }
+.av-vname.vt-prism { color: #c8b8ff; } .av-vname.vt-antimatter { color: #aaa2ff; } .av-vname.vt-lonsdaleite { color: #ffd75e; } .av-vname.vt-rgb { color: #3bd5ff; }
+.av-vname.vt-tabloid { color: #ffe600; } .av-vname.vt-barbie { color: #ff8ac4; } .av-vname.vt-hawaii { color: #ffb066; } .av-vname.vt-polaroid { color: #f7f2e6; }
+.av-vname.vt-polska { color: #ff6a7a; } .av-vname.vt-independence { color: #ff6a7a; } .av-vname.vt-snow, .av-vname.vt-ice { color: #bfe6ff; } .av-vname.vt-christmas { color: #ffd75e; }
+.av-vname.vt-ascii { color: #2bff70; } .av-vname.vt-hologram { color: #5ad8ff; } .av-vname.vt-halloween, .av-vname.vt-lantern { color: #ffa23d; } .av-vname.vt-devil { color: #ff4a4a; }

@@ -2313,6 +2313,8 @@ export const EN: Record<string, string> = {
   "Klucz jest podany nad szyfrogramem. Znaki spoza alfabetu (cyfry, nawiasy, spacje) nie zużywają liter klucza.": "The key is given above the ciphertext. Characters outside the alphabet (digits, brackets, spaces) don't use up letters of the key.",
   "W CyberChef użyj Vigenère Decode, wpisz klucz i wklej szyfrogram. Dla szybszej pracy dcode.fr też zadziała.": "In CyberChef use Vigenère Decode, enter the key and paste the ciphertext. dcode.fr works too, if you prefer.",
   "Discord połączony": "Discord linked",
+  "Pochwal się na Discordzie": "Show off on Discord",
+  "Karta poszła na kanał Discorda": "The card was posted to the Discord channel",
   "Discord odłączony": "Discord unlinked",
   "Odłącz": "Unlink",
   "Połącz": "Link",

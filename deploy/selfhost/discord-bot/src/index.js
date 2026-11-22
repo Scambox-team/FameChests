@@ -13,8 +13,8 @@ import path from 'node:path';
 import {
   ApplicationCommandOptionType, Client, EmbedBuilder, GatewayIntentBits,
 } from 'discord.js';
-import { card, cardSearch, player, playerNames, snapshot } from './game.js';
-import { closeRenderer, renderCard } from './render.js';
+import { player, playerNames, snapshot } from './game.js';
+import { closeRenderer } from './render.js';
 import { createFeatures } from './features.js';
 import { clip, day, full, gr, num, pct, rel, stamp } from './format.js';
 
@@ -82,6 +82,7 @@ const CHANNELS = {
   crates: { env: 'CH_CRATES', what: 'skrzynki i rotacja' },
   patch: { env: 'CH_PATCH', what: 'ogłoszenia o aktualizacjach' },
   drops: { env: 'CH_DROPS', what: 'rzadkie dropy' },
+  brag: { env: 'CH_BRAG', what: 'kanał „pochwal się” (karty z przycisku w grze)' },
   alerts: { env: 'CH_ALERTS', what: 'alerty o awarii gry (bez kanału: wiadomość prywatna do właściciela serwera)' },
   commands: { env: 'CH_COMMANDS', what: 'kanał komend (poza nim komendy są odrzucane, o ile COMMANDS_ONLY=1)' },
 };
@@ -248,7 +249,29 @@ async function postQuest(q, key, id, embed, watch, doneText) {
   save();
 }
 
+/** Skarbonka (quest wspólny): stan wpłat, pasek postępu, top 3 */
+function piggyEmbed(p) {
+  const pctDone = p.target ? Math.min(100, Math.round((p.total / p.target) * 100)) : 0;
+  const filled = Math.round(pctDone / 5);
+  const bar = '█'.repeat(filled) + '░'.repeat(20 - filled);
+  const e = new EmbedBuilder()
+    .setColor(p.brokenAt ? 0x59c27a : 0xf29bb8)
+    .setTitle(p.brokenAt ? '🐷 Skarbonka rozbita!' : p.filledAt ? '🐷 Skarbonka jest pełna - rozbijajcie ją!' : '🐷 Skarbonka dnia');
+  e.setDescription((p.desc ? clip(p.desc, 300) + '\n' : '') + '\n`' + bar + '` **' + pctDone + '%**\n**' + gr(p.total) + '** / ' + gr(p.target));
+  e.addFields(
+    { name: '🎁 Nagroda', value: 'Karta ' + (p.rarityName ?? '?') + ' dla każdego wpłacającego (ta sama dla wszystkich, różnią się wariantem)' },
+    { name: '👥 Wpłacających', value: num(p.participants), inline: true },
+  );
+  if (p.filledAt && !p.brokenAt) e.addFields({ name: '🔨 Uderzenia', value: num(p.hits) + ' / ' + num(p.needHits), inline: true });
+  if (p.top?.length) e.addFields({ name: '🏅 Najwięcej wpłacili', value: p.top.map((t, k) => (MEDAL[k] ?? k + 1) + ' ' + clip(t.name, 24) + ' — ' + gr(t.amount)).join('\n') });
+  if (p.endsAt) e.addFields({ name: '⏱️ Koniec', value: rel(p.endsAt), inline: true });
+  return e;
+}
+
 async function quests(snap) {
+  const pg = snap.piggy && snap.piggy.day ? { ...snap.piggy, done: !!snap.piggy.brokenAt } : null;
+  await postQuest(pg, 'piggy', pg?.day, piggyEmbed, (p) => [p.total, p.filledAt, p.brokenAt, p.hits, p.participants, p.top?.[0]?.name],
+    () => '🐷 Skarbonka rozbita! Karty trafiły do wpłacających.');
   const q = snap.quest;
   await postQuest(q, 'quest', q?.day, questEmbed, (q) => [q.done, q.winner, q.wonPerson, q.crateNames, q.endsAt, q.nextAt],
     (q) => `🎉 Quest wykonany przez **${q.winner ?? 'gracza'}**. Następny ${rel(q.nextAt)}.`);
@@ -342,16 +365,9 @@ const COMMANDS = [
       choices: [{ name: 'Wartość kolekcji', value: 'value' }, { name: 'Zebrane karty', value: 'cards' }, { name: 'Otwarte skrzynki', value: 'opened' }],
     }],
   },
-  {
-    name: 'karta',
-    description: 'Pokaż kartę z gry, tak jak wygląda w grze (opcjonalnie w wybranym wariancie)',
-    options: [
-      { name: 'nazwa', description: 'Nazwa karty', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
-      { name: 'wariant', description: 'Wariant karty (domyślnie zwykły)', type: ApplicationCommandOptionType.String, autocomplete: true },
-    ],
-  },
-  { name: 'quest', description: 'Aktualne questy (Wanted i CTF)' },
+  { name: 'quest', description: 'Aktualne questy (Wanted, CTF i Skarbonka)' },
   { name: 'skrzynki', description: 'Skrzynki w sklepie i następna rotacja' },
+  { name: 'odlacz', description: 'Odłącz konto Discord od konta w grze' },
   { name: 'polacz', description: 'Połącz konto Discord z kontem w grze (nagroda + role za miejsce w rankingu)' },
 ];
 
@@ -361,25 +377,6 @@ async function registerCommands() {
   } catch (e) {
     console.error('Nie zarejestrowano komend (/profil, /ranking...). Zaproś bota ponownie z zakresem "applications.commands" (README.md):', e.message);
   }
-}
-
-/** Odpowiedź na /karta: obrazek karty z gry + podstawowe dane. `nazwa` to id z podpowiedzi albo wpisany tekst. */
-async function cardReply(nazwa, wariant) {
-  let c = await card(nazwa);
-  if (!c.found) {
-    // wpisano nazwę ręcznie, bez wyboru z podpowiedzi: bierzemy pierwszą pasującą kartę
-    const [first] = await cardSearch(nazwa);
-    if (first) c = await card(first.id);
-  }
-  if (!c.found) return 'Nie znalazłem takiej karty. Zacznij pisać nazwę i wybierz kartę z podpowiedzi.';
-  const v = c.variants.find((x) => x.key === wariant) ?? c.variants.find((x) => x.key === 'normal') ?? c.variants[0];
-  const png = await renderCard(c.id, v?.key ?? 'normal');
-  const embed = new EmbedBuilder()
-    .setColor(GOLD)
-    .setTitle(`🃏 ${clip(c.name, 100)}`)
-    .setDescription(`**${c.rarity}**${v && v.key !== 'normal' ? ` · wariant **${v.name}**` : ''}${v ? ` · wartość **${gr(v.value)}**` : ''}`)
-    .setImage('attachment://karta.png');
-  return { embeds: [embed], files: [{ attachment: png, name: 'karta.png' }] };
 }
 
 function profileEmbed(p) {
@@ -404,27 +401,13 @@ function profileEmbed(p) {
 client.on('interactionCreate', async (i) => {
   try {
     if (i.isAutocomplete()) {
-      if (i.commandName === 'karta') {
-        const f = i.options.getFocused(true);
-        if (f.name === 'nazwa') {
-          const found = await cardSearch(f.value);
-          await i.respond(found.map((c) => ({ name: clip(`${c.name} (${c.rarity})`, 100), value: c.id })));
-        } else {
-          // warianty tej karty (wybrana z podpowiedzi nazwa to jej id), z wartością w groszach
-          const c = await card(i.options.getString('nazwa') ?? '');
-          const typed = f.value.toLowerCase();
-          const list = (c.variants ?? []).filter((v) => v.name.toLowerCase().includes(typed) || v.key.includes(typed)).slice(0, 25);
-          await i.respond(list.map((v) => ({ name: clip(`${v.name} — ${gr(v.value)}`, 100), value: v.key })));
-        }
-        return;
-      }
       const names = await playerNames(i.options.getFocused());
       await i.respond(names.map((name) => ({ name: clip(name, 100), value: clip(name, 100) })));
       return;
     }
     if (!i.isChatInputCommand()) return;
     // komendy publiczne działają tylko na kanale #komendy (DISCORD_COMMANDS_ONLY=0 wyłącza ten wymóg); /polacz jest prywatne, więc wszędzie
-    if (COMMANDS_ONLY && i.commandName !== 'polacz') {
+    if (COMMANDS_ONLY && i.commandName !== 'polacz' && i.commandName !== 'odlacz') {
       const cmdCh = await channel('commands');
       if (cmdCh && i.channelId !== cmdCh.id) {
         await i.reply({ content: `Komend używaj na kanale <#${cmdCh.id}>.`, ephemeral: true });
@@ -432,13 +415,13 @@ client.on('interactionCreate', async (i) => {
       }
     }
     // kod do połączenia konta widzi tylko ten, kto go zażądał
-    await i.deferReply(i.commandName === 'polacz' ? { ephemeral: true } : {});
+    await i.deferReply(i.commandName === 'polacz' || i.commandName === 'odlacz' ? { ephemeral: true } : {});
     if (i.commandName === 'polacz') {
       await i.editReply(await features.linkReply(i.user.id));
       return;
     }
-    if (i.commandName === 'karta') {
-      await i.editReply(await cardReply(i.options.getString('nazwa', true), i.options.getString('wariant')));
+    if (i.commandName === 'odlacz') {
+      await i.editReply(await features.unlinkReply(i.user.id));
       return;
     }
     if (i.commandName === 'profil') {
@@ -455,7 +438,7 @@ client.on('interactionCreate', async (i) => {
       const lines = list.map((p, k) => `${MEDAL[k] ?? `**${k + 1}.**`} ${clip(p.username, 24)} — ${fmt(p)}`).join('\n') || 'Brak graczy';
       await i.editReply({ embeds: [new EmbedBuilder().setColor(GOLD).setTitle(`🏆 Ranking: ${title}`).setDescription(lines)] });
     } else if (i.commandName === 'quest') {
-      const embeds = [snap.quest && questEmbed(snap.quest), snap.ctf && ctfEmbed(snap.ctf)].filter(Boolean);
+      const embeds = [snap.quest && questEmbed(snap.quest), snap.ctf && ctfEmbed(snap.ctf), snap.piggy?.day && piggyEmbed(snap.piggy)].filter(Boolean);
       await i.editReply(embeds.length ? { embeds } : 'Questy są teraz wyłączone.');
     } else if (i.commandName === 'skrzynki') {
       await i.editReply({ embeds: [cratesEmbed(snap)] });

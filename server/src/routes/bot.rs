@@ -102,6 +102,9 @@ pub async fn snapshot(State(st): State<AppState>, headers: HeaderMap) -> Res {
         None => Value::Null,
     };
 
+    // skarbonka: dzisiejszy stan (bez graczy spoza rankingu - ich wpłat tu i tak nie ma)
+    let piggy = super::piggy::bot_view(&mut c, &cat).await?.unwrap_or(Value::Null);
+
     // quest CTF: bez flagi, danych zadania i podpowiedzi (to zostaje w grze); karta-nagroda w wariancie Cyfrowa
     let ctf = match super::ctf::ctf_view(&mut c, &cat, 0).await? {
         Some(q) => {
@@ -155,6 +158,7 @@ pub async fn snapshot(State(st): State<AppState>, headers: HeaderMap) -> Res {
         "ranking": {"value": top(|p| p.value), "cards": top(|p| p.unique as i64), "opened": top(|p| p.opened)},
         "quest": quest,
         "ctf": ctf,
+        "piggy": piggy,
         "events": events,
         "crates": crates,
         "nextRotation": next_rotation,
@@ -266,10 +270,12 @@ pub async fn drops(State(st): State<AppState>, headers: HeaderMap, axum::extract
     let drops: Vec<Value> = rows
         .into_iter()
         .map(|(id, user, pid, variant, rarity, at)| {
-            let secret = rarity == "secret";
+            // Rzułty papież (wariant tylko Jana Pawła II) jest ogłaszany z nazwą i obrazkiem, reszta tajnych zostaje tajemnicą
+            let rzulty = variant.split('+').any(|v| v == "rzulty");
+            let secret = rarity == "secret" && !rzulty;
             let name = cat.person(&pid).map(|p| p.name.clone()).unwrap_or_else(|| pid.clone());
             json!({
-                "id": id, "username": user, "secret": secret,
+                "id": id, "username": user, "secret": secret, "rzulty": rzulty,
                 "personId": if secret { Value::Null } else { json!(pid) }, "variantKey": variant,
                 "person": if secret { Value::Null } else { json!(name) },
                 "variant": if variant.is_empty() || variant == "normal" { Value::Null } else { json!(g().variant(&variant).name) },
@@ -293,6 +299,23 @@ const CODE_ALPHABET: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 pub struct LinkCodeReq {
     #[serde(rename = "discordId")]
     discord_id: String,
+}
+
+/// `POST /api/bot/unlink` {discordId}: bot odłącza konto Discorda od gracza (komenda /odlacz). {unlinked: bool}
+pub async fn unlink_by_bot(State(st): State<AppState>, headers: HeaderMap, JsonBody(req): JsonBody<LinkCodeReq>) -> Res {
+    match authorized(&st, &headers) {
+        None => return Ok(axum::http::StatusCode::NOT_FOUND.into_response()),
+        Some(false) => return Ok(axum::http::StatusCode::UNAUTHORIZED.into_response()),
+        Some(true) => {}
+    }
+    let id = req.discord_id.trim();
+    let name: Option<String> = sqlx::query_scalar("SELECT u.username FROM discord_links l JOIN users u ON u.id = l.user_id WHERE l.discord_id = $1")
+        .bind(id)
+        .fetch_optional(&st.db)
+        .await?;
+    sqlx::query("DELETE FROM discord_links WHERE discord_id = $1").bind(id).execute(&st.db).await?;
+    sqlx::query("DELETE FROM discord_link_codes WHERE discord_id = $1").bind(id).execute(&st.db).await?;
+    ok(json!({"unlinked": name.is_some(), "username": name}))
 }
 
 /// `POST /api/bot/link-code` {discordId}: bot prosi o kod dla gracza Discorda (komenda /polacz).
@@ -665,4 +688,62 @@ pub async fn cards(State(st): State<AppState>, headers: HeaderMap, axum::extract
     found.sort_by_key(|p| (!fold(&p.name).starts_with(&needle), fold(&p.name)));
     found.truncate(10);
     ok(json!({"cards": found.iter().map(|p| json!({"id": p.id, "name": p.name, "rarity": rarity(&p.rarity)})).collect::<Vec<_>>()}))
+}
+
+// ---------------------------------------------------------------- „Pochwal się” na Discordzie
+
+/// Co ile można się pochwalić kartą (żeby nie zalać kanału)
+const BRAG_GAP_SECS: f64 = 300.0;
+
+#[derive(serde::Deserialize)]
+pub struct BragReq {
+    /// numer egzemplarza z ekwipunku
+    item: i64,
+}
+
+/// `POST /api/discord/brag` {item} (gracz): wiadomość na kanale „pochwal się” o jego karcie. Tylko z połączonym
+/// Discordem, tylko własna jawna karta (nie Tajna), raz na `BRAG_GAP_SECS`. Idzie przez kolejkę jak powiadomienia,
+/// bot wyśle ją na kanał (nie na DM).
+pub async fn discord_brag(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<BragReq>) -> Res {
+    if st.cfg.bot_token.is_none() {
+        return crate::error::bad("Discord nie jest włączony");
+    }
+    if me.hidden_from_ranking() {
+        return crate::error::bad("Gracze poza rankingiem nie mogą się chwalić");
+    }
+    let cat = st.cat();
+    let mut tx = st.db.begin().await?;
+    crate::db::lock_me(&mut tx, me.id).await?;
+    let linked: Option<String> = sqlx::query_scalar("SELECT discord_id FROM discord_links WHERE user_id = $1").bind(me.id).fetch_optional(&mut *tx).await?;
+    if linked.is_none() {
+        return crate::error::bad("Połącz konto z Discordem w Ustawieniach, żeby się chwalić");
+    }
+    let item: Option<(String, String)> =
+        sqlx::query_as("SELECT person_id, variant FROM items WHERE id = $1 AND user_id = $2").bind(req.item).bind(me.id).fetch_optional(&mut *tx).await?;
+    let Some((pid, variant)) = item else { return crate::error::bad("Nie masz takiej karty") };
+    let Some(p) = cat.person(&pid) else { return crate::error::bad("Nie masz takiej karty") };
+    if p.is_secret() {
+        return crate::error::bad("Tajnej karty nie da się pokazać na Discordzie");
+    }
+    let t = now();
+    let last: Option<f64> =
+        sqlx::query_scalar("SELECT MAX(created_at) FROM discord_notifications WHERE user_id = $1 AND kind = 'brag'").bind(me.id).fetch_one(&mut *tx).await?;
+    if let Some(l) = last.filter(|l| t - l < BRAG_GAP_SECS) {
+        let left = (BRAG_GAP_SECS - (t - l)).ceil() as i64;
+        return crate::error::bad(&format!("Chwalić się można raz na 5 minut. Spróbuj za {} s.", left));
+    }
+    let data = json!({
+        "username": me.username, "personId": pid, "person": p.name, "variantKey": variant,
+        "variant": if variant.is_empty() || variant == "normal" { Value::Null } else { json!(g().variant(&variant).name) },
+        "rarity": g().rarities.get(&p.rarity).map_or(p.rarity.clone(), |r| r.name.clone()), "rarityKey": p.rarity,
+        "value": p.value(&variant),
+    });
+    sqlx::query("INSERT INTO discord_notifications (user_id, kind, data, url, created_at) VALUES ($1, 'brag', $2, NULL, $3)")
+        .bind(me.id)
+        .bind(data.to_string())
+        .bind(t)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    ok(json!({"ok": true}))
 }
