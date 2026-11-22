@@ -175,7 +175,8 @@ pub async fn user_search(State(st): State<AppState>, Me(_): Me, Query(query): Qu
     )
     .fetch_all(&st.db)
     .await?;
-    let users: Vec<UserView> = rows.iter().map(|u| u.view(&cat)).collect();
+    // gracze poza rankingiem (ukryci, z pieniędzmi od admina) nie wychodzą w wyszukiwarce
+    let users: Vec<UserView> = rows.iter().filter(|u| !u.hidden_from_ranking()).map(|u| u.view(&cat)).collect();
     ok(json!({"users": users}))
 }
 
@@ -517,6 +518,9 @@ pub struct TradeRequest {
 }
 
 pub async fn trade_create(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<TradeRequest>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let cx = Ctx::new(st, me);
     let mut tx = cx.st.db.begin().await?;
     lock_me(&mut tx, cx.uid()).await?;
@@ -590,6 +594,9 @@ pub async fn trade_create(State(st): State<AppState>, Me(me): Me, JsonBody(req):
 
 /// /api/trades/<id>/accept | decline | cancel
 pub async fn trade_action(State(st): State<AppState>, Me(me): Me, Path((tid, action)): Path<(i64, String)>) -> Res {
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
+    }
     let status = match action.as_str() {
         "accept" => return trade_accept(st, me, tid).await,
         "decline" => TradeStatus::Declined,
@@ -778,6 +785,9 @@ pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<St
     let cat = st.cat();
     let mut c = st.db.acquire().await?;
     let Some(u) = find_user(&mut c, &name).await? else { return fail(StatusCode::NOT_FOUND, "Nie ma takiego gracza") };
+    if u.hidden_from_ranking() && u.id != me.id && !me.admin() {
+        return fail(StatusCode::NOT_FOUND, "Nie ma takiego gracza");
+    }
     let state = get_state(&mut c, u.id).await?;
     let stats = collection_stats(&mut c, &cat).await?;
     let collection: Vec<CollectionEntry> = sqlx::query!(

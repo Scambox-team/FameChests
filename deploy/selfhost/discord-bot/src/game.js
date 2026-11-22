@@ -44,6 +44,18 @@ export async function linkCode(discordId) {
   return res.json();
 }
 
+/** Odłącza konto Discord od gracza: { unlinked, username } */
+export async function unlink(discordId) {
+  const res = await fetch(`${GAME_URL}/api/bot/unlink`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ discordId }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Gra odpowiedziała ${res.status}`);
+  return res.json();
+}
+
 /** Podpowiedzi kart po nazwie: [{ id, name, rarity }] */
 export const cardSearch = async (q) => (await get(`/api/bot/cards?q=${encodeURIComponent(q)}`)).cards ?? [];
 

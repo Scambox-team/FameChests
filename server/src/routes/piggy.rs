@@ -202,6 +202,14 @@ pub async fn add(c: &mut Conn, uid: i64, ev: Ev) -> sqlx::Result<()> {
     if uid <= 0 {
         return Ok(());
     }
+    // gracze poza rankingiem (zablokowani, ukryci, z pieniędzmi od admina) nie wpłacają do skarbonki
+    let out: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND (banned <> 0 OR ranking_hidden <> 0 OR money_generated <> 0))")
+        .bind(uid)
+        .fetch_one(&mut *c)
+        .await?;
+    if out {
+        return Ok(());
+    }
     let (day, _, _) = day_bounds();
     let cached = CACHE.lock().unwrap_or_else(|e| e.into_inner()).clone().filter(|(d, _)| *d == day);
     let info = match cached {
@@ -262,18 +270,20 @@ async fn settle(c: &mut Conn, cat: &Catalog, q: &Quest) -> sqlx::Result<()> {
     .await?;
     let tiers = [CardTier { score: 0, rarity: q.rarity.clone() }];
     let mut place = 0usize;
+    // jedna karta dnia dla wszystkich graczy (różnią się tylko wariantami)
+    let Some(pid) = super::pinball::pick_card(cat, &tiers, 0) else { return Ok(()) };
     for (uid, _, hidden) in rows {
-        // gracze poza rankingiem (admin, testy) dostają kartę, ale nie zajmują miejsc 1-3
-        let slot = if hidden { 3 } else { place.min(3) };
-        if !hidden {
-            place += 1;
+        // gracze poza rankingiem nie biorą udziału (nie wpłacają, więc zwykle ich tu nie ma)
+        if hidden {
+            continue;
         }
-        let Some(pid) = super::pinball::pick_card(cat, &tiers, 0) else { continue };
-        let item = insert_for(c, cat, uid, hidden, &pid, PLACES[slot], "piggy").await?;
+        let slot = place.min(3);
+        place += 1;
+        let item = insert_for(c, cat, uid, false, &pid, PLACES[slot], "piggy").await?;
         sqlx::query("UPDATE piggy_contrib SET place = $3, item_id = $4, person_id = $5, variant = $6 WHERE day = $1 AND user_id = $2")
             .bind(&q.day)
             .bind(uid)
-            .bind(if hidden { 0 } else { place as i32 })
+            .bind(place as i32)
             .bind(item.id)
             .bind(&pid)
             .bind(PLACES[slot])
@@ -341,6 +351,14 @@ async fn view(c: &mut Conn, cat: &Catalog, uid: i64, q: &Quest) -> sqlx::Result<
     }))
 }
 
+/// Stan dzisiejszej skarbonki dla bota Discorda (bez wkładu konkretnego gracza); None = skarbonka wyłączona
+pub async fn bot_view(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Option<Value>> {
+    match today(c).await? {
+        Some(q) => Ok(Some(view(c, cat, 0, &q).await?)),
+        None => Ok(None),
+    }
+}
+
 pub async fn piggy_status(State(st): State<AppState>, Me(me): Me) -> Res {
     let cat = st.cat();
     let mut tx = st.db.begin().await?;
@@ -384,6 +402,9 @@ pub async fn piggy_hit(State(st): State<AppState>, Me(me): Me, JsonBody(req): Js
             return bad("Za szybko");
         }
         l.insert(me.id, Instant::now());
+    }
+    if me.hidden_from_ranking() {
+        return bad("Gracze poza rankingiem nie biorą udziału w skarbonce");
     }
     let n = req.n.clamp(1, 10);
     let cat = st.cat();

@@ -25,6 +25,10 @@ const updateCovered = () => {};
 /** Akcje przycisków w podglądzie karty: dostarczają je ekrany, które je obsługują */
 export const viewerActions: Record<string, any> = {};
 
+// „Pochwal się na Discordzie”: przycisk tylko przy własnej, jawnej karcie i połączonym koncie (stan pobierany raz)
+let discordInfo: Promise<any> | null = null;
+const discordLinked = () => (discordInfo ??= api('/api/discord').catch(() => ({ linked: false })));
+
 "use strict";
 // Efekty: cząsteczki, wielkie odsłonięcie (legendarne/ultra), podgląd karty, deszcz monet.
 // Korzysta z globalnych funkcji z app.js (S, $, person, cardHTML, fmt, esc...).
@@ -397,6 +401,15 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
       </div>`;
   }
   document.body.appendChild(el);
+  if (!p.masked && p.rarity !== "secret" && uid && S.items.some(i => i.id === +uid)) {
+    discordLinked().then(d => {
+      const box = el.querySelector(".vi-social");
+      if (!d?.linked || !d?.enabled || !box || !el.isConnected || box.querySelector('[data-act="brag"]')) return;
+      const b = document.createElement("button");
+      b.className = "btn"; b.dataset.act = "brag"; b.textContent = "Pochwal się na Discordzie";
+      box.appendChild(b);
+    });
+  }
   // Frutiger Aero: w podglądzie żywa scena 3D zamiast obrazków
   // Hologramowy: żywy hologram z obracaniem o 360° przeciąganiem
   if (use3D() && variantParts(variant).includes("hologram")) import("../three/hologramScene").then(m => m.mountHoloLive(el.querySelector(".vf-front .card"))).catch(() => {});
@@ -426,6 +439,11 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "fav") return viewerActions.toggleFavorite?.(pid, variant, uid).then(() => openViewer(pid, variant, uid));
+    if (act === "brag") {
+      const b = e.target.closest("[data-act]");
+      b.disabled = true;
+      return api("/api/discord/brag", { item: +uid }).then(() => { toast("Karta poszła na kanał Discorda"); Sound.click(); }, err => { toast(err.message || "Nie udało się", true); b.disabled = false; });
+    }
     if (act === "draw") return viewerActions.openDrawing?.(+uid);
     if (act === "scratch") return viewerActions.openScratch?.(+uid);
     // Prezentowy: kliknięcie zapakowanej karty też ją odpakowuje

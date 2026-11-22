@@ -134,6 +134,28 @@ pub async fn image_kind(
     image(st, u, pid, kind, q, headers).await
 }
 
+/// Plik zdjęcia karty: własne zdjęcie wariantu (Rzulty, Halloweenowa...; połączony wariant - ta część, która je ma),
+/// potem zdjęcie z "photoFallback" (Lampionowa / Diabelska -> Halloweenowa), na końcu zwykłe (`kind` "alt" = drugie)
+async fn card_photo_path(
+    st: &AppState,
+    cat: &crate::catalog::Catalog,
+    p: &crate::catalog::Person,
+    pid: &str,
+    kind: &str,
+) -> Option<std::path::PathBuf> {
+    let photos = cat.photo_variants(pid);
+    let parts: Vec<&str> = kind.split('+').filter(|v| photos.iter().any(|x| x == v)).collect();
+    if parts.is_empty() {
+        return st.images.ensure(pid, p.wiki.clone(), kind == "alt").await;
+    }
+    let mut tries: Vec<String> = parts.iter().map(|v| v.to_string()).collect();
+    tries.extend(parts.iter().filter_map(|v| g().variants[*v].photo_fallback.clone()).filter(|f| photos.contains(f)));
+    match tries.iter().find_map(|v| st.images.find(pid, &Kind::Variant(v.clone()))) {
+        Some(p) => Some(p),
+        None => st.images.ensure(pid, p.wiki.clone(), false).await,
+    }
+}
+
 async fn image(
     State(st): State<AppState>,
     MaybeUser(u): MaybeUser,
@@ -170,20 +192,7 @@ async fn image(
         }
     }
     drop(c);
-    // własne zdjęcie wariantu (Rzulty, Halloweenowa...; połączony wariant - ta część, która je ma), potem zdjęcie
-    // z "photoFallback" (Lampionowa / Diabelska -> Halloweenowa), na końcu zwykłe
-    let photos = cat.photo_variants(&pid);
-    let parts: Vec<&str> = kind.split('+').filter(|v| photos.iter().any(|x| x == v)).collect();
-    let path = if !parts.is_empty() {
-        let mut tries: Vec<String> = parts.iter().map(|v| v.to_string()).collect();
-        tries.extend(parts.iter().filter_map(|v| g().variants[*v].photo_fallback.clone()).filter(|f| photos.contains(f)));
-        match tries.iter().find_map(|v| st.images.find(&pid, &Kind::Variant(v.clone()))) {
-            Some(p) => Some(p),
-            None => st.images.ensure(&pid, p.wiki.clone(), false).await,
-        }
-    } else {
-        st.images.ensure(&pid, p.wiki.clone(), kind == "alt").await
-    };
+    let path = card_photo_path(&st, &cat, &p, &pid, &kind).await;
     if let Some(path) = path {
         // ?v=<wersja zdjęcia> - adres zmienia się razem ze zdjęciem
         let cache = if p.is_secret() {
@@ -223,7 +232,8 @@ pub async fn avatar_image(State(st): State<AppState>, Me(me): Me, Path(name): Pa
         return Ok(svg_response(MYSTERY_SVG.into()));
     }
     drop(c);
-    let Some(path) = st.images.ensure(&pid, p.wiki.clone(), false).await else {
+    // zdjęcie wariantu ikony (Rzulty Jana Pawła II to własny GIF)
+    let Some(path) = card_photo_path(&st, &cat, &p, &pid, u.avatar_variant()).await else {
         return Err(AppError::Status(StatusCode::NOT_FOUND));
     };
     send_file(&path, mimetype(&path), &headers, "private, max-age=300").await

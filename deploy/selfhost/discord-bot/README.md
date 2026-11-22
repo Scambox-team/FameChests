@@ -9,13 +9,14 @@ Bot dla serwera społeczności scambox.pl. Działa w Dockerze obok gry i co minu
 |---|---|
 | Liczba kont i graczy online w nazwach kanałów **głosowych** (`👥 \| Konta: 2 524`, `🟢 \| Online: 37`), odświeżane co 10 min | `DISCORD_CH_ACCOUNTS`, `DISCORD_CH_ONLINE` |
 | Ranking (wartość kolekcji, karty, otwarte skrzynki) - jedna wiadomość, którą bot edytuje | `DISCORD_CH_RANKING` |
-| Aktualne questy (Wanted i CTF, każdy osobną wiadomością) i ich koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja. Z CTF tylko tytuł, kategoria, poziom i nagroda - zadanie, podpowiedzi i flaga zostają w grze | `DISCORD_CH_QUESTS` |
+| Aktualne questy (Wanted, CTF i Skarbonka dnia, każdy osobną wiadomością; stan skarbonki edytowany na bieżąco) i ich koniec: nowy quest = nowa wiadomość, wykonanie / koniec = edycja. Z CTF tylko tytuł, kategoria, poziom i nagroda - zadanie, podpowiedzi i flaga zostają w grze | `DISCORD_CH_QUESTS` |
 | Eventy: wiadomość na event, edytowana do końca, potem oznaczona jako zakończona | `DISCORD_CH_EVENTS` |
 | Skrzynki w sklepie: nowa wiadomość po każdej rotacji (o północy czasu serwera) | `DISCORD_CH_CRATES` |
 | Aktualizacje gry: nowy wpis z listy zmian (`patchNotes`), gdy wzrośnie numer wersji. Pierwszy start tylko zapamiętuje obecną | `DISCORD_CH_PATCH` |
-| Wyjątkowe dropy: karta ze skrzynki warta co najmniej 30 cen tej skrzynki (3 razy rzadziej niż „Ostatnie najlepsze dropy” w sklepie, `DISCORD_DROP_MULT` w `server/src/routes/shop.rs`), z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
+| Wyjątkowe dropy (Rzułty Papież = ping roli PING (`DISCORD_PING_ROLE_ID`), z nazwą i obrazkiem): karta ze skrzynki warta co najmniej 30 cen tej skrzynki (3 razy rzadziej niż „Ostatnie najlepsze dropy” w sklepie, `DISCORD_DROP_MULT` w `server/src/routes/shop.rs`), z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
 | Alert, gdy gra nie odpowiada 3 minuty (ping właściciela serwera, potem komunikat o powrocie) | `DISCORD_CH_ALERTS` (bez niego: wiadomość prywatna do właściciela) |
-| Komendy `/profil`, `/ranking`, `/karta`, `/quest`, `/skrzynki`, `/polacz` | `DISCORD_CH_COMMANDS` (gdy ustawiony i `DISCORD_COMMANDS_ONLY=1`, publiczne komendy działają tylko tam) |
+| „Pochwal się”: karta gracza wysłana przyciskiem w grze (podgląd karty -> „Pochwal się na Discordzie”; tylko z połączonym kontem, raz na 5 minut, bez Tajnych) | `DISCORD_CH_BRAG` |
+| Komendy `/profil`, `/ranking`, `/quest`, `/skrzynki`, `/polacz`, `/odlacz` | `DISCORD_CH_COMMANDS` (gdy ustawiony i `DISCORD_COMMANDS_ONLY=1`, publiczne komendy działają tylko tam) |
 
 Bot pisze do kanałów tekstowych, więc nadaj mu tam uprawnienia: *View Channel*, *Send Messages*, *Embed Links*, *Attach Files* (obrazki kart). Kanały z ogłoszeniami możesz ustawić jako tylko do odczytu dla graczy. Do kanałów głosowych (liczniki) bot potrzebuje *View Channel*, *Connect* i *Manage Channels*.
 
@@ -48,16 +49,16 @@ Gra i bot muszą mieć ten sam `DISCORD_BOT_GAME_TOKEN` - to hasło, którym bot
 |---|---|
 | `/profil gracz` | wartość kolekcji, zebrane karty, otwarte skrzynki, miejsca w rankingu, kontrakty, ulepszacz, najcenniejsze karty; nazwę gracza podpowiada Discord |
 | `/ranking wedlug` | top 10 według wartości, kart albo skrzynek |
-| `/karta nazwa wariant` | obrazek karty dokładnie jak w grze (CSS wariantu, zdjęcie, napisy) z wartością; nazwę i wariant podpowiada Discord. Tajne i specjalne karty są pomijane |
-| `/quest` | aktualne questy: Wanted i CTF |
+| `/quest` | aktualne questy: Wanted, CTF i Skarbonka (stan wpłat, pasek, top 3) |
 | `/skrzynki` | skrzynki w sklepie i następna rotacja |
 | `/polacz` | kod do połączenia konta Discord z kontem w grze (widoczny tylko dla Ciebie) |
+| `/odlacz` | odłącza Twoje konto Discord od konta w grze (role znikną w ciągu kilku minut; to samo w grze: Ustawienia → Discord → Odłącz) |
 
 Gracze zablokowani albo ukryci w rankingu przez admina nie są widoczni w `/profil`. Tajne karty pokazują się jako "Tajna karta".
 
 ## Karty jako obrazki
 
-Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze jest Chromium, który otwiera stronę `/render/card` gry na ukrytym koncie technicznym `__render__` (bez hasła, poza rankingiem, tworzy się przy pierwszej komendzie `/karta`) i robi zrzut samej karty. Obrazek ma ten sam wygląd co w grze, ale animacje wariantów są zatrzymane w jednym kadrze. Gotowe obrazki bot trzyma w pamięci przez 30 minut. Tajne karty to konto techniczne widzi jako zamaskowane, więc nie da się ich w ten sposób podejrzeć.
+Karta w grze to HTML i CSS, więc bot rysuje ją przeglądarką: w kontenerze jest Chromium, który otwiera stronę `/render/card` gry na ukrytym koncie technicznym `__render__` (bez hasła, poza rankingiem, tworzy się przy pierwszym rysowaniu karty) i robi zrzut samej karty. Obrazek ma ten sam wygląd co w grze, ale animacje wariantów są zatrzymane w jednym kadrze. Gotowe obrazki bot trzyma w pamięci przez 30 minut. Tajne karty to konto techniczne widzi jako zamaskowane, więc nie da się ich w ten sposób podejrzeć.
 
 ## Łączenie kont i role
 

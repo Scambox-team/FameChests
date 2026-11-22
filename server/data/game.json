@@ -4063,6 +4063,15 @@
  },
  "patchNotes": [
   {
+   "v": 32,
+   "date": "2026-11-18",
+   "title": "Pinball: większy stół i wyrzutnia",
+   "items": [
+    "Pinball ma większy stół: panel z wynikiem jest po lewej, a stół zajmuje prawie całą wysokość ekranu.",
+    "Uratowana kulka nie wylatuje już sama: czeka w wyrzutni i wystrzelisz ją z dowolną siłą."
+   ]
+  },
+  {
    "v": 31,
    "date": "2026-11-17",
    "title": "Obrona Orbity, AIMPULSE i Plinko",
