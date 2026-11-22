@@ -251,6 +251,9 @@ pub struct DropsQuery {
 /// `GET /api/bot/drops?after=<id>` - nowe wyjątkowe dropy (karta warta >= DISCORD_DROP_MULT cen skrzynki, shop.rs) po id, najstarsze pierwsze, do 20.
 /// `max` = najwyższe id w tabeli (bot przy pierwszym starcie zaczyna od niego, żeby nie ogłaszać starych).
 /// Nazwa Tajnej karty nie wychodzi z gry: zamiast niej `secret: true`.
+/// Dropy starsze niż tyle nie są ogłaszane (bot po dłuższej przerwie nie zalewa kanału starymi dropami)
+const DROP_FRESH_SECS: f64 = 3.0 * 3600.0;
+
 pub async fn drops(State(st): State<AppState>, headers: HeaderMap, axum::extract::Query(q): axum::extract::Query<DropsQuery>) -> Res {
     match authorized(&st, &headers) {
         None => return Ok(axum::http::StatusCode::NOT_FOUND.into_response()),
@@ -262,9 +265,10 @@ pub async fn drops(State(st): State<AppState>, headers: HeaderMap, axum::extract
     let max: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(id), 0) FROM bot_events").fetch_one(&mut *c).await?;
     let rows: Vec<(i64, String, String, String, String, f64)> = sqlx::query_as(
         "SELECT e.id, u.username, e.person_id, e.variant, e.rarity, e.created_at FROM bot_events e \
-         JOIN users u ON u.id = e.user_id WHERE e.id > $1 AND u.banned = 0 AND u.ranking_hidden = 0 ORDER BY e.id LIMIT 20",
+         JOIN users u ON u.id = e.user_id WHERE e.id > $1 AND e.created_at > $2 AND u.banned = 0 AND u.ranking_hidden = 0 ORDER BY e.id LIMIT 20",
     )
     .bind(q.after.unwrap_or(max))
+    .bind(now() - DROP_FRESH_SECS)
     .fetch_all(&mut *c)
     .await?;
     let drops: Vec<Value> = rows
