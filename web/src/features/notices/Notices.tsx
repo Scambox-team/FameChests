@@ -5,6 +5,7 @@ import { Sound } from '../../sound/sound';
 import { Avatar } from '../../ui/UserLink';
 import { api } from '../../api/client';
 import { S, touch, useGame } from '../../game/store';
+import { fmt } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { DailyDialog } from '../daily/DailyDialog';
@@ -13,7 +14,7 @@ import styles from './Notices.module.css';
 
 // Okienka gry pokazywane jedno po drugim: wiadomości od adminów, lista zmian, codzienna skrzynka.
 // Wiadomości, lista zmian i nagrody za polecenia mają u góry obrazek: własne zdjęcie wiadomości (panel admina) albo domyślny.
-type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' } | { kind: 'referral'; list: any[] };
+type Notice = { kind: 'messages'; list: any[] } | { kind: 'patch'; notes: any[] } | { kind: 'daily' } | { kind: 'terms' } | { kind: 'referral'; list: any[] } | { kind: 'christmas'; note: any };
 
 const seenMessages = new Set<number>();
 const DEFAULT_IMAGE = '/static/img/notice-default.webp';
@@ -30,6 +31,15 @@ export function showReferral(list: any[] = []) {
   if (!fresh.length) return;
   fresh.forEach(n => seenReferrals.add(`${n.role}:${n.referredId}`));
   queueNotice({ kind: 'referral', list: fresh });
+}
+
+let christmasQueued = false;
+
+/** Wynik wspólnej choinki z /api/me: okienko raz (nagrody po evencie świątecznym) */
+export function showChristmas(note: any) {
+  if (!note || christmasQueued) return;
+  christmasQueued = true;
+  queueNotice({ kind: 'christmas', note });
 }
 
 export function queueNotice(n: Notice) {
@@ -59,6 +69,7 @@ export function startNotices(me: any) {
   showTerms(me);
   showMessages(me.messages);
   showReferral(me.referral);
+  showChristmas(me.christmas);
   if (me.patchNotes?.length) queueNotice({ kind: 'patch', notes: me.patchNotes });
   if (me.dailyClaimable) queueNotice({ kind: 'daily' });
 }
@@ -103,6 +114,27 @@ function Referral({ list, onClose }: { list: any[]; onClose: () => void }) {
   );
 }
 
+function Christmas({ note, onClose }: { note: any; onClose: () => void }) {
+  useEffect(() => {
+    Sound.win();
+    api('/api/christmas/seen', {}).catch(() => {});
+    syncInventory(null, true);   // karty z puli i zwrot
+  }, [note]);
+  const rewards: any[] = note.rewards || [];
+  return (
+    <Modal title="Choinka rozliczona" onClose={onClose}>
+      <Banner />
+      <article className={styles.note}>
+        <header><b><Gift size={16} aria-hidden="true" /> Dziękujemy za udekorowanie choinki</b></header>
+        <p>Powiesiłeś {note.hung} {note.hung === 1 ? 'kartę' : 'kart'} o wartości {fmt(note.value)}. Za to dostajesz {rewards.length} {rewards.length === 1 ? 'kartę' : 'kart'} świątecznych o wartości {fmt(note.rewardsValue)} oraz {(note.pool || []).length} {(note.pool || []).length === 1 ? 'kartę' : 'kart'} z puli choinki o wartości {fmt(note.poolValue || 0)}.</p>
+        {(note.pool || []).length > 0 && <><p className="muted small">Z puli (karty innych graczy):</p><ul>{note.pool.slice(0, 8).map((r: any, i: number) => <li key={i}><b>{r.name}</b> ({r.variantName}) od {r.from}</li>)}{note.pool.length > 8 && <li>… i {note.pool.length - 8} więcej</li>}</ul></>}
+        {rewards.length > 0 && <><p className="muted small">Karty świąteczne:</p><ul>{rewards.slice(0, 8).map((r, i) => <li key={i}><b>{r.name}</b> ({r.variantName}){r.special ? ' · specjalna' : ''}</li>)}{rewards.length > 8 && <li>… i {rewards.length - 8} więcej</li>}</ul></>}
+      </article>
+      <Button kind="hue" onClick={onClose}>Super</Button>
+    </Modal>
+  );
+}
+
 export function PatchNotes({ notes, onClose }: { notes: any[]; onClose: () => void }) {
   useEffect(() => { api('/api/patchnotes/seen', {}).catch(() => {}); }, []);
   return (
@@ -133,5 +165,6 @@ export function Notices() {
   if (next.kind === 'messages') return <Messages list={next.list} onClose={close} />;
   if (next.kind === 'patch') return <PatchNotes notes={next.notes} onClose={close} />;
   if (next.kind === 'referral') return <Referral list={next.list} onClose={close} />;
+  if (next.kind === 'christmas') return <Christmas note={next.note} onClose={() => { christmasQueued = false; close(); }} />;
   return <DailyDialog onClose={close} />;
 }

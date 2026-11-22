@@ -45,7 +45,7 @@ function FeedItem({ f, seen }: { f: any; seen: number }) {
         <div className={s.feedSide}>
           {f.message && <div className={s.quote}>„{f.message}”</div>}
           <b>{p.name}</b>
-          <span className="small"><span style={{ color: R.color }}>{R.name}</span>{isSpecial(f.variant) && ` · ${variantName(f.variant)}`}</span>
+          <span className="small"><span className="rar-chip" style={{ color: R.color }}>{R.name}</span>{isSpecial(f.variant) && ` · ${variantName(f.variant)}`}</span>
           <span className={s.value}>{fmt(f.value)}</span>
         </div>
       </div>

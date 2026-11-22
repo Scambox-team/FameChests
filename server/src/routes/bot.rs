@@ -135,7 +135,7 @@ pub async fn snapshot(State(st): State<AppState>, headers: HeaderMap) -> Res {
             t < end && s - 14 * 86400 <= t
         })
         .map(|e| {
-            let mut v = event_view(&cat, e, &HashSet::new());
+            let mut v = event_view(&cat, e, &HashSet::new(), crate::events::today(), false);
             v["advent"] = Value::Null; // nagrody kalendarza adwentowego to niespodzianka dla graczy
             v
         })

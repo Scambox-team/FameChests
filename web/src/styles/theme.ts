@@ -1,15 +1,15 @@
-// Motyw wyglądu: `localStorage.theme` = `y2k`, `aero`, `warm`, `vapor` albo `independence` ustawia `data-theme` na <html>
+// Motyw wyglądu: `localStorage.theme` = `y2k`, `aero`, `warm`, `vapor`, `cyber` albo `independence` ustawia `data-theme` na <html>
 // (Niepodległość to odmiana Warm: data-theme="warm" + data-skin="independence", cały układ i sceny biorą się z Warm).
 // Wywoływane jak najwcześniej (main.tsx i skrypt w index.html), żeby strona nie migała domyślnym motywem.
 // Frutiger Aero jest zablokowany, dopóki serwer nie poda go w `themes` z /api/me (gracz wylosował kartę aero);
 // Niepodległość jest czasowy: serwer podaje go w `themes` tylko w terminie ustawionym w panelu admina (routes/themes.rs).
 
-export type Theme = 'default' | 'y2k' | 'aero' | 'warm' | 'vapor' | 'independence';
+export type Theme = 'default' | 'y2k' | 'aero' | 'warm' | 'vapor' | 'cyber' | 'independence';
 
 export function getTheme(): Theme {
   try {
     const t = localStorage.getItem('theme');
-    return t === 'y2k' || t === 'aero' || t === 'warm' || t === 'vapor' || t === 'independence' ? t : 'default';
+    return t === 'y2k' || t === 'aero' || t === 'warm' || t === 'vapor' || t === 'cyber' || t === 'independence' ? t : 'default';
   } catch { return 'default'; }
 }
 
@@ -44,6 +44,15 @@ function vaporFont() {
   document.head.appendChild(l);
 }
 
+/** Cybercore pisze nagłówki kanciastym krojem Chakra Petch (wczytywany tylko przy tym motywie) */
+function cyberFont() {
+  if (document.getElementById('cyberFont')) return;
+  const l = document.createElement('link');
+  l.id = 'cyberFont'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap';
+  document.head.appendChild(l);
+}
+
 export function applyTheme(t: Theme = getTheme()) {
   const d = document.documentElement.dataset;
   if (t === 'default') delete d.theme;
@@ -52,10 +61,11 @@ export function applyTheme(t: Theme = getTheme()) {
   if (t === 'warm' || t === 'independence') warmFont();   // Niepodległość: Newsreader zostaje na kartach wariantu
   if (t === 'independence') independenceFont();
   if (t === 'vapor') vaporFont();
+  if (t === 'cyber') cyberFont();
 }
 
 /** Motywy, które zmieniają też sceny 3D i układ: przejście do nich albo z nich przeładowuje stronę (sceny czytają motyw raz) */
-export const isDeepTheme = (t: Theme) => t === 'warm' || t === 'aero' || t === 'vapor' || t === 'independence';
+export const isDeepTheme = (t: Theme) => t === 'warm' || t === 'aero' || t === 'vapor' || t === 'cyber' || t === 'independence';
 /** Z głębokich motywów tylko Warm i Aero mają domyślnie wyłączone 3D (własne ilustracje 2D); Vaporwave ma neonowe 3D */
 export const defaultsTo2D = (t: Theme) => t === 'warm' || t === 'aero' || t === 'independence';
 

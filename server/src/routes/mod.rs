@@ -31,6 +31,7 @@ pub mod reports;
 pub mod radio;
 pub mod roles;
 pub mod shop;
+pub mod christmas;
 pub mod events;
 pub mod snake;
 pub mod turbo_run;
@@ -327,6 +328,11 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/arcade/{name}", get(arcade::admin_arcade).post(arcade::admin_arcade_save))
         .route("/api/events", get(events::events_list))
         .route("/api/events/{id}/advent", post(events::advent_claim))
+        .route("/api/christmas", get(christmas::tree_view))
+        .route("/api/christmas/hang", post(christmas::tree_hang))
+        .route("/api/christmas/take", post(christmas::tree_take))
+        .route("/api/christmas/seen", post(christmas::christmas_seen))
+        .route("/api/admin/christmas", get(christmas::admin_christmas).post(christmas::admin_christmas_save))
         .route("/api/admin/events", get(events::admin_events).post(events::admin_events_save))
         .route("/api/pinball", get(pinball::pinball_status))
         .route("/api/pinball/start", post(pinball::pinball_start))

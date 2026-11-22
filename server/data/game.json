@@ -4422,7 +4422,7 @@
   {
    "id": "swieta",
    "name": "Święta",
-   "desc": "Kalendarz adwentowy: od 1 do 24 grudnia codziennie otwórz jedno okienko i odbierz nagrodę.",
+   "desc": "Świąteczny event: od 1 do 24 grudnia ze wszystkich skrzynek wypadają karty w świątecznych wariantach.",
    "start": "2026-12-01",
    "end": "2026-12-24",
    "enabled": true,

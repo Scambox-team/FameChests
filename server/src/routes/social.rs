@@ -919,6 +919,8 @@ struct MeResponse {
     needs_terms: bool,
     /// nagrody za polecenia (reflinki), których gracz jeszcze nie widział
     referral: Vec<super::referral::RefNote>,
+    /// wynik wspólnej choinki do pokazania raz (nagrody po evencie świątecznym)
+    christmas: Option<Value>,
     /// dostępne motywy interfejsu (poza domyślnym, Y2K, Warm i Vaporwave): "aero" - Frutiger Aero (odblokowany kartą), "independence" - Niepodległość (czasowy)
     themes: Vec<&'static str>,
     /// motyw, który dostają domyślnie gracze bez własnego wyboru (teraz: "independence" w trakcie eventu niepodległościowego)
@@ -941,6 +943,7 @@ pub async fn themes_seen(State(st): State<AppState>, Me(me): Me) -> Res {
 pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) -> Res {
     let cx = Ctx::new(st.clone(), me);
     settle_market(&st.db, &cx.cat).await?; // licytacje kończą się na czas
+    super::christmas::settle_due(&st).await; // choinka po evencie świątecznym rozlicza się raz
     super::horses::settle_my_horses(&cx).await?;
     let mut c = st.db.acquire().await?;
     let uid = cx.uid();
@@ -1000,6 +1003,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         ach_unseen: crate::achievements::unseen(&mut c, uid).await?,
         horse_news: super::horses::horse_news(&mut c, uid).await?,
         referral: super::referral::notes(&mut c, &cx.cat, uid).await?,
+        christmas: super::christmas::notes(&mut c, &cx.cat, uid).await?,
         needs_terms: !super::reports::terms_ok(&mut c, uid).await?,
         theme_default: if indep_now { Some("independence") } else { None },
         themes: {

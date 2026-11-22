@@ -25,7 +25,11 @@
   --radius-s: 8px;
   --display: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --body: "Hanken Grotesk", system-ui, sans-serif;
-  scrollbar-color: #b08d5c #e4cba6;
+  scrollbar-color: #6a4228 #e4cba6;
+  --brown: #3b2214;              /* czekoladowy brąz z tła karuzeli skrzynek (środek #4b2c1b, brzeg #2a170d) */
+  --brown-hi: #54331f;
+  --brown-dk: #2a170d;
+  --on-brown: #f8ecd6;
 
   /* zmienne wspólnej konstrukcji (theme-deep.css) */
   --deep-hover: #d9bd93;
@@ -207,3 +211,89 @@
 :root[data-theme="warm"] .pb-cabinet::before, :root[data-theme="warm"] .pb-cabinet::after { background: linear-gradient(#f3d9a0, #b8863a 35%, #fff0c8 50%, #8a5a22 75%, #e8b46a); }
 :root[data-theme="warm"] .sn-board { box-shadow: 0 0 0 1.5px #2b1a0d, 0 0 0 7px #e8b46a, 0 0 0 8.5px #2b1a0d, 4px 8px 0 8px #2b1a0d; }
 :root[data-theme="warm"] .pb-dmd { border-color: #8a5a22; }
+
+/* ======================= ciemne i jasne: espresso jako druga połowa palety =======================
+   Kolor tła karuzeli skrzynek (--brown, --brown-dk) leży tu PŁASKO, bez gradientów (gradient zostaje tylko w samej karuzeli).
+   Pasek boczny, górny, dolny pasek telefonu, nagłówki ekranów i kafelki Arena / Kasyno są ciemnymi wyspami: dostają paletę --isl-*,
+   więc cały tekst w nich jest jasny. Odmiana Niepodległość ma własne reguły (data-skin), tu jej nie ruszamy. */
+:root[data-theme="warm"]:not([data-skin]) :is([class*="_app_"] > [class*="_side_"], [class*="_app_"] > main > [class*="_top_"], [class*="_tabbar_"],
+    [class*="_hero_"]:not(:has(> [class*="_scene_"])), [class*="_home_"] [class*="_tile_"][class*="_arena_"], [class*="_home_"] [class*="_tile_"][class*="_casino_"]) {
+  color-scheme: dark;
+  --ground: var(--isl-ground); --surface: var(--isl-surface); --raised: var(--isl-raised); --rule: var(--isl-rule); --control: var(--isl-control);
+  --text: var(--isl-text); --muted: var(--isl-muted); --faint: var(--isl-faint);
+  --warn: #e8b46a; --good: #8fd69c; --bad: #ff8f80;
+  color: var(--text);
+}
+:root[data-theme="warm"]:not([data-skin]) ::selection { background: var(--brown); color: var(--on-brown); }
+
+/* tło strony: papier z ziarnem, cieplejsze rogi i koncentryczne pierścienie wychodzące z prawego dolnego rogu (jak tarcza radaru na starej mapie) */
+:root[data-theme="warm"]:not([data-skin]) body {
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .17 0 0 0 0 .1 0 0 0 0 .05 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.5'/></svg>"),
+    radial-gradient(60% 45% at 100% 0%, #b5553a22, transparent 70%),
+    radial-gradient(55% 45% at 0% 100%, #3b221420, transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-theme="warm"]:not([data-skin]) #root::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: repeating-radial-gradient(circle at 100% 100%, transparent 0 26px, #3b22142e 26px 27px);
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, #000, transparent 62vmin); mask-image: radial-gradient(circle at 100% 100%, #000, transparent 62vmin);
+}
+
+/* pasek boczny (komputer): płaski espresso, aktywna pozycja jaśniejszym brązem z terakotową kreską */
+@media (min-width: 821px) {
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > [class*="_side_"] { background: var(--brown-dk); box-shadow: none; }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > [class*="_side_"] [class*="_brand_"] { border-bottom-color: var(--isl-rule); }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > [class*="_side_"] [class*="_link_"]:hover,
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > [class*="_side_"] [class*="_nav_"] button[class*="_link_"]:hover { background: rgb(248 236 214 / .09); color: #fff; text-decoration: none; }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_nav_"] [class*="_link_"][class*="_on_"] { background: var(--brown-hi); color: var(--on-brown); border-radius: 0 8px 8px 0; box-shadow: inset 3px 0 0 var(--hue); }
+  /* pasek górny: espresso, tytuł jasny, saldo złote, przycisk codziennej skrzynki z jasnym obrysem */
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > main > [class*="_top_"] { background: var(--brown); box-shadow: inset 0 0 0 1px var(--isl-rule), 4px 4px 0 rgb(43 26 13 / .28); }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > main > [class*="_top_"] [class*="_money_"] { color: #e8b46a; }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > main > [class*="_top_"] [class*="_daily_"] { background-color: transparent; border-color: var(--isl-muted); color: var(--text); }
+  :root[data-theme="warm"]:not([data-skin]) [class*="_app_"] > main > [class*="_top_"] [class*="_daily_"]:hover { background-color: var(--hue); border-color: var(--hue); color: #fff; box-shadow: 3px 3px 0 var(--isl-ground); }
+}
+/* dolny pasek telefonu */
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabbar_"] { background: var(--brown-dk); box-shadow: 0 -1px 0 var(--isl-rule); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabbar_"] [class*="_link_"] { color: var(--isl-muted); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabbar_"] [class*="_link_"][class*="_on_"] { color: #f0a766; background: none; box-shadow: none; }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabbar_"] [class*="_link_"][class*="_on_"] svg { color: #f0a766; }
+
+/* zakładki: aktywna pozycja płaski brąz z jasnym tekstem */
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabs_"] { background: rgb(59 34 20 / .13); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabs_"] button[aria-selected="true"] { background: var(--brown); color: var(--on-brown); box-shadow: none; }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabs_"] button[aria-selected="true"]:hover { background: var(--brown-hi); color: var(--on-brown); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_tabs_"] button:not([aria-selected="true"]):hover { background: rgb(59 34 20 / .12); color: var(--text); }
+
+/* nagłówki paneli: krótka brązowa kreska redakcyjna */
+:root[data-theme="warm"]:not([data-skin]) .panel h3 { border-bottom-color: #bf9f70; background: linear-gradient(var(--brown), var(--brown)) 0 100% / 56px 3px no-repeat; }
+
+/* nagłówek ekranu: ciemna winieta z jasnym szeryfem i pierścieniami po prawej */
+:root[data-theme="warm"]:not([data-skin]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) {
+  position: relative; isolation: isolate; overflow: hidden; min-height: 0; padding: 26px 30px; border-radius: var(--radius);
+  background: var(--brown-dk); box-shadow: inset 0 0 0 1px var(--isl-rule);
+}
+:root[data-theme="warm"]:not([data-skin]) [class*="_hero_"]:not(:has(> [class*="_scene_"]))::after {
+  display: block; content: ""; position: absolute; z-index: -1; pointer-events: none; right: -90px; top: 50%; width: 360px; height: 360px; translate: 0 -50%; border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 16px, #b5553a40 16px 17px);
+}
+:root[data-theme="warm"]:not([data-skin]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) h2 { color: var(--text); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_hero_"]:not(:has(> [class*="_scene_"])) [class*="_stats_"] div { background: rgb(248 236 214 / .07); box-shadow: inset 0 0 0 1px var(--isl-rule); border-left: 0; }
+
+/* strona startowa: Arena i Kasyno jako ciemne kafelki (płaski espresso), reszta zostaje pastelowa */
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] [class*="_tile_"][class*="_arena_"],
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] a[class*="_tile_"][class*="_arena_"]:hover,
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] [class*="_tile_"][class*="_casino_"],
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] a[class*="_tile_"][class*="_casino_"]:hover { background: var(--brown); box-shadow: inset 0 0 0 1px var(--isl-rule), 5px 6px 0 rgb(43 26 13 / .22); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] [class*="_tile_"]:is([class*="_arena_"], [class*="_casino_"]) [class*="_cta_"] { background: var(--on-brown); color: var(--brown); box-shadow: 3px 3px 0 var(--hue); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] :is([class*="_arena_"], [class*="_casino_"]) :is([class*="_swords_"], [class*="_knight_"]) { box-shadow: 6px 7px 0 var(--hue); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] [class*="_casino_"] [class*="_wheel_"] > i { box-shadow: 6px 7px 0 var(--hue); }
+:root[data-theme="warm"]:not([data-skin]) [class*="_home_"] [class*="_casino_"] [class*="_dice_"] { box-shadow: 3px 4px 0 var(--hue); }
+
+/* małe kafelki kart (.pick) mają na sztywno ciemne tło: tekst w nich zawsze jasny, także w jasnym motywie */
+:root[data-theme="warm"] .pick { --text: var(--isl-text); --muted: var(--isl-muted); --good: #8fd69c; color: var(--isl-text); }
+/* plakietka „Test” na karuzeli skrzynek: jasny bursztyn zamiast ciemnego, żeby czarny tekst był czytelny */
+:root[data-theme="warm"] [class*="_wrap_"]:has(> [class*="_track_"]) [class*="_test_"] { background: #e8b46a; }
+
+/* liczniki rzadkości w klaserze: tekst w kolorze tuszu, kolor rzadkości zostaje w kropce (jasne kolory rzadkości nie są czytelne na papierze) */
+:root[data-theme="warm"] .rar-count { color: var(--text); }

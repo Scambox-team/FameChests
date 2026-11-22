@@ -26,7 +26,7 @@ export function OwnedCardDialog({ pid, onClose }: { pid: string; onClose: () => 
       <div className={styles.grid}>
         <Card person={pid} variant={o.best} className={styles.card} />
         <div className={styles.side}>
-          <p className="muted">{S.cfg.types[p.type].name} · {crateOf(p.crate).name} · <b style={{ color: R.color }}>{R.name}</b></p>
+          <p className="muted">{S.cfg.types[p.type].name} · {crateOf(p.crate).name} · <b className="rar-chip" style={{ color: R.color }}>{R.name}</b></p>
           <p>Posiadasz: <b>{o.ids.length}</b></p>
           {special && <p className="muted">Karty specjalnej nie da się sprzedać grze, postawić w kasynie ani zużyć w kuźni. Możesz ją wymienić albo wystawić na rynku.</p>}
           {joker && <p className="muted">Kartę Jokerową możesz sprzedać grze jak zwykłą kartę. Nie da się jej postawić w kasynie ani zużyć w kuźni.</p>}

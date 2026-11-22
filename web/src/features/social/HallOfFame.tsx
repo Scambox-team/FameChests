@@ -11,7 +11,7 @@ import { SearchField, Select } from '../../ui/Field';
 import { timeAgo } from '../../lib/time';
 import styles from './hof.module.css';
 
-const SOURCES: Record<string, string> = { crate: 'Skrzynka', contract: 'Kontrakt', upgrade: 'Ulepszacz', casino: 'Kasyno', market: 'Rynek', trade: 'Wymiana', reward: 'Nagroda', link: 'Link', pinball: 'Pinball' };
+const SOURCES: Record<string, string> = { crate: 'Skrzynka', contract: 'Kontrakt', upgrade: 'Ulepszacz', casino: 'Kasyno', market: 'Rynek', trade: 'Wymiana', reward: 'Nagroda', link: 'Link', pinball: 'Pinball', advent: 'Event' };
 const day = (t: number) => new Date(t * 1000).toLocaleDateString('pl-PL');
 
 function Thumb({ pid }: { pid: string }) {
@@ -123,7 +123,7 @@ export function HallOfFame() {
               <Thumb pid={id} />
               <div className={styles.hofInfo}>
                 <div><b>{p.masked ? '???' : p.name}</b> <small className="muted">{c.code} {String(p.number).padStart(3, '0')}</small></div>
-                <div className="small"><span style={{ color: R.color }}>{R.name}</span></div>
+                <div className="small"><span className={styles.rar} style={{ color: R.color }}>{R.name}</span></div>
                 {vars.length > 0 ? <>
                   <div className="muted small">Wariantów: <b>{vars.length}</b> · zdobyto łącznie <b>{sum(id).toLocaleString('pl-PL')}×</b></div>
                   {first && <div className="small"><Medal size={13} aria-hidden="true" style={{ verticalAlign: -2 }} /> Pierwszy: {user(first.u)} <span className="muted">· {day(first.t)}</span></div>}

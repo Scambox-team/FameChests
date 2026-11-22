@@ -343,6 +343,19 @@ CREATE TABLE IF NOT EXISTS advent_claims (
     PRIMARY KEY (user_id, event_id, day)
 );
 
+-- wspólna choinka eventu świątecznego (routes/christmas.rs): karty powieszone przez graczy (item_id leży wtedy w ESCROW do końca
+-- eventu; `returned` = 1 po rozliczeniu), wynik rozliczenia gracza (cards = JSON [{person, variant, value}]) i znacznik rozliczenia eventu
+CREATE TABLE IF NOT EXISTS tree_cards (
+    item_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, event_id TEXT NOT NULL, day TEXT NOT NULL, person_id TEXT NOT NULL,
+    variant TEXT NOT NULL, value BIGINT NOT NULL, hung_at DOUBLE PRECISION NOT NULL, returned INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS tree_cards_user ON tree_cards (event_id, user_id, day);
+CREATE TABLE IF NOT EXISTS tree_results (
+    event_id TEXT NOT NULL, user_id BIGINT NOT NULL, hung BIGINT NOT NULL, value BIGINT NOT NULL, budget BIGINT NOT NULL,
+    cards TEXT NOT NULL, settled_at DOUBLE PRECISION NOT NULL, seen INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (event_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS tree_settled (event_id TEXT PRIMARY KEY, at DOUBLE PRECISION NOT NULL);
+
 -- polecenia (reflinki, routes/referral.rs): kod gracza, unikalne wejścia (skrót IP z solą), polecenia, skróty IP graczy
 CREATE TABLE IF NOT EXISTS referral_codes (user_id BIGINT PRIMARY KEY, code TEXT NOT NULL UNIQUE,
                                            created_at DOUBLE PRECISION NOT NULL, clicks BIGINT NOT NULL DEFAULT 0);

@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 
 use axum::extract::{Path, State};
+use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -41,28 +42,32 @@ pub(super) fn reward_view(cat: &Catalog, r: &Value) -> Value {
     }
 }
 
-/// Event dla gracza: termin, opis, warianty z dropów, kalendarz (dni minione, dziś, przyszłe; nagrody tylko do dziś)
-pub(super) fn event_view(cat: &Catalog, e: &GameEvent, claimed: &HashSet<(String, i32)>) -> Value {
-    let t = now() as i64;
+/// Event dla gracza: termin, opis, warianty z dropów, kalendarz (dni minione, dziś, przyszłe; nagrody do dziś, zaległe okienka
+/// można otworzyć później). `today` to „dziś” gracza (admin z datą testową ma inne), `avail` - czy kalendarz jest dla niego dostępny.
+pub(super) fn event_view(cat: &Catalog, e: &GameEvent, claimed: &HashSet<(String, i32)>, today: NaiveDate, avail: bool) -> Value {
     let (start, end) = e.span();
-    let advent = e.advent.as_ref().map(|days| {
-        let today_n = e.advent_day(today());
-        let started = (today() - chrono::NaiveDate::parse_from_str(&e.start, "%Y-%m-%d").unwrap_or(today())).num_days() + 1;
+    let start_day = NaiveDate::parse_from_str(&e.start, "%Y-%m-%d").unwrap_or(today);
+    let end_day = NaiveDate::parse_from_str(&e.end, "%Y-%m-%d").unwrap_or(today);
+    let running = e.enabled && start_day <= today && today <= end_day;
+    let started = (today - start_day).num_days() + 1;
+    let advent = e.advent.as_ref().filter(|_| avail).map(|days| {
         json!(days.iter().enumerate().map(|(i, rw)| {
             let day = i as i32 + 1;
             let open = (day as i64) <= started;   // dzień już był albo jest dziś - nagrodę widać
+            let done = claimed.contains(&(e.id.clone(), day));
             json!({
                 "day": day,
-                "claimed": claimed.contains(&(e.id.clone(), day)),
-                "today": today_n == Some(day as usize),
+                "claimed": done,
+                "today": running && (day as i64) == started,
                 "past": (day as i64) < started,
+                "claimable": running && open && !done,
                 "rewards": if open { json!(rw.iter().map(|r| reward_view(cat, r)).collect::<Vec<_>>()) } else { Value::Null },
             })
         }).collect::<Vec<_>>())
     });
     json!({
         "id": e.id, "name": e.name, "desc": e.desc, "start": e.start, "end": e.end, "startsAt": start, "endsAt": end,
-        "active": e.active(t),
+        "active": running,
         "drops": e.drops.iter().map(|d| json!({"variant": d.variant, "name": g().variant(&d.variant).name, "chance": d.chance})).collect::<Vec<_>>(),
         "advent": advent,
     })
@@ -81,29 +86,60 @@ pub async fn events_list(State(st): State<AppState>, Me(me): Me) -> Res {
         .await?
         .into_iter()
         .collect();
-    let list: Vec<Value> = cat
-        .vs
-        .game_events
-        .iter()
-        .filter(|e| e.enabled)
-        .filter(|e| {
-            let (s, end) = e.span();
-            t < end && s - UPCOMING_DAYS * 86400 <= t
-        })
-        .map(|e| event_view(&cat, e, &claimed))
-        .collect();
+    let today = super::christmas::today_for(&mut c, &me).await?;
+    let mut list: Vec<Value> = Vec::new();
+    for e in cat.vs.game_events.iter().filter(|e| e.enabled) {
+        let (s, end) = e.span();
+        let christmas = e.id == super::christmas::EVENT_ID;
+        let tile = if christmas { Some(super::christmas::tile_state(&mut c, &cat, &me).await?) } else { None };
+        // kalendarz świąteczny jest wyłączony dla graczy (admini widzą go zawsze, z ewentualną datą testową)
+        let avail = tile.as_ref().map_or(true, |t| t["available"].as_bool() == Some(true));
+        let test_in = me.admin() && s <= crate::events::day_start(today) && crate::events::day_start(today) < end;
+        if !((t < end && s - UPCOMING_DAYS * 86400 <= t) || test_in) {
+            continue;
+        }
+        let mut v = event_view(&cat, e, &claimed, today, avail);
+        if let Some(tile) = tile {
+            v["christmas"] = tile;
+        }
+        list.push(v);
+    }
     ok(json!({"events": list}))
 }
 
-/// Odbiór nagrody dnia z kalendarza adwentowego (raz na gracza; tylko dzisiejszy dzień)
-pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path<String>) -> Res {
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct AdventRequest {
+    /// numer okienka (domyślnie dzisiejsze); zaległe okienka z poprzednich dni też można otworzyć
+    day: Option<i32>,
+}
+
+/// Odbiór nagrody z kalendarza adwentowego (raz na gracza i okienko): dzisiejszego albo zaległego z poprzednich dni
+pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path<String>, JsonBody(req): JsonBody<AdventRequest>) -> Res {
     let cat = st.cat();
     let Some(e) = cat.vs.game_events.iter().find(|e| e.id == id).cloned() else { return bad("Nie ma takiego eventu") };
-    let Some(day) = e.advent_day(today()) else { return bad("Dziś nie ma okienka do otwarcia") };
-    let rewards = e.advent.as_ref().and_then(|d| d.get(day - 1)).cloned().unwrap_or_default();
     let cx = Ctx::new(st.clone(), me.clone());
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
+    if e.id == super::christmas::EVENT_ID && !super::christmas::available(&mut tx, &me).await? {
+        return bad("Kalendarz adwentowy jeszcze nie jest dostępny");
+    }
+    let today = super::christmas::today_for(&mut tx, &me).await?;
+    let Some(start) = NaiveDate::parse_from_str(&e.start, "%Y-%m-%d").ok() else { return bad("Nie ma takiego eventu") };
+    let started = (today - start).num_days() + 1;
+    let ended = NaiveDate::parse_from_str(&e.end, "%Y-%m-%d").is_ok_and(|end| today > end);
+    let days = e.advent.as_ref().map_or(0, |d| d.len() as i64);
+    if !e.enabled || started < 1 || ended || days == 0 {
+        return bad("Dziś nie ma okienka do otwarcia");
+    }
+    let day = i64::from(req.day.unwrap_or(started.min(days) as i32));
+    if day < 1 || day > days {
+        return bad("Nie ma takiego okienka");
+    }
+    if day > started {
+        return bad("To okienko jeszcze się nie otwiera");
+    }
+    let rewards = e.advent.as_ref().and_then(|d| d.get(day as usize - 1)).cloned().unwrap_or_default();
     let fresh = sqlx::query("INSERT INTO advent_claims (user_id, event_id, day, claimed_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING")
         .bind(me.id)
         .bind(&e.id)

@@ -104,6 +104,10 @@ export function SettingsPanel({ className }: { className?: string }) {
             <input type="radio" name="theme" checked={current === 'vapor'} onChange={() => pickTheme('vapor')} />
             <span><b>Vaporwave</b><small>Neonowy zachód słońca, siatka, róż i błękit.</small></span>
           </label>
+          <label className={styles.check}>
+            <input type="radio" name="theme" checked={current === 'cyber'} onChange={() => pickTheme('cyber')} />
+            <span><b>Cybercore</b><small>Czarny ekran, neonowa zieleń i cyjan, siatka, skan-linie i panele jak z hełmofonu.</small></span>
+          </label>
           {indepOpen && (
             <label className={styles.check}>
               <input type="radio" name="theme" checked={current === 'independence'} onChange={() => pickTheme('independence')} />

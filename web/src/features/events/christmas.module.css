@@ -1,0 +1,37 @@
+/* Wspólna choinka eventu świątecznego (okno z Christmas.tsx). Kolory zostają świąteczne w każdym motywie: rysunek i bombki mają własne barwy. */
+.admin { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 8px 12px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--warn) 20%, transparent); font-size: 13px; }
+.top { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.treeBtn { position: relative; display: block; width: 100%; padding: 8px 8px 0; border: 0; border-radius: var(--radius); background: radial-gradient(70% 55% at 50% 40%, #1b3a6b, #0b1830 80%); color: #fff; cursor: pointer; font: inherit; transition: transform .15s, box-shadow .15s; }
+.treeBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px -12px #000b, 0 0 0 2px #ffd54a66; }
+.art { display: block; width: 100%; height: auto; }
+.treeHint { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0 10px; font-size: 12px; color: #d8e4ff; }
+.star { transform-box: fill-box; transform-origin: center; animation: treeStar 2.6s ease-in-out infinite; }
+.bauble { animation: treeTwinkle 3.2s ease-in-out infinite; }
+@keyframes treeStar { 50% { opacity: .65; } }
+@keyframes treeTwinkle { 50% { opacity: .72; } }
+@media (prefers-reduced-motion: reduce) { .star, .bauble { animation: none; } }
+.side { display: grid; gap: 14px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stats div { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--raised); box-shadow: inset 0 0 0 1px var(--rule); }
+.stats b { font: 700 20px/1.1 var(--display); overflow-wrap: anywhere; }
+.stats span { font-size: 12px; color: var(--muted); }
+.today { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--raised); box-shadow: inset 0 0 0 1px var(--rule); }
+.today h3, .rules h3, .mine h3, .result h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.hungRow { display: flex; gap: 14px; align-items: flex-start; }
+.hungRow > :first-child { width: 92px; flex: none; }
+.hungRow p { margin: 0 0 8px; }
+.rules, .mine, .result { display: grid; gap: 8px; margin-top: 16px; }
+.rules ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.45; }
+.hungList { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 240px; overflow: auto; }
+.hungList li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 6px 10px; border-radius: var(--radius-s); background: var(--raised); font-size: 14px; }
+.hungList li > :first-child { min-width: 64px; }
+.result { padding: 14px; border-radius: var(--radius); background: color-mix(in srgb, #47c26b 16%, transparent); box-shadow: inset 0 0 0 1px #47c26b66; }
+.special { padding: 0 8px; border-radius: 999px; background: #ffd54a; color: #3a2a00; font-size: 12px; font-weight: 700; }
+.search { width: 100%; max-width: 360px; margin: 8px 0; }
+.cell { display: grid; gap: 3px; align-content: start; min-width: 0; }
+.cap { font-size: 11px; line-height: 14px; text-align: center; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  .treeBtn { max-width: 300px; margin-inline: auto; }
+  .hungRow { flex-direction: column; }
+}

@@ -1526,6 +1526,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     super::casino::blackjack_forget_user(&mut tx, uid).await?; // rozdanie w trakcie i postawione w nim karty
     super::referral::referral_forget_user(&mut tx, uid).await?; // kod polecenia i polecenia
     super::poker::poker_forget_user(&mut tx, &st.cat(), uid).await?; // miejsce przy stole pokera i przyniesione karty
+    super::christmas::christmas_forget_user(&mut tx, uid).await?; // karty powieszone na choince
     super::horses::horse_forget_user(&mut tx, uid).await?; // zakłady na wyścigi konne i postawione w nich karty
     sqlx::query("DELETE FROM user_counters WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM passport_stamps WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;

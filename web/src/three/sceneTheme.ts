@@ -9,7 +9,7 @@ export interface CrateMats {
   trim: { color: string; roughness: number; metalness: number };
 }
 export interface SceneTheme {
-  id: 'default' | 'warm' | 'aero' | 'vapor';
+  id: 'default' | 'warm' | 'aero' | 'vapor' | 'cyber';
   /** ekspozycja sceny skrzynek */
   exposure: number;
   /** tło i panele światła, które odbijają się w metalu */
@@ -107,7 +107,24 @@ const VAPOR: SceneTheme = {
   sky: '#2a0a4e', turf: '#0e2a5a'
 };
 
+// Cybercore: czarny ekran z neonową zielenią i cyjanem, magenta jako kontrapunkt. Chłodny chrom, ciemne lakierowane skrzynki.
+const CYBER: SceneTheme = {
+  id: 'cyber', exposure: 1.1,
+  envBg: '#03080c', envPanels: [[0, 6, 2, 8, '#22f5b4'], [-6, 1, 3, 4, '#00d9ff'], [6, 2, -2, 5, '#ff2e88']], envIntensity: .8,
+  key: { color: '#d9fff3', intensity: 2.5 }, rim: { intensity: 3.6 },
+  shadow: { color: '#000000', opacity: .7 },
+  step: { color: '#0d1e24', roughness: .3, metalness: .45 },
+  mats: {
+    body: { roughness: .34, metalness: .25, clearcoat: .8, clearcoatRoughness: .1 },
+    lid: { roughness: .28, metalness: .3, clearcoat: .9, clearcoatRoughness: .08 },
+    trim: { color: '#22f5b4', roughness: .2, metalness: 1 }
+  },
+  bubbles: false, floor: '#04090d',
+  felt: ['#0a5a52', '#06322f', '#021412'], wood: [['#143a44', '#05161a'], ['#2a7f8c', '#0c3038']], metal: '#22f5b4', chrome: '#cfeee6',
+  sky: '#02070b', turf: '#052a24'
+};
+
 export function sceneTheme(): SceneTheme {
   const t = baseTheme();
-  return t === 'warm' ? WARM : t === 'aero' ? AERO : t === 'vapor' ? VAPOR : DEFAULT;
+  return t === 'warm' ? WARM : t === 'aero' ? AERO : t === 'vapor' ? VAPOR : t === 'cyber' ? CYBER : DEFAULT;
 }

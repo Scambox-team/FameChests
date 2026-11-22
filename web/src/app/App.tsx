@@ -29,7 +29,7 @@ import { VerifyEmailPage } from '../features/auth/VerifyEmailPage';
 import { noteQuest } from '../features/crates/QuestBox';
 import { noteCtf } from '../features/home/CtfQuest';
 import { Stage } from '../features/crates/Stage';
-import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
+import { Notices, showChristmas, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
 import { RenderCard } from '../features/render/RenderCard';
@@ -50,6 +50,7 @@ function onMe(me: any) {
   if (me.jackpot) showJackpotResult(me.jackpot);
   if (me.messages?.length) showMessages(me.messages);
   if (me.referral?.length) showReferral(me.referral);
+  if (me.christmas) showChristmas(me.christmas);
   showTerms(me);
 }
 

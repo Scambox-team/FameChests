@@ -187,13 +187,13 @@ export function ForgePage() {
         </section>
 
         <section className={styles.panel} aria-label="Kontrakt">
-          <h2 className={styles.title}>{need} × <span style={{ color: R.color }}>{R.name}</span> daje 1 × <span style={{ color: NR.color }}>{NR.name}</span></h2>
+          <h2 className={styles.title}>{need} × <span className="rar-chip" style={{ color: R.color }}>{R.name}</span> daje 1 × <span className="rar-chip" style={{ color: NR.color }}>{NR.name}</span></h2>
           <div className={styles.slots}>
             {Array.from({ length: need }, (_, k) => slotItems[k]
               ? <button key={slotItems[k].id} type="button" className={styles.slot} onClick={() => { setSlots(slots.filter(id => id !== slotItems[k].id)); Sound.click(); }} aria-label="Wyjmij z kontraktu"><Card person={slotItems[k].person} variant={slotItems[k].variant} tilt={false} /><X className={styles.remove} size={18} aria-hidden="true" /></button>
               : <div key={k} className={styles.empty}>{k + 1}</div>)}
           </div>
-          <div className={styles.flow}><ArrowDown size={20} aria-hidden="true" /><span style={{ color: NR.color }}>{NR.name}</span></div>
+          <div className={styles.flow}><ArrowDown size={20} aria-hidden="true" /><span className="rar-chip" style={{ color: NR.color }}>{NR.name}</span></div>
           <dl className={styles.facts}>
             <div><dt>Wkład</dt><dd>{fmt(stake)}</dd></div>
             <div><dt>Wynik</dt><dd>{fmt(NR.value)}+</dd></div>

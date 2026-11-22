@@ -22,6 +22,7 @@ import './styles/theme-aero.css';
 import './styles/theme-warm.css';
 import './styles/theme-independence.css';
 import './styles/theme-vapor.css';
+import './styles/theme-cyber.css';
 import './styles/lite.css';
 
 import { App } from './app/App';

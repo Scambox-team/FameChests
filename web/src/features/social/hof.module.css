@@ -30,3 +30,6 @@
 
 @media (max-width: 480px) { .hofGrid { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+
+/* nazwa rzadkości w kolorze rzadkości na ciemnej pigułce: czytelna także w jasnych motywach */
+.rar { display: inline-block; padding: 0 9px; border-radius: 999px; background: rgb(14 8 4); font-weight: 600; }

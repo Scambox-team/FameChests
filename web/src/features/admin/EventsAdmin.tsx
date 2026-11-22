@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { CalendarDays, Plus, RotateCcw, Trash2, TreePine } from 'lucide-react';
 import { api } from '../../api/client';
 import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
@@ -17,6 +17,45 @@ interface Meta {
 const pct = (x: number) => +(x * 100).toFixed(4);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
 const status = (e: GameEvent, today: string) => !e.enabled ? 'wyłączony' : today < e.start ? 'zaplanowany' : today > e.end ? 'zakończony' : 'trwa';
+
+interface Xmas { enabled: boolean; testDate: string; event: { name: string; start: string; end: string } | null; tree: { cards: number; players: number; value: number }; settled: boolean; sharePct: number; specialVariant: string | null }
+
+/** Choinka i kalendarz eventu świątecznego (server/src/routes/christmas.rs): włączanie dla graczy, data testowa, rozliczenie, czyszczenie */
+function ChristmasPanel() {
+  const [x, setX] = useState<Xmas | null>(null);
+  const [date, setDate] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api<Xmas>('/api/admin/christmas').then(r => { setX(r); setDate(r.testDate); }).catch(e => toast(e.message, true)); }, []);
+  const send = async (body: object, msg: string) => {
+    setBusy(true);
+    try { const r = await api<Xmas>('/api/admin/christmas', body); setX(r); setDate(r.testDate); toast(msg); } catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
+  if (!x) return null;
+  return (
+    <article className={`panel ${s.event}`} aria-label="Choinka i kalendarz świąteczny">
+      <div className={s.body}>
+        <h4><TreePine size={16} aria-hidden="true" /> Choinka i kalendarz adwentowy (event „Święta”)</h4>
+        <p className="muted small">Wspólna choinka: każdy gracz wiesza codziennie jedną kartę, na koniec eventu dostaje je z powrotem i losowe karty za {x.sharePct}% ich wartości
+          w wariantach z dropów eventu. {x.specialVariant ? `Karta specjalna: ${x.specialVariant}.` : 'Karta w nowym wariancie specjalnym: jeszcze nie ustawiona (wariant nie powstał).'}
+          {x.event ? ` Termin: ${x.event.start} – ${x.event.end}.` : ' Event „Święta” jest wyłączony albo go nie ma.'}</p>
+        <label className={s.chk}><input type="checkbox" checked={x.enabled} disabled={busy} onChange={e => send({ enabled: e.target.checked }, e.target.checked ? 'Choinka i kalendarz włączone dla graczy' : 'Wyłączone dla graczy (admini nadal je widzą)')} />
+          Włączone dla wszystkich graczy (wyłączone: widzą je tylko admini)</label>
+        <div className={s.row}>
+          <label className={s.inline}>Data testowa (tylko dla adminów) <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+          <Button disabled={busy} onClick={() => send({ testDate: date }, date ? 'Data testowa ustawiona' : 'Data testowa wyłączona')}>Zapisz datę</Button>
+          <span className="muted small">Pozwala adminowi sprawdzić kalendarz i choinkę poza terminem eventu (np. 2026-12-05). Gracze widzą prawdziwą datę.</span>
+        </div>
+        <p className="muted small">Na choince: {x.tree.cards} kart od {x.tree.players} graczy (wartość {x.tree.value.toLocaleString('pl-PL')} gr). {x.settled ? 'Choinka rozliczona.' : 'Rozliczy się sama po ostatnim dniu eventu.'}</p>
+        <div className={s.btns}>
+          <Button disabled={busy || x.settled} onClick={() => { if (confirm('Rozliczyć choinkę TERAZ? Wszystkim graczom zwrócą się powieszone karty i dostaną nagrody, nie da się tego cofnąć. Na produkcji rób to tylko przy teście.')) send({ action: 'settle' }, 'Choinka rozliczona'); }}>Rozlicz teraz</Button>
+          <Button disabled={busy} onClick={() => { if (confirm('Wyczyścić choinkę? Powieszone karty wrócą do graczy BEZ nagród, wpisy i wyniki zostaną skasowane. Używaj po próbach.')) send({ action: 'reset' }, 'Choinka wyczyszczona'); }}>
+            <RotateCcw size={15} aria-hidden="true" /> Wyczyść choinkę (po próbach)</Button>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function EventsAdmin() {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -48,7 +87,7 @@ export default function EventsAdmin() {
       <div className={s.head}>
         <p className="muted">Eventy z terminem (daty włącznie, czas serwera). Dropy: wariant wypada ze <b>wszystkich skrzynek</b> z podaną szansą przez cały event, także
           gdy jest wyłączony na /variants (na /variants widać go jako wydarzenie „Event: …”). Kalendarz adwentowy: dzień 1 = dzień startu eventu, gracz
-          odbiera nagrodę tylko danego dnia, raz. Gracze widzą trwające eventy i te, które zaczną się w ciągu 14 dni.</p>
+          odbiera nagrodę raz, a zaległe okienka z poprzednich dni może otworzyć później. Gracze widzą trwające eventy i te, które zaczną się w ciągu 14 dni.</p>
         <div className={s.btns}>
           <Button onClick={addEvent}><Plus size={15} aria-hidden="true" /> Nowy event</Button>
           <Button kind="hue" disabled={busy || !dirty} onClick={() => save({ events }, 'Eventy zapisane')}>Zapisz wszystko</Button>
@@ -56,6 +95,8 @@ export default function EventsAdmin() {
             <RotateCcw size={15} aria-hidden="true" /> Domyślne</Button>
         </div>
       </div>
+
+      <ChristmasPanel />
 
       {events.map((e, i) => {
         const key = e.id || `new${i}`, isOpen = open === key, st = status(e, meta.today);
