@@ -10,6 +10,7 @@ import { Sound } from '../../sound/sound';
 import { SearchField, Tabs } from '../../ui/Field';
 import { UserLink } from '../../ui/UserLink';
 import { HallOfFame } from './HallOfFame';
+import { TopCards } from './TopCards';
 import s from './social.module.css';
 
 type By = 'value' | 'cards' | 'opened';
@@ -20,13 +21,14 @@ const MEDALS = ['#e5b94a', '#c2c6cf', '#c98a55'];
 let saved: { by: By; scope: 'all' | 'friends' } = { by: 'value', scope: 'all' };
 
 export function RankingPage() {
-  const hof = useParams().tab === 'hall-of-fame';
+  const tab = useParams().tab;
+  const view = tab === 'hall-of-fame' ? 'hof' : tab === 'cards' ? 'cards' : 'players';
   const navigate = useNavigate();
   return (
     <>
-      <Tabs label="Ranking" value={hof ? 'hof' : 'players'} onChange={v => { Sound.click(); navigate(v === 'hof' ? '/ranking/hall-of-fame' : '/ranking'); }}
-        items={[{ id: 'players', label: 'Gracze' }, { id: 'hof', label: 'Hall of Fame' }]} />
-      {hof ? <HallOfFame /> : <PlayersRanking />}
+      <Tabs label="Ranking" value={view} onChange={v => { Sound.click(); navigate(v === 'hof' ? '/ranking/hall-of-fame' : v === 'cards' ? '/ranking/cards' : '/ranking'); }}
+        items={[{ id: 'players', label: 'Gracze' }, { id: 'cards', label: 'Najdroższe karty' }, { id: 'hof', label: 'Hall of Fame' }]} />
+      {view === 'hof' ? <HallOfFame /> : view === 'cards' ? <TopCards /> : <PlayersRanking />}
     </>
   );
 }

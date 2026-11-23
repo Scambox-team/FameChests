@@ -872,6 +872,51 @@ pub async fn ranking(State(st): State<AppState>, Me(me): Me) -> Res {
     ok(json!({"players": players, "totalCards": cat.people.len(), "online": st.online.count(), "accounts": accounts}))
 }
 
+/// Ile najdroższych kart pokazuje ranking
+const TOP_CARDS: usize = 10;
+
+/// Ranking „Najdroższe karty”: `TOP_CARDS` (10) najdroższych egzemplarzy, które TERAZ istnieją u graczy, i ich właściciele. Wartość to cena karty w jej
+/// wariancie (`Person::value`), remis rozstrzyga starszy egzemplarz. Pomija graczy poza rankingiem (zablokowani, ukryci, z pieniędzmi od admina - jak
+/// ranking graczy) i karty w ESCROW (rynek, kasyno, choinka), bo ich właściciela nie widać.
+pub async fn ranking_top_cards(State(st): State<AppState>, Me(_me): Me) -> Res {
+    let cat = st.cat();
+    let mut c = st.db.acquire().await?;
+    // pary (karta, wariant), które ktoś ma - od najdroższej (par jest niewiele, w przeciwieństwie do egzemplarzy)
+    let pairs: Vec<(String, String)> = sqlx::query_as(concat!(
+        "SELECT DISTINCT i.person_id, i.variant FROM items i JOIN users u ON u.id = i.user_id WHERE i.user_id <> 0 AND ",
+        "u.banned = 0 AND u.ranking_hidden = 0 AND u.money_generated = 0"
+    ))
+    .fetch_all(&mut *c)
+    .await?;
+    let mut priced: Vec<(i64, String, String)> = pairs.into_iter().filter_map(|(p, v)| cat.person(&p).map(|x| (x.value(&v), p, v))).collect();
+    priced.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)).then_with(|| a.2.cmp(&b.2)));
+    let mut rows: Vec<(i64, i64, String, String, i64, f64)> = Vec::new();   // (egzemplarz, właściciel, karta, wariant, wartość, od kiedy)
+    for (value, pid, variant) in priced {
+        if rows.len() >= TOP_CARDS {
+            break;
+        }
+        let owned: Vec<(i64, i64, f64)> = sqlx::query_as(concat!(
+            "SELECT i.id, i.user_id, i.created_at FROM items i JOIN users u ON u.id = i.user_id WHERE i.person_id = $1 AND i.variant = $2 AND i.user_id <> 0 AND ",
+            "u.banned = 0 AND u.ranking_hidden = 0 AND u.money_generated = 0 ORDER BY i.id LIMIT $3"
+        ))
+        .bind(&pid)
+        .bind(&variant)
+        .bind((TOP_CARDS - rows.len()) as i64)
+        .fetch_all(&mut *c)
+        .await?;
+        rows.extend(owned.into_iter().map(|(id, uid, at)| (id, uid, pid.clone(), variant.clone(), value, at)));
+    }
+    let owners = users_by_id(&mut c, &cat, rows.iter().map(|r| Some(r.1))).await?;
+    let cards: Vec<Value> = rows
+        .iter()
+        .filter_map(|(id, uid, pid, variant, value, at)| {
+            let o = owners.get(uid)?;
+            Some(json!({"id": id, "person": pid, "variant": variant, "value": value, "since": at, "owner": o}))
+        })
+        .collect();
+    ok(json!({"cards": cards}))
+}
+
 #[derive(Serialize)]
 struct AdminMessage {
     id: i64,

@@ -3214,16 +3214,22 @@ canvas.ae3-live { position: absolute; inset: 0; width: 100%; height: 100%; displ
 .pick.v-christmas { box-shadow: inset 0 0 0 2px #d4af37, inset 0 0 0 4px #b3142a, inset 0 -26px 26px -18px var(--rc); }
 .avv-christmas img { box-shadow: 0 0 0 2px #d4af37, 0 0 0 4px #b3142a !important; }
 
-/* Choinka (event Święta, makieta „Bombki przed zdjęciem”) - ciemna zieleń, gałązki świerku z górnych rogów (tre-branch), złota
-   gwiazda nad nazwą (tre-star), kolorowe bombki (tre-ball: nitka, złota zawieszka, kula z odblaskiem; gładkie / w paski / w kropki)
-   po bokach i przed zdjęciem (VX_PHOTO). Klasy tre- (tr- to Tarot). */
-.card.v-tree { --frame: linear-gradient(160deg, #2a8a4a, #0c2a17 50%, #3aa05a); --spin: initial; box-shadow: 0 6px 18px #0009; }
-.card.v-tree .card-inner { background: radial-gradient(circle at 50% 40%, #154a2a, #061409); color: #e8ffee; }
-.card.v-tree :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #071a0ecc; border: .3cqw solid #2a8a4a; border-radius: .4em; }
-.card.v-tree :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #e8ffee; text-shadow: none; }
-.card.v-tree .card-name { color: #fff; text-shadow: 0 0 .4em #2a8a4a; }
-.card.v-tree .card-photo { border: .6cqw solid #c41e3a; border-image: none; border-radius: .35em; overflow: hidden; }
-.card.v-tree .card-photo > img, .r-secret.v-tree .sc-art img { filter: saturate(1.06) brightness(1.02); }
+/* Choinka (event Święta, makieta „Bombki przed zdjęciem”, odświeżona na wesoło) - jasna soczysta zieleń, gałązki świerku z górnych rogów
+   (tre-branch), złota gwiazda nad nazwą (tre-star), złote łańcuchy (tre-garland) i kolorowe lampki biegnące po ramce (xm-bulb),
+   kolorowe bombki (tre-ball: nitka, złota zawieszka, kula z odblaskiem; gładkie / w paski / w kropki) po bokach i przed zdjęciem
+   (VX_PHOTO), zdjęcie w ramce z laski cukrowej, zaspy śniegu przy dole (tre-snow). Klasy tre- (tr- to Tarot). */
+.card.v-tree { --frame: linear-gradient(160deg, #3fd26a, #12843c 45%, #ffd23d 52%, #12843c 60%, #3fd26a); --spin: initial; box-shadow: 0 6px 18px #0009, 0 0 18px #3fd26a55; }
+.card.v-tree .card-inner { background: radial-gradient(circle at 50% 30%, #2fae5c, #167a3c 52%, #0b4a25); color: #f4fff6; }
+.card.v-tree .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-tree :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #0b3a1cc4; border: .3cqw solid #ffd23d; border-radius: .4em; }
+.card.v-tree :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #f4fff6; text-shadow: none; }
+.card.v-tree .card-sub { font-weight: 800; letter-spacing: .04em; }
+.card.v-tree .card-name { color: #fff; text-shadow: 0 .1em 0 #0b3a1c, 0 0 .5em #ffd23d; }
+.card.v-tree .card-photo { border: 1cqw solid; border-image: repeating-linear-gradient(45deg, #e8283a 0 1.5cqw, #fff 1.5cqw 3cqw) 1; border-radius: 0; overflow: hidden; box-shadow: 0 0 2cqw #ffd23d66; }
+.card.v-tree .card-photo > img, .r-secret.v-tree .sc-art img { filter: saturate(1.12) brightness(1.04); }
+.vx-bg > .tre-snow { left: -5%; right: -5%; bottom: -2%; height: 22%; background: radial-gradient(60% 100% at 20% 100%, #fff 96%, transparent), radial-gradient(70% 90% at 72% 100%, #eaf4ff 96%, transparent); opacity: .95; }
+.vx-deco > svg.tre-garland { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 .3cqw .3cqw #0006); }
+.tre-garland path { fill: none; stroke: #ffd23d; stroke-width: 1.5cqw; stroke-dasharray: 0 3.6cqw; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .vx-deco > svg.tre-branch { position: absolute; width: 58%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 .6cqw .8cqw #0007); }
 .vx-deco > svg.tre-branch.a { left: -18%; top: -18%; } .vx-deco > svg.tre-branch.b { right: -18%; top: -18%; }
 .tre-ball { position: absolute; display: block; z-index: 2; width: var(--sz); height: calc(var(--len) + var(--sz)); margin-left: calc(var(--sz) / -2); transform-origin: 50% 0;
@@ -3239,9 +3245,9 @@ canvas.ae3-live { position: absolute; inset: 0; width: 100%; height: 100%; displ
 .tre-star { flex: none; position: relative; z-index: 2; text-align: center; font-size: 9cqw; line-height: 1; margin: -1cqw 0 -2cqw; color: #ffe08a;
   text-shadow: 0 0 2cqw #ffd23d, 0 0 5cqw #d4af37; animation: treGlow 2.4s ease-in-out infinite; }
 @keyframes treGlow { 50% { opacity: .65; } }
-.r-secret.v-tree .sc-border { background: linear-gradient(160deg, #2a8a4a, #0c2a17, #3aa05a); animation: none; }
-.pick.v-tree { box-shadow: inset 0 0 0 2px #2a8a4a, inset 0 0 0 4px #c41e3a, inset 0 -26px 26px -18px var(--rc); }
-.avv-tree img { box-shadow: 0 0 0 2px #2a8a4a, 0 0 0 4px #c41e3a !important; }
+.r-secret.v-tree .sc-border { background: linear-gradient(160deg, #3fd26a, #12843c, #ffd23d); animation: none; }
+.pick.v-tree { box-shadow: inset 0 0 0 2px #3fd26a, inset 0 0 0 4px #c41e3a, inset 0 -26px 26px -18px var(--rc); }
+.avv-tree img { box-shadow: 0 0 0 2px #3fd26a, 0 0 0 4px #c41e3a !important; }
 
 /* Prezentowy (event Święta, makieta 1 „Kokarda i rozdarcie”) - odpakowana karta: kremowe wnętrze, złota wstążka dookoła ramki (gf-frame)
    i mała kokarda w rogu. Moja nieodpakowana karta jest zapakowana (gf-wrap z giftWrapHTML w cardHtml.ts: czerwony papier, złote

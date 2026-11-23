@@ -5,7 +5,7 @@ import { api } from '../../api/client';
 import { PickTile } from '../../cards/PickTile';
 import { cardValue, person, variantName } from '../../game/rules';
 import { syncInventory } from '../../game/session';
-import { useGame } from '../../game/store';
+import { S, useGame } from '../../game/store';
 import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
@@ -61,16 +61,42 @@ const SPOTS = (() => {
   return pts;
 })();
 
+const LIGHT_COLORS = ['#ff3b3b', '#ffd60a', '#30d158', '#4aa8ff', '#ff9f0a', '#d77bff'];
+const GARLANDS: [number, number, number, number, number, number][] = [[92, 128, 150, 152, 208, 128], [72, 208, 150, 240, 228, 208], [52, 296, 150, 334, 248, 296]];
+/** Punkt na krzywej Béziera drugiego stopnia (łańcuch choinkowy) */
+const bez = (g: number[], t: number): [number, number] => [(1 - t) ** 2 * g[0] + 2 * (1 - t) * t * g[2] + t * t * g[4], (1 - t) ** 2 * g[1] + 2 * (1 - t) * t * g[3] + t * t * g[5]];
+const LIGHTS = GARLANDS.flatMap((g, gi) => Array.from({ length: 6 + gi * 2 }, (_, k) => ({ at: bez(g, (k + .5) / (6 + gi * 2)), c: LIGHT_COLORS[(k + gi * 2) % LIGHT_COLORS.length], d: -((k * .41 + gi * .3) % 1.6) })));
+/** Kołnierz ze śniegu wzdłuż dolnej krawędzi piętra: faliste zaspy */
+const snowEdge = (x1: number, x2: number, y: number) => {
+  let d = `M${x1} ${y}`;
+  const n = Math.round((x2 - x1) / 16);
+  for (let i = 0; i < n; i++) d += ` Q${x1 + (i + .5) * (x2 - x1) / n} ${y + (i % 2 ? 9 : 5)} ${x1 + (i + 1) * (x2 - x1) / n} ${y}`;
+  return d;
+};
+const GIFTS: [number, number, number, number, string, string][] = [[46, 330, 38, 30, '#e8283a', '#ffd60a'], [86, 340, 28, 20, '#2f86ee', '#fff'], [192, 326, 40, 34, '#1faa5c', '#ffd60a'], [230, 342, 30, 20, '#a65bd6', '#ffe9a8']];
+
 function TreeArt({ cards }: { cards: number }) {
   const shown = Math.min(cards, SPOTS.length);
   return (
-    <svg className={s.art} viewBox="0 0 300 360" role="img" aria-label={`Choinka z ${cards} powieszonymi kartami`}>
-      <rect x="132" y="308" width="36" height="38" rx="3" fill="#6a4426" />
-      {TRIS.map((t, i) => <polygon key={i} points={t.map(p => p.join(',')).join(' ')} fill={['#1f7a40', '#1a6a38', '#145a2e'][i]} stroke="#0c3a1c" strokeWidth="2" strokeLinejoin="round" />)}
-      <path d="M92 128 Q150 150 208 128 M72 208 Q150 238 228 208 M52 296 Q150 330 248 296" fill="none" stroke="#e8b64a" strokeWidth="2.4" strokeDasharray="1 7" strokeLinecap="round" opacity=".9" />
-      <polygon className={s.star} points="150,6 156,22 173,22 159,32 165,48 150,38 135,48 141,32 127,22 144,22" fill="#ffd54a" stroke="#b8860b" strokeWidth="1.5" strokeLinejoin="round" />
+    <svg className={s.art} viewBox="0 0 300 382" role="img" aria-label={`Choinka z ${cards} powieszonymi kartami`}>
+      <ellipse cx="150" cy="366" rx="146" ry="18" fill="#fff" />
+      <path d="M0 382 V362 Q40 350 80 360 T160 358 T240 360 T300 356 V382Z" fill="#eaf4ff" />
+      <rect x="132" y="308" width="36" height="46" rx="3" fill="#7a4a24" stroke="#4a2a12" strokeWidth="2" />
+      {TRIS.map((t, i) => <polygon key={i} points={t.map(p => p.join(',')).join(' ')} fill={['#26b556', '#1fa34b', '#168a3d'][i]} stroke="#0b5a28" strokeWidth="2.4" strokeLinejoin="round" />)}
+      {[[78, 222, 142], [58, 242, 222], [36, 264, 312]].map(([x1, x2, y], i) => <path key={i} d={snowEdge(x1, x2, y)} fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" opacity=".96" />)}
+      <path d="M92 128 Q150 152 208 128 M72 208 Q150 240 228 208 M52 296 Q150 334 248 296" fill="none" stroke="#ffd23d" strokeWidth="3.2" strokeDasharray="1 7" strokeLinecap="round" />
+      {LIGHTS.map((l, i) => <circle key={i} className={s.light} cx={l.at[0]} cy={l.at[1]} r="3.6" fill={l.c} style={{ animationDelay: `${l.d}s`, color: l.c }} />)}
+      {GIFTS.map(([x, y, w, h, c, r], i) => (
+        <g key={i}>
+          <rect x={x} y={y} width={w} height={h} rx="3" fill={c} stroke="#00000044" strokeWidth="1.2" />
+          <rect x={x + w / 2 - 3.5} y={y} width="7" height={h} fill={r} /><rect x={x} y={y + h * .32} width={w} height="6" fill={r} />
+          <path d={`M${x + w / 2} ${y} c-12 -12 -17 1 0 0 c17 1 12 -12 0 0z`} fill={r} stroke="#00000033" strokeWidth=".8" />
+        </g>
+      ))}
+      <g className={s.starWrap}><circle cx="150" cy="26" r="26" fill="#ffd54a" opacity=".28" />
+        <polygon className={s.star} points="150,4 157,22 176,22 161,34 167,52 150,41 133,52 139,34 124,22 143,22" fill="#ffd54a" stroke="#d99a00" strokeWidth="1.6" strokeLinejoin="round" /></g>
       {SPOTS.slice(0, shown).map((p, i) => (
-        <g key={i} className={s.bauble} style={{ animationDelay: `${(i % 9) * .35}s` }}>
+        <g key={i} className={s.bauble} style={{ animationDelay: `${(i % 9) * .35}s`}}>
           <line x1={p.x} y1={p.y - p.r - 4} x2={p.x} y2={p.y - p.r} stroke="#e8e8e8" strokeWidth="1" />
           <circle cx={p.x} cy={p.y} r={p.r} fill={p.c} stroke="#00000055" strokeWidth=".8" />
           <circle cx={p.x - p.r / 3} cy={p.y - p.r / 3} r={p.r / 3.2} fill="#ffffffaa" />
@@ -108,6 +134,7 @@ export function ChristmasDialog({ onClose }: { onClose: () => void }) {
   if (!data.available || !data.event) return <Modal title="Choinka" onClose={onClose}><p className="muted">Choinka nie jest teraz dostępna.</p></Modal>;
   const d = data as Tree & { event: NonNullable<Tree["event"]> };
   const hungToday = d.mine.hung.find(h => h.canTake);
+  const specials = Object.values(S.cfg.people).filter((p: any) => p.source === 'tree').map((p: any) => p.name as string);   // karta specjalna z choinki (specialSources.tree)
 
   return (
     <Modal title="Wspólna choinka" onClose={onClose} wide>
@@ -151,7 +178,7 @@ export function ChristmasDialog({ onClose }: { onClose: () => void }) {
           <li>Każdego dnia eventu możesz powiesić na choince <b>jedną kartę</b> ze swojego ekwipunku (nie ulubioną i nie specjalną).</li>
           <li><b>Powieszona karta nie wraca do Ciebie.</b> Do końca tego samego dnia możesz ją jeszcze zdjąć, potem trafia do wspólnej puli choinki.</li>
           <li>Po {fmtDay(d.event.end)} <b>karty z puli dostają inni gracze</b>, którzy też coś powiesili. Im więcej wartych kart powiesisz, tym <b>większa szansa</b>, że z puli trafi do Ciebie <b>więcej</b> i <b>lepszych</b> kart (cudzych, nie Twoich).</li>
-          <li>Żebyś nic nie stracił, dostajesz też <b>{d.sharePct}%</b> wartości swoich powieszonych kart (zaokrąglone w górę) w losowych kartach w wariantach: {d.pool.map(p => p.name).join(', ') || '-'}, oraz kartę specjalną.</li>
+          <li>Żebyś nic nie stracił, dostajesz też <b>{d.sharePct}%</b> wartości swoich powieszonych kart (zaokrąglone w górę) w losowych kartach w wariantach: {d.pool.map(p => p.name).join(', ') || '-'}{specials.length > 0 ? <>, oraz kartę specjalną: <b>{specials.join(', ')}</b></> : ', oraz kartę specjalną'}.</li>
         </ul>
       </section>
 

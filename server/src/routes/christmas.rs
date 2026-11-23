@@ -13,7 +13,9 @@
 //!    listy dropów eventu (`drops`: Śnieżny, Sugar Cane, Lodowy, Choinka, Świąteczny, Prezentowy; waga wariantu = jego szansa w
 //!    evencie), spośród kart dostępnych w grze (`Person::forge`). Wartość kart jest zawsze NIE MNIEJSZA niż 110% (zaokrąglenie w
 //!    górę: `draw_rewards` dobiera ostatnią kartę z nadwyżką), więc nikt nie wychodzi na minus, nawet gdy pula mu nic nie da.
-//! 3. Jedna karta specjalna w nowym wariancie specjalnym: `SPECIAL_VARIANT` (None, dopóki wariant nie powstanie).
+//! 3. KARTA SPECJALNA Z CHOINKI: każdy gracz z wkładem dostaje po jednym egzemplarzu każdej karty specjalnej ze źródłem
+//!    `tree` (`specialSources` w game.json; dziś Święty Mikołaj z Miry w wariancie Jolly, `sp_mikolaj_z_miry`). Nowa taka
+//!    karta (admin: źródło „Choinka”) trafia do graczy sama, bez zmian w kodzie.
 //!
 //! Funkcja jest WYŁĄCZONA dla graczy (ustawienie `christmas_enabled` w tabeli `state`, domyślnie 0), admini widzą ją zawsze.
 //! Admin może w panelu (Eventy) ustawić datę testową (`christmas_test_date`, RRRRMMDD), którą widzi tylko on, wymusić rozliczenie
@@ -48,8 +50,8 @@ const HARD_CAP: usize = 400;
 const PRICE_EXP: f64 = 0.6;
 /// Ile kart pokazać na choince (najnowsze)
 const LIST_MAX: usize = 400;
-/// Nowy wariant specjalny (jedna losowa karta w nim dla każdego gracza z wkładem). None = jeszcze go nie ma.
-const SPECIAL_VARIANT: Option<&str> = None;
+/// Źródło kart specjalnych wydawanych z choinki (klucz w `specialSources`)
+pub const SPECIAL_SOURCE: &str = "tree";
 
 const ENABLED: &str = "christmas_enabled";
 const TEST_DATE: &str = "christmas_test_date";
@@ -277,11 +279,9 @@ async fn settle_event(c: &mut Conn, cat: &Catalog, e: &GameEvent) -> sqlx::Resul
             insert_for(c, cat, uid, false, &cd.pid, &cd.variant, "advent").await?;
             bonus.push(json!({"person": cd.pid, "variant": cd.variant, "value": cd.value}));
         }
-        if let Some(v) = SPECIAL_VARIANT {
-            if let Some(cd) = special_card(cat, v) {
-                insert_for(c, cat, uid, false, &cd.pid, &cd.variant, "advent").await?;
-                bonus.push(json!({"person": cd.pid, "variant": cd.variant, "value": cd.value, "special": true}));
-            }
+        for cd in special_cards(cat) {
+            insert_for(c, cat, uid, false, &cd.pid, &cd.variant, "tree").await?;
+            bonus.push(json!({"person": cd.pid, "variant": cd.variant, "value": cd.value, "special": true}));
         }
         let cards = json!({"bonus": bonus, "pool": pool_for.remove(&uid).unwrap_or_default()});
         sqlx::query(
@@ -301,14 +301,16 @@ async fn settle_event(c: &mut Conn, cat: &Catalog, e: &GameEvent) -> sqlx::Resul
     Ok(true)
 }
 
-/// Losowa karta do nowego wariantu specjalnego (gdy `SPECIAL_VARIANT` zostanie ustawiony)
-fn special_card(cat: &Catalog, variant: &str) -> Option<Cand> {
-    let all: Vec<_> = cat.people.values().filter(|p| p.forge && !p.is_special() && !p.is_secret()).collect();
-    if all.is_empty() || !g().variants.contains_key(variant) {
-        return None;
-    }
-    let p = all[rand::thread_rng().gen_range(0..all.len())];
-    Some(Cand { pid: p.id.clone(), variant: variant.to_owned(), value: p.value(variant) })
+/// Karty specjalne z choinki: każda karta rzadkości Specjalnej ze źródłem `tree` w swoim jedynym wariancie (kolejność stała)
+pub fn special_cards(cat: &Catalog) -> Vec<Cand> {
+    let mut out: Vec<Cand> = cat
+        .people
+        .values()
+        .filter(|p| p.is_special() && p.source.as_deref() == Some(SPECIAL_SOURCE))
+        .map(|p| Cand { pid: p.id.clone(), variant: p.fixed().to_owned(), value: p.value(p.fixed()) })
+        .collect();
+    out.sort_by(|a, b| a.pid.cmp(&b.pid));
+    out
 }
 
 /// Po zakończeniu eventu rozlicza choinkę (raz; woła /api/me). Błędy nie przerywają zapytania gracza.
@@ -547,7 +549,7 @@ async fn admin_view(c: &mut Conn, cat: &Catalog) -> sqlx::Result<Value> {
         "testDate": test_day(c).await?.map(fmt_day).unwrap_or_default(),
         "event": event(cat).map(|e| json!({"name": e.name, "start": e.start, "end": e.end})),
         "tree": {"cards": cards, "players": players, "value": value},
-        "settled": settled, "sharePct": BONUS_PCT, "specialVariant": SPECIAL_VARIANT,
+        "settled": settled, "sharePct": BONUS_PCT, "specialCards": special_cards(cat).iter().map(|c| json!({"person": c.pid, "name": cat.person(&c.pid).map(|p| p.name.clone()), "variant": c.variant})).collect::<Vec<_>>(),
     }))
 }
 
@@ -633,6 +635,26 @@ mod tests {
 
     fn weights() -> Vec<(String, f64)> {
         vec![("snow".into(), 3.0), ("tree".into(), 1.0)]
+    }
+
+    /// Karta specjalna z choinki (Święty Mikołaj z Miry, Jolly) jest w katalogu, a Gwiazdkowa z kalendarza nie trafia do choinki
+    #[test]
+    fn tree_special_card_comes_from_the_catalog() {
+        let cat = crate::catalog::build_on(&[], &[], &[], NaiveDate::from_ymd_opt(2026, 12, 10).unwrap(), 3);
+        let cards = special_cards(&cat);
+        assert_eq!(cards.len(), 1, "dokładnie jedna karta ze źródłem tree");
+        assert_eq!((cards[0].pid.as_str(), cards[0].variant.as_str()), ("sp_mikolaj_z_miry", "jolly"));
+        let advent = cat.person("sp_mikolaj").expect("karta Mikołaja z kalendarza");
+        assert_eq!((advent.source.as_deref(), advent.fixed()), (Some("advent"), "gwiazdkowy"));
+        // dzień 24 kalendarza: ta karta + Świąteczna skrzynka z pieniędzmi 50 000 - 100 000 gr
+        let e = cat.vs.game_events.iter().find(|e| e.id == EVENT_ID).expect("event swieta");
+        let day24 = &e.advent.as_ref().expect("kalendarz")[23];
+        assert!(day24.iter().any(|r| r["type"] == "card" && r["person"] == "sp_mikolaj" && r["variant"] == "gwiazdkowy"));
+        assert!(day24.iter().any(|r| r["type"] == "chest" && r["kind"] == "money_swiateczna"));
+        let m = &g().money_chests["swiateczna"];
+        assert_eq!((m.min, m.max), (50_000, 100_000));
+        assert_eq!(e.end, "2026-12-24");
+        assert_eq!(e.advent.as_ref().unwrap().len(), 24);
     }
 
     #[test]

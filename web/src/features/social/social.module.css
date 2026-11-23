@@ -69,6 +69,19 @@
 .rankValue { grid-column: 5; text-align: right; font-weight: 600; }
 .rankBar { grid-column: 1 / -1; height: 5px; border-radius: 999px; background: var(--raised); overflow: hidden; }
 .rankBar div { height: 100%; background: var(--hue); }
+.topCards { display: flex; flex-direction: column; gap: 8px; }
+.topRow { display: grid; grid-template-columns: 44px 84px minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-m); background: var(--surface); }
+.topTile { width: 84px; }
+.topTile > button { display: block; width: 100%; }   /* przycisk kafelka bez tego ma szerokość swojej nazwy, więc kafelki wychodzą nierówne */
+.topInfo { display: grid; gap: 2px; min-width: 0; }
+.topInfo b { overflow-wrap: anywhere; }
+.topValue { font: 800 18px var(--display); }
+.topOwner { display: grid; gap: 3px; justify-items: start; min-width: 0; }
+@media (max-width: 720px) {
+  .topRow { grid-template-columns: 30px 70px minmax(0, 1fr); gap: 8px; padding: 8px 10px; }
+  .topTile { width: 70px; }
+  .topOwner { grid-column: 2 / -1; flex-direction: row; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+}
 .rankOthers { margin: 10px 4px 2px; color: var(--muted); font: 600 13px var(--body); }
 
 .head { flex-direction: row; align-items: center; gap: 20px; flex-wrap: wrap; }

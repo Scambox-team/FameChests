@@ -25,5 +25,6 @@ export const VARIANT_COLORS: Record<string, string[]> = {
       lantern: ["#ffb347", "#ff7a00", "#fff1c1", "#3a1a06"], devil: ["#ff1a1a", "#b3001b", "#ffcf5a", "#120002"],
       sketch: ["#1b1712", "#f4ecd8", "#6b5d4a"], galaxy: ["#7b4dff", "#1fb6ff", "#ff4fd8", "#ffffff"],
       mlg: ["#9cff00", "#ffe100", "#ff7a00", "#ff2bd6", "#00e5ff"],
+      jolly: ["#ff2d55", "#ffd60a", "#30d158", "#0a84ff", "#ff9f0a", "#bf5af2"], gwiazdkowy: ["#f6efe2", "#f3d28a", "#12244d", "#7a4f2c"],
     
 };

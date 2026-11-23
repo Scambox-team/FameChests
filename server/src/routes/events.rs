@@ -172,14 +172,25 @@ pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path
 /// Listy do formularzy nagród w panelu (Eventy, Paszport): warianty (do wyboru przy karcie), karty i skrzynki
 pub(super) fn reward_options(cat: &Catalog) -> (Vec<Value>, Vec<Value>, Vec<Value>) {
     let g = g();
+    // warianty zwykłe, a na końcu specjalne (`special: true`): karty specjalne mają jeden, stały wariant, więc nagrodą może być
+    // karta specjalna razem z jej wariantem; formularz dropów eventu pomija warianty specjalne
     let variants: Vec<Value> = g
         .variant_order
         .iter()
         .filter(|v| *v != "normal" && !g.variants[*v].combo && !g.variants[*v].special && !g.variants[*v].always)
         .map(|v| json!({"key": v, "name": g.variants[v].name, "chance": g.variants[v].chance, "enabled": cat.variant_enabled(v)}))
+        .chain(
+            g.variant_order
+                .iter()
+                .filter(|v| g.variants[*v].special)
+                .map(|v| json!({"key": v, "name": g.variants[v].name, "chance": 0, "enabled": true, "special": true})),
+        )
         .collect();
-    let mut cards: Vec<Value> =
-        cat.people.values().filter(|p| !p.is_special()).map(|p| json!({"id": p.id, "name": p.name, "rarity": p.rarity})).collect();
+    let mut cards: Vec<Value> = cat
+        .people
+        .values()
+        .map(|p| json!({"id": p.id, "name": p.name, "rarity": p.rarity, "special": p.is_special(), "fixedVariant": p.fixed_variant}))
+        .collect();
     cards.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     let mut chests: Vec<Value> = g.money_chests.iter().map(|(k, c)| json!({"kind": format!("money_{k}"), "name": c.name})).collect();
     chests.extend(cat.crates.values().filter(|c| !c.special).map(|c| json!({"kind": c.id, "name": c.name})));

@@ -1,0 +1,122 @@
+/* ============================================================ KARTY SPECJALNE ŚWIĄTECZNE - dwa Mikołaje
+   Ładowany PO special.css (main.tsx): `.card.r-special` ustawia --rc / --frame / --inner / box-shadow dla każdej karty specjalnej, więc
+   reguły wariantów muszą przyjść później. Ozdoby rysuje cards/cardHtml.ts (VX_BG / VX_PHOTO / VX_DECO, variantTop / variantSub).
+   Animuje się tylko transform i opacity; przy ograniczonym ruchu (i w trybie wydajności) wszystko stoi.
+
+   JOLLY (Święty Mikołaj z Miry, drop z choinki) - przesadnie wesoły: jaskrawe promienie, konfetti, śnieg, podskakujący napis, sanie.
+   GWIAZDKOWY (Święty Mikołaj, nagroda z 24 grudnia) - wigilijna noc: granat, czerń, biel i ciemny brąz, ulica z kamieniczkami, gwiazdka betlejemska. */
+
+/* ------------------------------------------------------------ JOLLY - klasy jl- */
+.card.v-jolly {
+  --rc: #ff2d55;
+  --frame: repeating-linear-gradient(45deg, #ff2d55 0 3.2cqw, #fff 3.2cqw 6.4cqw, #30d158 6.4cqw 9.6cqw, #fff 9.6cqw 12.8cqw);
+  --spin: initial;
+  box-shadow: 0 6px 18px #000a, 0 0 22px #ff2d5588, 0 0 44px #ffd60a55;
+}
+.card.v-jolly .card-inner { background: linear-gradient(165deg, #ff3b6b 0%, #ff8a2a 36%, #ffd60a 62%, #31d46a 100%); color: #5a0820; }
+.card.v-jolly .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+.card.v-jolly :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #fffffff2; border: .6cqw solid #ff2d55; border-radius: 1.4cqw; box-shadow: .5cqw .5cqw 0 #1b7a3a; }
+.card.v-jolly :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name) { color: #a3063a; text-shadow: none; }
+.card.v-jolly .card-sub { font-weight: 900; letter-spacing: .04em; }
+.card.v-jolly .card-hp { color: #fff; text-shadow: 0 .3cqw 0 #b3063a, 0 0 1cqw #b3063a; }
+.card.v-jolly .card-name { color: #fff; text-shadow: 0 .4cqw 0 #c4143c, .25cqw .7cqw 0 #6b0820, 0 0 1.4cqw #ffd60a; letter-spacing: .01em; }
+.card.v-jolly .card-photo { border: 1.3cqw solid; border-image: repeating-linear-gradient(45deg, #ff2d55 0 1.7cqw, #fff 1.7cqw 3.4cqw) 1; border-radius: 0; overflow: hidden; box-shadow: 0 0 2.4cqw #fff9; }
+.card.v-jolly .card-photo > img, .pick.v-jolly img, .avv-jolly img { filter: saturate(1.25) contrast(1.05) brightness(1.04); }
+
+/* napis nad nazwą: kolorowe litery podskakują jedna po drugiej */
+.jl-banner { flex: none; position: relative; z-index: 2; display: flex; justify-content: center; gap: .2cqw; margin: -.6cqw 0 .6cqw; font: 900 7.6cqw/1 "Bricolage Grotesque", Rubik, sans-serif; }
+.jl-banner b { display: inline-block; color: var(--c); -webkit-text-stroke: .5cqw #fff; paint-order: stroke fill; text-shadow: 0 .5cqw 0 #0005;
+  animation: jlBounce 1.3s ease-in-out infinite; animation-delay: calc(var(--k) * -.09s); }
+.jl-banner u { width: 2cqw; }
+@keyframes jlBounce { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-1.3cqw) rotate(3deg); } }
+
+/* tło: obracające się promienie, kropki, dwie warstwy konfetti (obrazek w CSS przesuwany transformem jak śnieg) */
+.vx-bg > .jl-rays { inset: -60%; will-change: transform; background: repeating-conic-gradient(from 0deg at 50% 50%, #ffffff3a 0 7deg, transparent 7deg 15deg); animation: jlSpin 48s linear infinite; }
+@keyframes jlSpin { to { transform: rotate(360deg); } }
+.vx-bg > .jl-dots { inset: 0; opacity: .55; background: radial-gradient(circle, #ffffff66 0 1.1cqw, transparent 1.2cqw) 0 0 / 8cqw 8cqw; }
+.vx-bg > .jl-confetti { left: 0; top: -100%; width: 100%; height: 200%; will-change: transform; animation: snwDown 12s linear infinite;
+  background: radial-gradient(circle, #ff2d55 0 .8cqw, transparent .9cqw) 0 0 / 17cqw 19cqw, radial-gradient(circle, #0a84ff 0 .7cqw, transparent .8cqw) 8cqw 9cqw / 23cqw 17cqw,
+    radial-gradient(circle, #bf5af2 0 .6cqw, transparent .7cqw) 4cqw 14cqw / 19cqw 21cqw; }
+.vx-bg > .jl-confetti.b { animation-duration: 19s; opacity: .8;
+  background: radial-gradient(circle, #ffd60a 0 .9cqw, transparent 1cqw) 3cqw 2cqw / 21cqw 17cqw, radial-gradient(circle, #fff 0 .6cqw, transparent .7cqw) 11cqw 6cqw / 15cqw 13cqw; }
+
+/* sanie przelatują przez całą kartę, lampki po ramce biegną (xm-bulb jak w Świątecznym) */
+.vx-deco > .jl-fly { left: 0; top: 25%; width: 54cqw; height: 12cqw; will-change: transform; animation: jlFly 6.5s linear infinite; }
+.jl-fly > svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 .8cqw .8cqw #0006); overflow: visible; }
+@keyframes jlFly { 0% { transform: translate(-58cqw, 2cqw) rotate(-3deg); } 50% { transform: translate(22cqw, -2.5cqw) rotate(2deg); } 100% { transform: translate(104cqw, 1cqw) rotate(-2deg); } }
+
+/* na zdjęciu: prezenty w rogach, bombki z górnej krawędzi (tre-ball) */
+.card-photo > .jl-gift { position: absolute; bottom: 2%; z-index: 2; width: 17%; filter: drop-shadow(0 .6cqw .6cqw #0007); transform-origin: 50% 100%; animation: jlWob 2.2s ease-in-out infinite; }
+.card-photo > .jl-gift > svg { display: block; width: 100%; height: auto; }
+.card-photo > .jl-gift.a { left: 3%; } .card-photo > .jl-gift.b { left: 19%; width: 12%; animation-delay: -.7s; } .card-photo > .jl-gift.c { right: 3%; width: 19%; animation-delay: -1.4s; }
+@keyframes jlWob { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg) scale(1.04); } }
+
+.var-tag.vt-jolly, .ph.vt-jolly { background: linear-gradient(90deg, #ff2d55, #ff9f0a, #ffd60a, #30d158, #0a84ff); color: #fff; text-shadow: 0 .1em 0 #0006; box-shadow: 0 0 .7em #ffd60a99; }
+.pick.v-jolly { box-shadow: inset 0 0 0 2px #ff2d55, inset 0 0 0 4px #fff, inset 0 -26px 26px -18px var(--rc); }
+.vdot.vt-jolly { background: conic-gradient(#ff2d55 0 25%, #fff 0 50%, #30d158 0 75%, #fff 0); box-shadow: 0 0 0 1px #fff8; }
+.odd.odd-v.vt-jolly { border-left-color: #ff2d55; }
+.vchip.vt-jolly.active { background: linear-gradient(90deg, #ff2d55, #30d158); color: #fff; }
+.avv-jolly img { box-shadow: 0 0 0 2px #ff2d55, 0 0 0 4px #fff !important; }
+.av-vname.vt-jolly { color: #ff6a85; }
+
+/* ------------------------------------------------------------ GWIAZDKOWY - klasy gw- (makieta „Ulica z latarniami”) */
+.card.v-gwiazdkowy {
+  --rc: #caa86a;
+  --frame: linear-gradient(160deg, #8a5a30, #3a2414 38%, #130b06 60%, #7a4f2c);
+  --spin: initial;
+  box-shadow: 0 6px 18px #000c, 0 0 18px #f3d28a33;
+}
+.card.v-gwiazdkowy .card-inner { background: linear-gradient(#03060f 0%, #08122b 32%, #12244d 62%, #1c3263 100%); color: #f6efe2; }
+.card.v-gwiazdkowy .card-inner > :where(:not(.vx-bg, .galaxy-bg, .dv-bg, .mlg-bg, .v-stickers)) { position: relative; z-index: 1; }
+/* zdjęcie niższe, panele przy dolnej krawędzi: między nimi odsłania się ulica z kamieniczkami */
+.card.v-gwiazdkowy .card-sub { margin-top: auto; font: italic 700 .66em/1.2 Georgia, serif; letter-spacing: .03em; }
+.card.v-gwiazdkowy :is(.card-attack, .card-stats, .card-foot, .card-sub) { background: #1b110a99; border: .3cqw solid #b28a52; border-radius: .4em; }
+.card.v-gwiazdkowy :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-dmg, .atk-name, .card-hp) { color: #f6efe2; text-shadow: 0 .2cqw .4cqw #000a; }
+.card.v-gwiazdkowy .card-name { font: 800 1em/1.05 Georgia, serif; color: #fff; text-shadow: 0 .1em 0 #000, 0 0 .5em #f3d28a99; }
+.card.v-gwiazdkowy .card-photo { aspect-ratio: 1.32; border: .8cqw solid #f4f1ea; border-image: none; border-radius: .35em; overflow: hidden; box-shadow: 0 0 0 .4cqw #3a2414, 0 0 3cqw #f3d28a55; }
+.card.v-gwiazdkowy .card-photo > img, .pick.v-gwiazdkowy img, .avv-gwiazdkowy img { filter: sepia(.16) saturate(.96) contrast(1.03) brightness(.97); }
+.card-photo > .gw-warm { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 55% at 90% 100%, #ffb34766, transparent), linear-gradient(#0000 62%, #1b110a77); }
+
+/* gwiazdka betlejemska na rogu zdjęcia: czteroramienna, z promieniem w dół i poświatą */
+.card-photo > .gw-bstar { position: absolute; z-index: 2; width: 13cqw; height: 13cqw; margin: -6.5cqw 0 0 -6.5cqw; scale: var(--s); filter: drop-shadow(0 0 .5cqw #7a4f00) drop-shadow(0 0 1.6cqw #ffe9a0); animation: gwPulse 3.2s ease-in-out infinite; }
+.gw-bstar::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, #fff 0 16%, #ffe680 42%, #ffb81c); clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%); }
+.gw-bstar > u { position: absolute; left: 50%; top: 56%; width: 4.4cqw; height: 26cqw; margin-left: -2.2cqw; background: linear-gradient(#fff6c4cc, transparent); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+@keyframes gwPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .82; } }
+
+/* tło karty: dwie warstwy gwiazd, poświata nad horyzontem, ulica z wysokimi kamieniczkami, dym i latarnie */
+.vx-bg > .gw-stars { inset: 0 0 40% 0; animation: gwTw 3.6s ease-in-out infinite; }
+.vx-bg > .gw-stars.a { background: radial-gradient(circle, #fff 0 .22cqw, transparent .3cqw) 3cqw 4cqw / 13cqw 11cqw, radial-gradient(circle, #ffe9b8 0 .18cqw, transparent .26cqw) 9cqw 1cqw / 17cqw 14cqw; }
+.vx-bg > .gw-stars.b { animation-duration: 4.8s; animation-direction: reverse;
+  background: radial-gradient(circle, #fff 0 .3cqw, transparent .4cqw) 6cqw 8cqw / 19cqw 16cqw, radial-gradient(circle, #cfe1ff 0 .2cqw, transparent .3cqw) 1cqw 5cqw / 11cqw 9cqw; }
+@keyframes gwTw { 50% { opacity: .35; } }
+.vx-bg > .gw-hz { left: 0; right: 0; bottom: 30%; height: 34%; background: linear-gradient(transparent, #ffb3473a, transparent); }
+.vx-bg > .gw-v { position: absolute; left: 0; right: 0; bottom: 0; top: auto; }
+.gw-vsvg { display: block; width: 100%; height: 100%; }
+.gw-win { animation: xmWin 5s steps(1) infinite; }
+.vx-bg > .gw-puff { width: 3cqw; aspect-ratio: 1; border-radius: 50%; background: #ffffffa0; filter: blur(.4cqw); animation: xmSmoke 3.4s ease-out infinite; }
+.vx-bg > .gw-lamp { width: 2.2cqw; height: 2.2cqw; margin-left: -1.1cqw; border-radius: 50%; background: #ffe3a0; box-shadow: 0 0 5cqw 3cqw #ffc24788; }
+.gw-lamp::after { content: ""; position: absolute; left: 50%; top: 100%; width: .8cqw; height: 15cqw; margin-left: -.4cqw; background: #1a0f08; }
+
+/* sanie jak spadająca gwiazda: lecą po skosie przez całą kartę, nad zdjęciem, ze świecącym ogonem z iskier */
+.vx-deco > .gw-shoot { left: 0; top: var(--y); width: 30cqw; height: 7cqw; opacity: 0; rotate: 13deg; will-change: transform; animation: gwShoot 9s linear infinite; animation-delay: var(--d); }
+.gw-shoot > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 .5cqw #ffd980) drop-shadow(0 0 1.4cqw #ffd98066); }
+.gw-shoot > .gw-tail { position: absolute; display: block; right: 92%; top: 48%; width: 46cqw; height: 1.1cqw; border-radius: 1cqw;
+  background: radial-gradient(circle, #fff 0 .35cqw, transparent .5cqw) 0 50% / 3cqw 100% repeat-x, linear-gradient(90deg, transparent, #ffe08ab0); }
+@keyframes gwShoot { 0%, 58% { opacity: 0; translate: -34cqw 0; } 61% { opacity: 1; } 87% { opacity: 1; } 91%, 100% { opacity: 0; translate: 112cqw 26cqw; } }
+
+.var-tag.vt-gwiazdkowy, .ph.vt-gwiazdkowy { background: linear-gradient(90deg, #0a0f1f, #24365f); color: #f6efe2; border: 1px solid #caa86a; box-shadow: 0 0 .7em #f3d28a66; text-shadow: none; }
+.pick.v-gwiazdkowy { box-shadow: inset 0 0 0 2px #caa86a, inset 0 0 0 4px #0a0f1f, inset 0 -26px 26px -18px var(--rc); }
+.vdot.vt-gwiazdkowy { background: radial-gradient(circle, #fff6c8 0 25%, #12244d 32%); box-shadow: 0 0 0 1px #caa86a; }
+.odd.odd-v.vt-gwiazdkowy { border-left-color: #caa86a; }
+.vchip.vt-gwiazdkowy.active { background: linear-gradient(90deg, #0a0f1f, #3a2414); color: #f6efe2; }
+.avv-gwiazdkowy img { box-shadow: 0 0 0 2px #caa86a, 0 0 0 4px #0a0f1f !important; }
+.av-vname.vt-gwiazdkowy { color: #f3d28a; }
+
+/* ograniczony ruch / tryb wydajności (wtyczka liteMotion kopiuje tę regułę pod :root[data-lite]): wszystko stoi, sanie w widocznym miejscu */
+@media (prefers-reduced-motion: reduce) {
+  .jl-banner b, .vx-bg > :is(.jl-rays, .jl-confetti), .card.v-jolly .snw-layer, .vx-deco > .jl-fly, .card-photo > .jl-gift,
+  .card-photo > .gw-bstar, .vx-bg > :is(.gw-stars, .gw-puff), .gw-win, .vx-deco > .gw-shoot, .card.v-gwiazdkowy .snw-layer { animation: none; }
+  .vx-deco > .jl-fly { transform: translate(22cqw, -2.5cqw); }
+  .vx-deco > .gw-shoot { opacity: 1; translate: 30cqw 8cqw; }
+  .vx-bg > .jl-rays { opacity: .8; }
+}

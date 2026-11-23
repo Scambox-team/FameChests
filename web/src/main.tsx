@@ -9,6 +9,7 @@ import './cards/css/cards2.css';
 import './cards/css/special.css';
 import './cards/css/joker-talia.css';
 import './cards/css/ufo.css';
+import './cards/css/santa.css';
 import './cards/css/avatars.css';
 import './fx/css/stage.css';
 import './fx/css/fx.css';

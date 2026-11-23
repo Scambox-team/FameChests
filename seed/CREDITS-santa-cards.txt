@@ -1,0 +1,15 @@
+Zdjęcia kart świątecznych (karty specjalne Święty Mikołaj z Miry i Święty Mikołaj)
+Pliki w seed/custom_images/: sp_mikolaj_z_miry.webp, sp_mikolaj.webp. Wszystkie obrazy z Wikimedia Commons, domena publiczna
+(stare dzieła, autorzy nieznani lub dawno zmarli); kadrowane, zmniejszone/powiększone i zapisane jako WebP.
+
+sp_mikolaj_z_miry.webp  - Święty Mikołaj z Miry (karta w wariancie Jolly, drop z wspólnej choinki)
+  Źródło: https://commons.wikimedia.org/wiki/File:St_Nicholas_Icon_Sinai_13th_century.jpg
+  Ikona św. Mikołaja, XIII w., klasztor św. Katarzyny na Synaju (Egipt), autor nieznany. Licencja: Public domain.
+  Zmiany: kadr pionowy 4:5 od czubka głowy po księgę.
+
+sp_mikolaj.webp  - Święty Mikołaj (karta w wariancie Gwiazdkowy, nagroda za okienko 24 grudnia)
+  Źródło: https://commons.wikimedia.org/wiki/File:Santa,_in_red_robe,_%22Proclamation_Christmas_Greetings_to_all_of_you%22_(NBY_6432).jpg
+  Świąteczna kartka pocztowa z początku XX w. (kolekcja CARLI, Illinois), autor nieznany. Licencja: Public domain.
+  Zmiany: kadr z głową i brodą Mikołaja bez ramki i napisu, powiększenie.
+
+Ta sama informacja jest w „O stronie” (web/src/features/legal/About.tsx).

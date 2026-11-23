@@ -933,6 +933,29 @@
     "Pustka"
    ],
    "desc": "Karta nie z tej planety - szary nieregularny ośmiokąt, plaster heksagonów i znak obcych."
+  },
+  "jolly": {
+   "name": "Jolly",
+   "chance": 0.0,
+   "mult": 1.0,
+   "exclusive": true,
+   "special": true,
+   "stickers": true,
+   "styles": [
+    "Przesadnie wesołe święta"
+   ],
+   "desc": "Święta podkręcone do maksimum: jaskrawe paski i bombki, prezenty z kokardami, śnieg, który nie przestaje padać, sanie przelatujące przez kartę i wielki napis „Wesołych świąt”."
+  },
+  "gwiazdkowy": {
+   "name": "Gwiazdkowy",
+   "chance": 0.0,
+   "mult": 1.0,
+   "exclusive": true,
+   "special": true,
+   "styles": [
+    "Wigilijna noc"
+   ],
+   "desc": "Wigilijna noc: granat i czerń nieba pełnego gwiazd z jedną jasną gwiazdką betlejemską, śnieg, wysokie kamieniczki z zapalonymi oknami przy ośnieżonej ulicy z latarniami i sanie, które przecinają kartę jak spadająca gwiazda. Biel śniegu i ciepły brąz."
   }
  },
  "defaultCrateVariants": {
@@ -1048,6 +1071,15 @@
    "curve": 2.0,
    "color1": "#ffd54a",
    "color2": "#8a5b00"
+  },
+  "swiateczna": {
+   "name": "Świąteczna skrzynka",
+   "emoji": "🎄",
+   "min": 50000,
+   "max": 100000,
+   "curve": 1.3,
+   "color1": "#e0283a",
+   "color2": "#0f5a32"
   }
  },
  "dailyStreak": 7,
@@ -3179,6 +3211,32 @@
      "source": "ufo",
      "fixedVariant": "ufo",
      "style": 1
+    },
+    {
+     "id": "sp_mikolaj_z_miry",
+     "name": "Święty Mikołaj z Miry",
+     "rarity": "special",
+     "type": "wiara",
+     "hp": 160,
+     "attack": "Cichy dar",
+     "dmg": 110,
+     "source": "tree",
+     "fixedVariant": "jolly",
+     "style": 1,
+     "desc": "Prawdziwy Mikołaj: biskup Miry w Licji (dzisiejsze Demre w Turcji), żyjący w IV wieku. Znany z tego, że pomagał potrzebującym po cichu, bez rozgłosu - stąd wzięła się tradycja prezentów. Zdjęcie: ikona z klasztoru św. Katarzyny na Synaju (XIII w.), domena publiczna. Dostają ją wszyscy, którzy powiesili kartę na wspólnej choince."
+    },
+    {
+     "id": "sp_mikolaj",
+     "name": "Święty Mikołaj",
+     "rarity": "special",
+     "type": "kino",
+     "hp": 140,
+     "attack": "Worek prezentów",
+     "dmg": 120,
+     "source": "advent",
+     "fixedVariant": "gwiazdkowy",
+     "style": 1,
+     "desc": "Ten, którego znamy z kartek świątecznych: czerwony płaszcz, biała broda, sanie i worek pełen prezentów. Nagroda za ostatnie okienko kalendarza adwentowego, 24 grudnia. Zdjęcie: kartka pocztowa z ok. 1910 r., domena publiczna."
     }
    ]
   }
@@ -3187,7 +3245,9 @@
  "specialSources": {
   "casino": "🎰 Kasyno — wygrane w grach, które dają nowe karty (ruletka, blackjack)",
   "link": "🔗 Link od admina — każdy gracz może go użyć raz",
-  "ufo": "🛸 UFO — na razie nie do zdobycia: czasem sama pojawia się w ekwipunku i zabiera ją UFO"
+  "ufo": "🛸 UFO — na razie nie do zdobycia: czasem sama pojawia się w ekwipunku i zabiera ją UFO",
+  "tree": "🎄 Choinka — dostaje ją na koniec eventu Święta każdy, kto powiesił na wspólnej choince choć jedną kartę",
+  "advent": "🎁 Kalendarz adwentowy — nagroda okienka (karta ustawiana w panelu Eventy, domyślnie dzień 24)"
  },
  "casinoSpecial": {
   "per": 50000,
@@ -4063,6 +4123,18 @@
  },
  "patchNotes": [
   {
+   "v": 33,
+   "date": "2026-11-23",
+   "title": "Wesołe święta: kalendarz, choinka i dwie karty Mikołaja",
+   "items": [
+    "Kalendarz adwentowy w grudniu jest kolorowy i świąteczny: drzwiczki z numerami, bombki, światełka i padający śnieg. Okienka otworzysz w dniu eventu albo później, a ostatnie, 24 grudnia, czeka z niespodzianką.",
+    "Wspólna choinka też wygląda radośniej: światełka, łańcuchy, prezenty pod drzewkiem i śnieg. Karta Choinka dostała jaśniejszą zieleń, światełka i łańcuch.",
+    "Nowa karta specjalna Święty Mikołaj z Miry (wariant Jolly): prawdziwy, historyczny Mikołaj. Dostają ją wszyscy, którzy powiesili kartę na choince, po zakończeniu eventu.",
+    "Nowa karta specjalna Święty Mikołaj (wariant Gwiazdkowy): nocne niebo z gwiazdą betlejemską. To nagroda za okienko z 24 grudnia, razem ze Świąteczną skrzynką z pieniędzmi (50 000 - 100 000 gr) - każdy gracz otworzy je raz.",
+    "W rankingu jest nowa zakładka „Najdroższe karty”: dziesięć najdroższych kart w grze i ich właściciele."
+   ]
+  },
+  {
    "v": 32,
    "date": "2026-11-18",
    "title": "Pinball: większy stół i wyrzutnia",
@@ -4458,7 +4530,7 @@
     [{"type": "chest", "kind": "money_daily", "count": 1}],
     [{"type": "chest", "kind": "money_daily", "count": 1}],
     [{"type": "chest", "kind": "money_daily", "count": 1}],
-    [{"type": "chest", "kind": "money_mega", "count": 1}]
+    [{"type": "card", "person": "sp_mikolaj", "variant": "gwiazdkowy", "count": 1}, {"type": "chest", "kind": "money_swiateczna", "count": 1}]
    ]
   }
  ],

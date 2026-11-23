@@ -1,4 +1,6 @@
-/* Eventy na stronie startowej i kalendarz adwentowy */
+/* Eventy na stronie startowej i kalendarz adwentowy.
+   Event Święta jest celowo wesoły i kolorowy: czerwień, zieleń, złoto, lampki, bombki, śnieg - może odstawać od motywu gry, więc ma własne,
+   stałe kolory tekstu (czytelne w każdym motywie). Animuje się tylko transform i opacity; przy ograniczonym ruchu wszystko stoi. */
 .tile { grid-column: 1 / -1; position: relative; overflow: hidden; isolation: isolate; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;
   min-height: 170px; padding: 22px; border-radius: var(--radius-l, 18px); background: linear-gradient(135deg, #1d1d24, #121216); box-shadow: inset 0 0 0 1px #ffffff12; }
 .deco { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
@@ -13,28 +15,98 @@
 .ev_niepodleglosc .lead, .ev_niepodleglosc .when { color: #2a2a2a; }
 .ev_niepodleglosc .drops { color: #fff; text-shadow: 0 1px 2px #0006; }
 @keyframes evWave { to { background-position: -200% 0; } }
-/* Święta: zieleń choinki, czerwień, padający śnieg */
-.ev_swieta { background: radial-gradient(120% 140% at 0 0, #1f6b3a, #0f3a22 60%, #08200f); }
-.ev_swieta .deco { background: radial-gradient(#fff .15rem, #0000 .2rem) 0 0 / 40px 40px, radial-gradient(#fff9 .1rem, #0000 .15rem) 20px 20px / 30px 30px; animation: evSnow 12s linear infinite; opacity: .6; }
-@keyframes evSnow { to { background-position: 0 400px, 20px 320px; } }
-.won { padding: 10px 14px; border-radius: var(--radius-s); background: #2bd96b22; }
-.calendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
-.door { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 104px; padding: 10px; border-radius: var(--radius-s);
-  background: linear-gradient(160deg, #8a1f2c, #5a0f1a); box-shadow: inset 0 0 0 2px #e8c35a55; }
-.door:nth-child(3n) { background: linear-gradient(160deg, #1f6b3a, #0f3a22); }
-.door:nth-child(4n) { background: linear-gradient(160deg, #23406b, #12223a); }
-.num { font: 800 26px/1 var(--display); color: #f4e2a8; text-shadow: 0 2px 0 #0006; }
-.today { box-shadow: inset 0 0 0 2px #ffd36e, 0 0 18px #ffd36e66; }
-.opened { background: #ffffff10 !important; box-shadow: inset 0 0 0 1px #ffffff1a; }
-.opened .num { color: var(--muted); text-shadow: none; }
-.missed { box-shadow: inset 0 0 0 2px #e8c35a99; }
+
+/* ---------------------------------------------------------------- Święta: kafelek na stronie startowej */
+.ev_swieta { background: linear-gradient(120deg, #c8102e 0%, #e8283a 34%, #178a46 72%, #0e5a31 100%); color: #fff; box-shadow: inset 0 0 0 2px #ffd60a99, 0 8px 26px -14px #c8102eaa; }
+.ev_swieta .when { color: #ffe9a8; }
+.ev_swieta .name { color: #fff; font-size: 32px; text-shadow: 0 2px 0 #7a0a1c, 0 0 18px #ffd60a66; }
+.ev_swieta .lead { color: #fff2f2; }
+.ev_swieta .drops { color: #fff; text-shadow: 0 1px 2px #0007; }
+.ev_swieta .running { color: #fff; text-shadow: 0 1px 2px #0007; }
+/* pasek z laski cukrowej u dołu i drut z lampkami u góry */
+.ev_swieta::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 9px; z-index: 0; pointer-events: none;
+  background: repeating-linear-gradient(135deg, #e8283a 0 9px, #fff 9px 18px); opacity: .95; }
+.ev_swieta .deco { overflow: hidden; }
+.ev_swieta .deco::before, .ev_swieta .deco::after { content: ""; position: absolute; left: 0; top: -100%; width: 100%; height: 200%; will-change: transform; animation: evSnowFall 13s linear infinite;
+  background: radial-gradient(circle, #fff 0 3px, transparent 4px) 0 0 / 90px 70px, radial-gradient(circle, #fffc 0 2px, transparent 3px) 40px 30px / 60px 50px; }
+.ev_swieta .deco::after { animation-duration: 21s; opacity: .7; background: radial-gradient(circle, #fff 0 4px, transparent 5px) 15px 10px / 130px 100px, radial-gradient(circle, #fff9 0 1.5px, transparent 2.5px) 0 0 / 40px 36px; }
+@keyframes evSnowFall { to { transform: translate(-30px, 50%); } }
+.lights { position: absolute; left: 0; right: 0; top: 0; height: 22px; }
+.lights::before { content: ""; position: absolute; left: -4%; right: -4%; top: -9px; height: 20px; border-bottom: 2px solid #0007; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+.lights i { position: absolute; top: 5px; width: 9px; height: 13px; border-radius: 50% 50% 45% 45%; background: var(--c); box-shadow: 0 0 10px var(--c); animation: evBulb 1.8s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes evBulb { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.baubles { position: absolute; right: 18px; top: 0; display: flex; gap: 22px; }
+.baubles i { position: relative; display: block; width: 26px; height: calc(34px + var(--len)); transform-origin: 50% 0; animation: evSwing 3.2s ease-in-out infinite; animation-delay: var(--d);
+  background: linear-gradient(#ffe9a8, #ffe9a8) 50% 0 / 1.5px calc(100% - 26px) no-repeat; }
+.baubles i::after { content: ""; position: absolute; left: 0; bottom: 0; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset -4px -5px 8px #0004, 0 4px 8px #0005;
+  background: radial-gradient(circle at 34% 30%, #fff9 0 12%, transparent 13%), radial-gradient(circle at 50% 50%, var(--c) 0 70%, color-mix(in srgb, var(--c) 55%, #000)); }
+@keyframes evSwing { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+/* ---------------------------------------------------------------- Kalendarz adwentowy (okno) */
+.won { padding: 10px 14px; border-radius: var(--radius-s); background: linear-gradient(90deg, #ffd60a, #ffb703); color: #4a2b00; font-size: 15px; text-align: center; box-shadow: 0 0 22px #ffd60a88; }
+.calWrap { position: relative; overflow: hidden; isolation: isolate; margin-top: 12px; padding: 22px 14px 16px; border-radius: var(--radius); color: #fff6e2;
+  background: radial-gradient(120% 90% at 50% 0, #1f8a4c, #0f5a31 55%, #0a3d22); box-shadow: inset 0 0 0 2px #ffd60a88; }
+.calWrap::before { content: ""; position: absolute; left: 0; top: -100%; width: 100%; height: 200%; z-index: -1; pointer-events: none; will-change: transform; animation: evSnowFall 16s linear infinite;
+  background: radial-gradient(circle, #fff 0 2.5px, transparent 3.5px) 0 0 / 80px 64px, radial-gradient(circle, #ffffffb0 0 1.8px, transparent 2.8px) 36px 28px / 54px 46px; }
+.calLights { position: absolute; left: 0; right: 0; top: 0; height: 18px; z-index: 0; pointer-events: none; }
+.calLights i { position: absolute; top: 3px; width: 8px; height: 11px; border-radius: 50% 50% 45% 45%; background: var(--c); box-shadow: 0 0 9px var(--c); animation: evBulb 1.8s ease-in-out infinite; animation-delay: var(--d); }
+.calLights::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #0008; }
+.calTitle { position: relative; z-index: 2; margin: 0 0 12px; text-align: center; font: 800 20px/1.1 var(--display); color: #ffe9a8; text-shadow: 0 2px 0 #0007; }
+.calendar { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px; }
+.door { --a: #d62839; --b: #8f0f22; position: relative; display: block; width: 100%; min-height: 104px; padding: 0; border: 0; border-radius: 10px; font: inherit; color: inherit; text-align: center; cursor: default; }
+.c1 { --a: #1faa5c; --b: #0b6a35; } .c2 { --a: #f0b323; --b: #b3730a; } .c3 { --a: #2f86ee; --b: #1553a3; } .c4 { --a: #a65bd6; --b: #66308f; } .c5 { --a: #f5742f; --b: #b13d0b; }
+/* zamknięte okienko = zapakowany prezent: kolorowe pudełko, złote wstęgi, numer na kokardzie */
+.box { position: absolute; inset: 0; border-radius: 10px; overflow: hidden; transform-origin: 0 50%; transition: transform .35s, filter .2s;
+  background: linear-gradient(150deg, var(--a), var(--b)); box-shadow: inset 0 0 0 2px #ffffff55, 0 6px 12px -6px #000a; }
+.box::before { content: ""; position: absolute; left: 0; right: 0; top: 36%; height: 16%; background: linear-gradient(#ffe9a8, #e8b923 55%, #b8860b); box-shadow: 0 1px 0 #0003; }
+.box::after { content: ""; position: absolute; top: 0; bottom: 0; left: 42%; width: 16%; background: linear-gradient(90deg, #b8860b, #ffe9a8 45%, #e8b923); box-shadow: 1px 0 0 #0003; }
+.num { position: absolute; left: 50%; top: 44%; z-index: 2; transform: translate(-50%, -50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  font: 800 20px/1 var(--display); color: var(--b); background: radial-gradient(circle at 35% 30%, #fff, #ffe9a8); box-shadow: 0 0 0 3px var(--a), 0 0 0 5px #ffe9a8, 0 3px 6px #0006; }
+.tag { position: absolute; left: 4px; right: 4px; bottom: 6px; z-index: 2; font-size: 12px; font-weight: 800; line-height: 1.1; color: #fff; text-shadow: 0 1px 2px #000b; }
+.tag small { font-weight: 700; opacity: .9; }
+/* otwarte okienko: ciepłe wnętrze z nagrodą */
+.inside { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; gap: 4px; padding: 8px 6px; border-radius: 10px; text-align: center;
+  background: radial-gradient(circle at 50% 40%, #fff4c9, #ffd36e 70%, #f0a830); color: #4a2b00; box-shadow: inset 0 0 0 2px var(--a), inset 0 0 18px #fff9; }
+.inside b { font: 800 12px/1 var(--display); color: var(--b); opacity: .8; }
+.rewards { font-size: 12px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere; }
+.opened .box { transform: perspective(900px) rotateY(-72deg); filter: saturate(.85); }
+.opened { cursor: default; }
+.opened .num, .opened .tag { display: none; }
+.claimable { cursor: pointer; }
+.claimable:hover .box, .claimable:focus-visible .box { transform: perspective(900px) rotateY(-24deg); }
+.claimable:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.claimable:disabled { opacity: .7; cursor: wait; }
+.today .box { animation: evPulse 1.5s ease-in-out infinite; box-shadow: inset 0 0 0 2px #fff, 0 0 0 3px #ffd60a, 0 0 22px 4px #ffd60acc; }
+.missed .box { box-shadow: inset 0 0 0 2px #ffffff88, 0 0 0 2px #ffd60a99, 0 6px 12px -6px #000a; }
+@keyframes evPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.locked .box { filter: saturate(.5) brightness(.8); }
+.lock { position: absolute; right: 7px; top: 7px; z-index: 3; color: #fff; filter: drop-shadow(0 1px 2px #000a); }
+/* 24 grudnia: największe okienko ze złotą ramką i gwiazdą */
+.wigilia { min-height: 104px; }
+.wigilia .box { box-shadow: inset 0 0 0 3px #ffe9a8, 0 0 0 3px #ffb703, 0 0 24px #ffd60a88; }
+.wigilia .num { width: 48px; height: 48px; font-size: 24px; }
+.star { position: absolute; right: 10px; top: 8px; z-index: 3; color: #ffe14a; filter: drop-shadow(0 0 6px #ffd60a); animation: evPulse 2s ease-in-out infinite; }
 .running { margin: 0; font-size: 14px; line-height: 1.45; }
 .adminTag { display: inline-block; margin-left: 10px; padding: 1px 9px; border-radius: 999px; background: #ffd54a; color: #3a2a00; font-size: 12px; font-weight: 700; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.rewards { font-size: 12px; line-height: 1.3; color: var(--text); }
-.rewards small { display: block; color: var(--muted); }
-.lock { align-self: flex-end; opacity: .6; }
 
 /* przyciski pomocnicze na ciemnym kafelku eventu: jasny obrys, w każdym motywie czytelne */
 .actions button[class*="_btn_"]:not([class*="_hue_"]) { background-color: #ffffff1f; border-color: #ffffff88; color: #fff; }
 .actions button[class*="_btn_"]:not([class*="_hue_"]):hover:not(:disabled) { background-color: #ffffff38; color: #fff; box-shadow: none; }
+/* kafelek ma własne, stałe kolory: motywy (Aero, Warm...) nie mogą przemalować przycisków */
+.ev_swieta .actions button[class*="_btn_"]:not([class*="_hue_"]) { background: #ffffff26 !important; color: #fff !important; border-color: #ffffffaa !important; text-shadow: 0 1px 2px #0006 !important; box-shadow: none !important; }
+.ev_swieta .actions button[class*="_btn_"][class*="_hue_"] { background: linear-gradient(#ffe14a, #ffb703); border-color: #fff4c0; color: #4a2b00; box-shadow: 0 3px 0 #a86a00, 0 0 18px #ffd60a88; }
+
+@media (max-width: 820px) {
+  .ev_swieta .name { font-size: 26px; }
+  .baubles { right: 8px; gap: 14px; transform: scale(.8); transform-origin: 100% 0; }
+  .calendar { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+  .door { min-height: 84px; }
+  .num { width: 32px; height: 32px; font-size: 16px; }
+  .rewards { font-size: 11px; }
+  .wigilia { min-height: 90px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ev_swieta .deco::before, .ev_swieta .deco::after, .calWrap::before, .lights i, .calLights i, .baubles i, .today .box, .star { animation: none; }
+  .box { transition: none; }
+}

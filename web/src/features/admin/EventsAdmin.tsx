@@ -10,15 +10,15 @@ import s from './EventsAdmin.module.css';
 type Reward = { type: 'card' | 'chest' | 'money'; person?: string; variant?: string; kind?: string; count?: number; amount?: number };
 interface GameEvent { id: string; name: string; desc: string; start: string; end: string; enabled: boolean; drops: { variant: string; chance: number }[]; advent: Reward[][] | null }
 interface Meta {
-  events: GameEvent[]; variants: { key: string; name: string; chance: number; enabled: boolean }[];
-  cards: { id: string; name: string; rarity: string }[]; chests: { kind: string; name: string }[]; claims: Record<string, number>; today: string;
+  events: GameEvent[]; variants: { key: string; name: string; chance: number; enabled: boolean; special?: boolean }[];
+  cards: { id: string; name: string; rarity: string; special?: boolean; fixedVariant?: string | null }[]; chests: { kind: string; name: string }[]; claims: Record<string, number>; today: string;
 }
 
 const pct = (x: number) => +(x * 100).toFixed(4);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
 const status = (e: GameEvent, today: string) => !e.enabled ? 'wyłączony' : today < e.start ? 'zaplanowany' : today > e.end ? 'zakończony' : 'trwa';
 
-interface Xmas { enabled: boolean; testDate: string; event: { name: string; start: string; end: string } | null; tree: { cards: number; players: number; value: number }; settled: boolean; sharePct: number; specialVariant: string | null }
+interface Xmas { enabled: boolean; testDate: string; event: { name: string; start: string; end: string } | null; tree: { cards: number; players: number; value: number }; settled: boolean; sharePct: number; specialCards: { person: string; name: string | null; variant: string }[] }
 
 /** Choinka i kalendarz eventu świątecznego (server/src/routes/christmas.rs): włączanie dla graczy, data testowa, rozliczenie, czyszczenie */
 function ChristmasPanel() {
@@ -37,7 +37,7 @@ function ChristmasPanel() {
       <div className={s.body}>
         <h4><TreePine size={16} aria-hidden="true" /> Choinka i kalendarz adwentowy (event „Święta”)</h4>
         <p className="muted small">Wspólna choinka: każdy gracz wiesza codziennie jedną kartę, na koniec eventu dostaje je z powrotem i losowe karty za {x.sharePct}% ich wartości
-          w wariantach z dropów eventu. {x.specialVariant ? `Karta specjalna: ${x.specialVariant}.` : 'Karta w nowym wariancie specjalnym: jeszcze nie ustawiona (wariant nie powstał).'}
+          w wariantach z dropów eventu. {x.specialCards.length ? `Karta specjalna z choinki (dla każdego z wkładem): ${x.specialCards.map(c => c.name || c.person).join(', ')}.` : 'Karta specjalna z choinki: żadna (ustaw źródło „Choinka” w karcie specjalnej).'}
           {x.event ? ` Termin: ${x.event.start} – ${x.event.end}.` : ' Event „Święta” jest wyłączony albo go nie ma.'}</p>
         <label className={s.chk}><input type="checkbox" checked={x.enabled} disabled={busy} onChange={e => send({ enabled: e.target.checked }, e.target.checked ? 'Choinka i kalendarz włączone dla graczy' : 'Wyłączone dla graczy (admini nadal je widzą)')} />
           Włączone dla wszystkich graczy (wyłączone: widzą je tylko admini)</label>
@@ -124,7 +124,7 @@ export default function EventsAdmin() {
                 {e.drops.map((d, k) => (
                   <div key={k} className={s.row}>
                     <select value={d.variant} onChange={x => edit(i, v => ({ ...v, drops: v.drops.map((y, j) => j === k ? { ...y, variant: x.target.value } : y) }))}>
-                      {meta.variants.map(v => <option key={v.key} value={v.key}>{v.name}{v.enabled ? '' : ' (wyłączony)'}</option>)}
+                      {meta.variants.filter(v => !v.special).map(v => <option key={v.key} value={v.key}>{v.name}{v.enabled ? '' : ' (wyłączony)'}</option>)}
                     </select>
                     <label className={s.inline}>Szansa <input type="number" min={0} max={20} step="any" value={pct(d.chance)}
                       onChange={x => edit(i, v => ({ ...v, drops: v.drops.map((y, j) => j === k ? { ...y, chance: (+x.target.value || 0) / 100 } : y) }))} /> %</label>
@@ -151,7 +151,7 @@ export default function EventsAdmin() {
                         return (
                           <div key={d} className={s.day}>
                             <b className={s.dayN}>{d + 1}</b>
-                            <label>Karta (id)<input list="evCards" value={card?.person || ''} placeholder="brak" onChange={x => setDay('card', x.target.value ? { type: 'card', person: x.target.value.trim(), variant: card?.variant || 'normal', count: 1 } : null)} />
+                            <label>Karta (id)<input list="evCards" value={card?.person || ''} placeholder="brak" onChange={x => setDay('card', x.target.value ? { type: 'card', person: x.target.value.trim(), variant: meta.cards.find(c => c.id === x.target.value.trim())?.fixedVariant || card?.variant || 'normal', count: 1 } : null)} />
                               {card?.person && <small className="muted">{cardName.get(card.person) || 'nie ma takiej karty'}</small>}</label>
                             <label>Wariant<select value={card?.variant || 'normal'} disabled={!card} onChange={x => setDay('card', { ...card!, variant: x.target.value })}>
                               <option value="normal">Zwykła</option>{meta.variants.map(v => <option key={v.key} value={v.key}>{v.name}</option>)}</select></label>
