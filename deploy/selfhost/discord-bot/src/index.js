@@ -82,6 +82,7 @@ const CHANNELS = {
   crates: { env: 'CH_CRATES', what: 'skrzynki i rotacja' },
   patch: { env: 'CH_PATCH', what: 'ogłoszenia o aktualizacjach' },
   drops: { env: 'CH_DROPS', what: 'rzadkie dropy' },
+  roles: { env: 'CH_ROLES', what: 'zasady ról (jedna wiadomość)' },
   brag: { env: 'CH_BRAG', what: 'kanał „pochwal się” (karty z przycisku w grze)' },
   alerts: { env: 'CH_ALERTS', what: 'alerty o awarii gry (bez kanału: wiadomość prywatna do właściciela serwera)' },
   commands: { env: 'CH_COMMANDS', what: 'kanał komend (poza nim komendy są odrzucane, o ile COMMANDS_ONLY=1)' },
@@ -131,7 +132,7 @@ async function upsert(ch, id, payload) {
 const mention = () => (PING_ROLE ? { content: `<@&${PING_ROLE}>`, allowedMentions: { roles: [PING_ROLE] } } : { allowedMentions: { parse: [] } });
 
 // ogłoszenia o aktualizacjach i dropach, alert o awarii, /polacz i role za ranking (features.js)
-const features = createFeatures({ client, state, save, getGuild: () => guild, channel, mention });
+const features = createFeatures({ client, state, save, getGuild: () => guild, channel, mention, upsert });
 
 // ---------------------------------------------------------------- statystyki
 
@@ -463,7 +464,7 @@ async function tick() {
     // każda część osobno: błąd w jednym kanale (np. brak uprawnień) nie zatrzymuje reszty
     const parts = [
       ['statystyki', stats], ['ranking', ranking], ['questy', quests], ['eventy', events], ['skrzynki', crates],
-      ['zmiany', features.patch], ['dropy', features.drops], ['role', features.syncRoles],
+      ['zmiany', features.patch], ['dropy', features.drops], ['zasady ról', features.rules], ['role', features.syncRoles],
     ];
     for (const [name, fn] of parts) {
       try {

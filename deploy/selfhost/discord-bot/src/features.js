@@ -6,7 +6,7 @@ import { EmbedBuilder } from 'discord.js';
 import * as game from './game.js';
 import { clip, gr, rel } from './format.js';
 import { renderCard } from './render.js';
-import { ROLE_DEFS, ROLE_ORDER, rolesFor } from './roles.js';
+import { ROLE_DEFS, ROLE_ORDER, ROLE_RULES, rolesFor } from './roles.js';
 
 const GOLD = 0xe5b94a;
 const GAME_PUBLIC_URL = (process.env.GAME_PUBLIC_URL || '').replace(/\/$/, '');
@@ -24,7 +24,7 @@ const plain = (s) =>
     .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ');
 
-export function createFeatures({ client, state, save, getGuild, channel, mention }) {
+export function createFeatures({ client, state, save, getGuild, channel, mention, upsert }) {
   // ------------------------------------------------------------ ogłoszenia o aktualizacjach
 
   async function patch(snap) {
@@ -97,6 +97,30 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
       state.dropAfter = d.id;
       save();
     }
+  }
+
+  // ------------------------------------------------------------ zasady ról
+
+  /** Jedna wiadomość z zasadami ról na kanale DISCORD_CH_ROLES (edytowana, gdy zmieni się treść) */
+  async function rules() {
+    const ch = await channel('roles');
+    if (!ch) return;
+    const fields = ROLE_RULES.map(([group, how, gone]) => ({ name: group, value: clip(`${how}
+*${gone}*`, 1000) }));
+    const embed = new EmbedBuilder()
+      .setColor(GOLD)
+      .setTitle('🏷️ Role: jak działają')
+      .setDescription(
+        'Role nadaje i zabiera **bot, automatycznie**, co ok. 5 minut, na podstawie statystyk Twojego konta w grze. ' +
+          'Dostajesz je po połączeniu kont (`/polacz`). Nic nie jest karą: rola po prostu odzwierciedla to, co masz TERAZ. ' +
+          'Jeśli rola znikła, zmieniły się Twoje statystyki albo ranking, albo odłączyłeś konto (`/odlacz`). ' +
+          'W każdej grupie masz tylko najlepszą pasującą rolę. Roli nadanej ręcznie osobie bez połączonego konta bot nie rusza.',
+      )
+      .addFields(fields);
+    const h = JSON.stringify([embed.data]);
+    if (state.rules?.hash === h) return;
+    state.rules = { id: await upsert(ch, state.rules?.id, { embeds: [embed] }), hash: h };
+    save();
   }
 
   // ------------------------------------------------------------ powiadomienia na DM
@@ -339,6 +363,6 @@ export function createFeatures({ client, state, save, getGuild, channel, mention
     }
   }
 
-  return { patch, drops, dms, health, linkReply, unlinkReply, syncRoles, ensureRoles };
+  return { patch, drops, rules, dms, health, linkReply, unlinkReply, syncRoles, ensureRoles };
 }
 

@@ -14,6 +14,7 @@ Bot dla serwera społeczności scambox.pl. Działa w Dockerze obok gry i co minu
 | Skrzynki w sklepie: nowa wiadomość po każdej rotacji (o północy czasu serwera) | `DISCORD_CH_CRATES` |
 | Aktualizacje gry: nowy wpis z listy zmian (`patchNotes`), gdy wzrośnie numer wersji. Pierwszy start tylko zapamiętuje obecną | `DISCORD_CH_PATCH` |
 | Wyjątkowe dropy (Rzułty Papież = ping roli PING (`DISCORD_PING_ROLE_ID`), z nazwą i obrazkiem): karta ze skrzynki warta co najmniej 30 cen tej skrzynki (3 razy rzadziej niż „Ostatnie najlepsze dropy” w sklepie, `DISCORD_DROP_MULT` w `server/src/routes/shop.rs`), z obrazkiem karty (Tajna bez nazwy i obrazka) | `DISCORD_CH_DROPS` |
+| Zasady ról: jedna wiadomość wyjaśniająca, kiedy bot nadaje i zabiera role (budowana z `ROLE_RULES` w `src/roles.js`, edytowana przy zmianie treści); kanał ustaw jako tylko do odczytu | `DISCORD_CH_ROLES` |
 | Alert, gdy gra nie odpowiada 3 minuty (ping właściciela serwera, potem komunikat o powrocie) | `DISCORD_CH_ALERTS` (bez niego: wiadomość prywatna do właściciela) |
 | „Pochwal się”: karta gracza wysłana przyciskiem w grze (podgląd karty -> „Pochwal się na Discordzie”; tylko z połączonym kontem, raz na 5 minut, bez Tajnych) | `DISCORD_CH_BRAG` |
 | Komendy `/profil`, `/ranking`, `/quest`, `/skrzynki`, `/polacz`, `/odlacz` | `DISCORD_CH_COMMANDS` (gdy ustawiony i `DISCORD_COMMANDS_ONLY=1`, publiczne komendy działają tylko tam) |

@@ -199,6 +199,7 @@ services:
       CH_CRATES: ${DISCORD_CH_CRATES:-}
       CH_PATCH: ${DISCORD_CH_PATCH:-}
       CH_DROPS: ${DISCORD_CH_DROPS:-}
+      CH_ROLES: ${DISCORD_CH_ROLES:-}
       CH_COMMANDS: ${DISCORD_CH_COMMANDS:-}
       CH_ALERTS: ${DISCORD_CH_ALERTS:-}
     volumes:

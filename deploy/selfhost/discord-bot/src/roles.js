@@ -94,3 +94,16 @@ export function rolesFor(l) {
 /** Klucze ról od najwyżej do najniżej na liście serwera */
 export const ROLE_ORDER = GROUPS.flatMap((g) => g.map(([k]) => k));
 
+
+/** Opisy do kanału z zasadami ról (features.js `rules`): [grupa, jak zdobyć, kiedy zniknie] w kolejności GROUPS */
+export const ROLE_RULES = [
+  ['Wyjątkowa', '🟡 RZUŁTY: wylosowałeś ze skrzynki Jana Pawła II w wariancie Rzulty.', 'Zostaje nawet po sprzedaży karty.'],
+  ['Ranking wartości', '👑 Top 1, 🥇 Top 3, 🥈 Top 5, 🏆 Top 10, 🎖️ Top 20, 🏅 Top 50, 📈 Top 100: miejsce w rankingu wartości kolekcji. Dostajesz tylko najlepszą pasującą rolę.', 'Ranking zmienia się cały czas: gdy ktoś Cię wyprzedzi albo sprzedasz karty, spadasz do niższej roli (albo ją tracisz).'],
+  ['Najrzadsze karty', '🔮 Posiadacz Tajnej, 🌈 Łowca ULTRA, ⭐ Łowca Legend: masz TERAZ w ekwipunku kartę tej rzadkości (Tajna, ULTRA, Złota).', 'Sprzedaż, kontrakt, ulepszenie, wymiana lub stawka w kasynie zabiera rolę, gdy to była ostatnia taka karta.'],
+  ['Majątek', '💰 Milioner (wartość kolekcji od 1 000 000 gr), 💵 Bogacz (od 100 000 gr).', 'Znika, gdy wartość kolekcji spadnie poniżej progu.'],
+  ['Kolekcja', '🏛️ Kompletna kolekcja (100% kart), 📚 Kolekcjoner (50%), 🃏 Zbieracz (25%).', 'Nowe karty w grze podnoszą próg: gdy wyjdzie nowa skrzynka, możesz spaść do niższej roli.'],
+  ['Skrzynki', '🎰 Szaleniec skrzynek (1000 otwartych skrzynek), 📦 Otwieracz (100).', 'Nie znika (licznik tylko rośnie).'],
+  ['Gry', '⚗️ Alchemik (10 udanych ulepszeń), 📜 Kontraktor (10 kontraktów).', 'Nie znika.'],
+  ['Staż', '🛡️ Weteran: konto w grze starsze niż 30 dni.', 'Nie znika.'],
+  ['Połączenie', '🔗 Połączony: masz połączone konto Discord z grą.', 'Znika po /odlacz.'],
+];
