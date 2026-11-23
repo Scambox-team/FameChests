@@ -6,6 +6,7 @@ pub mod account_mail;
 pub mod admin;
 pub mod mail_admin;
 pub mod arena;
+pub mod arena_admin;
 pub mod backups;
 pub mod cards_io;
 pub mod casino;
@@ -124,6 +125,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/passport", get(admin_page))
         .route("/admin/gstickers", get(admin_page))
         .route("/admin/exp", get(admin_page))
+        .route("/admin/arena", get(admin_page))
         .route("/admin/referrals", get(admin_page))
         // polecenia: link /r/<kod> działa bez logowania
         .route("/r/{code}", get(referral::ref_landing))
@@ -349,7 +351,13 @@ pub fn router(st: AppState) -> Router {
         .route("/api/items/{id}/scratch", post(scratch::scratch_item))
         .route("/api/items/{id}/unwrap", post(gift::unwrap_item))
         .route("/api/items/{id}/rewrap", post(gift::rewrap_item))
-        // arena (tylko admini)
+        // arena (admini, a po włączeniu w panelu wszyscy gracze)
+        .route("/api/arena/card/{pid}", get(arena_card))
+        .route("/api/admin/arena", get(arena_admin::admin_arena))
+        .route("/api/admin/arena/settings", post(arena_admin::admin_arena_settings))
+        .route("/api/admin/arena/meta", post(arena_admin::admin_arena_meta))
+        .route("/api/admin/arena/card/{pid}", post(arena_admin::admin_arena_card))
+        .route("/api/admin/arena/apply", post(arena_admin::admin_arena_apply))
         .route("/api/arena/inbox", get(arena_inbox))
         .route("/api/arena/start", post(arena_start))
         .route("/api/arena/battle/{bid}", get(arena_battle))

@@ -50,7 +50,10 @@ pub async fn login_page(State(st): State<AppState>, MaybeUser(u): MaybeUser, Raw
 
 pub async fn index(Me(me): Me, uri: Uri) -> Res {
     // Arena i makiety kart specjalnych: tylko admini
-    if matches!(uri.path(), "/arena" | "/mockups" | "/stickers" | "/variants" | "/designer") && !me.admin() {
+    if uri.path() == "/arena" && !super::arena::has_access(&me) {
+        return Ok(Redirect::to("/").into_response());
+    }
+    if matches!(uri.path(), "/mockups" | "/stickers" | "/variants" | "/designer") && !me.admin() {
         return Ok(Redirect::to("/").into_response());
     }
     Ok(app_page())
@@ -267,7 +270,7 @@ pub async fn friend_owns(c: &mut Conn, me: i64, owner: Option<&String>, pid: &st
 pub async fn arena_shows(st: &AppState, me: i64, bid: Option<&String>, pid: &str) -> bool {
     let Some(bid) = bid.filter(|b| !b.is_empty()) else { return false };
     let arena = st.arena.inner.lock().await;
-    arena.battles.get(bid).is_some_and(|b| b.side_of_user(me).is_some() && b.pids().contains(pid))
+    arena.battles.get(bid).is_some_and(|b| b.side_of_user(me).is_some() && b.game.pids().contains(&pid))
 }
 
 /// Tajna karta w ofercie na rynku - jej zdjęcie widać (aktywna oferta albo moja transakcja)

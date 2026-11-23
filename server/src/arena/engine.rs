@@ -1,26 +1,20 @@
-//! Silnik walki kartami. Przeglądarka wysyła tylko ruchy (wystaw kartę, użyj zdolności, wróć na ławkę, koniec tury,
-//! poddanie), serwer sprawdza zasady, liczy skutki i zapisuje kolejne kroki walki (`Step`) - każdy krok ma zdarzenia
-//! do animacji i stan planszy po ruchu. Strony walki to `Side::A` i `Side::B`; gracz widzi siebie jako "me", a rywala
-//! jako "ai" (arena/view.rs).
-
-use std::collections::HashSet;
+//! Silnik meczu Areny (czysta logika - bez bazy i katalogu, czas podawany z zewnątrz, więc da się go testować).
+//!
+//! Zasady: dwie strony (`Side::A` / `Side::B`), każda ma `rows` rzędów (0 = pierwsza linia) po `row_slots` miejsc.
+//! Tura gracza: najwyżej `moves` ruchów i `turn_secs` sekund; ruch = wystawienie karty (koszt w pieniądzach meczu
+//! = punkty karty), wycofanie karty do ręki albo użycie umiejętności (każda karta raz na turę). Pokonanie karty rywala
+//! daje jej punkty. Mecz trwa `game_secs`; po czasie wygrywa strona z większą liczbą punktów, przy remisie dogrywka
+//! `overtime_secs` (najwyżej `max_overtimes` razy, potem remis).
+//!
+//! Zasięg: karta w moim rzędzie `r` (0 = pierwsza linia) do karty w rzędzie rywala `e` ma odległość `r + e + 1`
+//! (pierwsza linia na pierwszą linię = 1). Karta sięga rywali w odległości od `range_min` do `range_max`.
 
 use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::{Hero, Reward};
-use crate::catalog::{ArenaEffectCfg, Catalog, Person};
-use crate::data::g;
-use crate::db::now;
+use super::rules::{Ability, CardStats, Combo, Settings};
 
-pub const TURN_LIMIT: i64 = 80; // po tylu turach (obu graczy razem) remis
-pub const PVP_TURN_SECONDS: f64 = 90.0; // czas na turę w pojedynku z graczem - potem tura kończy się sama
-pub const PVP_AWAY_SECONDS: f64 = 120.0; // gracz bez kontaktu z serwerem tak długo przegrywa walkowerem
-const OWN_TICK: &[&str] = &["stun", "boost", "weaken", "burn", "poison"]; // odliczane na końcu tury właściciela karty
-const OPP_TICK: &[&str] = &["taunt", "shield"]; // odliczane na końcu tury rywala (chronią przed nim)
-
-/// Strona walki
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Side {
@@ -38,40 +32,34 @@ impl Side {
         }
     }
 
-    fn idx(self) -> usize {
+    pub fn idx(self) -> usize {
         self as usize
     }
 }
 
-/// Walka z komputerem albo pojedynek z graczem
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
-    Ai,
+    Bot,
     Pvp,
 }
 
-/// Wynik walki
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
     Won(Side),
     Draw,
 }
 
-/// Dlaczego walka się skończyła
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum EndReason {
-    /// wszystkie karty rywala pokonane
-    Ko,
-    /// limit tur - remis
-    Limit,
+    /// koniec czasu (także po dogrywce)
+    Time,
     Surrender,
     /// walkower za brak kontaktu
     Away,
 }
 
-/// Ruch niezgodny z zasadami - komunikat trafia do gracza
 #[derive(Debug, thiserror::Error)]
 #[error("{0}")]
 pub struct ArenaError(pub String);
@@ -80,1026 +68,1113 @@ fn err<T>(msg: impl Into<String>) -> Result<T, ArenaError> {
     Err(ArenaError(msg.into()))
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct Status {
-    pub id: String,
-    pub value: i64,
-    pub turns: i64,
-}
-
-/// Karta w walce
-#[derive(Debug, Clone, Serialize)]
-pub struct Unit {
-    pub uid: i64,
-    pub pid: String,
-    pub variant: String,
-    /// widok dodaje stronę z perspektywy gracza ("me" / "ai")
-    #[serde(skip)]
-    pub side: Side,
-    pub hp: i64,
-    #[serde(rename = "maxHp")]
-    pub max_hp: i64,
-    pub st: Vec<Status>,
-    pub acted: bool,
-    #[serde(skip)]
-    pub knock: bool,
-}
-
-/// Zdarzenie do animacji
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
-pub enum Event {
-    Block { uid: i64, amount: i64 },
-    Dmg { uid: i64, amount: i64 },
-    Heal { uid: i64, amount: i64 },
-    Shield { uid: i64, amount: i64 },
-    Text { uid: i64, text: String },
-    Status { uid: i64, text: String },
-}
-
-impl Unit {
-    fn has(&self, sid: &str) -> bool {
-        self.st.iter().any(|x| x.id == sid)
-    }
-
-    fn st_val(&self, sid: &str) -> i64 {
-        self.st.iter().filter(|x| x.id == sid).map(|x| x.value).sum()
-    }
-
-    fn add_status(&mut self, sid: &str, value: i64, turns: i64) {
-        match self.st.iter_mut().find(|x| x.id == sid) {
-            Some(old) => {
-                old.value = old.value.max(value);
-                old.turns = old.turns.max(turns);
-            }
-            None => self.st.push(Status { id: sid.into(), value, turns }),
-        }
-    }
-
-    /// Obrażenia: najpierw tarcza, potem HP. Zwraca obrażenia, które trafiły w HP.
-    fn damage(&mut self, amount: f64, ev: &mut Vec<Event>, pierce: bool) -> i64 {
-        let amount = (amount.round_ties_even() as i64).max(0);
-        let mut left = amount;
-        if !pierce {
-            for s in self.st.iter_mut().filter(|x| x.id == "shield") {
-                let take = s.value.min(left);
-                s.value -= take;
-                left -= take;
-                if take != 0 {
-                    ev.push(Event::Block { uid: self.uid, amount: take });
-                }
-            }
-        }
-        self.st.retain(|x| !(x.id == "shield" && x.value <= 0));
-        let hit = self.hp.min(left);
-        self.hp -= hit;
-        if left != 0 || amount == 0 {
-            ev.push(Event::Dmg { uid: self.uid, amount: left });
-        }
-        hit
-    }
-
-    fn heal(&mut self, amount: f64, ev: &mut Vec<Event>) {
-        if self.has("poison") {
-            ev.push(Event::Text { uid: self.uid, text: "☠️ nie leczy".into() });
-            return;
-        }
-        let h = (self.max_hp - self.hp).min(amount.round_ties_even() as i64);
-        self.hp += h;
-        ev.push(Event::Heal { uid: self.uid, amount: h });
-    }
-}
-
-/// Jedna strona walki: karty na planszy, na ławce i pokonane, monety i akcje
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Team {
-    pub name: String,
-    #[serde(skip)]
-    pub user: Option<i64>,
-    pub board: Vec<Unit>,
-    pub bench: Vec<Unit>,
-    pub ko: Vec<Unit>,
-    pub coins: i64,
-    pub max_coins: i64,
-    pub actions: i64,
-    pub turn_no: i64,
-    pub coin_penalty: i64,
-}
-
-impl Team {
-    fn new(cat: &Catalog, player: &Player, side: Side, uid_start: i64) -> Team {
-        let bench = player
-            .deck
-            .iter()
-            .zip(uid_start..)
-            .map(|(c, uid)| {
-                let hp = cat.people[&c.pid].hp;
-                Unit {
-                    uid,
-                    pid: c.pid.clone(),
-                    variant: c.variant.clone(),
-                    side,
-                    hp,
-                    max_hp: hp,
-                    st: vec![],
-                    acted: false,
-                    knock: false,
-                }
-            })
-            .collect();
-        Team {
-            name: player.name.clone(),
-            user: player.user,
-            board: vec![],
-            bench,
-            ko: vec![],
-            coins: 0,
-            max_coins: 0,
-            actions: 0,
-            turn_no: 0,
-            coin_penalty: 0,
-        }
-    }
-
-    /// karty na planszy i na ławce
-    fn alive(&self) -> usize {
-        self.board.len() + self.bench.len()
-    }
-
-    fn board_uids(&self) -> Vec<i64> {
-        self.board.iter().map(|u| u.uid).collect()
-    }
-}
-
-/// Stan walki po ruchu
-#[derive(Debug, Clone)]
-pub struct Snapshot {
-    pub teams: [Team; 2],
-    pub active: Side,
-    pub first: Side,
-    pub turn: i64,
-    pub over: Option<Outcome>,
-    pub reason: Option<EndReason>,
-}
-
-/// Ruch w kroku walki (pole "type")
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
-pub enum Action {
-    Start,
-    Turn { ev: Vec<Event>, kos: Vec<i64>, bonus: i64 },
-    End { timeout: bool },
-    Place { uid: i64, cost: i64 },
-    Retreat { uid: i64 },
-    Use { uid: i64, ab: i64, primary: Vec<i64>, ev: Vec<Event>, kos: Vec<i64> },
-    Over { reason: EndReason },
-}
-
-#[derive(Debug, Clone)]
-pub struct Step {
-    pub n: usize,
-    pub side: Option<Side>,
-    pub winner: Option<Outcome>,
-    pub action: Action,
-    pub state: Snapshot,
-}
-
-/// Rodzaj zdolności
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AbKind {
-    /// ofensywna: wartość = obrażenia
-    Off,
-    /// defensywna: wartość = osłona
-    Def,
-    /// lecząca: wartość = leczone HP
-    Heal,
-    /// ekonomiczna: wartość = monety
-    Eco,
-}
-
-impl AbKind {
-    fn parse(kind: &str) -> AbKind {
-        match kind {
-            "off" => AbKind::Off,
-            "heal" => AbKind::Heal,
-            "eco" => AbKind::Eco,
-            _ => AbKind::Def,
-        }
-    }
-}
-
-/// Cel zdolności
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Target {
-    Enemy,
-    Ally,
-    Me,
-    AllEnemies,
-    AllAllies,
-}
-
-impl Target {
-    fn parse(target: &str) -> Option<Target> {
-        Some(match target {
-            "enemy" => Target::Enemy,
-            "ally" => Target::Ally,
-            "self" => Target::Me,
-            "all_enemies" => Target::AllEnemies,
-            "all_allies" => Target::AllAllies,
-            _ => return None,
-        })
-    }
-
-    /// cel wybierany przez gracza
-    fn chosen(self) -> bool {
-        matches!(self, Target::Enemy | Target::Ally)
-    }
-}
-
-/// Zdolność karty w walce (te same miejsca co w przeglądarce: 0, 1 = zdolności karty, 2+ = dodatkowe)
-#[derive(Debug, Clone)]
-pub struct Ab {
-    pub kind: AbKind,
-    pub value: i64,
-    pub cost: i64,
-    pub target: Target,
-    pub effects: Vec<ArenaEffectCfg>,
-}
-
-pub fn card_cost(p: &Person) -> i64 {
-    g().arena.card_cost.get(&p.rarity).copied().unwrap_or(1)
-}
-
-/// Domyślny koszt zdolności z jej wartości (słabe za darmo)
-fn auto_cost(value: i64) -> i64 {
-    g().arena.ability_cost.iter().rev().find(|(minimum, _)| value >= *minimum).map_or(0, |(_, c)| *c)
-}
-
-pub fn abilities(p: &Person) -> Vec<Ab> {
-    let first = std::iter::once((p.kind1.as_str(), p.dmg));
-    let second = p.attack2.as_ref().map(|_| (p.kind2.as_str(), p.dmg2));
-    let extra = p.abilities.iter().map(|a| (a.kind.as_str(), a.value));
-    first
-        .chain(second)
-        .chain(extra)
-        .enumerate()
-        .map(|(slot, (kind, value))| {
-            let cfg = p.arena.get(slot);
-            let kind = AbKind::parse(kind);
-            let default_target = if kind == AbKind::Off { Target::Enemy } else { Target::Me };
-            Ab {
-                cost: cfg.and_then(|c| c.cost).unwrap_or_else(|| auto_cost(value)),
-                target: cfg.and_then(|c| c.target.as_deref()).and_then(Target::parse).unwrap_or(default_target),
-                effects: cfg.map(|c| c.effects.clone()).unwrap_or_default(),
-                kind,
-                value,
-            }
-        })
-        .collect()
-}
-
-fn type_mult(cat: &Catalog, attacker: &Unit, target: &Unit, dmg: i64) -> (i64, Option<&'static str>) {
-    let tt = crate::data::base_game().types.get(&cat.people[&target.pid].type_);
-    let at = &cat.people[&attacker.pid].type_;
-    match tt {
-        Some(t) if t.weak.as_ref() == Some(at) => (dmg * 2, Some("słabość ×2")),
-        Some(t) if t.resist.as_ref() == Some(at) => ((dmg - 20).max(0), Some("odporność −20")),
-        _ => (dmg, None),
-    }
-}
-
+/// Karta z talii gracza
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DeckCard {
     pub pid: String,
     pub variant: String,
 }
 
-/// Talia komputera: te same rzadkości co talia gracza, losowe osoby, wariant tylko dla wyglądu
-pub fn ai_deck(cat: &Catalog, deck: &[DeckCard], allowed_secret: &HashSet<String>) -> Vec<DeckCard> {
-    let g = g();
-    let mut used: HashSet<&str> = deck.iter().map(|c| c.pid.as_str()).collect();
-    let pool: Vec<&Person> = cat
-        .people
-        .values()
-        .map(AsRef::as_ref)
-        .filter(|p| p.hp > 0 && (!p.is_secret() || allowed_secret.contains(&p.id)))
-        .collect();
-    let looks: Vec<&String> = g.variant_order[1..].iter().filter(|v| !g.variants[*v].exclusive).collect(); // bez wyjątkowych
-    let mut rng = rand::thread_rng();
-    let mut out = vec![];
-    for c in deck {
-        let rarity = &cat.people[&c.pid].rarity;
-        let mut opts: Vec<&Person> =
-            pool.iter().copied().filter(|p| &p.rarity == rarity && !used.contains(p.id.as_str())).collect();
-        if opts.is_empty() {
-            opts = pool.iter().copied().filter(|p| !used.contains(p.id.as_str())).collect();
-        }
-        let Some(p) = opts.choose(&mut rng).or(pool.first()).copied() else { break };
-        used.insert(&p.id);
-        let variant = if rng.gen::<f64>() < 0.7 {
-            "normal".to_owned()
-        } else {
-            looks.choose(&mut rng).map(|v| (*v).clone()).unwrap_or_default()
-        };
-        out.push(DeckCard { pid: p.id.clone(), variant });
+/// Karta do meczu: wygląd + statystyki + punkty
+#[derive(Debug, Clone)]
+pub struct Entry {
+    pub card: DeckCard,
+    pub stats: CardStats,
+    pub points: i64,
+}
+
+/// Efekt rozłożony w czasie (trucizna, leczenie, dochód) albo tarcza
+#[derive(Debug, Clone, Serialize)]
+pub struct Timed {
+    pub value: i64,
+    pub turns: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Unit {
+    pub uid: i64,
+    pub pid: String,
+    pub variant: String,
+    #[serde(skip)]
+    pub stats: CardStats,
+    pub points: i64,
+    pub hp: i64,
+    pub max_hp: i64,
+    /// premia HP z układów (wliczona w max_hp)
+    #[serde(skip)]
+    pub bonus_hp: i64,
+    pub row: usize,
+    pub slot: usize,
+    pub shields: Vec<Timed>,
+    pub poison: Vec<Timed>,
+    pub regen: Vec<Timed>,
+    pub acted: bool,
+    /// „Powrót”: za tyle tur właściciela karta wraca (tylko w `ko`)
+    pub revive_in: Option<i64>,
+    #[serde(skip)]
+    pub revived: bool,
+}
+
+impl Unit {
+    fn shield(&self) -> i64 {
+        self.shields.iter().map(|s| s.value).sum()
     }
-    out
+
+    fn special(&self, key: &str) -> bool {
+        self.stats.abilities.iter().any(|a| a.kind == "special" && a.mode == key)
+    }
 }
 
-pub struct Player {
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Team {
     pub name: String,
+    #[serde(skip)]
     pub user: Option<i64>,
-    pub deck: Vec<DeckCard>,
-    pub hero: Hero,
+    pub hand: Vec<Unit>,
+    pub board: Vec<Unit>,
+    pub ko: Vec<Unit>,
+    pub money: i64,
+    pub points: i64,
+    pub moves: i64,
+    pub income: Vec<Timed>,
+    pub turns: i64,
+    /// aktywne układy (id)
+    pub combos: Vec<String>,
 }
 
-pub struct Battle {
-    pub id: String,
+/// Zdarzenie do animacji
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum Fx {
+    Dmg { uid: i64, amount: i64 },
+    Block { uid: i64, amount: i64 },
+    Heal { uid: i64, amount: i64 },
+    Shield { uid: i64, amount: i64 },
+    Poison { uid: i64, amount: i64 },
+    Ko { uid: i64, points: i64 },
+    Revive { uid: i64 },
+    Money { side: Side, amount: i64 },
+    Place { uid: i64 },
+}
+
+/// Wpis dziennika meczu
+#[derive(Debug, Clone, Serialize)]
+pub struct Log {
+    pub n: usize,
+    pub side: Option<Side>,
+    pub text: String,
+    pub fx: Vec<Fx>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Game {
     pub mode: Mode,
+    pub cfg: Settings,
+    pub combos: Vec<Combo>,
     pub teams: [Team; 2],
-    pub heroes: [Hero; 2],
-    pub first: Side,
     pub active: Side,
-    pub turn: i64,
+    pub started: f64,
+    pub game_ends: f64,
+    pub turn_ends: f64,
+    pub overtimes: i64,
     pub over: Option<Outcome>,
     pub reason: Option<EndReason>,
-    pub steps: Vec<Step>,
-    /// admin: komputer gra za gracza (wtedy bez nagród)
-    pub auto: [bool; 2],
-    pub no_reward: bool,
-    /// nagroda strony (wpisuje arena_record po zakończeniu)
-    pub rewards: [Option<Reward>; 2],
-    pub recorded: bool,
-    /// strona i karta ostatniego użytego ataku - do osiągnięć (kto zadał ostatni cios)
-    pub last_use: Option<(Side, String)>,
-    pub seen: [f64; 2],
-    pub turn_started: f64,
-    pub created: f64,
-    pub touched: f64,
     pub finished_at: Option<f64>,
+    pub log: Vec<Log>,
+    /// strona i karta, która ostatnio pokonała kartę rywala (osiągnięcia)
+    pub last_ko: Option<(Side, String)>,
 }
 
-/// Losowy identyfikator (jak secrets.token_urlsafe(9))
-pub fn token() -> String {
-    use base64::Engine;
-    let bytes: [u8; 9] = rand::random();
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
-}
-
-impl Battle {
-    pub fn new(cat: &Catalog, mode: Mode, a: Player, b: Player, first: Side) -> Battle {
-        let now = now();
-        Battle {
-            id: token(),
+impl Game {
+    pub fn new(mode: Mode, cfg: Settings, combos: Vec<Combo>, names: [(String, Option<i64>); 2], decks: [Vec<Entry>; 2], first: Side, now: f64) -> Game {
+        let mut next_uid = 1;
+        let [na, nb] = names;
+        let [da, db] = decks;
+        let mut team = |(name, user): (String, Option<i64>), deck: Vec<Entry>| Team {
+            name,
+            user,
+            hand: deck
+                .into_iter()
+                .map(|e| {
+                    let uid = next_uid;
+                    next_uid += 1;
+                    Unit {
+                        uid,
+                        pid: e.card.pid,
+                        variant: e.card.variant,
+                        hp: e.stats.hp,
+                        max_hp: e.stats.hp,
+                        bonus_hp: 0,
+                        stats: e.stats,
+                        points: e.points,
+                        row: 0,
+                        slot: 0,
+                        shields: vec![],
+                        poison: vec![],
+                        regen: vec![],
+                        acted: false,
+                        revive_in: None,
+                        revived: false,
+                    }
+                })
+                .collect(),
+            board: vec![],
+            ko: vec![],
+            money: cfg.start_money,
+            points: 0,
+            moves: 0,
+            income: vec![],
+            turns: 0,
+            combos: vec![],
+        };
+        let teams = [team(na, da), team(nb, db)];
+        let mut g = Game {
             mode,
-            teams: [Team::new(cat, &a, Side::A, 1), Team::new(cat, &b, Side::B, 101)],
-            heroes: [a.hero, b.hero],
-            first,
+            game_ends: now + cfg.game_secs as f64,
+            turn_ends: now,
+            cfg,
+            combos,
+            teams,
             active: first,
-            turn: 0,
+            started: now,
+            overtimes: 0,
             over: None,
             reason: None,
-            steps: vec![],
-            auto: [false, false],
-            no_reward: false,
-            rewards: [None, None],
-            recorded: false,
-            last_use: None,
-            seen: [now, now],
-            turn_started: now,
-            created: now,
-            touched: now,
             finished_at: None,
-        }
-    }
-
-    // ------------------------------------------------------------ pomocnicze
-
-    pub fn team(&self, k: Side) -> &Team {
-        &self.teams[k.idx()]
-    }
-
-    fn team_mut(&mut self, k: Side) -> &mut Team {
-        &mut self.teams[k.idx()]
-    }
-
-    fn units(&self) -> impl Iterator<Item = &Unit> {
-        self.teams.iter().flat_map(|t| t.board.iter().chain(&t.bench).chain(&t.ko))
-    }
-
-    fn unit(&self, uid: i64) -> Option<&Unit> {
-        self.units().find(|u| u.uid == uid)
-    }
-
-    fn unit_mut(&mut self, uid: i64) -> Option<&mut Unit> {
-        self.teams.iter_mut().flat_map(|t| t.board.iter_mut().chain(&mut t.bench).chain(&mut t.ko)).find(|u| u.uid == uid)
-    }
-
-    /// karta na planszy lub ławce (bez pokonanych)
-    fn find(&self, uid: i64) -> Option<&Unit> {
-        self.teams.iter().flat_map(|t| t.board.iter().chain(&t.bench)).find(|u| u.uid == uid)
-    }
-
-    fn on_board(&self, k: Side, uid: i64) -> bool {
-        self.team(k).board.iter().any(|u| u.uid == uid)
-    }
-
-    pub fn side_of_user(&self, user: i64) -> Option<Side> {
-        Side::BOTH.into_iter().find(|k| self.team(*k).user == Some(user))
-    }
-
-    pub fn user_of(&self, k: Side) -> Option<i64> {
-        self.team(k).user
-    }
-
-    /// Wszystkie karty w walce
-    pub fn pids(&self) -> HashSet<String> {
-        self.units().map(|u| u.pid.clone()).collect()
-    }
-
-    fn snapshot(&self) -> Snapshot {
-        Snapshot {
-            teams: self.teams.clone(),
-            active: self.active,
-            first: self.first,
-            turn: self.turn,
-            over: self.over,
-            reason: self.reason,
-        }
-    }
-
-    fn push(&mut self, side: Option<Side>, action: Action) {
-        let winner = if matches!(action, Action::Over { .. }) { self.over } else { None };
-        let step = Step { n: self.steps.len() + 1, side, winner, action, state: self.snapshot() };
-        self.steps.push(step);
-    }
-
-    pub fn is_bot(&self, k: Side) -> bool {
-        (self.mode == Mode::Ai && k == Side::B) || self.auto[k.idx()]
-    }
-
-    pub fn set_auto(&mut self, k: Side, on: bool) {
-        self.auto[k.idx()] = on;
-        self.no_reward |= on;
-    }
-
-    pub fn auto_of(&self, k: Side) -> bool {
-        self.auto[k.idx()]
-    }
-
-    pub fn touch_seen(&mut self, k: Side) {
-        self.seen[k.idx()] = now();
-    }
-
-    pub fn reward(&self, k: Side) -> Option<&Reward> {
-        self.rewards[k.idx()].as_ref()
-    }
-
-    pub fn set_reward(&mut self, k: Side, r: Reward) {
-        self.rewards[k.idx()] = Some(r);
-    }
-
-    pub fn hero(&self, k: Side) -> &Hero {
-        &self.heroes[k.idx()]
-    }
-
-    // ------------------------------------------------------------ zasady
-
-    fn why_cant_act(&self, k: Side, u: &Unit) -> Option<String> {
-        if self.over.is_some() || self.active != k {
-            return Some("To nie twoja tura".into());
-        }
-        if !self.on_board(k, u.uid) {
-            return Some("Karta musi być na planszy".into());
-        }
-        if u.acted {
-            return Some("Ta karta już działała w tej turze".into());
-        }
-        if u.has("stun") {
-            return Some("Karta jest ogłuszona 💫".into());
-        }
-        if self.team(k).actions <= 0 {
-            return Some("Brak akcji ⚡".into());
-        }
-        None
-    }
-
-    fn valid_targets(&self, k: Side, ab: &Ab) -> Vec<i64> {
-        let foe = &self.team(k.other()).board;
-        match ab.target {
-            Target::Enemy => {
-                let taunt: Vec<i64> = foe.iter().filter(|t| t.has("taunt")).map(|t| t.uid).collect();
-                if taunt.is_empty() {
-                    foe.iter().map(|t| t.uid).collect()
-                } else {
-                    taunt
-                }
-            }
-            Target::Ally => self.team(k).board_uids(),
-            _ => vec![],
-        }
-    }
-
-    fn why_cant_use(&self, k: Side, u: &Unit, ab: &Ab) -> Option<String> {
-        if let Some(why) = self.why_cant_act(k, u) {
-            return Some(why);
-        }
-        if self.team(k).coins < ab.cost {
-            return Some(format!("Za mało monet (potrzeba {} 🪙)", ab.cost));
-        }
-        if ab.target.chosen() && self.valid_targets(k, ab).is_empty() {
-            return Some("Brak celu".into());
-        }
-        None
-    }
-
-    fn primary(&self, k: Side, u: i64, ab: &Ab, target: Option<i64>) -> Vec<i64> {
-        match ab.target {
-            Target::Enemy | Target::Ally => target.into_iter().collect(),
-            Target::Me => vec![u],
-            Target::AllEnemies => self.team(k.other()).board_uids(),
-            Target::AllAllies => self.team(k).board_uids(),
-        }
-    }
-
-    fn resolve(&mut self, cat: &Catalog, k: Side, u: i64, ab: &Ab, primary: &[i64]) -> Vec<Event> {
-        let mut ev = vec![];
-        let team = self.team_mut(k);
-        team.coins -= ab.cost;
-        team.actions -= 1;
-        if let Some(x) = self.unit_mut(u) {
-            x.acted = true;
-        }
-        let mut dealt = 0;
-        match ab.kind {
-            AbKind::Off => {
-                for &t in primary {
-                    let (Some(att), Some(tu)) = (self.unit(u).cloned(), self.unit(t).cloned()) else { continue };
-                    let base = (ab.value + att.st_val("boost") - att.st_val("weaken")).max(0);
-                    let (dmg, note) = type_mult(cat, &att, &tu, base);
-                    if let Some(note) = note {
-                        ev.push(Event::Text { uid: t, text: note.into() });
-                    }
-                    if let Some(x) = self.unit_mut(t) {
-                        dealt += x.damage(dmg as f64, &mut ev, false);
-                    }
-                }
-            }
-            AbKind::Heal => {
-                for &t in primary {
-                    if let Some(x) = self.unit_mut(t) {
-                        x.heal(ab.value as f64, &mut ev);
-                    }
-                }
-            }
-            AbKind::Eco => {
-                // monety na tę turę (najwyżej limit monet)
-                let team = self.team_mut(k);
-                let gain = ab.value.min(g().arena.max_coins - team.coins).max(0);
-                team.coins += gain;
-                ev.push(Event::Text { uid: u, text: format!("🪙 +{gain}") });
-            }
-            AbKind::Def => {
-                for &t in primary {
-                    if let Some(x) = self.unit_mut(t) {
-                        x.add_status("shield", ab.value, 1);
-                    }
-                    ev.push(Event::Shield { uid: t, amount: ab.value });
-                }
-            }
-        }
-        for e in &ab.effects {
-            self.apply_effect(k, u, e, primary, dealt, &mut ev);
-        }
-        ev
-    }
-
-    fn apply_effect(&mut self, k: Side, u: i64, e: &ArenaEffectCfg, primary: &[i64], dealt: i64, ev: &mut Vec<Event>) {
-        let foe = self.team(k.other()).board_uids();
-        let targets: Vec<i64> = match e.target.as_str() {
-            "self" => vec![u],
-            "all_allies" => self.team(k).board_uids(),
-            "all_enemies" => foe,
-            "random_enemy" => foe.choose(&mut rand::thread_rng()).copied().into_iter().collect(),
-            _ => primary.to_vec(),
+            log: vec![],
+            last_ko: None,
         };
-        let value = e.value;
-        match e.id.as_str() {
-            "heal" => {
-                for t in targets {
-                    if let Some(x) = self.unit_mut(t) {
-                        x.heal(value as f64, ev);
-                    }
-                }
+        g.note(None, "Mecz się zaczyna".into(), vec![]);
+        g.begin_turn(first, now);
+        g
+    }
+
+    pub fn team(&self, s: Side) -> &Team {
+        &self.teams[s.idx()]
+    }
+
+    fn team_mut(&mut self, s: Side) -> &mut Team {
+        &mut self.teams[s.idx()]
+    }
+
+    fn note(&mut self, side: Option<Side>, text: String, fx: Vec<Fx>) {
+        let n = self.log.len() + 1;
+        self.log.push(Log { n, side, text, fx });
+    }
+
+    /// Wszystkie karty w meczu (zdjęcia tajnych kart)
+    pub fn pids(&self) -> Vec<&str> {
+        self.teams.iter().flat_map(|t| t.hand.iter().chain(&t.board).chain(&t.ko)).map(|u| u.pid.as_str()).collect()
+    }
+
+    // ------------------------------------------------------------ czas
+
+    /// Upływ czasu: koniec meczu albo dogrywka, koniec tury po czasie
+    pub fn tick(&mut self, now: f64) {
+        while self.over.is_none() {
+            if now >= self.game_ends {
+                self.time_up(now);
+                continue;
             }
-            "lifesteal" => {
-                if let Some(x) = self.unit_mut(u) {
-                    x.heal(dealt as f64 * value as f64 / 100.0, ev);
-                }
+            if now >= self.turn_ends {
+                let s = self.active;
+                self.note(Some(s), format!("{}: koniec czasu tury", self.team(s).name), vec![]);
+                self.pass(now);
+                continue;
             }
-            "splash" => {
-                for t in targets {
-                    let Some(side) = self.unit(t).map(|x| x.side) else { continue };
-                    let board = self.team(side).board_uids();
-                    if let Some(i) = board.iter().position(|x| *x == t) {
-                        let neighbours = [i.checked_sub(1).map(|j| board[j]), board.get(i + 1).copied()];
-                        for n in neighbours.into_iter().flatten() {
-                            if let Some(x) = self.unit_mut(n) {
-                                x.damage(value as f64, ev, false);
-                            }
-                        }
-                    }
-                }
-            }
-            "steal_coins" => {
-                self.team_mut(k.other()).coin_penalty += value;
-                ev.push(Event::Text { uid: u, text: format!("💰 −{value} 🪙 rywalowi") });
-            }
-            "extra_action" => {
-                let team = self.team_mut(k);
-                team.actions = (team.actions + value).min(5);
-                ev.push(Event::Text { uid: u, text: format!("⚡ +{value} akcja") });
-            }
-            "knockback" => {
-                for t in targets {
-                    let Some(x) = self.unit(t) else { continue };
-                    if x.side != k && self.on_board(x.side, t) && x.hp > 0 {
-                        ev.push(Event::Text { uid: t, text: "🔁 na ławkę!".into() });
-                        if let Some(x) = self.unit_mut(t) {
-                            x.knock = true;
-                        }
-                    }
-                }
-            }
-            id => {
-                let (icon, name) = crate::data::base_game().arena_effects.get(id).map_or(("❔", id), |i| (i.icon.as_str(), i.name.as_str()));
-                let text = format!("{icon} {name}");
-                for t in targets {
-                    if let Some(x) = self.unit_mut(t) {
-                        x.add_status(id, value, e.turns.max(1));
-                    }
-                    ev.push(Event::Status { uid: t, text: text.clone() });
-                }
-            }
+            break;
         }
     }
 
-    /// Karty bez HP schodzą z planszy (K.O.), odrzucone ("Do ławki!") wracają na ławkę
-    fn collect_ko(&mut self) -> Vec<i64> {
-        let mut kos = vec![];
-        for team in &mut self.teams {
-            for mut u in std::mem::take(&mut team.board) {
-                let knock = std::mem::take(&mut u.knock);
-                if u.hp <= 0 {
-                    kos.push(u.uid);
-                    team.ko.push(u);
-                } else if knock {
-                    team.bench.push(u);
-                } else {
-                    team.board.push(u);
-                }
-            }
+    fn time_up(&mut self, now: f64) {
+        let (a, b) = (self.teams[0].points, self.teams[1].points);
+        if a != b {
+            let w = if a > b { Side::A } else { Side::B };
+            self.finish(Outcome::Won(w), EndReason::Time, now);
+        } else if self.overtimes < self.cfg.max_overtimes {
+            self.overtimes += 1;
+            self.game_ends += self.cfg.overtime_secs as f64;
+            self.note(None, format!("Remis {a}:{b} - dogrywka {} ({} s)", self.overtimes, self.cfg.overtime_secs), vec![]);
+        } else {
+            self.finish(Outcome::Draw, EndReason::Time, now);
         }
-        kos
     }
 
-    fn finish(&mut self, outcome: Outcome, reason: EndReason) {
+    pub fn finish(&mut self, o: Outcome, reason: EndReason, now: f64) {
         if self.over.is_some() {
             return;
         }
-        self.over = Some(outcome);
+        self.over = Some(o);
         self.reason = Some(reason);
-        self.finished_at = Some(now());
-        self.push(None, Action::Over { reason });
+        self.finished_at = Some(now);
+        let text = match o {
+            Outcome::Won(s) => format!("Wygrywa {}", self.team(s).name),
+            Outcome::Draw => "Remis".into(),
+        };
+        self.note(None, text, vec![]);
     }
 
-    fn check_win(&mut self) {
-        if self.over.is_some() {
-            return;
-        }
-        match (self.team(Side::A).alive() == 0, self.team(Side::B).alive() == 0) {
-            (true, true) => self.finish(Outcome::Draw, EndReason::Ko),
-            (true, false) => self.finish(Outcome::Won(Side::B), EndReason::Ko),
-            (false, true) => self.finish(Outcome::Won(Side::A), EndReason::Ko),
-            (false, false) => {}
-        }
+    pub fn surrender(&mut self, s: Side, now: f64) {
+        self.note(Some(s), format!("{} się poddaje", self.team(s).name), vec![]);
+        self.finish(Outcome::Won(s.other()), EndReason::Surrender, now);
     }
 
     // ------------------------------------------------------------ tury
 
-    pub fn start(&mut self, cat: &Catalog) {
-        self.push(Some(self.first), Action::Start);
-        self.start_turn(self.first);
-        self.run_bots(cat);
-    }
-
-    fn start_turn(&mut self, k: Side) {
-        self.active = k;
-        self.turn += 1;
-        if self.turn > TURN_LIMIT {
-            return self.finish(Outcome::Draw, EndReason::Limit);
-        }
-        let rules = &g().arena;
-        let first = self.first;
-        let team = self.team_mut(k);
-        team.turn_no += 1;
-        let bonus = i64::from(team.turn_no == 1 && k != first); // drugi gracz: +1 moneta na start
-        team.max_coins = rules.max_coins.min(team.turn_no) + bonus;
-        team.coins = (team.max_coins - team.coin_penalty).max(0);
-        team.coin_penalty = 0;
-        team.actions = rules.actions;
-        let mut ev = vec![];
-        for u in &mut team.board {
-            u.acted = false;
-            for sid in ["burn", "poison"] {
-                if u.has(sid) {
-                    let v = u.st_val(sid);
-                    u.damage(v as f64, &mut ev, true);
+    fn begin_turn(&mut self, s: Side, now: f64) {
+        self.active = s;
+        self.turn_ends = (now + self.cfg.turn_secs as f64).min(self.game_ends.max(now));
+        let mut fx = vec![];
+        let combo_money = self.combo_bonus(s, "money");
+        let cfg_turn = self.cfg.money_per_turn;
+        let max_money = self.cfg.max_money;
+        let revive_turns_left = {
+            let t = self.team_mut(s);
+            t.turns += 1;
+            t.moves = 0;
+            let mut gain = cfg_turn + combo_money;
+            for i in t.income.iter_mut() {
+                gain += i.value;
+                i.turns -= 1;
+            }
+            t.income.retain(|i| i.turns > 0);
+            let before = t.money;
+            t.money = (t.money + gain).clamp(0, max_money);
+            if t.money != before {
+                fx.push(Fx::Money { side: s, amount: t.money - before });
+            }
+            for u in t.board.iter_mut() {
+                u.acted = false;
+                for sh in u.shields.iter_mut() {
+                    sh.turns -= 1;
+                }
+                u.shields.retain(|x| x.turns > 0 && x.value > 0);
+            }
+            // „Powrót”: odliczanie tur pokonanych kart
+            let mut back = vec![];
+            for u in t.ko.iter_mut() {
+                if let Some(n) = u.revive_in.as_mut() {
+                    *n -= 1;
+                    if *n <= 0 {
+                        back.push(u.uid);
+                    }
                 }
             }
-        }
-        for u in &mut team.bench {
-            u.acted = false;
-        }
-        let kos = self.collect_ko();
-        self.turn_started = now();
-        self.push(Some(k), Action::Turn { ev, kos, bonus });
-        self.check_win();
-    }
-
-    pub fn end_turn(&mut self, k: Side, timeout: bool) -> Result<(), ArenaError> {
-        if self.over.is_some() || self.active != k {
-            return err("To nie twoja tura");
-        }
-        fn tick(team: &mut Team, ids: &[&str]) {
-            for u in team.board.iter_mut().chain(&mut team.bench) {
-                u.st.iter_mut().filter(|x| ids.contains(&x.id.as_str())).for_each(|x| x.turns -= 1);
-                u.st.retain(|x| x.turns > 0);
+            back
+        };
+        // trucizna i leczenie rozłożone w czasie - na początku tury właściciela karty
+        let uids: Vec<i64> = self.team(s).board.iter().map(|u| u.uid).collect();
+        for uid in uids {
+            let Some(u) = self.unit_mut(s, uid) else { continue };
+            let poison: i64 = u.poison.iter().map(|p| p.value).sum();
+            let regen: i64 = u.regen.iter().map(|p| p.value).sum();
+            for p in u.poison.iter_mut().chain(u.regen.iter_mut()) {
+                p.turns -= 1;
+            }
+            u.poison.retain(|p| p.turns > 0);
+            u.regen.retain(|p| p.turns > 0);
+            if regen > 0 {
+                let h = (u.max_hp - u.hp).min(regen).max(0);
+                u.hp += h;
+                fx.push(Fx::Heal { uid, amount: h });
+            }
+            if poison > 0 {
+                fx.push(Fx::Poison { uid, amount: poison });
+                self.hurt(s, uid, poison, true, s.other(), None, &mut fx);
             }
         }
-        tick(self.team_mut(k), OWN_TICK);
-        tick(self.team_mut(k.other()), OPP_TICK);
-        self.push(Some(k), Action::End { timeout });
-        self.start_turn(k.other());
+        for uid in revive_turns_left {
+            self.revive(s, uid, &mut fx);
+        }
+        self.refresh(s);
+        self.refresh(s.other());
+        self.team_mut(s).moves = self.cfg.moves;
+        let name = self.team(s).name.clone();
+        self.note(Some(s), format!("Tura: {name}"), fx);
+    }
+
+    /// Koniec tury (przycisk albo czas)
+    fn pass(&mut self, now: f64) {
+        let next = self.active.other();
+        self.begin_turn(next, now);
+    }
+
+    pub fn end_turn(&mut self, s: Side, now: f64) -> Result<(), ArenaError> {
+        self.check_turn(s)?;
+        self.pass(now);
         Ok(())
+    }
+
+    fn check_turn(&self, s: Side) -> Result<(), ArenaError> {
+        if self.over.is_some() {
+            return err("Mecz już się skończył");
+        }
+        if self.active != s {
+            return err("To nie twoja tura");
+        }
+        Ok(())
+    }
+
+    fn check_move(&self, s: Side) -> Result<(), ArenaError> {
+        self.check_turn(s)?;
+        if self.team(s).moves <= 0 {
+            return err("Nie masz już ruchów w tej turze");
+        }
+        Ok(())
+    }
+
+    /// Ruch wykonany: po ostatnim ruchu tura kończy się sama
+    fn spend(&mut self, s: Side, now: f64) {
+        let t = self.team_mut(s);
+        t.moves -= 1;
+        if t.moves <= 0 && self.over.is_none() {
+            self.pass(now);
+        }
     }
 
     // ------------------------------------------------------------ ruchy
 
-    pub fn place(&mut self, cat: &Catalog, k: Side, uid: i64) -> Result<(), ArenaError> {
-        if self.over.is_some() || self.active != k {
-            return err("To nie twoja tura");
+    pub fn free_slot(&self, s: Side, row: usize) -> Option<usize> {
+        (0..self.cfg.row_slots).find(|i| !self.team(s).board.iter().any(|u| u.row == row && u.slot == *i))
+    }
+
+    pub fn place(&mut self, s: Side, uid: i64, row: usize, now: f64) -> Result<(), ArenaError> {
+        self.check_move(s)?;
+        if row >= self.cfg.rows {
+            return err("Nie ma takiego rzędu");
         }
-        let Some(pos) = self.team(k).bench.iter().position(|x| x.uid == uid) else { return err("Tej karty nie ma na ławce") };
-        let cost = card_cost(&cat.people[&self.team(k).bench[pos].pid]);
-        if self.team(k).board.len() >= g().arena.board_slots {
-            return err("Plansza jest pełna");
+        let Some(i) = self.team(s).hand.iter().position(|u| u.uid == uid) else { return err("Tej karty nie ma w ręce") };
+        let cost = self.team(s).hand[i].points;
+        if self.team(s).money < cost {
+            return err(format!("Za mało pieniędzy (potrzeba {cost})"));
         }
-        if self.team(k).coins < cost {
-            return err(format!("Za mało monet ({cost} 🪙)"));
-        }
-        let team = self.team_mut(k);
-        team.coins -= cost;
-        let mut u = team.bench.remove(pos);
+        let Some(slot) = self.free_slot(s, row) else { return err("Ten rząd jest pełny") };
+        let t = self.team_mut(s);
+        let mut u = t.hand.remove(i);
+        t.money -= cost;
+        u.row = row;
+        u.slot = slot;
         u.acted = false;
-        team.board.push(u);
-        self.push(Some(k), Action::Place { uid, cost });
+        t.board.push(u);
+        let name = format!("{}: wystawia kartę do rzędu {}", t.name, row + 1);
+        self.refresh(s);
+        self.note(Some(s), name, vec![Fx::Place { uid }, Fx::Money { side: s, amount: -cost }]);
+        self.spend(s, now);
         Ok(())
     }
 
-    pub fn retreat(&mut self, k: Side, uid: i64) -> Result<(), ArenaError> {
-        if self.over.is_some() || self.active != k {
-            return err("To nie twoja tura");
-        }
-        let Some(pos) = self.team(k).board.iter().position(|x| x.uid == uid) else { return err("Tej karty nie ma na planszy") };
-        if self.team(k).actions <= 0 {
-            return err("Brak akcji ⚡");
-        }
-        let team = self.team_mut(k);
-        team.actions -= 1;
-        let u = team.board.remove(pos);
-        team.bench.push(u);
-        self.push(Some(k), Action::Retreat { uid });
+    pub fn retreat(&mut self, s: Side, uid: i64, now: f64) -> Result<(), ArenaError> {
+        self.check_move(s)?;
+        let Some(i) = self.team(s).board.iter().position(|u| u.uid == uid) else { return err("Tej karty nie ma na planszy") };
+        let t = self.team_mut(s);
+        let mut u = t.board.remove(i);
+        u.shields.clear();
+        u.poison.clear();
+        u.regen.clear();
+        t.hand.push(u);
+        let text = format!("{}: wycofuje kartę", t.name);
+        self.refresh(s);
+        self.note(Some(s), text, vec![]);
+        self.spend(s, now);
         Ok(())
     }
 
-    pub fn use_ability(
-        &mut self,
-        cat: &Catalog,
-        k: Side,
-        uid: i64,
-        ab_index: i64,
-        target: Option<i64>,
-    ) -> Result<(), ArenaError> {
-        let Some(u) = self.team(k).board.iter().find(|x| x.uid == uid).cloned() else { return err("Karta musi być na planszy") };
-        let abl = abilities(&cat.people[&u.pid]);
-        let Some(ab) = usize::try_from(ab_index).ok().and_then(|i| abl.get(i)) else { return err("Nie ma takiej zdolności") };
-        if let Some(why) = self.why_cant_use(k, &u, ab) {
-            return err(why);
-        }
-        let mut chosen = None;
-        if ab.target.chosen() {
-            let found = target.and_then(|t| self.find(t)).map(|x| x.uid);
-            if !found.is_some_and(|t| self.valid_targets(k, ab).contains(&t)) {
-                return err("Ten cel jest niedostępny");
-            }
-            chosen = found;
-        }
-        let primary = self.primary(k, uid, ab, chosen);
-        let ev = self.resolve(cat, k, uid, ab, &primary);
-        let kos = self.collect_ko();
-        self.push(Some(k), Action::Use { uid, ab: ab_index, primary, ev, kos });
-        self.last_use = Some((k, u.pid.clone()));
-        self.check_win();
-        Ok(())
+    fn unit(&self, s: Side, uid: i64) -> Option<&Unit> {
+        self.team(s).board.iter().find(|u| u.uid == uid)
     }
 
-    pub fn surrender(&mut self, k: Side) {
-        self.finish(Outcome::Won(k.other()), EndReason::Surrender);
+    fn unit_mut(&mut self, s: Side, uid: i64) -> Option<&mut Unit> {
+        self.team_mut(s).board.iter_mut().find(|u| u.uid == uid)
     }
 
-    // ------------------------------------------------------------ komputer
-
-    fn ai_score(&self, cat: &Catalog, k: Side, u: &Unit, ab: &Ab, target: Option<i64>) -> f64 {
-        let rules = &g().arena;
-        let eff_bonus: f64 = ab.effects.iter().map(|e| 25.0 + e.value as f64 * 0.3).sum();
-        let score = match ab.kind {
-            AbKind::Off => {
-                let targets = self.primary(k, u.uid, ab, target);
-                if targets.is_empty() {
-                    return -1.0;
-                }
-                let base = (ab.value + u.st_val("boost") - u.st_val("weaken")).max(0);
-                targets
-                    .into_iter()
-                    .filter_map(|t| self.unit(t))
-                    .map(|t| {
-                        let dmg = (type_mult(cat, u, t, base).0 - t.st_val("shield")).max(0);
-                        let kill = if dmg >= t.hp { 400.0 + card_cost(&cat.people[&t.pid]) as f64 * 40.0 } else { 0.0 };
-                        dmg.min(t.hp) as f64 + kill
-                    })
-                    .sum()
-            }
-            AbKind::Heal => {
-                let healed: i64 = self
-                    .primary(k, u.uid, ab, target)
-                    .into_iter()
-                    .filter_map(|t| self.unit(t))
-                    .filter(|t| !t.has("poison"))
-                    .map(|t| ab.value.min(t.max_hp - t.hp))
-                    .sum();
-                if healed == 0 {
-                    -1.0
-                } else {
-                    healed as f64 * 0.9
-                }
-            }
-            AbKind::Eco => {
-                let team = self.team(k);
-                let want = team.bench.iter().any(|b| card_cost(&cat.people[&b.pid]) > team.coins)
-                    && team.board.len() < rules.board_slots;
-                (ab.value.min(rules.max_coins - team.coins) * if want { 35 } else { 4 }) as f64
-            }
-            AbKind::Def => {
-                let hurt = self.team(k).board.iter().any(|x| (x.hp as f64) < x.max_hp as f64 * 0.5);
-                let score = ab.value as f64 * if hurt { 0.8 } else { 0.25 };
-                if self.team(k.other()).board.is_empty() {
-                    score * 0.3
-                } else {
-                    score
-                }
-            }
-        };
-        score + eff_bonus - ab.cost as f64 * 15.0
+    pub fn distance(own_row: usize, foe_row: usize) -> i64 {
+        (own_row + foe_row + 1) as i64
     }
 
-    /// Wystaw karty: najmocniejsze, na które stać
-    fn place_all(&mut self, cat: &Catalog, k: Side) {
-        while self.over.is_none() && self.active == k && self.team(k).board.len() < g().arena.board_slots {
-            let coins = self.team(k).coins;
-            let best = self
-                .team(k)
-                .bench
-                .iter()
-                .filter(|u| card_cost(&cat.people[&u.pid]) <= coins)
-                .min_by_key(|u| (-card_cost(&cat.people[&u.pid]), -cat.people[&u.pid].hp))
-                .map(|u| u.uid);
-            match best {
-                Some(uid) if self.place(cat, k, uid).is_ok() => {}
-                _ => break,
-            }
+    /// Karty rywala w zasięgu karty
+    pub fn in_range(&self, s: Side, uid: i64) -> Vec<i64> {
+        let Some(u) = self.unit(s, uid) else { return vec![] };
+        let (lo, hi) = (u.stats.range_min, u.stats.range_max);
+        self.team(s.other())
+            .board
+            .iter()
+            .filter(|f| (lo..=hi).contains(&Self::distance(u.row, f.row)))
+            .map(|f| f.uid)
+            .collect()
+    }
+
+    /// Atak karty z premią z układów
+    pub fn attack_of(&self, s: Side, u: &Unit) -> i64 {
+        (u.stats.atk + self.unit_bonus(s, u, "atk")).max(0)
+    }
+
+    /// Cele umiejętności: (strona celów, lista kart)
+    pub fn targets(&self, s: Side, uid: i64, ab: &Ability) -> (Side, Vec<i64>) {
+        match (ab.kind.as_str(), ab.mode.as_str()) {
+            ("attack", _) => (s.other(), self.in_range(s, uid)),
+            ("heal", "drain") if ab.from == "enemy" => (s.other(), self.in_range(s, uid)),
+            ("heal", "drain") => (s, self.team(s).board.iter().filter(|u| u.uid != uid).map(|u| u.uid).collect()),
+            ("shield" | "heal", _) => (s, self.team(s).board.iter().map(|u| u.uid).collect()),
+            _ => (s, vec![]),
         }
     }
 
-    fn ai_turn(&mut self, cat: &Catalog, k: Side) {
-        // 1) wystaw karty
-        self.place_all(cat, k);
-        // 2) akcje: najlepsza zdolność albo ratowanie słabej karty (powrót na ławkę + wystawienie mocniejszej)
-        while self.over.is_none() && self.active == k && self.team(k).actions > 0 {
-            let mut best: Option<(f64, i64, usize, Option<i64>)> = None;
-            for u in &self.team(k).board {
-                for (i, ab) in abilities(&cat.people[&u.pid]).iter().enumerate() {
-                    if self.why_cant_use(k, u, ab).is_some() {
-                        continue;
+    /// Wybór celów: skierowana = wskazany cel (+ najbliżsi sąsiedzi przy obszarowej), losowa = losowe karty
+    fn pick(&self, side: Side, pool: &[i64], ab: &Ability, target: Option<i64>, rng: &mut impl Rng) -> Result<Vec<i64>, ArenaError> {
+        if pool.is_empty() {
+            return err("Brak celu w zasięgu");
+        }
+        let n = if ab.area { if ab.count <= 0 { pool.len() } else { ab.count as usize } } else { 1 };
+        if ab.aim {
+            let Some(t) = target.filter(|t| pool.contains(t)) else { return err("Wybierz cel") };
+            let Some(tu) = self.unit(side, t) else { return err("Wybierz cel") };
+            let mut rest: Vec<&Unit> = pool.iter().filter(|u| **u != t).filter_map(|u| self.unit(side, *u)).collect();
+            rest.sort_by_key(|u| (u.row.abs_diff(tu.row), u.slot.abs_diff(tu.slot), u.uid));
+            Ok(std::iter::once(t).chain(rest.into_iter().map(|u| u.uid)).take(n).collect())
+        } else {
+            Ok(pool.choose_multiple(rng, n.min(pool.len())).copied().collect())
+        }
+    }
+
+    pub fn use_ability(&mut self, s: Side, uid: i64, ab_idx: usize, target: Option<i64>, target2: Option<i64>, now: f64) -> Result<(), ArenaError> {
+        self.use_with(s, uid, ab_idx, target, target2, now, &mut rand::thread_rng())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn use_with(&mut self, s: Side, uid: i64, ab_idx: usize, target: Option<i64>, target2: Option<i64>, now: f64, rng: &mut impl Rng) -> Result<(), ArenaError> {
+        self.check_move(s)?;
+        let Some(u) = self.unit(s, uid) else { return err("Karta musi być na planszy") };
+        if u.acted {
+            return err("Ta karta już działała w tej turze");
+        }
+        let Some(ab) = u.stats.abilities.get(ab_idx).cloned() else { return err("Nie ma takiej umiejętności") };
+        if ab.passive() {
+            return err("Ta umiejętność działa sama");
+        }
+        if self.team(s).money < ab.cost {
+            return err(format!("Za mało pieniędzy (potrzeba {})", ab.cost));
+        }
+        let atk = self.attack_of(s, u);
+        let mut fx = vec![];
+        let (tside, pool) = self.targets(s, uid, &ab);
+        match (ab.kind.as_str(), ab.mode.as_str()) {
+            ("attack", mode) => {
+                let hit = self.pick(tside, &pool, &ab, target, rng)?;
+                let dmg = (atk * ab.power + 50) / 100;
+                for t in hit {
+                    if mode == "poison" {
+                        if let Some(f) = self.unit_mut(tside, t) {
+                            f.poison.push(Timed { value: dmg, turns: ab.turns });
+                            fx.push(Fx::Poison { uid: t, amount: dmg });
+                        }
+                    } else {
+                        self.hurt(tside, t, dmg, false, s, Some(uid), &mut fx);
                     }
-                    let targets: Vec<Option<i64>> =
-                        if ab.target.chosen() { self.valid_targets(k, ab).into_iter().map(Some).collect() } else { vec![None] };
-                    for t in targets {
-                        let sc = self.ai_score(cat, k, u, ab, t);
-                        if best.is_none_or(|b| sc > b.0) {
-                            best = Some((sc, u.uid, i, t));
+                }
+            }
+            ("shield", _) => {
+                for t in self.pick(tside, &pool, &ab, target, rng)? {
+                    if let Some(f) = self.unit_mut(tside, t) {
+                        f.shields.push(Timed { value: ab.power, turns: ab.turns.max(1) });
+                        fx.push(Fx::Shield { uid: t, amount: ab.power });
+                    }
+                }
+            }
+            ("heal", "drain") => {
+                let src = self.pick(tside, &pool, &Ability { area: false, ..ab.clone() }, target, rng)?[0];
+                let own: Vec<i64> = self.team(s).board.iter().filter(|x| x.uid != src).map(|x| x.uid).collect();
+                let to = if ab.aim {
+                    match target2.filter(|t| own.contains(t)) {
+                        Some(t) => t,
+                        None => return err("Wybierz kartę, która dostanie HP"),
+                    }
+                } else {
+                    let hurt: Vec<i64> = own.iter().copied().filter(|x| self.unit(s, *x).is_some_and(|u| u.hp < u.max_hp)).collect();
+                    *hurt.choose(rng).or(own.choose(rng)).unwrap_or(&uid)
+                };
+                let taken = self.unit(tside, src).map_or(0, |x| x.hp.min(ab.power));
+                self.hurt(tside, src, taken, true, s, Some(uid), &mut fx);
+                if let Some(r) = self.unit_mut(s, to) {
+                    let h = (r.max_hp - r.hp).min(taken).max(0);
+                    r.hp += h;
+                    fx.push(Fx::Heal { uid: to, amount: h });
+                }
+            }
+            ("heal", mode) => {
+                for t in self.pick(tside, &pool, &ab, target, rng)? {
+                    if let Some(f) = self.unit_mut(tside, t) {
+                        if mode == "regen" {
+                            f.regen.push(Timed { value: ab.power, turns: ab.turns });
+                            fx.push(Fx::Heal { uid: t, amount: 0 });
+                        } else {
+                            let h = (f.max_hp - f.hp).min(ab.power).max(0);
+                            f.hp += h;
+                            fx.push(Fx::Heal { uid: t, amount: h });
                         }
                     }
                 }
             }
-            let team = self.team(k);
-            let weak = team.board.iter().find(|u| (u.hp as f64) < u.max_hp as f64 * 0.3 && !u.acted).map(|u| (u.uid, u.hp));
-            // najmocniejsza karta z ławki, na którą stać (pierwsza przy remisie)
-            let fresh = team
-                .bench
-                .iter()
-                .filter(|u| card_cost(&cat.people[&u.pid]) <= team.coins)
-                .fold(None::<&Unit>, |acc, u| if acc.is_none_or(|a| u.hp > a.hp) { Some(u) } else { acc })
-                .map(|u| (u.uid, u.hp));
-            match (weak, fresh, best) {
-                (Some((wu, whp)), Some((fu, fhp)), _) if fhp > whp * 2 && best.is_none_or(|b| b.0 < 120.0) => {
-                    if self.retreat(k, wu).is_err() || self.place(cat, k, fu).is_err() {
-                        break;
+            ("eco", mode) => {
+                let max = self.cfg.max_money;
+                match mode {
+                    "income" => self.team_mut(s).income.push(Timed { value: ab.power, turns: ab.turns }),
+                    "steal" => {
+                        let foe = self.team_mut(s.other());
+                        let take = foe.money.min(ab.power).max(0);
+                        foe.money -= take;
+                        fx.push(Fx::Money { side: s.other(), amount: -take });
+                        let me = self.team_mut(s);
+                        me.money = (me.money + take).min(max);
+                        fx.push(Fx::Money { side: s, amount: take });
+                    }
+                    _ => {
+                        let me = self.team_mut(s);
+                        let before = me.money;
+                        me.money = (me.money + ab.power).min(max);
+                        fx.push(Fx::Money { side: s, amount: me.money - before });
                     }
                 }
-                (_, _, Some((sc, uid, i, t))) if sc > 0.0 => {
-                    if self.use_ability(cat, k, uid, i as i64, t).is_err() {
-                        break;
-                    }
-                    self.place_all(cat, k); // zdolność ekonomiczna mogła dać monety na kolejną kartę
+            }
+            _ => return err("Ta umiejętność działa sama"),
+        }
+        self.team_mut(s).money -= ab.cost;
+        if let Some(u) = self.unit_mut(s, uid) {
+            u.acted = true;
+        }
+        self.refresh(s);
+        self.refresh(s.other());
+        let text = format!("{}: {}", self.team(s).name, ab.name);
+        self.note(Some(s), text, fx);
+        self.spend(s, now);
+        Ok(())
+    }
+
+    /// Obrażenia karcie strony `s`; `by` = strona, która dostaje punkty za pokonanie
+    #[allow(clippy::too_many_arguments)]
+    fn hurt(&mut self, s: Side, uid: i64, amount: i64, pierce: bool, by: Side, killer: Option<i64>, fx: &mut Vec<Fx>) {
+        let Some(u) = self.unit_mut(s, uid) else { return };
+        let mut left = amount.max(0);
+        if !pierce {
+            for sh in u.shields.iter_mut() {
+                let take = sh.value.min(left);
+                sh.value -= take;
+                left -= take;
+                if take > 0 {
+                    fx.push(Fx::Block { uid, amount: take });
                 }
-                _ => break,
+            }
+            u.shields.retain(|x| x.value > 0);
+        }
+        let hit = u.hp.min(left);
+        u.hp -= hit;
+        if left > 0 || amount == 0 {
+            fx.push(Fx::Dmg { uid, amount: left });
+        }
+        if u.hp <= 0 {
+            self.defeat(s, uid, by, killer, fx);
+        }
+    }
+
+    fn defeat(&mut self, s: Side, uid: i64, by: Side, killer: Option<i64>, fx: &mut Vec<Fx>) {
+        let revive_turns = self.cfg.revive_turns;
+        let bonus = self.combo_bonus(by, "points");
+        let t = self.team_mut(s);
+        let Some(i) = t.board.iter().position(|u| u.uid == uid) else { return };
+        let mut u = t.board.remove(i);
+        u.hp = 0;
+        u.shields.clear();
+        u.poison.clear();
+        u.regen.clear();
+        if u.special("revive") && !u.revived {
+            u.revive_in = Some(revive_turns);
+        }
+        let pts = (u.points + bonus).max(0);
+        t.ko.push(u);
+        self.team_mut(by).points += pts;
+        fx.push(Fx::Ko { uid, points: pts });
+        if let Some(k) = killer.and_then(|k| self.unit(by, k)) {
+            self.last_ko = Some((by, k.pid.clone()));
+        }
+    }
+
+    fn revive(&mut self, s: Side, uid: i64, fx: &mut Vec<Fx>) {
+        let t = self.team_mut(s);
+        let Some(i) = t.ko.iter().position(|u| u.uid == uid) else { return };
+        let mut u = t.ko.remove(i);
+        u.revive_in = None;
+        u.revived = true;
+        u.hp = u.stats.hp;
+        u.acted = false;
+        let row = u.row;
+        if let Some(slot) = self.free_slot(s, row) {
+            u.slot = slot;
+            self.team_mut(s).board.push(u);
+        } else {
+            self.team_mut(s).hand.push(u);
+        }
+        fx.push(Fx::Revive { uid });
+    }
+
+    // ------------------------------------------------------------ układy
+
+    /// Aktywne układy strony: (układ, karty, które go tworzą)
+    pub fn active_combos(&self, s: Side) -> Vec<(&Combo, Vec<i64>)> {
+        let board = &self.team(s).board;
+        let mut out = vec![];
+        for c in &self.combos {
+            let mut groups: indexmap::IndexMap<&str, Vec<i64>> = indexmap::IndexMap::new();
+            for u in board {
+                if let Some(v) = u.stats.trait_value(&c.trait_) {
+                    if c.value.is_empty() || c.value == v {
+                        groups.entry(v).or_default().push(u.uid);
+                    }
+                }
+            }
+            let members: Vec<i64> = groups.into_values().filter(|g| g.len() as i64 >= c.count).flatten().collect();
+            if !members.is_empty() {
+                out.push((c, members));
             }
         }
-        if self.over.is_none() && self.active == k {
-            let _ = self.end_turn(k, false);
+        out
+    }
+
+    /// Premia strony z układów (money / points)
+    fn combo_bonus(&self, s: Side, kind: &str) -> i64 {
+        self.active_combos(s).iter().flat_map(|(c, _)| &c.effects).filter(|e| e.kind == kind).map(|e| e.amount).sum()
+    }
+
+    /// Premia karty z układów (atk / hp)
+    fn unit_bonus(&self, s: Side, u: &Unit, kind: &str) -> i64 {
+        self.active_combos(s)
+            .iter()
+            .flat_map(|(c, members)| c.effects.iter().filter(move |e| e.kind == kind && (e.all || members.contains(&u.uid))))
+            .map(|e| e.amount)
+            .sum()
+    }
+
+    /// Przelicza premie HP z układów i listę aktywnych układów
+    fn refresh(&mut self, s: Side) {
+        let bonus: Vec<(i64, i64)> = self.team(s).board.iter().map(|u| (u.uid, self.unit_bonus(s, u, "hp"))).collect();
+        let ids: Vec<String> = self.active_combos(s).iter().map(|(c, _)| c.id.clone()).collect();
+        let t = self.team_mut(s);
+        t.combos = ids;
+        for (uid, b) in bonus {
+            let Some(u) = t.board.iter_mut().find(|u| u.uid == uid) else { continue };
+            let diff = b - u.bonus_hp;
+            u.bonus_hp = b;
+            u.max_hp = (u.stats.hp + b).max(1);
+            if diff > 0 {
+                u.hp += diff;
+            }
+            u.hp = u.hp.min(u.max_hp);
+        }
+        for u in t.hand.iter_mut() {
+            u.bonus_hp = 0;
+            u.max_hp = u.stats.hp;
+            u.hp = u.hp.min(u.max_hp);
         }
     }
 
-    /// Tury komputera (i gracza z włączoną auto-grą) liczą się od razu - przeglądarka pokaże je po kolei
-    pub fn run_bots(&mut self, cat: &Catalog) {
-        while self.over.is_none() && self.is_bot(self.active) {
-            self.ai_turn(cat, self.active);
+    // ------------------------------------------------------------ bot
+
+    /// Ruchy komputera w jego turze (wszystkie naraz)
+    pub fn bot_turn(&mut self, s: Side, now: f64) {
+        let mut rng = rand::thread_rng();
+        let mut guard = 0;
+        while self.over.is_none() && self.active == s && guard < 20 {
+            guard += 1;
+            if !self.bot_move(s, now, &mut rng) {
+                if self.active == s && self.over.is_none() {
+                    self.note(Some(s), format!("{}: koniec tury", self.team(s).name), vec![]);
+                    self.pass(now);
+                }
+                break;
+            }
         }
     }
 
-    // ------------------------------------------------------------ czas (pojedynki)
-
-    /// Przy każdym zapytaniu: koniec czasu tury, walkower za brak kontaktu
-    pub fn tick(&mut self, cat: &Catalog) {
-        let now = now();
-        self.touched = now;
-        if self.over.is_some() || self.mode != Mode::Pvp {
-            return;
+    /// Jeden ruch komputera; false = nie ma sensownego ruchu
+    fn bot_move(&mut self, s: Side, now: f64, rng: &mut impl Rng) -> bool {
+        // (ocena, umiejętność, karta, cel, cel2)
+        type Choice = (i64, usize, i64, Option<i64>, Option<i64>);
+        let mut best: Option<Choice> = None;
+        let foe = s.other();
+        for u in self.team(s).board.iter().filter(|u| !u.acted) {
+            let atk = self.attack_of(s, u);
+            for (i, ab) in u.stats.abilities.iter().enumerate() {
+                if ab.passive() || ab.cost > self.team(s).money {
+                    continue;
+                }
+                let (tside, pool) = self.targets(s, u.uid, ab);
+                let mut consider = |score: i64, t: Option<i64>, t2: Option<i64>| {
+                    if best.as_ref().is_none_or(|b| score > b.0) {
+                        best = Some((score, i, u.uid, t, t2));
+                    }
+                };
+                match (ab.kind.as_str(), ab.mode.as_str()) {
+                    ("attack", mode) if !pool.is_empty() => {
+                        let dmg = (atk * ab.power + 50) / 100;
+                        for t in &pool {
+                            let Some(f) = self.unit(tside, *t) else { continue };
+                            let real = (dmg - f.shield()).max(0);
+                            let kill = mode != "poison" && real >= f.hp;
+                            let n = if ab.area { if ab.count <= 0 { pool.len() } else { (ab.count as usize).min(pool.len()) } } else { 1 } as i64;
+                            let score = if kill { 100 + f.points * 10 } else { real.min(f.hp) * n / 2 + if mode == "poison" { dmg * ab.turns / 3 } else { 0 } };
+                            consider(score, Some(*t), None);
+                        }
+                    }
+                    ("heal", "drain") if !pool.is_empty() => {
+                        let own: Vec<&Unit> = self.team(s).board.iter().collect();
+                        if let (Some(t), Some(r)) = (pool.first(), own.iter().min_by_key(|x| x.hp - x.max_hp)) {
+                            if tside == foe {
+                                consider(ab.power, Some(*t), Some(r.uid));
+                            }
+                        }
+                    }
+                    ("heal", _) => {
+                        if let Some(w) = self.team(s).board.iter().filter(|x| x.hp < x.max_hp).min_by_key(|x| x.hp * 100 / x.max_hp.max(1)) {
+                            consider((w.max_hp - w.hp).min(ab.power) + if ab.mode == "regen" { ab.power } else { 0 }, Some(w.uid), None);
+                        }
+                    }
+                    ("shield", _) if !self.team(foe).board.is_empty() => {
+                        if let Some(w) = self.team(s).board.iter().filter(|x| x.shield() == 0).max_by_key(|x| x.points) {
+                            consider(ab.power / 2 + 5, Some(w.uid), None);
+                        }
+                    }
+                    ("eco", _) => {
+                        let m = self.team(s).money;
+                        if m < self.cfg.max_money - ab.power {
+                            consider(ab.power * 6 + if ab.mode == "steal" { self.team(foe).money.min(ab.power) * 4 } else { 0 }, None, None);
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
-        if let Some(away) = Side::BOTH.into_iter().find(|k| now - self.seen[k.idx()] > PVP_AWAY_SECONDS) {
-            return self.finish(Outcome::Won(away.other()), EndReason::Away);
+        // wystawienie: najdroższa karta, na którą stać, w rzędzie dopasowanym do zasięgu
+        let money = self.team(s).money;
+        let place = self
+            .team(s)
+            .hand
+            .iter()
+            .filter(|u| u.points <= money)
+            .max_by_key(|u| (u.points, u.stats.atk))
+            .and_then(|u| {
+                let want = (u.stats.range_min - 1).clamp(0, self.cfg.rows as i64 - 1) as usize;
+                let rows: Vec<usize> = std::iter::once(want).chain(0..self.cfg.rows).collect();
+                rows.into_iter().find(|r| self.free_slot(s, *r).is_some()).map(|r| (u.uid, r, u.points))
+            });
+        let ab_score = best.as_ref().map_or(0, |b| b.0);
+        if let Some((uid, row, p)) = place {
+            let score = 40 + p * 8 + if self.team(s).board.is_empty() { 200 } else { 0 };
+            if score > ab_score {
+                return self.place(s, uid, row, now).is_ok();
+            }
         }
-        if now - self.turn_started > PVP_TURN_SECONDS {
-            let _ = self.end_turn(self.active, true);
-            self.run_bots(cat);
+        if let Some((score, i, uid, t, t2)) = best {
+            if score > 0 {
+                return self.use_with(s, uid, i, t, t2, now, rng).is_ok();
+            }
         }
-    }
-
-    pub fn turn_left(&self) -> Option<i64> {
-        (self.over.is_none() && self.mode == Mode::Pvp)
-            .then(|| ((PVP_TURN_SECONDS - (now() - self.turn_started)).round_ties_even() as i64).max(0))
+        false
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arena::rules::{Ability, CardStats, Combo, ComboEffect, Meta, Settings};
+    use rand::SeedableRng;
+
+    fn stats(atk: i64, hp: i64, lo: i64, hi: i64, abilities: Vec<Ability>) -> CardStats {
+        CardStats { atk, hp, range_min: lo, range_max: hi, abilities, ..CardStats::default() }
+    }
+
+    fn entry(pid: &str, s: CardStats, points: i64) -> Entry {
+        Entry { card: DeckCard { pid: pid.into(), variant: "normal".into() }, stats: s, points }
+    }
+
+    fn atk(power: i64) -> Ability {
+        Ability { power, ..Ability::default() }
+    }
+
+    fn cfg() -> Settings {
+        Settings { start_money: 100, max_money: 1000, money_per_turn: 0, moves: 10, ..Settings::default() }
+    }
+
+    fn game(a: Vec<Entry>, b: Vec<Entry>) -> Game {
+        let mut g = Game::new(Mode::Pvp, cfg(), vec![], [("A".into(), Some(1)), ("B".into(), Some(2))], [a, b], Side::A, 0.0);
+        g.teams[1].money = 100;
+        g
+    }
+
+    fn rng() -> rand::rngs::StdRng {
+        rand::rngs::StdRng::seed_from_u64(7)
+    }
+
+    /// wystawia kartę strony bez zużywania tury testu
+    fn put(g: &mut Game, s: Side, uid: i64, row: usize) {
+        g.active = s;
+        g.teams[s.idx()].moves = 10;
+        g.place(s, uid, row, 1.0).unwrap();
+        g.active = s;
+        g.teams[s.idx()].moves = 10;
+    }
 
     #[test]
-    fn bots_finish_a_battle() {
-        let cat = crate::catalog::build(&[], &[]);
-        let deck: Vec<DeckCard> = cat
-            .people
-            .values()
-            .filter(|p| p.hp > 0 && !p.is_secret())
-            .take(8)
-            .map(|p| DeckCard { pid: p.id.clone(), variant: "normal".into() })
-            .collect();
-        let ai = ai_deck(&cat, &deck, &HashSet::new());
-        assert_eq!(ai.len(), 8);
-        let me = Player { name: "Ja".into(), user: Some(1), deck, hero: Hero::Bot { username: "Ja", bot: true } };
-        let bot = Player { name: "Komputer".into(), user: None, deck: ai, hero: Hero::computer() };
-        let mut b = Battle::new(&cat, Mode::Ai, me, bot, Side::A);
-        b.start(&cat);
-        b.set_auto(Side::A, true); // komputer gra za gracza - walka musi się skończyć
-        b.run_bots(&cat);
-        assert!(b.over.is_some(), "walka bez końca");
-        assert!(b.steps.len() > 2);
-        let view = serde_json::to_value(b.view(Side::A, 0)).unwrap();
-        assert!(view["state"]["over"].is_string());
-        assert_eq!(view["steps"][0]["type"], "start");
-        assert!(view["state"]["sides"]["ai"]["bench"].as_array().unwrap().iter().all(|u| u["hidden"] == true));
+    fn range_and_distance() {
+        let mut g = game(vec![entry("a", stats(50, 100, 1, 1, vec![atk(100)]), 2)], vec![entry("b", stats(10, 100, 1, 1, vec![]), 3), entry("c", stats(10, 100, 1, 1, vec![]), 3)]);
+        put(&mut g, Side::B, 2, 0);
+        put(&mut g, Side::B, 3, 1);
+        put(&mut g, Side::A, 1, 0);
+        assert_eq!(Game::distance(0, 0), 1);
+        assert_eq!(g.in_range(Side::A, 1), vec![2]);
+        assert!(g.use_with(Side::A, 1, 0, Some(3), None, 1.0, &mut rng()).is_err()); // rząd 2 poza zasięgiem 1-1
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[1].board.iter().find(|u| u.uid == 2).unwrap().hp, 50);
+        // ta sama karta drugi raz w turze nie działa
+        assert!(g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).is_err());
+    }
+
+    #[test]
+    fn points_cost_and_kill() {
+        let mut g = game(vec![entry("a", stats(200, 100, 1, 3, vec![atk(100)]), 2)], vec![entry("b", stats(10, 50, 1, 1, vec![]), 4)]);
+        put(&mut g, Side::B, 2, 0);
+        assert_eq!(g.teams[1].money, 96);
+        put(&mut g, Side::A, 1, 0);
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[0].points, 4);
+        assert!(g.teams[1].board.is_empty() && g.teams[1].ko.len() == 1);
+        assert!(g.place(Side::A, 99, 0, 1.0).is_err());
+        g.teams[0].money = 0;
+    }
+
+    #[test]
+    fn shield_on_ally_and_area() {
+        let sh = Ability { kind: "shield".into(), power: 30, area: true, count: 0, aim: false, turns: 2, ..Ability::default() };
+        let mut g = game(
+            vec![entry("a", stats(10, 100, 1, 3, vec![sh]), 1), entry("a2", stats(10, 100, 1, 3, vec![]), 1)],
+            vec![entry("b", stats(50, 100, 1, 3, vec![atk(100)]), 1)],
+        );
+        put(&mut g, Side::A, 1, 0);
+        put(&mut g, Side::A, 2, 1);
+        put(&mut g, Side::B, 3, 0);
+        g.active = Side::A;
+        g.use_with(Side::A, 1, 0, None, None, 1.0, &mut rng()).unwrap();
+        assert!(g.teams[0].board.iter().all(|u| u.shield() == 30));
+        g.active = Side::B;
+        g.use_with(Side::B, 3, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        let u = g.teams[0].board.iter().find(|u| u.uid == 2).unwrap();
+        assert_eq!((u.hp, u.shield()), (80, 0));
+    }
+
+    #[test]
+    fn area_attack_hits_neighbours() {
+        let area = Ability { power: 100, area: true, count: 2, aim: true, ..Ability::default() };
+        let mut g = game(vec![entry("a", stats(20, 100, 1, 3, vec![area]), 1)], (0..3).map(|i| entry(&format!("b{i}"), stats(1, 100, 1, 1, vec![]), 1)).collect());
+        for uid in 2..=4 {
+            put(&mut g, Side::B, uid, 0);
+        }
+        put(&mut g, Side::A, 1, 0);
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        let hurt = g.teams[1].board.iter().filter(|u| u.hp < 100).count();
+        assert_eq!(hurt, 2);
+        assert_eq!(g.teams[1].board.iter().find(|u| u.uid == 2).unwrap().hp, 80);
+    }
+
+    #[test]
+    fn poison_over_turns_gives_points() {
+        let p = Ability { mode: "poison".into(), power: 100, turns: 3, ..Ability::default() };
+        let mut g = game(vec![entry("a", stats(20, 100, 1, 3, vec![p]), 1)], vec![entry("b", stats(1, 50, 1, 1, vec![]), 5)]);
+        put(&mut g, Side::B, 2, 0);
+        put(&mut g, Side::A, 1, 0);
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[1].board[0].hp, 50); // trucizna działa dopiero od tury właściciela
+        g.end_turn(Side::A, 2.0).unwrap(); // tura B: -20
+        assert_eq!(g.teams[1].board[0].hp, 30);
+        g.end_turn(Side::B, 3.0).unwrap();
+        g.end_turn(Side::A, 4.0).unwrap(); // -20
+        assert_eq!(g.teams[1].board[0].hp, 10);
+        g.end_turn(Side::B, 5.0).unwrap();
+        g.end_turn(Side::A, 6.0).unwrap(); // -20 -> pokonana, punkty dla A
+        assert!(g.teams[1].board.is_empty());
+        assert_eq!(g.teams[0].points, 5);
+    }
+
+    #[test]
+    fn heal_regen_and_drain() {
+        let heal = Ability { kind: "heal".into(), power: 30, ..Ability::default() };
+        let regen = Ability { kind: "heal".into(), mode: "regen".into(), power: 10, turns: 2, ..Ability::default() };
+        let drain = Ability { kind: "heal".into(), mode: "drain".into(), power: 25, from: "enemy".into(), ..Ability::default() };
+        let mut g = game(
+            vec![entry("a", stats(1, 100, 1, 3, vec![heal, regen]), 1), entry("d", stats(1, 100, 1, 3, vec![drain]), 1)],
+            vec![entry("b", stats(1, 100, 1, 3, vec![]), 1)],
+        );
+        put(&mut g, Side::A, 1, 0);
+        put(&mut g, Side::A, 2, 0);
+        put(&mut g, Side::B, 3, 0);
+        g.teams[0].board[0].hp = 40;
+        g.active = Side::A;
+        g.use_with(Side::A, 1, 0, Some(1), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[0].board[0].hp, 70);
+        // wysysanie: rywal -25, moja karta 1 +25
+        g.use_with(Side::A, 2, 0, Some(3), Some(1), 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[1].board[0].hp, 75);
+        assert_eq!(g.teams[0].board[0].hp, 95);
+        // leczenie rozłożone: +10 na początku tury właściciela
+        g.teams[0].board[0].hp = 50;
+        g.teams[0].board[0].acted = false;
+        g.use_with(Side::A, 1, 1, Some(1), None, 1.0, &mut rng()).unwrap();
+        g.end_turn(Side::A, 2.0).unwrap();
+        g.end_turn(Side::B, 3.0).unwrap();
+        assert_eq!(g.teams[0].board[0].hp, 60);
+    }
+
+    #[test]
+    fn economy_kinds() {
+        let eco = Ability { kind: "eco".into(), power: 5, ..Ability::default() };
+        let inc = Ability { kind: "eco".into(), mode: "income".into(), power: 2, turns: 2, ..Ability::default() };
+        let steal = Ability { kind: "eco".into(), mode: "steal".into(), power: 7, ..Ability::default() };
+        let mut g = game(
+            vec![entry("a", stats(1, 100, 1, 3, vec![eco]), 0), entry("b", stats(1, 100, 1, 3, vec![inc]), 0), entry("c", stats(1, 100, 1, 3, vec![steal]), 0)],
+            vec![],
+        );
+        for uid in 1..=3 {
+            put(&mut g, Side::A, uid, 0);
+        }
+        g.teams[0].money = 10;
+        g.teams[1].money = 4;
+        g.use_with(Side::A, 1, 0, None, None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[0].money, 15);
+        g.use_with(Side::A, 3, 0, None, None, 1.0, &mut rng()).unwrap();
+        assert_eq!((g.teams[0].money, g.teams[1].money), (19, 0));
+        g.use_with(Side::A, 2, 0, None, None, 1.0, &mut rng()).unwrap();
+        g.end_turn(Side::A, 2.0).unwrap();
+        g.end_turn(Side::B, 3.0).unwrap();
+        assert_eq!(g.teams[0].money, 21);
+        g.end_turn(Side::A, 4.0).unwrap();
+        g.end_turn(Side::B, 5.0).unwrap();
+        assert_eq!(g.teams[0].money, 23);
+        g.end_turn(Side::A, 6.0).unwrap();
+        g.end_turn(Side::B, 7.0).unwrap();
+        assert_eq!(g.teams[0].money, 23); // dochód skończył się po 2 turach
+    }
+
+    #[test]
+    fn revive_after_three_turns() {
+        let rev = Ability { kind: "special".into(), mode: "revive".into(), ..Ability::default() };
+        let mut g = game(vec![entry("a", stats(500, 100, 1, 3, vec![atk(100)]), 1)], vec![entry("s", stats(1, 80, 1, 1, vec![rev]), 6)]);
+        put(&mut g, Side::B, 2, 1);
+        put(&mut g, Side::A, 1, 0);
+        g.active = Side::B;
+        assert!(g.use_with(Side::B, 2, 0, None, None, 1.0, &mut rng()).is_err()); // specjalna działa sama
+        g.active = Side::A;
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[0].points, 6);
+        assert_eq!(g.teams[1].ko[0].revive_in, Some(3));
+        for t in 0..3 {
+            assert!(g.teams[1].board.is_empty(), "tura {t}");
+            g.end_turn(Side::A, 2.0).unwrap();
+            if t < 2 {
+                g.end_turn(Side::B, 3.0).unwrap();
+            }
+        }
+        let u = &g.teams[1].board[0];
+        assert_eq!((u.hp, u.row), (80, 1));
+        // drugi raz już nie wraca
+        g.active = Side::A;
+        g.teams[0].moves = 5;
+        g.teams[0].board[0].acted = false;
+        g.use_with(Side::A, 1, 0, Some(2), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[1].ko[0].revive_in, None);
+    }
+
+    #[test]
+    fn moves_and_turn_time() {
+        let mut g = Game::new(
+            Mode::Pvp,
+            Settings { moves: 2, start_money: 50, ..Settings::default() },
+            vec![],
+            [("A".into(), None), ("B".into(), None)],
+            [(0..4).map(|i| entry(&format!("a{i}"), stats(1, 10, 1, 1, vec![]), 1)).collect(), vec![]],
+            Side::A,
+            0.0,
+        );
+        g.place(Side::A, 1, 0, 1.0).unwrap();
+        g.place(Side::A, 2, 0, 1.0).unwrap();
+        assert_eq!(g.active, Side::B); // po 4 (tu: 2) ruchach tura kończy się sama
+        assert!(g.place(Side::A, 3, 0, 1.0).is_err());
+        g.tick(1.0 + g.cfg.turn_secs as f64 + 0.1);
+        assert_eq!(g.active, Side::A); // 40 s minęło
+        g.retreat(Side::A, 1, 50.0).unwrap();
+        assert!(g.teams[0].hand.iter().any(|u| u.uid == 1));
+    }
+
+    #[test]
+    fn time_up_and_overtime() {
+        let mut g = game(vec![], vec![]);
+        g.tick(299.0);
+        assert!(g.over.is_none());
+        g.tick(300.5);
+        assert!(g.over.is_none() && g.overtimes == 1 && g.game_ends == 420.0); // remis 0:0 -> dogrywka +2 min
+        g.teams[1].points = 3;
+        g.tick(421.0);
+        assert_eq!(g.over, Some(Outcome::Won(Side::B)));
+        assert_eq!(g.reason, Some(EndReason::Time));
+        let mut g = game(vec![], vec![]);
+        g.tick(10_000.0);
+        assert_eq!((g.over, g.overtimes), (Some(Outcome::Draw), 3)); // po 3 dogrywkach remis
+    }
+
+    #[test]
+    fn combos_bonus() {
+        let party = |pid: &str| {
+            let mut s = stats(10, 100, 1, 3, vec![atk(100)]);
+            s.traits.insert("party".into(), "X".into());
+            entry(pid, s, 1)
+        };
+        let combo = Combo {
+            id: "p".into(),
+            name: "Partia".into(),
+            trait_: "party".into(),
+            value: String::new(),
+            count: 3,
+            effects: vec![ComboEffect { kind: "atk".into(), amount: 5, all: false }, ComboEffect { kind: "hp".into(), amount: 20, all: false }, ComboEffect { kind: "points".into(), amount: 2, all: false }],
+        };
+        let mut g = Game::new(Mode::Pvp, cfg(), vec![combo], [("A".into(), None), ("B".into(), None)], [vec![party("a"), party("b"), party("c")], vec![entry("z", stats(1, 15, 1, 1, vec![]), 1)]], Side::A, 0.0);
+        g.teams[1].money = 10;
+        put(&mut g, Side::A, 1, 0);
+        put(&mut g, Side::A, 2, 0);
+        assert!(g.teams[0].combos.is_empty());
+        put(&mut g, Side::A, 3, 1);
+        assert_eq!(g.teams[0].combos, vec!["p".to_owned()]);
+        assert!(g.teams[0].board.iter().all(|u| u.max_hp == 120 && u.hp == 120));
+        assert_eq!(g.attack_of(Side::A, &g.teams[0].board[0]), 15);
+        put(&mut g, Side::B, 4, 0);
+        g.active = Side::A;
+        g.use_with(Side::A, 1, 0, Some(4), None, 1.0, &mut rng()).unwrap();
+        assert_eq!(g.teams[0].points, 3); // 1 + premia 2
+        // wycofanie rozbija układ
+        g.retreat(Side::A, 3, 1.0).unwrap();
+        assert!(g.teams[0].combos.is_empty() && g.teams[0].board.iter().all(|u| u.max_hp == 100 && u.hp == 100));
+    }
+
+    #[test]
+    fn bot_plays_turn() {
+        let mut g = Game::new(
+            Mode::Bot,
+            Settings::default(),
+            Meta::default().combos,
+            [("A".into(), Some(1)), ("Bot".into(), None)],
+            [vec![entry("a", stats(10, 50, 1, 2, vec![atk(100)]), 2)], (0..4).map(|i| entry(&format!("b{i}"), stats(30, 60, 1, 3, vec![atk(100)]), 2)).collect()],
+            Side::B,
+            0.0,
+        );
+        g.bot_turn(Side::B, 1.0);
+        assert_eq!(g.active, Side::A);
+        assert!(!g.teams[1].board.is_empty());
+        assert!(g.teams[1].money <= Settings::default().start_money + Settings::default().money_per_turn);
     }
 }

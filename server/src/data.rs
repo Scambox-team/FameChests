@@ -249,19 +249,6 @@ pub struct CasinoSpecial {
     pub max: f64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ArenaRules {
-    pub deck_size: usize,
-    pub board_slots: usize,
-    pub actions: i64,
-    pub max_coins: i64,
-    pub card_cost: HashMap<String, i64>,
-    pub ability_cost: Vec<(i64, i64)>,
-    pub reward_wins: Vec<i64>,
-    pub reward_chest: String,
-}
-
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 pub struct ArenaEffect {
@@ -368,8 +355,6 @@ pub struct GameData {
     pub special_sources_json: Value,
     pub casino_special: CasinoSpecial,
     pub casino_special_json: Value,
-    pub arena: ArenaRules,
-    pub arena_json: Value,
     pub arena_effects: IndexMap<String, ArenaEffect>,
     pub arena_effects_json: Value,
     pub arena_targets: Value,
@@ -545,8 +530,6 @@ impl GameData {
             special_sources_json: v("specialSources"),
             casino_special: get(&raw, "casinoSpecial")?,
             casino_special_json: v("casinoSpecial"),
-            arena: get(&raw, "arena")?,
-            arena_json: v("arena"),
             arena_effects,
             arena_effects_json: v("arenaEffects"),
             arena_targets: v("arenaTargets"),

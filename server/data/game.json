@@ -3207,43 +3207,6 @@
    120
   ]
  },
- "arena": {
-  "deckSize": 8,
-  "boardSlots": 4,
-  "actions": 2,
-  "maxCoins": 10,
-  "cardCost": {
-   "green": 1,
-   "uncommon": 1,
-   "blue": 2,
-   "purple": 3,
-   "red": 4,
-   "gold": 5,
-   "special": 5,
-   "ultra": 6,
-   "secret": 7
-  },
-  "abilityCost": [
-   [
-    0,
-    0
-   ],
-   [
-    150,
-    1
-   ],
-   [
-    250,
-    2
-   ]
-  ],
-  "rewardWins": [
-   1,
-   3,
-   9
-  ],
-  "rewardChest": "daily"
- },
  "arenaEffects": {
   "burn": {
    "name": "Podpalenie",
@@ -4475,8 +4438,6 @@
   "weak": "Słabość",
   "resistLabel": "Napis „odporność”",
   "resist": "Odporność",
-  "retreatLabel": "Napis „wycofanie”",
-  "retreat": "Wycofanie",
   "rarity": "Rzadkość",
   "number": "Numer karty",
   "value": "Cena",

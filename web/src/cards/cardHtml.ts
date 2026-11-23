@@ -1426,7 +1426,6 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
       <div class="card-stats">
         <span>${T("weakLabel", "słabość")}<b>${T("weak", S.cfg.types[type.weak].icon + "×2")}</b></span>
         <span>${T("resistLabel", "odporność")}<b>${T("resist", S.cfg.types[type.resist].icon + "-20")}</b></span>
-        <span>${T("retreatLabel", "wycofanie")}<b>${T("retreat", "⚪".repeat(1 + rarityIdx(p.rarity) % 3))}</b></span>
       </div>
       <div class="card-foot">
         <span class="card-rarity"><span class="gem"></span>${T("rarity", rarityName)}</span>

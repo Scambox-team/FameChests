@@ -32,6 +32,7 @@ import { Stage } from '../features/crates/Stage';
 import { Notices, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
+import { ArenaStatsDialog } from '../features/arena/ArenaStatsDialog';
 import { RenderCard } from '../features/render/RenderCard';
 import { achPoll } from '../features/achievements/popups';
 import { expHeader, noteExp } from '../features/exp/exp';
@@ -78,7 +79,7 @@ function Game() {
       noteExp(me.exp);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
-      if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania ani nie pobiera jej kodu
+      if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena: tylko gracze z dostępem (admini albo „Arena dla wszystkich”) pytają serwer o wyzwania i pobierają jej kod
       if (me.jackpot) setTimeout(() => showJackpotResult(me.jackpot), 600);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -124,6 +125,7 @@ function Game() {
       <StickerRevealHost />
       <ShareDialog />
       <ReportDialog />
+      {game.cfg?.arena && <ArenaStatsDialog />}
     </AppShell>
   );
 }

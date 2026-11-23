@@ -155,6 +155,8 @@ pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Cat
     let mut tx = pool.begin().await?;
     crate::exp::init(&mut tx, &cat).await?;
     tx.commit().await?;
+    // Arena: ustawienia, słowniki i statystyki kart do pamięci procesu
+    crate::arena::rules::load(&mut *pool.acquire().await?).await?;
     Ok(cat)
 }
 

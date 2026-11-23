@@ -24,6 +24,7 @@ const GamesAdmin = lazy(() => import('./GamesAdmin'));
 const EventsAdmin = lazy(() => import('./EventsAdmin'));
 const PassportAdmin = lazy(() => import('./PassportAdmin'));
 const ExpAdmin = lazy(() => import('./ExpAdmin'));
+const ArenaAdmin = lazy(() => import('./ArenaAdmin'));
 const StickersAdmin = lazy(() => import('./StickersAdmin'));
 const ReferralsAdmin = lazy(() => import('./ReferralsAdmin'));
 import './admin.css';
@@ -62,6 +63,7 @@ function page(path: string): ReactNode {
   if (path === '/admin/events') return <Suspense fallback={null}><EventsAdmin /></Suspense>;
   if (path === '/admin/passport') return <Suspense fallback={null}><PassportAdmin /></Suspense>;
   if (path === '/admin/exp') return <Suspense fallback={null}><ExpAdmin /></Suspense>;
+  if (path === '/admin/arena') return <Suspense fallback={null}><ArenaAdmin /></Suspense>;
   if (path === '/admin/gstickers') return <Suspense fallback={null}><StickersAdmin /></Suspense>;
   if (path === '/admin/games') return <Suspense fallback={null}><GamesAdmin /></Suspense>;
   if (path === '/admin/referrals') return <Suspense fallback={null}><ReferralsAdmin /></Suspense>;

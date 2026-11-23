@@ -51,7 +51,7 @@ pub fn need(path: &str) -> Need {
         "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
             Need::Perm("content")
         }
-        "horses" | "chess-skins" | "ctf" | "snake" | "run" => Need::Perm("games"),
+        "horses" | "chess-skins" | "ctf" | "snake" | "run" | "arena" => Need::Perm("games"),
         // EXP i levele: ustawienia i ręczne nadanie EXP - jak pieniądze i skrzynki graczy
         "exp" => Need::Perm("economy"),
         // /users, /users/{id}, /users/{id}/<akcja>[/...]

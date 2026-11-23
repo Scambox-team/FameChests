@@ -393,6 +393,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
           ${giftRewrappable(variant, uid) ? '<button class="btn" data-act="rewrap">Zapakuj ponownie</button>' : ""}
         </div>` : ""}
         <div class="muted small">Porusz kursorem nad kartą, aby ją przechylić. Kliknij kartę, aby ją obrócić.</div>
+        ${S.cfg.arena ? '<button type="button" class="vi-link" data-act="arena">Statystyki areny</button>' : ""}
         <button type="button" class="vi-link" data-act="report">Zgłoś problem z kartą</button>
       </div>`;
   }
@@ -417,6 +418,7 @@ export function openViewer(pid, variant = "normal", uid: any = null) {
       return;
     }
     if (act === "report") return viewerActions.openReport?.(pid, variant);
+    if (act === "arena") return viewerActions.openArenaStats?.(pid);
     if (act === "share") return viewerActions.openShowDialog?.(pid, variant);
     if (act === "pin") return viewerActions.toggleShowcase?.(pid, variant).then(() => openViewer(pid, variant, uid));
     if (act === "fav") return viewerActions.toggleFavorite?.(pid, variant, uid).then(() => openViewer(pid, variant, uid));

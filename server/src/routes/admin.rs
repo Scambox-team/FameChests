@@ -986,7 +986,7 @@ pub async fn admin_link_create(State(st): State<AppState>, Admin(me): Admin, Jso
     };
     let max_uses = req.max_uses.clamp(0, 100_000) as i32;
     let note = clean(&req.note, 80);
-    let token = crate::arena::engine::token();
+    let token = crate::arena::token();
     let mut tx = st.db.begin().await?;
     sqlx::query!(
         "INSERT INTO card_links (token, person_id, note, created_by, created_at, max_uses) VALUES ($1, $2, $3, $4, $5, $6)",

@@ -102,7 +102,9 @@ pub const SOURCES: &[Src] = &[
     src("achievement", "Questy i inne", "Zdobyte osiągnięcie", 50, 0),
     src("advent", "Questy i inne", "Okienko kalendarza adwentowego", 20, 20),
     src("passport", "Questy i inne", "Nowy stempel w paszporcie", 30, 300),
-    src("arena_win", "Questy i inne", "Wygrana walka w Arenie", 25, 200),
+    src("arena_win", "Arena", "Arena: wygrany mecz z człowiekiem", 40, 200),
+    src("arena_play", "Arena", "Arena: mecz z człowiekiem rozegrany do końca czasu (obie strony)", 10, 100),
+    src("arena_bot", "Arena", "Arena: wygrany trening z komputerem", 10, 50),
 ];
 
 pub fn src_def(key: &str) -> Option<&'static Src> {

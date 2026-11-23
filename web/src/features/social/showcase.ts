@@ -59,6 +59,11 @@ export function installViewerActions() {
       closeViewer();
       openStickerEditor(uid);
     },
+    openArenaStats(pid: string) {
+      closeViewer();
+      S.arenaCard = pid;
+      touch();
+    },
     openReport(pid: string, variant: string) {
       closeViewer();
       S.reportCard = { pid, variant };

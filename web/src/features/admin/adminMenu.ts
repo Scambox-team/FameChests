@@ -40,6 +40,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: 'gry', label: 'Gry', items: [
     G('gry', 'Gry', 'Ustawienia gier i kasyna', '/admin/games', 'games'),
+    G('arena', 'Arena', 'Arena dla wszystkich, ustawienia meczu i nagrody, statystyki kart, klasy, specjalizacje, ukryte cechy, układy', '/admin/arena', 'games'),
     G('szachy', 'Szachy', 'Skrzynki szachów i skiny figur', '/admin/chess', 'games'),
     P('skiny', 'Skiny figur', 'Rzadkości i dostępność skinów do szachów', 'games'),
     P('konie', 'Wyścigi konne', 'Nazwy koni i mnożniki wygranej', 'games'),

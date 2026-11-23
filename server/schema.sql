@@ -564,3 +564,9 @@ CREATE TABLE IF NOT EXISTS card_stickers (
     created_at DOUBLE PRECISION NOT NULL
 );
 CREATE INDEX IF NOT EXISTS card_stickers_item ON card_stickers (item_id);
+
+-- Arena: nagrody za wygrane z botem i zarobek w groszach (dzienne limity); ustawienia i statystyki kart z panelu admina
+ALTER TABLE arena_daily ADD COLUMN IF NOT EXISTS bot_wins INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE arena_daily ADD COLUMN IF NOT EXISTS earned BIGINT NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS arena_config (key TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS arena_cards (person_id TEXT PRIMARY KEY, data TEXT NOT NULL);

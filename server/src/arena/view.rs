@@ -1,25 +1,17 @@
-//! Walka z perspektywy gracza: on = "me", rywal = "ai"; karty na ławce rywala są zakryte.
-
-use std::collections::HashSet;
+//! Mecz z perspektywy gracza: on = "me", rywal = "foe". Ręka rywala jest zakryta (tylko liczba kart).
 
 use indexmap::IndexMap;
 use serde::Serialize;
+use serde_json::{json, Value};
 
-use super::engine::{Action, Battle, EndReason, Mode, Outcome, Side, Snapshot, Step, Team, Unit};
-use super::{Hero, Reward};
+use super::engine::{EndReason, Game, Log, Outcome, Side, Unit};
+use super::{Battle, Hero, Reward};
 
 fn label(me: Side, s: Side) -> &'static str {
     if s == me {
         "me"
     } else {
-        "ai"
-    }
-}
-
-fn outcome_label(me: Side, o: Outcome) -> &'static str {
-    match o {
-        Outcome::Won(s) => label(me, s),
-        Outcome::Draw => "draw",
+        "foe"
     }
 }
 
@@ -27,157 +19,120 @@ fn outcome_label(me: Side, o: Outcome) -> &'static str {
 #[serde(rename_all = "camelCase")]
 pub struct BattleView<'a> {
     id: &'a str,
-    mode: Mode,
-    /// liczba kroków walki (przeglądarka pyta potem o kolejne: ?since=)
+    mode: super::Mode,
+    /// numer ostatniego wpisu dziennika
     seen: usize,
-    steps: Vec<StepView<'a>>,
-    state: StateView<'a>,
+    /// nowe wpisy (od `since`)
+    log: Vec<LogView<'a>>,
+    active: &'static str,
+    /// sekundy do końca meczu / tury
+    game_left: f64,
+    turn_left: f64,
+    overtimes: i64,
+    over: Option<&'static str>,
+    reason: Option<EndReason>,
+    rules: Value,
+    sides: IndexMap<&'static str, Value>,
     heroes: IndexMap<&'static str, &'a Hero>,
-    turn_left: Option<i64>,
-    auto: bool,
     rewards: Option<&'a Reward>,
 }
 
 #[derive(Serialize)]
-struct StepView<'a> {
+struct LogView<'a> {
     n: usize,
-    #[serde(flatten)]
-    action: &'a Action,
     side: Option<&'static str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    winner: Option<&'static str>,
-    state: StateView<'a>,
+    text: &'a str,
+    fx: Vec<Value>,
 }
 
-#[derive(Serialize)]
-struct StateView<'a> {
-    active: &'static str,
-    first: &'static str,
-    turn: i64,
-    over: Option<&'static str>,
-    reason: Option<EndReason>,
-    sides: IndexMap<&'static str, TeamView<'a>>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TeamView<'a> {
-    name: &'a str,
-    board: Vec<UnitView<'a>>,
-    bench: Vec<BenchView<'a>>,
-    ko: Vec<UnitView<'a>>,
-    coins: i64,
-    max_coins: i64,
-    actions: i64,
-    turn_no: i64,
-    coin_penalty: i64,
-}
-
-#[derive(Serialize)]
-struct UnitView<'a> {
-    #[serde(flatten)]
-    unit: &'a Unit,
-    side: &'static str,
-}
-
-#[derive(Serialize)]
-#[serde(untagged)]
-enum BenchView<'a> {
-    Shown(UnitView<'a>),
-    Hidden { uid: i64, side: &'static str, hidden: bool },
-}
-
-impl<'a> StateView<'a> {
-    fn new(s: &'a Snapshot, me: Side) -> Self {
-        Self::of(&s.teams, (s.active, s.first, s.turn, s.over, s.reason), me)
+fn unit_json(g: &Game, s: Side, me: Side, u: &Unit) -> Value {
+    let mut fx = json!({
+        "uid": u.uid, "pid": u.pid, "variant": u.variant, "hp": u.hp, "maxHp": u.max_hp, "row": u.row, "slot": u.slot,
+        "atk": g.attack_of(s, u), "points": u.points, "acted": u.acted, "range": [u.stats.range_min, u.stats.range_max],
+        "class": u.stats.class, "spec": u.stats.spec, "abilities": u.stats.abilities,
+        "shield": u.shields.iter().map(|x| x.value).sum::<i64>(),
+        "poison": u.poison.iter().map(|x| x.value).sum::<i64>(),
+        "regen": u.regen.iter().map(|x| x.value).sum::<i64>(),
+        "reviveIn": u.revive_in,
+    });
+    if s == me {
+        // cele moich umiejętności (podświetlenie przy wyborze)
+        let targets: Vec<Value> = u
+            .stats
+            .abilities
+            .iter()
+            .map(|ab| {
+                let (side, list) = g.targets(s, u.uid, ab);
+                json!({"side": label(me, side), "uids": list})
+            })
+            .collect();
+        fx["targets"] = json!(targets);
     }
-
-    /// stan z drużyn i (aktywna strona, pierwsza strona, tura, wynik, powód końca)
-    fn of(
-        teams: &'a [Team; 2],
-        (active, first, turn, over, reason): (Side, Side, i64, Option<Outcome>, Option<EndReason>),
-        me: Side,
-    ) -> Self {
-        let team =
-            |t: &'a Team, k: Side| {
-                let side = label(me, k);
-                let shown = |u: &'a Unit| UnitView { unit: u, side };
-                TeamView {
-                    name: &t.name,
-                    board: t.board.iter().map(shown).collect(),
-                    bench: t
-                        .bench
-                        .iter()
-                        .map(|u| {
-                            if k == me {
-                                BenchView::Shown(shown(u))
-                            } else {
-                                BenchView::Hidden { uid: u.uid, side, hidden: true }
-                            }
-                        })
-                        .collect(),
-                    ko: t.ko.iter().map(shown).collect(),
-                    coins: t.coins,
-                    max_coins: t.max_coins,
-                    actions: t.actions,
-                    turn_no: t.turn_no,
-                    coin_penalty: t.coin_penalty,
-                }
-            };
-        StateView {
-            active: label(me, active),
-            first: label(me, first),
-            turn,
-            over: over.map(|o| outcome_label(me, o)),
-            reason,
-            sides: Side::BOTH.iter().zip(teams).map(|(k, t)| (label(me, *k), team(t, *k))).collect(),
-        }
-    }
-}
-
-impl<'a> StepView<'a> {
-    fn new(step: &'a Step, me: Side) -> Self {
-        StepView {
-            n: step.n,
-            action: &step.action,
-            side: step.side.map(|s| label(me, s)),
-            winner: step.winner.map(|o| outcome_label(me, o)),
-            state: StateView::new(&step.state, me),
-        }
-    }
-}
-
-/// Karty widoczne dla gracza: wszystkie moje, rywala - na planszy i pokonane
-fn visible_pids<'a>(teams: &'a [Team; 2], me: Side, out: &mut HashSet<&'a str>) {
-    for (k, t) in Side::BOTH.iter().zip(teams) {
-        let bench = if *k == me { t.bench.as_slice() } else { &[] };
-        out.extend(t.board.iter().chain(bench).chain(&t.ko).map(|u| u.pid.as_str()));
-    }
+    fx
 }
 
 impl Battle {
-    /// Walka dla gracza `me`: kroki od `since` (wcześniejsze przeglądarka już pokazała) i aktualny stan
-    pub fn view(&self, me: Side, since: usize) -> BattleView<'_> {
+    pub fn view(&self, me: Side, since: usize, now: f64) -> BattleView<'_> {
+        let g = &self.game;
+        let sides = Side::BOTH
+            .iter()
+            .map(|&s| {
+                let t = g.team(s);
+                let board: Vec<Value> = t.board.iter().map(|u| unit_json(g, s, me, u)).collect();
+                let ko: Vec<Value> = t.ko.iter().map(|u| json!({"uid": u.uid, "pid": u.pid, "variant": u.variant, "reviveIn": u.revive_in})).collect();
+                let hand: Value = if s == me {
+                    json!(t.hand.iter().map(|u| unit_json(g, s, me, u)).collect::<Vec<_>>())
+                } else {
+                    json!(t.hand.len())
+                };
+                let combos: Vec<Value> = g
+                    .active_combos(s)
+                    .iter()
+                    .map(|(c, members)| json!({"id": c.id, "name": c.name, "effects": c.effects, "members": members}))
+                    .collect();
+                (label(me, s), json!({"name": t.name, "money": t.money, "points": t.points, "moves": t.moves, "board": board, "hand": hand,
+                                       "ko": ko, "combos": combos, "income": t.income}))
+            })
+            .collect();
+        let heroes = Side::BOTH.iter().map(|&s| (label(me, s), &self.heroes[s.idx()])).collect();
+        let over = g.over.map(|o| match o {
+            Outcome::Won(s) => label(me, s),
+            Outcome::Draw => "draw",
+        });
+        let end = g.finished_at.unwrap_or(now);
         BattleView {
             id: &self.id,
-            mode: self.mode,
-            seen: self.steps.len(),
-            steps: self.steps.iter().skip(since).map(|s| StepView::new(s, me)).collect(),
-            state: StateView::of(&self.teams, (self.active, self.first, self.turn, self.over, self.reason), me),
-            heroes: Side::BOTH.into_iter().map(|k| (label(me, k), self.hero(k))).collect(),
-            turn_left: self.turn_left(),
-            auto: self.auto_of(me),
-            rewards: self.reward(me),
+            mode: g.mode,
+            seen: g.log.len(),
+            log: g.log.iter().filter(|l| l.n > since).map(|l: &Log| log_view(l, me)).collect(),
+            active: label(me, g.active),
+            game_left: (g.game_ends - end).max(0.0),
+            turn_left: if g.over.is_some() { 0.0 } else { (g.turn_ends - now).max(0.0) },
+            overtimes: g.overtimes,
+            over,
+            reason: g.reason,
+            rules: json!({"rows": g.cfg.rows, "rowSlots": g.cfg.row_slots, "moves": g.cfg.moves, "turnSecs": g.cfg.turn_secs,
+                          "gameSecs": g.cfg.game_secs, "overtimeSecs": g.cfg.overtime_secs, "maxOvertimes": g.cfg.max_overtimes,
+                          "maxMoney": g.cfg.max_money}),
+            sides,
+            heroes,
+            rewards: self.rewards[me.idx()].as_ref(),
         }
     }
+}
 
-    /// Karty, które gracz widzi w krokach od `since` i w aktualnym stanie (do pokazania tajnych kart)
-    pub fn visible_pids(&self, me: Side, since: usize) -> HashSet<String> {
-        let mut out = HashSet::new();
-        for s in self.steps.iter().skip(since) {
-            visible_pids(&s.state.teams, me, &mut out);
-        }
-        visible_pids(&self.teams, me, &mut out);
-        out.into_iter().map(str::to_owned).collect()
-    }
+fn log_view(l: &Log, me: Side) -> LogView<'_> {
+    let fx = l
+        .fx
+        .iter()
+        .map(|f| {
+            let mut v = serde_json::to_value(f).unwrap_or(Value::Null);
+            if let Some(s) = v.get("side").and_then(Value::as_str) {
+                let s = if s == "a" { Side::A } else { Side::B };
+                v["side"] = json!(label(me, s));
+            }
+            v
+        })
+        .collect();
+    LogView { n: l.n, side: l.side.map(|s| label(me, s)), text: &l.text, fx }
 }

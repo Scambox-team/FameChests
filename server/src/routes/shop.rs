@@ -140,10 +140,7 @@ pub async fn config(State(st): State<AppState>, Me(me): Me) -> Res {
             },
         );
     }
-    let arena = cx.me.admin().then(|| {
-        json!({"rules": g.arena_json, "effects": g.arena_effects_json, "visuals": g.arena_visuals,
-               "targets": g.arena_targets, "effectTargets": g.arena_effect_targets})
-    });
+    let arena = super::arena::has_access(&cx.me).then(super::arena::config_json);
     ok(ConfigResponse {
         rarities: &g.rarities_json,
         rarity_order: &g.rarity_order,
