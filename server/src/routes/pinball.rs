@@ -214,6 +214,9 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
         add_state(&mut tx, me.id, "balance", reward).await?;
         super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     }
+    if reason == "ok" {
+        crate::exp::award(&mut tx, me.id, "pinball", 1).await?;   // tylko gra odtworzona przez serwer i dość długa
+    }
     let card = match &card_pid {
         Some(pid) => {
             let item = insert_for(&mut tx, &cat, me.id, me.hidden_from_ranking(), pid, &cfg.card_variant, "pinball").await?;

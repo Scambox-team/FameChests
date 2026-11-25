@@ -1,0 +1,5 @@
+.reward { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; align-items: start; padding: 8px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--text) 4%, transparent); }
+.reward label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+.reward small { font-size: 11px; }
+.reward input, .reward select { padding: 7px 9px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; font-size: 14px; min-width: 0; }
+.bad { color: var(--bad); }

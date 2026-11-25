@@ -27,7 +27,7 @@ pub const PERMS: &[(&str, &str)] = &[
     ("reports", "Zgłoszenia od graczy"),
     ("log", "Dziennik adminów"),
     ("users", "Gracze: lista, blokady, ranking, podgląd kart i dostępu"),
-    ("economy", "Gracze: pieniądze, skrzynki, usuwanie kart"),
+    ("economy", "Gracze: pieniądze, skrzynki, EXP i levele, usuwanie kart"),
     ("accounts", "Konta: reset hasła, zmiana emaila, usuwanie kont"),
 ];
 
@@ -47,11 +47,13 @@ pub fn need(path: &str) -> Need {
         "roles" | "backups" => Need::Owner,
         "log" => Need::Perm("log"),
         "reports" => Need::Perm("reports"),
-        "crates" | "shop-size" | "cards" | "variants" | "variant-designs" | "stickers" => Need::Perm("catalog"),
+        "crates" | "shop-size" | "cards" | "variants" | "variant-designs" | "stickers" | "gstickers" => Need::Perm("catalog"),
         "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "christmas" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
             Need::Perm("content")
         }
-        "horses" | "chess-skins" | "ctf" | "snake" | "run" => Need::Perm("games"),
+        "horses" | "chess-skins" | "ctf" | "snake" | "run" | "arena" => Need::Perm("games"),
+        // EXP i levele: ustawienia i ręczne nadanie EXP - jak pieniądze i skrzynki graczy
+        "exp" => Need::Perm("economy"),
         // /users, /users/{id}, /users/{id}/<akcja>[/...]
         "users" => match (seg.len(), seg.get(2).copied()) {
             (1, _) => Need::Perm("users"),

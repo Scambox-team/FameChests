@@ -1041,7 +1041,7 @@ pub async fn admin_link_create(State(st): State<AppState>, Admin(me): Admin, Jso
     };
     let max_uses = req.max_uses.clamp(0, 100_000) as i32;
     let note = clean(&req.note, 80);
-    let token = crate::arena::engine::token();
+    let token = crate::arena::token();
     let mut tx = st.db.begin().await?;
     sqlx::query!(
         "INSERT INTO card_links (token, person_id, note, created_by, created_at, max_uses) VALUES ($1, $2, $3, $4, $5, $6)",
@@ -1531,6 +1531,9 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     sqlx::query("DELETE FROM user_counters WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM passport_stamps WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM piggy_contrib WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
+    for table in ["user_exp", "level_claims", "level_choices", "exp_daily", "exp_badges", "sticker_items"] {
+        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table} WHERE user_id = $1"))).bind(uid).execute(&mut *tx).await?;
+    }
     sqlx::query("DELETE FROM passport_last WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM pinball_runs WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM user_achievements WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;

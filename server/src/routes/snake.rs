@@ -316,6 +316,9 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
         set_state(&mut tx, me.id, "snake_day", today()).await?;
         set_state(&mut tx, me.id, "snake_today", earned + reward).await?;
     }
+    if score >= r.min_score {
+        crate::exp::award(&mut tx, me.id, if turbo { "snake3d" } else { "snake" }, 1).await?;   // gra z wynikiem, odtworzona przez serwer
+    }
     // karta za wynik, BEZ limitu na dobę: Snake 2D daje Pikselową, Snake 3D (Super Turbo) kartę RGB; progi jak w Pinballu
     let cfg = &g().snake;
     let mut card = None;

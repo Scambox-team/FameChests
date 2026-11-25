@@ -11,6 +11,7 @@ import { esc, fmt } from '../lib/format';
 import { drawingVersions } from './drawingVersions';
 import { use3D } from '../three/support';
 import { warmFont } from '../styles/theme';
+import { userStickers } from '../features/stickers/stickers';
 
 const VARIANT_TAGS = { chesswhite: "BIAŁA", chessblack: "CZARNA", anime: "🌸 ANIME", rgb: "🌈 RGB", tabloid: "📰 SZOK!", barbie: "💖 BARBIE", hawaii: "🌺 ALOHA", polaroid: "📸 POLAROID", wizytowka: "💼 WIZYTÓWKA", analog: "📼 ANALOG", polska: "🇵🇱 POLSKA", independence: "🇵🇱 1918", sugarcane: "🍬 SUGAR CANE", snow: "❄️ ŚNIEG", ascii: "> ASCII", jelly: "🍬 ŻELKA", hologram: "📡 HOLO", nightsky: "✦ NOCNE NIEBO", crystal: "💠 KRYSZTAŁ", wood: "🪵 DREWNO", dowod: "🪪 DOWÓD", banknote50: "💵 50 ZŁ", banknote100: "💵 100 ZŁ", banknote200: "💵 200 ZŁ", banknote500: "💵 500 ZŁ", ice: "🧊 LÓD", christmas: "🎄 ŚWIĘTA", jolly: "🎅 JOLLY", gwiazdkowy: "⭐ GWIAZDKOWY", tree: "🌲 CHOINKA", gift: "🎁 PREZENT", covid: "😷 COVID-19", claude: "✻ CLAUDE", scratch: "🪙 ZDRAPKA", teletext: "📟 P888", retroos: "💾 OKIENKA 97", receipt: "🧾 PARAGON", tarot: "🔮 TAROT", muertos: "💀 MUERTOS", blank: "🖌️ CZYSTA", bw: "B&W", reverse: "REVERSE", bronze: "BRONZE", silver: "SILVER", platinum: "PLATINUM", steel: "⚙️ STEEL", sapphire: "💙 SAPPHIRE", blackdiamond: "🖤 BLACK DIAMOND", holo: "HOLO", pearl: "🦪 PEARL", gold: "GOLDEN", vintage: "📷 1887", marble: "🏛️ MARBLE", slime: "🟢 SLIME", matte: "MATTE", racing: "🏁 RETRO", bismuth: "🌈 BISMUTH", digital: "💻 DIGITAL", cyber: "🌃 CYBER", fade: "🎨 FADE", wanted: "🤠 WANTED", artdeco: "ART DÉCO", cheese: "🧀 CHEESE", aero: "🫧 AERO", honey: "🍯 HONEY", chinese: "🏮 CHINA", moro: "🪖 MORO", beer: "🍺 BEER", neon: "💡 NEON", electric: "⚡ VOLT", synthwave: "📼 SYNTH", motor: "🏎️ MOTO", toxic: "☢️ TOXIC", pixel: "👾 PIXEL", popart: "💥 POP!", glass: "⛪ VITRAIL", thermal: "🌡️ THERMAL", blueprint: "📐 BLUEPRINT", glitch: "▓ GL1TCH", mosaic: "🧱 MOSAIC", noir: "🕵️ NOIR", chocolate: "🍫 CHOCO", candy: "🍭 CANDY", hollywood: "🎬 1969", cobalt: "🔷 COBALT", banana: "🍌 BANANA", uranium: "☢️ U-238", mercury: "☿ Hg", californium: "⚛️ Cf-252", files: "🗂️ AKTA", copper: "🟠 Cu", reflective: "🦺 HI-VIS", usa: "★ U.S.A. ★", komuna: "★ PRL ★", apollo: "◉ MISJA 69", flag: "FLAG", halloween: "🎃 HALLOWEEN", lantern: "🏮 LAMPION", devil: "😈 DEVIL", joker: "🃏 JOKER", jeans: "👖 DŻINS", ufo: "🛸 ⎍⎎⍜⌰⎍⎅", clear: "🫧 CLEAR", sketch: "✒️ SKETCH", emerald: "💚 EMERALD", amethyst: "💜 AMETHYST", ruby: "❤️ RUBY", mlg: "🎯 MLG", royal: "👑 ROYAL", diamond: "💎 DIAMOND", galaxy: "🌌 GALAXY", negative: "◐ NEGATIVE", prism: "◇ PRYZMAT", antimatter: "⚛ ANTYMATERIA", lonsdaleite: "⬢ LONSDALEIT", rzulty: "💛 RZULTY" };
 
@@ -1525,7 +1526,7 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
         <span class="card-hp"><small>${T("hpLabel", "HP")}</small>${T("hp", p.hp)}</span>
         <span class="card-type">${T("type", type.icon)}</span>
       </div>
-      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" decoding="async" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}</div>
+      <div class="card-photo"><img src="${imgUrl(p.id, variant)}" alt="${esc(name)}" loading="lazy" decoding="async" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${galaxyPhoto(variant)}${halloweenPhoto(variant)}${mlgPhoto(variant)}${variantPhoto(variant, p, uid)}${userStickers(uid, "photo")}</div>
       <div class="card-sub${p.subtitle || p.texts?.sub ? " has-subtitle" : ""}">${T("sub", p.subtitle ? esc(p.subtitle)
         : bs ? esc(bs.label) : variantSub(variant, pid) ?? `${type.name} · ${esc(crate.short)}`)}</div>
       ${abils.map((a, i) => `<div class="card-attack${i ? " atk2" : ""}${a.kind !== "off" ? " " + a.kind : ""}">
@@ -1536,7 +1537,6 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
       <div class="card-stats">
         <span>${T("weakLabel", "słabość")}<b>${T("weak", S.cfg.types[type.weak].icon + "×2")}</b></span>
         <span>${T("resistLabel", "odporność")}<b>${T("resist", S.cfg.types[type.resist].icon + "-20")}</b></span>
-        <span>${T("retreatLabel", "wycofanie")}<b>${T("retreat", "⚪".repeat(1 + rarityIdx(p.rarity) % 3))}</b></span>
       </div>
       <div class="card-foot">
         <span class="card-rarity"><span class="gem"></span>${T("rarity", rarityName)}</span>
@@ -1544,7 +1544,7 @@ export function cardHTML(pid, variant = "normal", uid: any = null) {
         <span class="card-value">${T("value", fmt(cardValue(pid, variant)))}</span>
       </div>
     </div>
-    ${variantLayers(variant, p, bs)}${giftWrap(variant, uid)}
+    ${variantLayers(variant, p, bs)}${giftWrap(variant, uid)}${userStickers(uid, "card")}
     <div class="shine"></div>
   </div>`;
 }
@@ -1554,10 +1554,10 @@ function secretCardHTML(p, variant, uid = null) {
   const type = S.cfg.types[p.type];
   const crate = crateOf(p.crate);
   return `
-  <div class="card r-secret ${vClass(variant)}" data-pid="${p.id}" data-variant="${variant}"${flagStyle(p, variant)}>
+  <div class="card r-secret ${vClass(variant)}" data-pid="${p.id}" data-variant="${variant}"${uid != null ? ` data-uid="${uid}"` : ""}${flagStyle(p, variant)}>
     <div class="sc">
       ${drawingBG(variant, uid)}
-      <div class="sc-art"><img src="${imgUrl(p.id, variant)}" alt="${esc(p.name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${variantPhoto(variant, p, uid)}</div>
+      <div class="sc-art"><img src="${imgUrl(p.id, variant)}" alt="${esc(p.name)}" loading="lazy" draggable="false"${photoFx(variant)}>${drawingPhoto(variant, uid)}${variantPhoto(variant, p, uid)}${userStickers(uid, "photo")}</div>
       ${galaxyBG(variant)}${devilBG(variant)}${halloweenPhoto(variant)}${mlgBG(variant)}${mlgPhoto(variant)}${variantBG(variant)}${underStickersHTML(variant, p)}
       <div class="sc-halo"></div>
       <div class="sc-stars"></div>
@@ -1575,7 +1575,7 @@ function secretCardHTML(p, variant, uid = null) {
       <div class="sc-frame"></div>
       <div class="sc-border"></div>
     </div>
-    ${variantLayers(variant, p)}${giftWrap(variant, uid)}
+    ${variantLayers(variant, p)}${giftWrap(variant, uid)}${userStickers(uid, "card")}
     <div class="shine"></div>
   </div>`;
 }

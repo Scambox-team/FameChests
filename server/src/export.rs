@@ -35,6 +35,9 @@ pub struct ExportFile {
     pub crates: Vec<ExportRow>,
     pub cards: Vec<ExportRow>,
     pub variants: Vec<ExportRow>,
+    /// Arena: ustawienia meczu, słowniki i statystyki kart (`arena::rules::export_json`)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub arena: Option<Value>,
 }
 
 fn parse(data: &str) -> Map<String, Value> {
@@ -62,6 +65,9 @@ pub async fn import_if_empty(pool: &PgPool, base: &Path) -> anyhow::Result<bool>
                 .execute(&mut *tx)
                 .await?;
         }
+    }
+    if let Some(a) = &export.arena {
+        crate::arena::rules::import_json(&mut tx, a).await?;
     }
     let existing =
         sqlx::query_scalar!(r#"SELECT (SELECT COUNT(*) FROM catalog_crates) + (SELECT COUNT(*) FROM catalog_cards) AS "n!""#)
@@ -154,7 +160,8 @@ pub async fn export_catalog(pool: &PgPool, cfg: &Config) -> anyhow::Result<(usiz
         .into_iter()
         .map(|(id, data, deleted)| ExportRow { data: parse(&data), id, deleted: deleted != 0 })
         .collect();
-    let export = ExportFile { crates, cards, variants };
+    let arena = Some(crate::arena::rules::load(&mut *pool.acquire().await?).await.map(|_| crate::arena::rules::export_json())?);
+    let export = ExportFile { crates, cards, variants, arena };
     // wcięcie 1 spacja - jak json.dump(..., indent=1) w wersji Python (mniejsze różnice w git)
     let mut buf = Vec::new();
     let mut ser = serde_json::Serializer::with_formatter(&mut buf, serde_json::ser::PrettyFormatter::with_indent(b" "));

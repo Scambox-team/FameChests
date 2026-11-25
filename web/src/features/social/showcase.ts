@@ -7,6 +7,7 @@ import { Sound } from '../../sound/sound';
 import { toast } from '../../ui/Toaster';
 import { openDrawing } from '../editors/drawing';
 import { openScratch } from '../editors/scratch';
+import { openStickerEditor } from '../stickers/stickers';
 
 const myItemFor = (pid: string, variant: string) => S.items.find(i => i.person === pid && i.variant === variant);
 
@@ -54,6 +55,15 @@ async function toggleFavorite(pid: string, variant: string, uid?: string | numbe
 export function installViewerActions() {
   Object.assign(viewerActions, {
     myItemFor, showcaseHas, toggleShowcase, openDrawing, openScratch, isFavorite, toggleFavorite,
+    openStickers(uid: number) {
+      closeViewer();
+      openStickerEditor(uid);
+    },
+    openArenaStats(pid: string) {
+      closeViewer();
+      S.arenaCard = pid;
+      touch();
+    },
     openReport(pid: string, variant: string) {
       closeViewer();
       S.reportCard = { pid, variant };

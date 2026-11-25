@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Crown, HelpCircle, ImagePlus, Pin, Trophy, UserCheck } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
@@ -15,6 +15,8 @@ import { Button } from '../../ui/Button';
 import { Tabs } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
 import { Avatar } from '../../ui/UserLink';
+import { ServiceBadge } from '../exp/LevelPage';
+import { mergePlaced } from '../stickers/stickers';
 import { Binder, collectedOwned, type BinderOwned } from '../binder/BinderPage';
 import { PatchNotes } from '../notices/Notices';
 import { AvatarPicker, EmailDialog, PasswordDialog } from './Account';
@@ -94,6 +96,7 @@ export function ProfilePage() {
     [fmt(u.value), 'wartość kolekcji'], [`${u.unique}/${Object.keys(S.cfg.people).length}`, 'unikalne karty'], [u.total, 'wszystkie karty'],
     [d.stats.opened, 'otwarte skrzynki'], [d.stats.contracts, 'kontrakty'], [`${d.stats.upgradesWon}/${d.stats.upgradesLost}`, 'ulepszenia W/P']
   ];
+  mergePlaced(d.stickers);   // naklejki na kartach z gabloty (także cudzej): rysują je same karty
   const slots = Array.from({ length: S.cfg.showcaseSize }, (_, i) => d.showcase[i]);
 
   return (
@@ -103,6 +106,12 @@ export function ProfilePage() {
         <div className={s.info}>
           <h2>{u.username} {u.isAdmin && <Crown size={20} aria-label="Admin" />}</h2>
           <div className="muted small">gracz od {new Date(u.created * 1000).toLocaleDateString('pl-PL')}</div>
+          {d.exp && (
+            <div className={s.levelRow}>
+              {mine ? <Link to="/level" className={s.lvChip} title="Poziom, nagrody i odznaki">Level {d.exp.level} · poziom i nagrody</Link> : <span className={s.lvChip}>Level {d.exp.level}</span>}
+              {d.exp.badge && <span className={s.svc}><ServiceBadge year={d.exp.badge.year} tier={d.exp.badge.tier} className={s.svcArt} />Za służbę w roku {d.exp.badge.year} ({d.exp.badge.name})</span>}
+            </div>
+          )}
           <div className={s.stats}>{stats.map(([v, l]) => <span key={l}><b>{v}</b>{l}</span>)}</div>
         </div>
         <div className={s.headBtns}>
@@ -117,7 +126,7 @@ export function ProfilePage() {
           {d.relation === 'outgoing' && <><span className={s.tag}><Clock size={15} aria-hidden="true" /> Zaproszenie wysłane</span><Button onClick={remove}>Anuluj</Button></>}
           {d.relation === 'incoming' && <Button kind="hue" onClick={() => act(() => api('/api/friends/respond', { username: u.username, accept: true }), 'Nowy znajomy')}>Przyjmij zaproszenie</Button>}
           {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button><Button onClick={remove}>Usuń ze znajomych</Button></>}
-          {!mine && S.cfg.arena && u.isAdmin && <Button title="Arena jest na razie tylko dla adminów" onClick={() => import('../arena/arena').then(m => m.arChallenge(u.username))}>Wyzwij na pojedynek</Button>}
+          {!mine && S.cfg.arena && (S.cfg.arena.public || u.isAdmin) && <Button onClick={() => import('../arena/arena').then(m => m.arChallenge(u.username))}>Wyzwij na pojedynek</Button>}
         </div>
       </section>
 

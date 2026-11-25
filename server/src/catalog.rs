@@ -1270,3 +1270,9 @@ mod tests {
         assert_eq!(rotation(&ids[..2], 2, day).len(), 2);
     }
 }
+
+/// Karta do testów (z samą rzadkością)
+#[cfg(test)]
+pub fn tests_person(id: &str, rarity: &str) -> Person {
+    check_card(id.into(), RawCard { name: id.into(), rarity: Some(rarity.into()), ..RawCard::default() }, &IndexMap::new())
+}

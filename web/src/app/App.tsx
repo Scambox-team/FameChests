@@ -32,8 +32,14 @@ import { Stage } from '../features/crates/Stage';
 import { Notices, showChristmas, showMessages, showReferral, showTerms, startNotices } from '../features/notices/Notices';
 import { LEGAL_PATHS, LegalPage } from '../features/legal/LegalPages';
 import { ReportDialog } from '../features/legal/ReportDialog';
+import { ArenaStatsDialog } from '../features/arena/ArenaStatsDialog';
 import { RenderCard } from '../features/render/RenderCard';
 import { achPoll } from '../features/achievements/popups';
+import { expHeader, noteExp } from '../features/exp/exp';
+import { LevelPage } from '../features/exp/LevelPage';
+import { ExpChoiceHost } from '../features/exp/ExpChoice';
+import { StickerEditorHost } from '../features/stickers/StickerEditor';
+import { StickerRevealHost } from '../features/stickers/StickerReveal';
 import { onResponseHeaders } from '../api/client';
 import { AppShell } from './AppShell';
 import styles from './App.module.css';
@@ -44,6 +50,7 @@ function onMe(me: any) {
   noteQuest(me.quest);
   noteCtf(me.ctf);
   noteUfo(me);
+  noteExp(me.exp);
   noteMarketBonus(me.marketBonus);
   if (me.horseNews?.length) import('../features/casino/horsesEngine').then(m => m.hrNews(me.horseNews));
   if (me.achUnseen && !S.opening) achPoll();
@@ -64,15 +71,16 @@ function Game() {
   useEffect(() => {
     let stop: undefined | (() => void), alive = true;
     openingHooks.bibiPlay = bibiPlay;
-    onResponseHeaders({ achievements: achPoll, bibi: bibiQueue });
+    onResponseHeaders({ achievements: achPoll, bibi: bibiQueue, exp: expHeader });
     boot().then(me => {
       if (!alive) return;
       noteQuest(me.quest);
       noteCtf(me.ctf);
       noteUfo(me);
+      noteExp(me.exp);
       noteMarketBonus(me.marketBonus);
       startNotices(me);
-      if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena tylko dla adminów: reszta graczy nie pyta serwera o wyzwania ani nie pobiera jej kodu
+      if (S.cfg.arena) import('../features/arena/arena').then(m => m.startArena());   // Arena: tylko gracze z dostępem (admini albo „Arena dla wszystkich”) pytają serwer o wyzwania i pobierają jej kod
       if (me.jackpot) setTimeout(() => showJackpotResult(me.jackpot), 600);
       if (me.achUnseen) setTimeout(achPoll, 2500);   // zdobyte, gdy nie było mnie w grze
       stop = startPolling(onMe);
@@ -104,6 +112,7 @@ function Game() {
           <Route path="/games/:tab/:sub" element={<ChessPage />} />
           <Route path="/passport" element={<PassportPage />} />
           <Route path="/quests" element={<QuestsPage />} />
+          <Route path="/level" element={<LevelPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/ranking/:tab" element={<RankingPage />} />
@@ -115,8 +124,12 @@ function Game() {
       </Suspense>
       <Stage />
       <Notices />
+      <ExpChoiceHost />
+      <StickerEditorHost />
+      <StickerRevealHost />
       <ShareDialog />
       <ReportDialog />
+      {game.cfg?.arena && <ArenaStatsDialog />}
     </AppShell>
   );
 }

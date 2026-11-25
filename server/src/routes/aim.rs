@@ -77,6 +77,9 @@ pub async fn aim_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
         .bind(req.run)
         .execute(&mut *tx)
         .await?;
+    if verified {
+        crate::exp::award(&mut tx, me.id, "aim", 1).await?;
+    }
     tx.commit().await?;
     ok(json!({"verified": verified, "reason": reason, "score": score, "hits": hits, "shots": shots}))
 }

@@ -524,6 +524,13 @@ tokio::task_local! {
 struct Flags {
     ach: Cell<bool>,
     bibi: Cell<bool>,
+    /// EXP przyznany w tym zapytaniu: (gracz, ile) - warstwa dopisuje X-Exp dla zalogowanego
+    exp: std::cell::RefCell<Vec<(i64, i64)>>,
+}
+
+/// EXP przyznany graczowi w tym zapytaniu (`exp::award`): po zapytaniu warstwa rozliczy levele, a nagłówek X-Exp da znać przeglądarce
+pub fn mark_exp(uid: i64, amount: i64) {
+    let _ = FLAGS.try_with(|f| f.exp.borrow_mut().push((uid, amount)));
 }
 
 /// Po zapytaniu trzeba sprawdzić osiągnięcia zalogowanego gracza
@@ -611,6 +618,7 @@ pub async fn count_casino(c: &mut Conn, uid: i64, game: &str, won: Option<bool>,
         keys.extend(win_events(game, cards));
     }
     count(c, uid, ones(keys)).await?;
+    crate::exp::casino(c, uid, game, won, !cards.is_empty()).await?;
     let Some(won) = won else { return Ok(()) };
     for g in ["any", game] {
         let streak = format!("streak:{g}");
@@ -812,6 +820,7 @@ async fn award(st: &AppState, user: User) -> anyhow::Result<bool> {
             .rows_affected();
             if added == 1 {
                 grant(&mut tx, &cx, d).await?;
+                crate::exp::award(&mut tx, uid, "achievement", 1).await?;
                 new = true;
             }
         }
@@ -825,11 +834,11 @@ async fn award(st: &AppState, user: User) -> anyhow::Result<bool> {
 pub async fn layer(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let is_me = req.uri().path() == "/api/me";
     let jar = SignedCookieJar::from_headers(req.headers(), st.cookie_key.clone());
-    let (mut resp, ach, bibi) = FLAGS
+    let (mut resp, ach, bibi, exp) = FLAGS
         .scope(Flags::default(), async {
             let resp = next.run(req).await;
-            let (ach, bibi) = FLAGS.with(|f| (f.ach.get(), f.bibi.get()));
-            (resp, ach, bibi)
+            let (ach, bibi, exp) = FLAGS.with(|f| (f.ach.get(), f.bibi.get(), f.exp.take()));
+            (resp, ach, bibi, exp)
         })
         .await;
     if resp.status().as_u16() >= 400 {
@@ -838,16 +847,20 @@ pub async fn layer(State(st): State<AppState>, req: Request, next: Next) -> Resp
     if bibi {
         resp.headers_mut().insert("X-Bibi", HeaderValue::from_static("1"));
     }
-    if !(ach || is_me) {
+    if !(ach || is_me || !exp.is_empty()) {
         return resp;
     }
     let Some(uid) = session_uid(&jar) else { return resp };
     let result = async {
-        let user = user_by_id(&mut *st.db.acquire().await?, uid).await?;
-        match user.filter(|u| u.banned == 0) {
-            Some(u) => award(&st, u).await,
-            None => Ok(false),
+        let user = user_by_id(&mut *st.db.acquire().await?, uid).await?.filter(|u| u.banned == 0);
+        let Some(u) = user else { return anyhow::Ok(false) };
+        let new = if ach || is_me { award(&st, u.clone()).await? } else { false };
+        // osiągnięcia mogły dać EXP, a nowe levele - nagrody (które z kolei mogą dać kolejne osiągnięcie)
+        if crate::exp::settle(&st, &u).await? {
+            award(&st, u).await?;
+            return Ok(true);
         }
+        Ok(new)
     }
     .await;
     match result {
@@ -856,6 +869,13 @@ pub async fn layer(State(st): State<AppState>, req: Request, next: Next) -> Resp
         }
         Ok(false) => {}
         Err(e) => tracing::error!("osiągnięcia: {e:#}"),
+    }
+    // EXP z tego zapytania: przeglądarka pokazuje „+N EXP” i odświeża pasek
+    let gained: i64 = exp.iter().filter(|(u, _)| *u == uid).map(|(_, n)| n).sum();
+    if gained > 0 {
+        if let Ok(v) = HeaderValue::from_str(&gained.to_string()) {
+            resp.headers_mut().insert("X-Exp", v);
+        }
     }
     resp
 }

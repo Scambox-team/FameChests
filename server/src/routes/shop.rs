@@ -113,6 +113,8 @@ pub struct ConfigResponse<'a> {
     /// warianty: ustawienia i wydarzenia, kreator, naklejki, easter egg (routes/variants.rs)
     #[serde(flatten)]
     variant_extras: serde_json::Map<String, Value>,
+    /// skrzynki z naklejkami (rodzaj w ekwipunku `sticker_<id>`) - do rysowania w ekwipunku
+    sticker_crates: Value,
 }
 
 pub async fn config(State(st): State<AppState>, Me(me): Me) -> Res {
@@ -138,10 +140,7 @@ pub async fn config(State(st): State<AppState>, Me(me): Me) -> Res {
             },
         );
     }
-    let arena = cx.me.admin().then(|| {
-        json!({"rules": g.arena_json, "effects": g.arena_effects_json, "visuals": g.arena_visuals,
-               "targets": g.arena_targets, "effectTargets": g.arena_effect_targets})
-    });
+    let arena = super::arena::has_access(&cx.me).then(super::arena::config_json);
     ok(ConfigResponse {
         rarities: &g.rarities_json,
         rarity_order: &g.rarity_order,
@@ -177,6 +176,7 @@ pub async fn config(State(st): State<AppState>, Me(me): Me) -> Res {
         special_sources: &g.special_sources_json,
         casino_special: &g.casino_special_json,
         variant_extras: super::variants::config_extras(&cx.st, &cx.cat, cx.me.admin()),
+        sticker_crates: super::stickers::crates_json(),
     })
 }
 
@@ -311,6 +311,9 @@ pub async fn open_crates(State(st): State<AppState>, Me(me): Me, JsonBody(req): 
     let persons: Vec<String> = drops.iter().map(|d| d.person.clone()).collect();
     crate::achievements::count_open(&mut tx, cx.uid(), &cr.id, req.count, &persons).await?;
     super::piggy::add(&mut tx, cx.uid(), super::piggy::Ev::Crates(cr.price * req.count)).await?;
+    if cr.price > 0 {
+        crate::exp::award(&mut tx, cx.uid(), "open", req.count).await?;   // EXP tylko za skrzynki, które coś kosztują
+    }
     let state = get_state(&mut tx, cx.uid()).await?;
     let chests = get_chests(&mut tx, &cx.cat, cx.uid()).await?;
     tx.commit().await?;
@@ -427,6 +430,7 @@ pub async fn open_money_chest(State(st): State<AppState>, Me(me): Me, JsonBody(r
     add_chests(&mut tx, me.id, &key, -1).await?;
     add_state(&mut tx, me.id, "balance", amount).await?;
     add_state(&mut tx, me.id, "daily_total", amount).await?;
+    crate::exp::award(&mut tx, me.id, "open_money", 1).await?;
     let state = get_state(&mut tx, me.id).await?;
     let chests = get_chests(&mut tx, &cat, me.id).await?;
     tx.commit().await?;
@@ -573,6 +577,7 @@ async fn contract_exec(c: &mut Conn, cx: &Ctx, plan: &Plan) -> Res<ContractResul
     let variant = roll_variant(&variants, &Default::default(), factor);
     let item = insert_item(c, cx, &person_id, &variant, "contract").await?;
     add_state(c, cx.uid(), "contracts", 1).await?;
+    crate::exp::award(c, cx.uid(), "contract", 1).await?;
     metrics::counter!("scambox_forge_total", "kind" => "contract").increment(1);
     Ok(ContractResult { item, crate_id: crate_id.or(person_crate) })
 }
@@ -699,6 +704,7 @@ pub async fn upgrade(State(st): State<AppState>, Me(me): Me, JsonBody(req): Json
         (None, None, vec![])
     };
     add_state(&mut tx, cx.uid(), if win { "upgrades_won" } else { "upgrades_lost" }, 1).await?;
+    crate::exp::award(&mut tx, cx.uid(), "upgrade", 1).await?;
     let state = get_state(&mut tx, cx.uid()).await?;
     tx.commit().await?;
     metrics::counter!("scambox_forge_total", "kind" => if win { "upgrade_won" } else { "upgrade_lost" }).increment(1);
@@ -789,6 +795,7 @@ pub async fn daily_claim(State(st): State<AppState>, Me(me): Me) -> Res {
         return bad("Dzisiejsza skrzynka jest już odebrana");
     }
     add_chests(&mut tx, me.id, &format!("money_{kind}"), 1).await?;
+    crate::exp::award(&mut tx, me.id, "daily", 1).await?;
     let chests = get_chests(&mut tx, &cat, me.id).await?;
     let daily = daily_info(&mut tx, me.id).await?;
     tx.commit().await?;

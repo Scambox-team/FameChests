@@ -910,6 +910,7 @@ pub async fn market_wanted_fill(
     }
     give_items(&mut tx, &cx.cat, &[item_id], w.buyer_id, "transfer").await?;
     add_state(&mut tx, cx.uid(), "balance", after_fee(w.price)).await?;
+    crate::exp::market_trade(&mut tx, w.buyer_id, cx.uid()).await?;
     let state = get_state(&mut tx, cx.uid()).await?;
     tx.commit().await?;
     metrics::counter!("scambox_market_trades_total", "kind" => "wanted").increment(1);

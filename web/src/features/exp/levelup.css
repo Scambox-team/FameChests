@@ -1,0 +1,17 @@
+/* Okienko „Nowy level” (levelup.ts) w kontenerze #achToasts z popups.css */
+.lvl-popup { width: min(340px, calc(100vw - 32px)); display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: var(--radius-m); background: var(--raised); box-shadow: 0 16px 40px #000b, inset 0 0 0 1px color-mix(in srgb, var(--hue) 55%, transparent); cursor: pointer; opacity: 0; transform: translateX(30px); transition: opacity .3s, transform .3s; }
+.lvl-popup.in { opacity: 1; transform: none; }
+.lvl-popup.out { opacity: 0; transform: translateX(30px); }
+.lvl-num { flex: none; width: 52px; height: 52px; display: grid; place-items: center; align-content: center; border-radius: 50%; background: var(--hue); color: var(--on-hue); line-height: 1; }
+.lvl-num small { font-size: 9px; letter-spacing: .12em; font-weight: 700; opacity: .85; }
+.lvl-num b { font: 800 22px var(--display); }
+.lvl-max .lvl-num { width: 64px; height: 80px; border-radius: 0; background: none; }
+.lvl-num .svc-badge { width: 64px; height: 80px; display: block; }
+.lvl-txt { display: flex; flex-direction: column; min-width: 0; }
+.lvl-txt small { color: var(--muted); font-size: 12px; }
+.lvl-txt b { font-size: 16px; overflow-wrap: anywhere; }
+.lvl-txt span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.lvl-txt em { font-style: normal; font-size: 12px; color: var(--warn); }
+@media (prefers-reduced-motion: reduce) {
+  .lvl-popup { transition: opacity .2s; transform: none; }
+}

@@ -1,0 +1,19 @@
+/* Pasek EXP w górnym pasku (komputer) i nagłówku telefonu */
+.xbar { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 5px; border-radius: 999px; background: var(--raised); color: var(--text); font-size: 12px; white-space: nowrap; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 5%, transparent); transition: background .12s; }
+.xbar:hover { background: color-mix(in srgb, var(--raised) 80%, var(--hue)); }
+.xlv { flex: none; min-width: 30px; height: 30px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: var(--hue); color: var(--on-hue); font: 800 14px/1 var(--display); font-variant-numeric: tabular-nums; }
+.xtrack { flex: none; width: 92px; height: 7px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 13%, transparent); }
+.xtrack i { display: block; height: 100%; border-radius: inherit; background: var(--hue); transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+.xtxt { color: var(--muted); font-variant-numeric: tabular-nums; }
+.xmax .xtrack i { background: linear-gradient(90deg, #e5b94a, #fff0b8, #e5b94a); }
+.xgain { position: absolute; left: 50%; top: 100%; margin-top: 4px; transform: translateX(-50%); padding: 2px 9px; border-radius: 999px; background: var(--hue); color: var(--on-hue); font: 700 12px/18px var(--body); pointer-events: none; z-index: 6; animation: expGain 2.4s ease-out forwards; }
+@keyframes expGain { 0% { opacity: 0; transform: translate(-50%, -6px); } 12% { opacity: 1; transform: translate(-50%, 0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 6px); } }
+.xcompact { height: 34px; gap: 6px; padding: 0 8px 0 3px; }
+.xcompact .xlv { min-width: 26px; height: 26px; font-size: 13px; }
+.xcompact .xtrack { width: 44px; }
+@media (max-width: 380px) { .xcompact .xtrack { width: 28px; } }
+@media (prefers-reduced-motion: reduce) {
+  .xtrack i { transition: none; }
+  .xgain { animation: expGainFade 2.4s linear forwards; transform: translateX(-50%); }
+}
+@keyframes expGainFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }

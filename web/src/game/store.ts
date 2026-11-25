@@ -11,6 +11,8 @@ export interface Store {
   showcase: number[];
   shareCard?: { pid: string; variant: string } | null;
   reportCard?: { pid: string; variant: string } | null;
+  /** karta w oknie „Statystyki areny” */
+  arenaCard?: string | null;
   chests: Record<string, number>;
   drawn: Set<number>;
   scratched: Set<number>;

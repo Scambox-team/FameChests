@@ -6,6 +6,7 @@ pub mod account_mail;
 pub mod admin;
 pub mod mail_admin;
 pub mod arena;
+pub mod arena_admin;
 pub mod backups;
 pub mod cards_io;
 pub mod arcade;
@@ -33,6 +34,8 @@ pub mod roles;
 pub mod shop;
 pub mod christmas;
 pub mod events;
+pub mod stickers;
+pub mod exp;
 pub mod snake;
 pub mod turbo_run;
 pub mod themes;
@@ -129,6 +132,9 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/games", get(admin_page))
         .route("/admin/events", get(admin_page))
         .route("/admin/passport", get(admin_page))
+        .route("/admin/gstickers", get(admin_page))
+        .route("/admin/exp", get(admin_page))
+        .route("/admin/arena", get(admin_page))
         .route("/admin/referrals", get(admin_page))
         // polecenia: link /r/<kod> działa bez logowania
         .route("/r/{code}", get(referral::ref_landing))
@@ -301,6 +307,23 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/ctf", get(ctf::admin_ctf).post(ctf::admin_ctf_save))
         .route("/api/quests/ctf", get(ctf::ctf_detail).post(ctf::ctf_submit))
         .route("/api/games/ranking", get(game_rankings::game_ranking))
+        .route("/api/stickers", get(stickers::stickers_me))
+        .route("/api/stickers/open", post(stickers::stickers_open))
+        .route("/api/stickers/attach", post(stickers::sticker_attach))
+        .route("/api/stickers/update", post(stickers::sticker_update))
+        .route("/api/stickers/detach", post(stickers::sticker_detach))
+        .route("/gsticker/{id}", get(stickers::sticker_image))
+        .route("/api/admin/gstickers", get(stickers::admin_stickers))
+        .route("/api/admin/gstickers/save", post(stickers::admin_sticker_save))
+        .route("/api/admin/gstickers/{id}/delete", post(stickers::admin_sticker_delete))
+        .route("/api/admin/gstickers/crates", post(stickers::admin_sticker_crates))
+        .route("/api/exp", get(exp::exp_page))
+        .route("/api/exp/progress", get(exp::exp_progress))
+        .route("/api/exp/pop", post(exp::exp_pop))
+        .route("/api/exp/choices", get(exp::exp_choices))
+        .route("/api/exp/choose", post(exp::exp_choose))
+        .route("/api/admin/exp", get(exp::admin_exp).post(exp::admin_exp_save))
+        .route("/api/admin/exp/grant", post(exp::admin_exp_grant))
         .route("/api/passport", get(passport::passport))
         .route("/api/passport/locate", post(passport::locate))
         .route("/api/passport/{code}", get(passport::stamp_holders))
@@ -357,7 +380,13 @@ pub fn router(st: AppState) -> Router {
         .route("/api/items/{id}/scratch", post(scratch::scratch_item))
         .route("/api/items/{id}/unwrap", post(gift::unwrap_item))
         .route("/api/items/{id}/rewrap", post(gift::rewrap_item))
-        // arena (tylko admini)
+        // arena (admini, a po włączeniu w panelu wszyscy gracze)
+        .route("/api/arena/card/{pid}", get(arena_card))
+        .route("/api/admin/arena", get(arena_admin::admin_arena))
+        .route("/api/admin/arena/settings", post(arena_admin::admin_arena_settings))
+        .route("/api/admin/arena/meta", post(arena_admin::admin_arena_meta))
+        .route("/api/admin/arena/card/{pid}", post(arena_admin::admin_arena_card))
+        .route("/api/admin/arena/apply", post(arena_admin::admin_arena_apply))
         .route("/api/arena/inbox", get(arena_inbox))
         .route("/api/arena/start", post(arena_start))
         .route("/api/arena/battle/{bid}", get(arena_battle))

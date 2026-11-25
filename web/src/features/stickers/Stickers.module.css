@@ -1,0 +1,48 @@
+/* Naklejki dla graczy: edytor naklejania, wynik otwarcia skrzynki, zakładka w ekwipunku.
+   Nazwy klas nie mogą pokrywać się z tymi, które łapią motywy ([class*="_on_"], _side_, _grid_, _tile_...). */
+.layout { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+.stageBox { flex: 0 0 min(320px, 100%); display: flex; flex-direction: column; gap: 8px; }
+.preview { position: relative; width: 100%; touch-action: none; user-select: none; }
+.panelSide { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.panelSide h3 { margin: 6px 0 0; font-size: 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chipBtn { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 2px solid transparent; border-radius: 999px; background: var(--raised); color: inherit; font: inherit; cursor: pointer; }
+.chipBtn.active { border-color: var(--hue); }
+.chipBtn small { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thumb { width: 34px; height: 34px; display: grid; place-items: center; flex: none; }
+.thumb :global(.gst-tile) { width: 100%; }
+.controls { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-m); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.controls label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.controls input[type="range"] { flex: 1; min-width: 0; }
+.line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text) !important; }
+.inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding: 2px; }
+.invItem { padding: 8px; border: 0; border-radius: var(--radius-s); background: var(--raised); cursor: pointer; display: grid; place-items: center; }
+.invItem:hover:not(:disabled) { background: color-mix(in srgb, var(--hue) 22%, var(--raised)); }
+.invItem:disabled { opacity: .45; cursor: not-allowed; }
+.inv > span { grid-column: 1 / -1; }
+.dirty { padding: 4px 12px; border-radius: 999px; background: var(--hue); color: var(--on-hue); font-weight: 600; font-size: 13px; }
+.pickGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.pickCard { width: 100%; padding: 0; border: 2px solid transparent; border-radius: 12px; background: none; cursor: pointer; }
+.pickCard:hover { border-color: var(--hue); }
+
+/* wynik otwarcia skrzynki */
+.revealGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.drop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; border-radius: var(--radius-m); background: var(--raised); text-align: center; opacity: 0; transform: translateY(14px) scale(.92); animation: dropIn .5s cubic-bezier(.2, .9, .3, 1.2) forwards; animation-delay: calc(var(--i) * .12s); box-shadow: inset 0 0 0 2px var(--rc, transparent); }
+.drop .art { width: 100%; max-width: 110px; }
+.drop b { font-size: 14px; overflow-wrap: anywhere; }
+.drop small { color: var(--muted); }
+.rar { color: var(--rc); font-weight: 600; font-size: 12px; }
+.varTag { position: absolute; top: 8px; right: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--text) 14%, transparent); font-size: 11px; }
+@keyframes dropIn { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 1; transform: none; } }
+
+/* zakładka Naklejki w ekwipunku */
+.switcher { margin-bottom: 4px; }
+.counts { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 10px; border-radius: var(--radius-m); background: var(--surface); box-shadow: inset 0 0 0 2px var(--rc, transparent); text-align: center; }
+.item .art { width: 100%; max-width: 100px; }
+.item b { font-size: 14px; overflow-wrap: anywhere; }
+.empty { grid-column: 1 / -1; color: var(--muted); }
+@media (max-width: 820px) { .stageBox { flex-basis: 100%; max-width: 360px; margin-inline: auto; } }

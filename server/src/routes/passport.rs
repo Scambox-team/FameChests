@@ -219,6 +219,7 @@ pub async fn locate(
         return ok(json!({"country": code, "new": false, "count": count}));
     }
     // nagroda za pierwsze zdobycie stempla, w tej samej transakcji
+    crate::exp::award(&mut tx, me.id, "passport", 1).await?;
     let rewards = stamp_rewards(&mut tx, &cat, code).await?;
     if !rewards.is_empty() {
         grant_rewards(&mut tx, &cx, &rewards, "passport").await?;

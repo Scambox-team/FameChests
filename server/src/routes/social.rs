@@ -659,6 +659,7 @@ async fn trade_accept(st: AppState, me: User, tid: i64) -> Res {
         }
     }
     sqlx::query!("UPDATE trades SET status = 'accepted', updated_at = $1 WHERE id = $2", now(), tid).execute(&mut *tx).await?;
+    crate::exp::trade_done(&mut tx, t.from_id, t.to_id).await?;
     tx.commit().await?;
     let mut c = st.db.acquire().await?;
     ok(json!({"ok": true, "state": get_state(&mut c, me.id).await?, "items": my_items(&mut c, &cat, me.id).await?,
@@ -779,6 +780,11 @@ struct ProfileResponse {
     showcase: Vec<ItemJson>,
     /// karty „Czysta kartka” gracza (każda ze swoim rysunkiem)
     drawings: Vec<ItemJson>,
+    /// naklejki naklejone na karty z gabloty: numer karty -> położenia
+    stickers: serde_json::Map<String, Value>,
+    /// level konta (EXP) i rok odznaki „za służbę” (level 100)
+    #[serde(rename = "exp")]
+    exp: Value,
 }
 
 pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<String>) -> Res {
@@ -830,8 +836,16 @@ pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<St
         },
         collection,
         collected,
+        stickers: {
+            let ids: Vec<i64> = showcase.iter().map(|i| i.id).collect();
+            super::stickers::placed_for(&mut c, &ids).await?
+        },
         showcase,
         drawings,
+        exp: {
+            let (level, badge) = crate::exp::levels_of(&mut c, &[u.id]).await?.get(&u.id).cloned().unwrap_or((1, None));
+            json!({"level": level, "badge": badge})
+        },
     })
 }
 
@@ -842,6 +856,9 @@ struct RankingPlayer {
     opened: i64,
     friend: bool,
     me: bool,
+    level: i64,
+    #[serde(rename = "serviceBadge")]
+    service_badge: Option<Value>,
 }
 
 pub async fn ranking(State(st): State<AppState>, Me(me): Me) -> Res {
@@ -859,13 +876,20 @@ pub async fn ranking(State(st): State<AppState>, Me(me): Me) -> Res {
     let users = sqlx::query_as!(User, "SELECT * FROM users WHERE banned = 0 AND ranking_hidden = 0 AND money_generated = 0")
         .fetch_all(&mut *c)
         .await?;
+    let ids: Vec<i64> = users.iter().map(|u| u.id).collect();
+    let levels = crate::exp::levels_of(&mut c, &ids).await?;
     let players: Vec<RankingPlayer> = users
         .iter()
-        .map(|u| RankingPlayer {
-            brief: UserBrief::new(&cat, u, &stats),
-            opened: opened.get(&u.id).copied().unwrap_or(0),
-            friend: friends.contains(&u.id),
-            me: u.id == me.id,
+        .map(|u| {
+            let (level, badge) = levels.get(&u.id).cloned().unwrap_or((1, None));
+            RankingPlayer {
+                brief: UserBrief::new(&cat, u, &stats),
+                opened: opened.get(&u.id).copied().unwrap_or(0),
+                friend: friends.contains(&u.id),
+                me: u.id == me.id,
+                level,
+                service_badge: badge,
+            }
         })
         .collect();
     let accounts = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!" FROM users"#).fetch_one(&mut *c).await?;
@@ -958,6 +982,8 @@ struct MeResponse {
     messages: Vec<AdminMessage>,
     /// osiągnięcia zdobyte, a jeszcze niepokazane (np. przyznane przy zapytaniu bez nagłówka X-Ach) - achPoll
     ach_unseen: i64,
+    /// EXP i level gracza (pasek w górnym pasku), `unseen` = nowe levele do pokazania
+    exp: Value,
     /// rozliczone zakłady na wyścigi konne, których gracz jeszcze nie widział
     horse_news: Vec<Value>,
     /// gracz nie zaakceptował aktualnej wersji regulaminu (okienko z akceptacją)
@@ -989,6 +1015,9 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
     let cx = Ctx::new(st.clone(), me);
     settle_market(&st.db, &cx.cat).await?; // licytacje kończą się na czas
     super::christmas::settle_due(&st).await; // choinka po evencie świątecznym rozlicza się raz
+    if let Err(e) = crate::exp::settle(&st, &cx.me).await {
+        tracing::error!("EXP: {e:#}");   // poziom nigdy nie psuje /api/me
+    }
     super::horses::settle_my_horses(&cx).await?;
     let mut c = st.db.acquire().await?;
     let uid = cx.uid();
@@ -1046,6 +1075,7 @@ pub async fn me(State(st): State<AppState>, Me(me): Me, jar: SignedCookieJar) ->
         patch_notes: crate::data::base_game().patch_notes.iter().filter(|n| n["v"].as_i64().unwrap_or(0) > seen).take(3).collect(),
         messages: active_messages(&mut c, &st, uid).await?,
         ach_unseen: crate::achievements::unseen(&mut c, uid).await?,
+        exp: crate::exp::me_view(&mut c, uid).await?,
         horse_news: super::horses::horse_news(&mut c, uid).await?,
         referral: super::referral::notes(&mut c, &cx.cat, uid).await?,
         christmas: super::christmas::notes(&mut c, &cx.cat, uid).await?,

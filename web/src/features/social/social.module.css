@@ -85,6 +85,14 @@
 .rankOthers { margin: 10px 4px 2px; color: var(--muted); font: 600 13px var(--body); }
 
 .head { flex-direction: row; align-items: center; gap: 20px; flex-wrap: wrap; }
+.levelRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 6px; }
+.lvChip { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px; background: var(--hue); color: var(--on-hue); font: 700 13px var(--body); }
+.svc { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.svcArt { display: block; width: 36px; height: 45px; flex: none; }
+.svcArt svg { width: 100%; height: 100%; display: block; }
+.rankLv { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--text) 9%, transparent); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rankSvc { display: inline-block; width: 18px; height: 22px; vertical-align: middle; margin-left: 6px; }
+.rankSvc svg { width: 100%; height: 100%; display: block; }
 .bigAvatar { flex: none; width: 96px; height: 96px; padding: 0; border: 0; border-radius: var(--radius); background: var(--raised); overflow: hidden; display: grid; place-items: center; cursor: pointer; }
 .bigAvatar:disabled { cursor: default; opacity: 1; }
 .bigAvatar :global(.av-card), .bigAvatar :global(.av-card img) { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }

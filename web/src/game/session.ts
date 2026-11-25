@@ -7,6 +7,7 @@ import { S, touch } from './store';
 import type { Config, StateResponse } from './types';
 import { applyDefaultTheme, enforceThemes } from '../styles/theme';
 import { toast } from '../ui/Toaster';
+import type { StkData } from '../features/stickers/stickers';
 
 function applyStateResponse(st: StateResponse) {
   S.state = st.state;
@@ -43,8 +44,9 @@ export async function refreshConfig() {
 export async function boot() {
   for (let attempt = 0; ; attempt++) {
     try {
-      const [me, cfg, st] = await Promise.all([api('/api/me'), api<Config>('/api/config'), api<StateResponse>('/api/state')]);
+      const [me, cfg, st, stk] = await Promise.all([api('/api/me'), api<Config>('/api/config'), api<StateResponse>('/api/state'), api<StkData>('/api/stickers').catch(() => null)]);
       S.cfg = cfg;
+      S.stk = stk;   // naklejki graczy: karty rysują swoje naklejki z S.stk.placed
       applyMe(me);
       applyStateResponse(st);
       S.collected = new Set((st.collected ?? []).map(([p, v]) => `${p}|${v}`));

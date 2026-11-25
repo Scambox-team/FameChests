@@ -16,6 +16,8 @@ import { Button } from '../../ui/Button';
 import { SearchField, Select } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
 import { ChestShelf } from './ChestShelf';
+import { StickersTab } from '../stickers/StickersTab';
+import { Tabs } from '../../ui/Field';
 import { ufoAbduct, ufoArrive, ufoLeave } from './ufo';
 import { VariantPicker, variantMatches, type VariantValue } from '../../ui/VariantPicker';
 import styles from './InventoryPage.module.css';
@@ -156,9 +158,14 @@ function MyCards() {
   );
 }
 
+// wybrana zakładka zostaje po wyjściu z ekranu
+let invTab: 'cards' | 'stickers' = 'cards';
+
 export function InventoryPage() {
   const { pathname } = useLocation();
   const game = useGame();
+  const [tab, setTab] = useState(invTab);
+  invTab = tab;
   useEffect(() => {
     document.title = 'Ekwipunek · ScamBox';
     ufoArrive();
@@ -172,7 +179,8 @@ export function InventoryPage() {
     <>
       <PageHero icon={Backpack} title="Twoje karty" lead="Wszystko, co masz: karty i skrzynki do otwarcia. Kliknij kartę, żeby ją zaznaczyć, ikoną obok, żeby ją obejrzeć."
         stats={[['Karty', game.items.length.toLocaleString('pl-PL')], ['Wartość', fmt(game.items.reduce((a, i) => a + i.value, 0))], ['Ulubione', String(game.items.filter(i => i.fav).length)]]} />
-      <MyCards />
+      <Tabs label="Ekwipunek" value={tab} onChange={setTab} items={[{ id: 'cards', label: 'Karty' }, { id: 'stickers', label: 'Naklejki', count: game.stk?.items.length }]} />
+      {tab === 'cards' ? <MyCards /> : <><ChestShelf /><StickersTab /></>}
     </>
   );
 }

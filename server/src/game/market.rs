@@ -14,6 +14,8 @@ use crate::game::{add_state, give_items, hidden_users, insert_for, item_by_id, i
 /// tę kartę w wariancie Paragon, a sprzedający w jednym z metali - losowo, wg szans tych wariantów w skrzynkach. Oba warianty
 /// wypadają stąd nawet wyłączone. Powiadomienie: market_bonuses, oddawane raz: kupującemu od razu w odpowiedzi na zakup albo przez /api/me.
 pub async fn market_bonus(c: &mut Conn, cat: &Catalog, buyer: i64, seller: i64, pid: &str) -> sqlx::Result<()> {
+    // jedno miejsce wszystkich zakupów na rynku (kupno, przyjęta propozycja, wygrana licytacja) - tu liczy się też EXP
+    crate::exp::market_trade(c, buyer, seller).await?;
     let m = &g().market;
     if cat.person(pid).is_none_or(|p| p.is_special()) || rand::random::<f64>() >= m.bonus_chance {
         return Ok(());

@@ -139,6 +139,19 @@ async fn finish(c: &mut Conn, x: &mut Game, winner: Option<Color>, reason: &str)
         add_chests(&mut *c, uid, chest, 1).await?;
         x.rewarded = 1;
     }
+    // EXP tylko za dość długie partie (jak nagroda): z człowiekiem - obie strony za udział, zwycięzca więcej; trening z botem - mało
+    if x.bot != TEST_BOT && x.moves().len() >= g().chess.min_plies {
+        for uid in [x.white_id, x.black_id].into_iter().flatten() {
+            if x.bot == 0 {
+                crate::exp::award(&mut *c, uid, "chess_play", 1).await?;
+                if x.winner_id == Some(uid) {
+                    crate::exp::award(&mut *c, uid, "chess_win", 1).await?;
+                }
+            } else {
+                crate::exp::award(&mut *c, uid, "chess_bot", 1).await?;
+            }
+        }
+    }
     save(c, x).await
 }
 

@@ -331,6 +331,7 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
         insert_plain(c, cx, pid, REWARD_VARIANT, "quest").await?;
         add_state(c, cx.uid(), "balance", money).await?;
         achievements::count_quest(c, cx.uid()).await?;
+        crate::exp::award(c, cx.uid(), "quest_wanted", 1).await?;
     }
     Ok(())
 }

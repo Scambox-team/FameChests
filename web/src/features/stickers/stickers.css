@@ -1,0 +1,40 @@
+/* Naklejki dla graczy (features/stickers/stickers.ts). Prefiks gst-: klasy us- należą do wariantu Amerykańska. Warianty naklejki to filtry na jednym PNG:
+   zwykła - bez efektu, foliowana - połysk przesuwający się po kształcie, holo - tęcza, złota - złoty odcień i błysk. Efekt jest przycięty maską do kształtu PNG. */
+.gst-layer { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+.gst-layer.gst-photo { z-index: 5; }
+.gst { position: absolute; left: var(--x); top: var(--y); width: var(--w); transform: translate(-50%, -50%) rotate(var(--r)) scaleX(var(--f)); isolation: isolate; pointer-events: none; filter: drop-shadow(0 1px 2px #0008); }
+.gst img { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
+.gst-fx { display: none; position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  -webkit-mask: var(--img) center / 100% 100% no-repeat; mask: var(--img) center / 100% 100% no-repeat; }
+.gst-foil .gst-fx, .gst-holo .gst-fx, .gst-gold .gst-fx { display: block; }
+.gst-fx::before { content: ""; position: absolute; inset: -10% -70%; will-change: transform; }
+
+/* foliowana: biały połysk przesuwa się po naklejce */
+.gst-foil img { filter: saturate(1.25) contrast(1.08) brightness(1.04); }
+.gst-foil .gst-fx::before { background: linear-gradient(105deg, transparent 38%, #ffffffb3 47%, #ffffff 50%, #ffffffb3 53%, transparent 62%); animation: gstSweep 3.6s ease-in-out infinite; }
+
+/* holo: tęcza przelewa się po naklejce */
+.gst-holo img { filter: saturate(1.15) contrast(1.05); }
+.gst-holo .gst-fx { mix-blend-mode: hard-light; opacity: .8; }
+.gst-holo .gst-fx::before { inset: 0; background: linear-gradient(115deg, #ff5fa2, #ffb347, #fff35c, #5cff9d, #4fc3ff, #a56bff, #ff5fa2, #ffb347, #fff35c); background-size: 220% 100%; will-change: background-position; animation: gstHolo 4.5s linear infinite; }
+
+/* złota: złoty odcień, poświata i błysk */
+.gst-gold { filter: drop-shadow(0 0 4px #ffcf4acc) drop-shadow(0 1px 2px #0008); }
+.gst-gold img { filter: sepia(1) saturate(3.6) hue-rotate(-12deg) brightness(1.08) contrast(1.15); }
+.gst-gold .gst-fx::before { background: linear-gradient(105deg, transparent 36%, #fff3a8cc 46%, #ffffff 50%, #fff3a8cc 54%, transparent 64%); animation: gstSweep 3s ease-in-out infinite; }
+
+@keyframes gstSweep { from { transform: translateX(-42%); } to { transform: translateX(42%); } }
+@keyframes gstHolo { from { background-position: 0 0; } to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .gst-fx::before { animation: none !important; }
+  .gst-foil .gst-fx::before, .gst-gold .gst-fx::before { transform: translateX(0); }
+}
+
+/* kafelek w ekwipunku, w wyniku otwarcia i w wyborze: układ statyczny */
+.gst.gst-tile { position: relative; left: auto; top: auto; width: 100%; transform: none; display: block; }
+
+/* edytor naklejania: naklejki da się chwytać i przeciągać */
+.gst-edit .gst { pointer-events: auto; cursor: grab; touch-action: none; }
+.gst-edit .gst-layer { pointer-events: none; }
+.gst-edit .gst.sel::after { content: ""; position: absolute; inset: -5px; border: 2px dashed var(--hue, #fff); border-radius: 6px; pointer-events: none; }
+.gst-edit.dragging .gst { cursor: grabbing; }

@@ -1,0 +1,11 @@
+.ars { display: grid; gap: 10px; }
+.ars h3 { margin: 6px 0 0; font-size: 15px; }
+.ars-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin: 0; }
+.ars-grid div { background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 10px; }
+.ars-grid dt { font-size: 12px; color: var(--muted); }
+.ars-grid dd { margin: 2px 0 0; font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+.ars-abs { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ars-abs li { background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 10px; font-size: 14px; line-height: 1.4; }
+.ars-kind { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--hue); margin-left: 4px; }
+.ars-muted { color: var(--muted); font-size: 13px; margin: 0; }
+.ars-err { color: var(--bad); }

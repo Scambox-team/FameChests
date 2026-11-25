@@ -147,6 +147,16 @@ pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Cat
     let mut tx = pool.begin().await?;
     crate::achievements::init(&mut tx, &cat).await?;
     tx.commit().await?;
+    // naklejki dla graczy: przykładowa skrzynka i naklejki (raz) + rejestr skrzynek w pamięci (przed EXP: pula ekskluzywna z leveli)
+    let mut tx = pool.begin().await?;
+    crate::stickers::init(&mut tx).await?;
+    tx.commit().await?;
+    // ustawienia EXP i leveli (panel admina) do pamięci procesu, stare dzienne limity EXP do kosza
+    let mut tx = pool.begin().await?;
+    crate::exp::init(&mut tx, &cat).await?;
+    tx.commit().await?;
+    // Arena: ustawienia, słowniki i statystyki kart do pamięci procesu
+    crate::arena::rules::load(&mut *pool.acquire().await?).await?;
     Ok(cat)
 }
 
