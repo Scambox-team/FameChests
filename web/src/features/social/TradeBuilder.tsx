@@ -17,11 +17,13 @@ import s from './social.module.css';
 const SORTS = CARD_SORTS.filter(([k]) => k !== 'new');
 const count = (n: number) => <span className="pc">×{n}</span>;
 
-function Builder({ username, prof, onClose, onSent }: { username: string; prof: any; onClose: () => void; onSent: () => void }) {
+type Want = { person: string; variant: string };
+
+function Builder({ username, prof, onClose, onSent, initialWant }: { username: string; prof: any; onClose: () => void; onSent: () => void; initialWant?: Want[] }) {
   useGame();
   const reveal = useMemo(() => ({ map: prof.reveal || {}, imgq: `owner=${encodeURIComponent(username)}` }), [prof, username]);
   const [give, setGive] = useState<number[]>([]);
-  const [want, setWant] = useState<Record<string, number>>({});
+  const [want, setWant] = useState<Record<string, number>>(() => Object.fromEntries((initialWant ?? []).filter(w => prof.collection.some((c: any) => c.person === w.person && c.variant === w.variant)).map(w => [`${w.person}|${w.variant}`, 1])));
   const [q, setQ] = useState({ mine: '', theirs: '' });
   const [sort, setSort] = useState({ mine: 'rarity', theirs: 'rarity' });
   const [message, setMessage] = useState('');
@@ -106,10 +108,11 @@ function Builder({ username, prof, onClose, onSent }: { username: string; prof: 
 }
 
 /** Okno budowania oferty wymiany ze znajomym */
-export function TradeBuilder({ username, onClose, onSent }: { username: string; onClose: () => void; onSent: () => void }) {
-  const { data, error } = useQuery({ queryKey: ['user', username], queryFn: () => api(`/api/users/${encodeURIComponent(username)}`) });
+export function TradeBuilder({ username, onClose, onSent, initialWant }: { username: string; onClose: () => void; onSent: () => void; initialWant?: Want[] }) {
+  // karty znajomego z jego ekwipunku (serwer pokazuje je tylko znajomym, którzy tego nie wyłączyli: inaczej błąd z wyjaśnieniem)
+  const { data, error } = useQuery({ queryKey: ['inventory', username], queryFn: () => api(`/api/users/${encodeURIComponent(username)}/inventory`), retry: false, staleTime: 0 });
   if (error) { toast(error.message, true); onClose(); return null; }
   if (!data) return null;
   if (data.relation !== 'friend') { toast('Wymieniać się możesz tylko ze znajomymi', true); onClose(); return null; }
-  return <Builder username={username} prof={data} onClose={onClose} onSent={onSent} />;
+  return <Builder username={username} prof={data} onClose={onClose} onSent={onSent} initialWant={initialWant} />;
 }

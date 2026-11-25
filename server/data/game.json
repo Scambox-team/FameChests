@@ -1069,6 +1069,8 @@
    "min": 10000,
    "max": 67000,
    "curve": 2.0,
+   "euroMin": 250,
+   "euroMax": 1000,
    "color1": "#ffd54a",
    "color2": "#8a5b00"
   },
@@ -1287,7 +1289,19 @@
    {"score": 175000, "rarity": "red"},
    {"score": 300000, "rarity": "gold"},
    {"score": 500000, "rarity": "ultra"}
-  ]
+  ],
+  "levelTierMult": [1.0, 0.95, 0.9, 0.85, 0.8]
+ },
+ "euro": {
+  "ratio": 0.02,
+  "chessWin": 25,
+  "scamroomsGr": 2000,
+  "scamroomsEuro": 40,
+  "scamroomsMinSeconds": 120,
+  "scamroomsDaily": 5,
+  "showcaseSlotPrice": 500,
+  "showcaseSlotStep": 250,
+  "showcaseMaxExtra": 10
  },
  "turbo": {
   "cardVariant": "rgb",
@@ -4085,6 +4099,29 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 37,
+   "date": "2026-11-25",
+   "title": "Euro i Sklep z kosmetykami",
+   "items": [
+    "<b>Euro</b> to nowa waluta, stoi obok groszy na pasku u góry i służy tylko do kupowania kosmetyków. Dostajesz ją ze wszystkich gier (zawsze mniej niż groszy z tego samego miejsca), z MEGA skrzynek (250-1000 euro obok groszy) i z nagród.",
+    "<b>Sklep</b> (nowa zakładka): tła miniprofilu, obramówki zdjęcia i tła profilu za euro. Szukaj po nazwie, filtruj po cenie, typie i kolorze. Zdobyte kosmetyki zakładasz w profilu, w „Wygląd profilu”. Czasem pojawią się pozycje limitowane czasowo albo ilościowo.",
+    "<b>Naklejki w Sklepie</b>: skrzynki z naklejkami kupisz teraz za euro (to główny sposób, żeby je zdobyć), a admin może wystawić też pojedyncze naklejki w wybranym wariancie. Naklejki nie zmieniają wartości karty, są widoczne na karcie u wszystkich i zostają na niej w tym samym miejscu przy wymianie i sprzedaży innemu graczowi.",
+    "<b>Zdjęcie profilowe</b> jako kosmetyk: własne grafiki (także animowane) kupisz w Sklepie, a zdjęcia z kart nadal są darmowe. W „Wygląd profilu” ustawisz też <b>opis i kraj</b> (darmowe), a w Sklepie dokupisz <b>dodatkowe miejsca w gablocie</b>.",
+    "<b>ScamRooms</b>: za przejście gry (wszystkie kasety i wyjście z lasu) dostajesz teraz 2000 gr i euro.",
+    "<b>Gry</b> płacą więcej groszy: Snake, Super Turbo Run, Obrona Orbity i AIMPULSE dają dwa do pięciu razy więcej niż wcześniej, żeby zarobki w podobnym czasie były podobne do Pinballa. Na wyższych poziomach Pinballa progi na karty są trochę niższe, a jego zakładka mieści się w oknie bez przewijania strony (przewija się tylko ranking)."
+   ]
+  },
+  {
+   "v": 36,
+   "date": "2026-11-25",
+   "title": "Miniprofile i kosmetyki profilu",
+   "items": [
+    "<b>Miniprofil</b>: najedź na nazwę gracza (na telefonie dotknij jej) w rankingu, rynku, wymianach, kasynie i wszędzie indziej, a zobaczysz jego level, odznakę za służbę, status online, kilka statystyk i szybkie akcje: dodaj do znajomych, wymiana, ekwipunek, profil.",
+    "<b>Ekwipunek znajomych</b>: możesz przejrzeć wszystkie karty znajomego (wyszukiwarka, rzadkość, wariant, sortowanie) i od razu zaproponować wymianę albo kupić wybraną kartę (zlecenie kupna trafia tylko do tego znajomego, twoje pieniądze są blokowane do jego odpowiedzi). W „Wygląd profilu” możesz ukryć swój ekwipunek przed znajomymi.",
+    "<b>Kosmetyki profilu</b>: tła miniprofilu, obramówki zdjęcia profilowego i tła całego profilu. Na początku masz tylko standardowy wygląd, resztę zdobywasz za questy, osiągnięcia, eventy, levele i odznakę za służbę. Zakładasz je w profilu, w przycisku „Wygląd profilu”."
+   ]
+  },
   {
    "v": 35,
    "date": "2026-11-25",

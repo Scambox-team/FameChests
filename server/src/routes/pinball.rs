@@ -22,7 +22,7 @@ use crate::catalog::Catalog;
 use crate::data::{g, CardTier};
 use crate::db::{lock_me, now};
 use crate::error::{bad, Res};
-use crate::game::{add_state, balance, insert_for};
+use crate::game::{add_state, balance, insert_for, pay_game_euro};
 use crate::pinball_sim::{self, TICK};
 use crate::live::Live;
 use crate::state::AppState;
@@ -44,7 +44,7 @@ fn info() -> serde_json::Value {
     let g = g();
     let cfg = &g.pinball;
     json!({"pointsPerGr": cfg.points_per_gr, "cardVariant": cfg.card_variant, "cardTiers": tiers_json(&cfg.card_tiers),
-           "levelMults": cfg.level_reward_mult})
+           "levelMults": cfg.level_reward_mult, "levelTierMults": cfg.level_tier_mult})
 }
 
 /// Karta za wynik: rzadkość z najwyższego osiągniętego progu, losowa ze skrzynek w rotacji (dziś w sklepie), a gdy
@@ -200,7 +200,7 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
     };
     // karta za wyjątkowy wynik: tylko przy poprawnie odtworzonej i dość długiej grze (bez limitu na dobę)
     let cat = st.cat();
-    let card_pid = if reason == "ok" { pick_card(&cat, &cfg.card_tiers, score) } else { None };
+    let card_pid = if reason == "ok" { pick_card(&cat, &cfg.card_tiers, cfg.tier_score(score, level_n)) } else { None };
     sqlx::query("UPDATE pinball_runs SET finished_at = $1, score = $2, reward = $3, card = $4, verified = $6 WHERE id = $5")
         .bind(now())
         .bind(score)
@@ -210,8 +210,10 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
         .bind(i32::from(reason == "ok"))
         .execute(&mut *tx)
         .await?;
+    let mut euro = 0;
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
+        euro = pay_game_euro(&mut tx, me.id, reward).await?;
         super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     }
     if reason == "ok" {
@@ -230,6 +232,7 @@ pub async fn pinball_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req
     let mut v = info();
     v["card"] = json!(card);
     v["reward"] = json!(reward);
+    v["euro"] = json!(euro);
     v["reason"] = json!(reason);
     v["score"] = json!(score);
     v["balance"] = json!(bal);
@@ -246,6 +249,20 @@ mod tests {
         assert_eq!(reward_for(5_000, 1), 5_000 / per);
         assert_eq!(reward_for(100_000_000, 1), 100_000_000 / per);
         assert_eq!(reward_for(-5, 1), 0);
+    }
+
+    #[test]
+    fn card_tiers_get_lower_on_higher_levels() {
+        let cfg = &g().pinball;
+        assert_eq!(cfg.level_tier_mult.len(), pinball_sim::level_count());
+        assert!(cfg.level_tier_mult.windows(2).all(|w| w[0] >= w[1]) && cfg.level_tier_mult.iter().all(|m| *m > 0.0 && *m <= 1.0), "progi tylko w dół");
+        assert_eq!(cfg.tier_score(50_000, 1), 50_000);
+        let first = cfg.card_tiers[0].score;
+        // poziom 5: karta za wynik niższy niż próg poziomu 1, ale nadal nie za darmo
+        let lowest = (first as f64 * cfg.tier_mult(5)).ceil() as i64;
+        assert!(lowest < first && cfg.tier_score(lowest, 5) >= first);
+        assert!(cfg.tier_score(lowest - 1, 5) < first);
+        assert_eq!(cfg.tier_score(first, 99), cfg.tier_score(first, 5), "poza listą obowiązuje ostatni");
     }
 
     #[test]

@@ -60,7 +60,7 @@ const TYPES: [(&str, &str); 8] = [
 const WEEKDAYS: [&str; 7] = ["poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"];
 const WEEKDAYS_IN: [&str; 7] =
     ["w poniedziałek", "we wtorek", "w środę", "w czwartek", "w piątek", "w sobotę", "w niedzielę"];
-const REWARD_TYPES: [(&str, &str); 3] = [("money", "Pieniądze"), ("chest", "Skrzynki"), ("card", "Karta")];
+const REWARD_TYPES: [(&str, &str); 5] = [("money", "Pieniądze"), ("euro", "Euro"), ("chest", "Skrzynki"), ("card", "Karta"), ("cosmetic", "Kosmetyk profilu")];
 const NAME_MAX: usize = 60;
 const DESC_MAX: usize = 300;
 const MAX_CRITERIA: usize = 2;
@@ -332,6 +332,11 @@ fn reward_text(r: &Value, names: &Names) -> String {
     match s(r, "type") {
         "money" => format!("{} gr", r.get("amount").and_then(Value::as_i64).unwrap_or(0)),
         "chest" => format!("{n}× {}", names.crate_(s(r, "kind"))),
+        "euro" => format!("{} euro", r.get("amount").and_then(Value::as_i64).unwrap_or(0)),
+        "cosmetic" => match crate::cosmetics::get(s(r, "id")) {
+            Some(c) => format!("{}: {}", c.kind.label(), c.name),
+            None => "Kosmetyk profilu".to_owned(),
+        },
         _ => {
             let v = s(r, "variant");
             let variant = if v.is_empty() || v == "normal" { String::new() } else { format!(" ({})", names.variant(v)) };
@@ -474,6 +479,16 @@ fn clean_reward(r: &Value, ctx: &CleanCtx) -> Result<Value, &'static str> {
                 return Err("Nagroda wskazuje nieistniejący wariant");
             }
             Ok(json!({"type": "card", "person": s(r, "person"), "variant": variant, "count": num(r.get("count"), 1, 100, 1)}))
+        }
+        "euro" => match num(r.get("amount"), 1, 1_000_000, 0) {
+            0 => Err("Podaj kwotę euro"),
+            amount => Ok(json!({"type": "euro", "amount": amount})),
+        },
+        "cosmetic" => {
+            if !crate::cosmetics::exists(s(r, "id")) {
+                return Err("Nagroda wskazuje kosmetyk, którego nie ma w katalogu");
+            }
+            Ok(json!({"type": "cosmetic", "id": s(r, "id")}))
         }
         _ => Err("Nieznany rodzaj nagrody"),
     }
@@ -772,6 +787,10 @@ pub async fn grant_rewards(c: &mut Conn, cx: &Ctx, list: &[Value], source: &str)
         match s(r, "type") {
             "money" => add_state(c, cx.uid(), "balance", r.get("amount").and_then(Value::as_i64).unwrap_or(0)).await?,
             "chest" if valid_chest_kind(&cx.cat, s(r, "kind")) => add_chests(c, cx.uid(), s(r, "kind"), n).await?,
+            "euro" => crate::game::add_euro(c, cx.uid(), r.get("amount").and_then(Value::as_i64).unwrap_or(0)).await?,
+            "cosmetic" => {
+                crate::cosmetics::unlock(c, cx.uid(), s(r, "id"), source).await?;
+            }
             "card" if cx.cat.has(s(r, "person")) => {
                 let v = s(r, "variant");
                 let variant = if g().variants.contains_key(v) { v } else { "normal" };
@@ -1062,7 +1081,7 @@ pub async fn admin_achievements(State(st): State<AppState>, Admin(_): Admin) -> 
     let rarities: Vec<Value> = g.rarities.iter().map(|(k, v)| json!({"id": k, "name": v.name})).collect();
     ok(json!({"list": list, "meta": {
         "types": pairs(&TYPES), "games": pairs(&GAMES), "rewardTypes": pairs(&REWARD_TYPES),
-        "people": people, "crates": crates, "chests": chests, "variants": variants, "rarities": rarities,
+        "people": people, "crates": crates, "chests": chests, "cosmetics": crate::cosmetics::options(), "variants": variants, "rarities": rarities,
         "weekdays": WEEKDAYS, "maxCriteria": MAX_CRITERIA, "maxRewards": MAX_REWARDS,
     }}))
 }

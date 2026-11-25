@@ -14,7 +14,11 @@ import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
 import { Tabs } from '../../ui/Field';
 import { toast } from '../../ui/Toaster';
-import { Avatar } from '../../ui/UserLink';
+import { FramedAvatar } from '../../ui/FramedAvatar';
+import { countryName, flagUrl } from '../profile/countries';
+import { useCosmeticSrc } from '../profile/cosmetics';
+import { FriendInventory } from '../profile/FriendInventory';
+import { StyleDialog } from '../profile/StyleDialog';
 import { ServiceBadge } from '../exp/LevelPage';
 import { mergePlaced } from '../stickers/stickers';
 import { Binder, collectedOwned, type BinderOwned } from '../binder/BinderPage';
@@ -23,6 +27,7 @@ import { AvatarPicker, EmailDialog, PasswordDialog } from './Account';
 import { ClaimReferral } from './ReferralPanel';
 import { TradeBuilder } from './TradeBuilder';
 import s from './social.module.css';
+import pf from './profilePage.module.css';
 
 function AchTile({ a }: { a: any }) {
   const hidden = a.hidden && !a.earned, bars = !a.earned ? a.progress ?? [] : [];
@@ -62,11 +67,12 @@ export function ProfilePage() {
   const game = useGame();
   const { name } = useParams();
   const username = name || game.me!.username;
-  const [dialog, setDialog] = useState<null | 'avatar' | 'password' | 'email' | 'trade' | { notes: any[] }>(null);
+  const [dialog, setDialog] = useState<null | 'avatar' | 'password' | 'email' | 'trade' | 'style' | 'inventory' | { notes: any[] }>(null);
   const [crate, setCrate] = useState<string>(() => seenCrateList()[0]?.id);
   const { data: d, error, refetch } = useQuery({ queryKey: ['user', username], queryFn: () => api(`/api/users/${encodeURIComponent(username)}`) });
 
   useEffect(() => { document.title = `${username} · ScamBox`; window.scrollTo(0, 0); }, [username]);
+  const bgSrc = useCosmeticSrc(d?.style?.bg);   // tło profilu (kosmetyk); animowane stoi w miejscu w trybie wydajności
 
   const reveal = useMemo(() => d ? { map: d.reveal, imgq: `owner=${encodeURIComponent(d.user.username)}` } : undefined, [d]);
   const owned = useMemo(() => {
@@ -97,15 +103,18 @@ export function ProfilePage() {
     [d.stats.opened, 'otwarte skrzynki'], [d.stats.contracts, 'kontrakty'], [`${d.stats.upgradesWon}/${d.stats.upgradesLost}`, 'ulepszenia W/P']
   ];
   mergePlaced(d.stickers);   // naklejki na kartach z gabloty (także cudzej): rysują je same karty
-  const slots = Array.from({ length: S.cfg.showcaseSize }, (_, i) => d.showcase[i]);
+  const slots = Array.from({ length: d.showcaseSlots ?? S.cfg.showcaseSize }, (_, i) => d.showcase[i]);
 
   return (
-    <div className={s.stack}>
+    <div className={`${s.stack} ${pf.pfWrap}`} data-pbg={bgSrc ? "" : undefined}>
+      {bgSrc && <div className={pf.pfBackdrop} aria-hidden="true"><div className={pf.pfImg} style={{ backgroundImage: `url("${bgSrc}")` }} /><div className={pf.pfShade} /></div>}
       <section className={`${s.panel} ${s.head}`}>
-        <button type="button" className={s.bigAvatar} disabled={!mine} aria-label={mine ? 'Zmień ikonę' : undefined} onClick={() => setDialog('avatar')}><Avatar user={u} size={96} /></button>
+        <button type="button" className={`${s.bigAvatar}${d.style?.frame ? ` ${s.bigFramed}` : ""}`} disabled={!mine} aria-label={mine ? 'Zmień ikonę' : undefined} onClick={() => setDialog('avatar')}><FramedAvatar user={u} size={d.style?.frame ? 120 : 96} frame={d.style?.frame} /></button>
         <div className={s.info}>
           <h2>{u.username} {u.isAdmin && <Crown size={20} aria-label="Admin" />}</h2>
           <div className="muted small">gracz od {new Date(u.created * 1000).toLocaleDateString('pl-PL')}</div>
+          {d.country && <div className={pf.pfCountry}><img src={flagUrl(d.country)} alt="" /> {countryName(d.country)}</div>}
+          {d.bio && <p className={pf.pfBio}>{d.bio}</p>}
           {d.exp && (
             <div className={s.levelRow}>
               {mine ? <Link to="/level" className={s.lvChip} title="Poziom, nagrody i odznaki">Level {d.exp.level} · poziom i nagrody</Link> : <span className={s.lvChip}>Level {d.exp.level}</span>}
@@ -118,6 +127,7 @@ export function ProfilePage() {
           {mine && <>
             <Button onClick={news}>Co nowego</Button>
             <Button onClick={() => setDialog('avatar')}>Zmień ikonę</Button>
+            <Button onClick={() => setDialog('style')}>Wygląd profilu</Button>
             <Button onClick={() => setDialog('password')}>Zmień hasło</Button>
             <Button onClick={() => setDialog('email')}>Email</Button>
             <Button onClick={logout}>Wyloguj</Button>
@@ -125,7 +135,7 @@ export function ProfilePage() {
           {d.relation === 'none' && <Button kind="hue" onClick={() => act(() => api('/api/friends/request', { username: u.username }), 'Wysłano zaproszenie')}>Zaproś do znajomych</Button>}
           {d.relation === 'outgoing' && <><span className={s.tag}><Clock size={15} aria-hidden="true" /> Zaproszenie wysłane</span><Button onClick={remove}>Anuluj</Button></>}
           {d.relation === 'incoming' && <Button kind="hue" onClick={() => act(() => api('/api/friends/respond', { username: u.username, accept: true }), 'Nowy znajomy')}>Przyjmij zaproszenie</Button>}
-          {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button><Button onClick={remove}>Usuń ze znajomych</Button></>}
+          {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button>{d.inventoryAllowed && <Button onClick={() => setDialog('inventory')}>Ekwipunek</Button>}<Button onClick={remove}>Usuń ze znajomych</Button></>}
           {!mine && S.cfg.arena && (S.cfg.arena.public || u.isAdmin) && <Button onClick={() => import('../arena/arena').then(m => m.arChallenge(u.username))}>Wyzwij na pojedynek</Button>}
         </div>
       </section>
@@ -160,6 +170,8 @@ export function ProfilePage() {
       {dialog === 'avatar' && <AvatarPicker onClose={() => setDialog(null)} onChanged={refetch} />}
       {dialog === 'password' && <PasswordDialog onClose={() => setDialog(null)} />}
       {dialog === 'email' && <EmailDialog onClose={() => setDialog(null)} />}
+      {dialog === 'style' && <StyleDialog onClose={() => setDialog(null)} onChanged={refetch} />}
+      {dialog === 'inventory' && <FriendInventory username={u.username} onClose={() => setDialog(null)} />}
       {dialog === 'trade' && <TradeBuilder username={u.username} onClose={() => setDialog(null)} onSent={() => {}} />}
       {dialog && typeof dialog === 'object' && <PatchNotes notes={dialog.notes} onClose={() => setDialog(null)} />}
     </div>

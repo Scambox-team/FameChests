@@ -63,7 +63,7 @@ export function SnakePage() {
         const r = await api<{ reward: number; card: WonCard | null; state: any }>('/api/games/snake/finish', { log, steps: run?.steps ?? 0 });
         applyState(r.state);
         setWon({ reward: r.reward, card: r.card });
-        if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
+        if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`); }
         if (r.card) { syncInventory(); toast(`Snake: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
         refetch();
       } catch (e: any) { toast(e.message, true); }

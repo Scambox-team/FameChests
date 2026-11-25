@@ -6,12 +6,14 @@ import { Gift, MoreHorizontal, X } from 'lucide-react';
 import { api } from '../api/client';
 import { S, useGame } from '../game/store';
 import { Avatar } from '../ui/UserLink';
-import { Money } from '../ui/Money';
+import { Euro, Money } from '../ui/Money';
 import { ExpBar } from '../features/exp/ExpBar';
 import { Ambient } from './Ambient';
+import { PlayerCardHost } from '../features/profile/PlayerCard';
 import { InstallButton } from './InstallButton';
 import { SettingsPanel, SoundControl } from './Settings';
 import { initRadio } from '../sound/radio';
+import { watchStickerCards } from '../features/stickers/stickers';
 import { LEGAL_NAV, navFor, titleFor, type NavItem } from './nav';
 import { Logo } from './Logo';
 import styles from './AppShell.module.css';
@@ -135,6 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => { setSheet(false); }, [pathname]);
   useEffect(() => { void initRadio(); }, []);   // radio (Eksperymentalne): pobiera albumy i rusza, jeśli gracz je włączył
+  useEffect(() => { watchStickerCards(); }, []);   // naklejki na kartach innych graczy (rynek, podglądy): dociąga je dla kart widocznych na ekranie
 
   // Pasek boczny się nie przewija: pokazuje tyle pozycji, ile mieści się w wysokości okna, a resztę
   // (od końca listy) zjada „Więcej” - arkusz ma zawsze pełną listę. Wysokość `.nav` nie zależy od liczby
@@ -160,6 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.app}>
       <Ambient />
+      <PlayerCardHost />
       <aside className={styles.side}>
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
         <nav className={styles.nav} aria-label="Główna" ref={navRef}>
@@ -180,7 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className={styles.phoneTop}>
         <a className={styles.brand} href="/"><Logo />ScamBox</a>
-        <span className={styles.phoneMoney}><ExpBar compact /> <Money value={game.state.balance} /></span>
+        <span className={styles.phoneMoney}><ExpBar compact /> <Money value={game.state.balance} /><Euro value={game.state.euro ?? 0} /></span>
         <button className={`${styles.icon} ${styles.phoneGift}`} type="button" aria-label="Codzienna skrzynka" onClick={() => S.openDaily?.()}>
           <Gift size={20} strokeWidth={1.6} />
           {game.dailyClaimable && <i className={styles.ready} aria-label="do odebrania" />}
@@ -192,7 +196,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <h1 className={styles.title}><LastEm>{title}</LastEm></h1>
           <div className={styles.topRight}>
             <ExpBar />
-            <span className={styles.money}><Money value={game.state.balance} /></span>
+            <span className={styles.money}><Money value={game.state.balance} /><Euro value={game.state.euro ?? 0} /></span>
             <button className={styles.daily} type="button" onClick={() => S.openDaily?.()}>
               <Gift size={17} strokeWidth={1.6} aria-hidden="true" />Codzienna skrzynka
               {game.dailyClaimable && <i className={styles.ready} aria-label="do odebrania" />}

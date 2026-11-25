@@ -98,6 +98,38 @@ pub struct MoneyChest {
     pub min: i64,
     pub max: i64,
     pub curve: f64,
+    /// euro ze skrzynki (0 = skrzynka nie daje euro): losowane jak grosze, między `euro_min` a `euro_max`
+    #[serde(default, rename = "euroMin")]
+    pub euro_min: i64,
+    #[serde(default, rename = "euroMax")]
+    pub euro_max: i64,
+}
+
+/// Euro: druga waluta, tylko na kosmetyki (sklep z kosmetykami). Z gier leci jej mniej niż groszy.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EuroCfg {
+    /// ile euro za 1 gr nagrody w grze (np. 0,02: gra płacąca 500 gr daje 10 euro; najmniej 1 euro, gdy nagroda w groszach jest dodatnia)
+    pub ratio: f64,
+    /// euro za wygraną partię szachów z człowiekiem (nagroda w groszach to skrzynka, więc stała kwota)
+    pub chess_win: i64,
+    /// grosze i euro za przejście ScamRooms (wszystkie kasety i wyjście z lasu)
+    pub scamrooms_gr: i64,
+    pub scamrooms_euro: i64,
+    /// ScamRooms: najkrótszy czas przejścia (s) i najwyżej tyle nagród na dobę
+    pub scamrooms_min_seconds: f64,
+    pub scamrooms_daily: i64,
+    /// dodatkowe miejsca w gablocie za euro: pierwsze kosztuje `showcase_slot_price`, każde następne o `showcase_slot_step` więcej, najwyżej `showcase_max_extra`
+    pub showcase_slot_price: i64,
+    pub showcase_slot_step: i64,
+    pub showcase_max_extra: i64,
+}
+
+impl EuroCfg {
+    /// Cena następnego dodatkowego miejsca w gablocie przy `extra` już kupionych (None = kupiono maksimum)
+    pub fn showcase_price(&self, extra: i64) -> Option<i64> {
+        (extra >= 0 && extra < self.showcase_max_extra).then(|| self.showcase_slot_price + self.showcase_slot_step * extra)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -142,12 +174,25 @@ pub struct PinballCfg {
     pub level_reward_mult: Vec<f64>,
     /// od jakiego wyniku jaka rzadkość karty (rosnąco)
     pub card_tiers: Vec<CardTier>,
+    /// mnożnik progów kart dla kolejnych poziomów (od 1.; poniżej 1 = łatwiej): wynik dzielimy przez niego przed porównaniem z progami
+    #[serde(default)]
+    pub level_tier_mult: Vec<f64>,
 }
 
 impl PinballCfg {
     /// Mnożnik nagrody dla poziomu (numerowanego od 1)
     pub fn reward_mult(&self, level: usize) -> f64 {
         self.level_reward_mult.get(level.saturating_sub(1)).or(self.level_reward_mult.last()).copied().unwrap_or(1.0)
+    }
+
+    /// Mnożnik progów kart dla poziomu (numerowanego od 1)
+    pub fn tier_mult(&self, level: usize) -> f64 {
+        self.level_tier_mult.get(level.saturating_sub(1)).or(self.level_tier_mult.last()).copied().filter(|m| *m > 0.0).unwrap_or(1.0)
+    }
+
+    /// Wynik przeliczony na skalę poziomu 1 do porównania z progami kart: na wyższych poziomach progi są niższe
+    pub fn tier_score(&self, score: i64, level: usize) -> i64 {
+        (score as f64 / self.tier_mult(level)).floor() as i64
     }
 }
 
@@ -363,6 +408,7 @@ pub struct GameData {
     pub market: MarketCfg,
     pub chess: ChessCfg,
     pub pinball: PinballCfg,
+    pub euro: EuroCfg,
     pub snake: SnakeCfg,
     pub turbo: TurboCfg,
     pub chess_skins: Vec<ChessSkin>,
@@ -538,6 +584,7 @@ impl GameData {
             market: get(&raw, "market")?,
             chess: get(&raw, "chess")?,
             pinball: get(&raw, "pinball")?,
+            euro: get(&raw, "euro")?,
             snake: get(&raw, "snake")?,
             turbo: get(&raw, "turbo")?,
             chess_skins: get(&raw, "chessSkins")?,

@@ -2,10 +2,23 @@
    Widok 3D = przechylenie szafy w CSS (perspektywa), fizyka i rysowanie są te same. */
 .pb-page {
   --pb-pink: #ff3cac; --pb-cyan: #2de2e6; --pb-purple: #9d4edd; --pb-dmd: #ff9d2b;
-  --pb-h: min(calc(100dvh - 96px), 1200px);   /* układ jak w starym Pinballu: stół prawie na całą wysokość okna (Zagraj przewija do niego) */
-  display: flex; gap: 22px; justify-content: center; align-items: flex-start;
+  /* Komputer: trzy kolumny - po lewej wynik, wybór poziomu i przyciski (od lewej krawędzi do stołu), stół DOKŁADNIE na środku, po prawej ranking
+     (od stołu do prawej krawędzi). Cała zakładka mieści się w oknie (`--pb-avail` liczy PinballPage.tsx: wolne miejsce pod nagłówkami);
+     strona się nie przewija, przewija się tylko ranking (i, gdy okno jest bardzo niskie, lewy panel). */
+  --pb-avail: calc(100dvh - 190px);
+  --pb-h: max(380px, calc(var(--pb-avail) - 32px));   /* wysokość płótna stołu; szafa dokłada 30 px ramki */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: stretch;
+  height: var(--pb-avail); overflow: hidden;
 }
-.pb-stage { display: flex; justify-content: center; flex: 0 1 auto; min-width: 0; scroll-margin: 12px; }
+.pb-stage { display: flex; justify-content: center; align-self: center; flex: none; width: calc(var(--pb-h) * 460 / 840 + 30px); max-width: 100%; scroll-margin: 12px; }
+.pb-left { order: -1; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding: 2px; }
+.pb-right { display: flex; min-width: 0; min-height: 0; }
+.pb-right .gr-box { flex: 1; min-height: 0; overflow: hidden; }
+.pb-right .gr-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-right: 4px; }
+.pb-help > summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.pb-help[open] > summary { margin-bottom: 8px; }
+/* kolejność w lewym panelu: wynik, Zagraj, rekord, poziomy, nagrody, zasady (Zagraj ma być widoczne bez przewijania) */
+.pb-dmd { order: 0; } .pb-actions { order: 1; } .pb-best { order: 2; } .pb-levels { order: 3; } .pb-reward { order: 4; } .pb-help { order: 5; }
 .pb-stage.is-3d { perspective: 1500px; perspective-origin: 50% 20%; }
 .pb-cabinet {
   position: relative; padding: 12px; border-radius: 22px;
@@ -40,7 +53,6 @@
 }
 
 /* panel po lewej stronie stołu, przyklejony przy przewijaniu (jak w starym Pinballu) */
-.pb-side { display: flex; flex-direction: column; gap: 14px; flex: 0 0 330px; min-width: 0; order: -1; position: sticky; top: 80px; }
 .pb-dmd {
   padding: 14px 16px; border-radius: 12px; border: 2px solid #3a1d05;
   background:
@@ -88,10 +100,12 @@
 .pb-help p { margin: 10px 0 0; }
 
 @media (max-width: 900px) {
-  .pb-page { flex-direction: column; align-items: stretch; --pb-h: max(420px, min(calc(100dvh - 170px), 1000px)); }   /* stół prawie na cały ekran między paskami gry */
+  .pb-page { display: flex; flex-direction: column; align-items: stretch; height: auto; overflow: visible; --pb-h: max(420px, min(calc(100dvh - 170px), 1000px)); }   /* stół prawie na cały ekran między paskami gry */
   .pb-page { gap: 12px; }
-  .pb-side { display: contents; }   /* wynik i przyciski nad stołem, opis pod nim */
-  .pb-stage { order: 0; scroll-margin: 64px 0 72px; }   /* Zagraj przewija stół między górny pasek a dolną nawigację */
+  .pb-left { display: contents; }   /* wynik i przyciski nad stołem, opis pod nim */
+  .pb-right { order: 6; }           /* ranking pod stołem i opisem */
+  .pb-right .gr-list { max-height: 360px; }
+  .pb-stage { order: 0; width: auto; scroll-margin: 64px 0 72px; }   /* Zagraj przewija stół między górny pasek a dolną nawigację */
   .pb-dmd { order: -3; }
   .pb-best { order: -2; }
   .pb-actions { order: -1; }

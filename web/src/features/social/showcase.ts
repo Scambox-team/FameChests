@@ -21,7 +21,8 @@ async function toggleShowcase(pid: string, variant: string) {
   const inside = ids.find(id => { const it = S.items.find(i => i.id === id)!; return it.person === pid && it.variant === variant; });
   if (inside) ids = ids.filter(id => id !== inside);
   else {
-    if (ids.length >= S.cfg.showcaseSize) return toast(`Gablota mieści ${S.cfg.showcaseSize} kart. Najpierw coś z niej zdejmij.`, true);
+    const limit = S.cfg.showcaseSize + (S.state.showcase_extra ?? 0);   // podstawowe miejsca + dokupione za euro w Sklepie
+    if (ids.length >= limit) return toast(`Gablota mieści ${limit} kart. Zdejmij coś z niej albo dokup miejsce w Sklepie.`, true);
     ids.push(myItemFor(pid, variant)!.id);
   }
   try {

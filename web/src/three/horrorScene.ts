@@ -17,6 +17,10 @@ export interface HorrorHooks {
   soundOn: () => boolean;
   /** gracz wybrał „Wyjdź z gry” (strona chowa kontener i woła destroy) */
   onExit: () => void;
+  /** zaczyna się nowa gra (pierwsza i każda kolejna): strona prosi serwer o bilet na nagrodę za przejście */
+  onStart?: () => void;
+  /** gra skończona: `escaped` = zebrane wszystkie kasety i wyjście z lasu (serwer sprawdza to jeszcze czasem gry) */
+  onEnd?: (r: { escaped: boolean; tapes: number; seconds: number }) => void;
 }
 export interface Horror3D { start: () => void; pause: () => void; destroy: () => void }
 
@@ -413,6 +417,7 @@ export function createHorror3D(el: HTMLElement, hooks: HorrorHooks): Horror3D {
     audio.resume();
     newGame();
     hideMenu();
+    hooks.onStart?.();
     mode = 'play';
   }
   function pause() {
@@ -427,6 +432,7 @@ export function createHorror3D(el: HTMLElement, hooks: HorrorHooks): Horror3D {
   function finish(escaped: boolean) {
     won = escaped;
     record = saveBest(P.tapes, escaped, P.t);
+    hooks.onEnd?.({ escaped, tapes: P.tapes, seconds: P.t });
     mode = 'over';
     if (document.pointerLockElement) document.exitPointerLock?.();
     audio.hum(0, 0); audio.stream(0, 0);

@@ -1,0 +1,12 @@
+/* Tło całego profilu (kosmetyk `bg`, 1600 x 900): leży za panelami, wtapia się w tło strony i jest przyciemnione / rozjaśnione warstwą w kolorze
+   motywu (--ground), więc tekst jest czytelny w każdym motywie. Prefiks pf - motywy łapią m.in. _bg_, _hero_, _scene_. */
+.pfWrap { position: relative; isolation: isolate; }
+.pfBackdrop { position: absolute; z-index: -1; top: -10px; left: -12px; right: -12px; height: clamp(300px, 64vh, 640px); overflow: hidden; border-radius: var(--radius); pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 45%, transparent 100%); }
+.pfImg { position: absolute; inset: 0; background-size: cover; background-position: center top; }
+.pfShade { position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--ground) 6%, transparent) 0%, color-mix(in srgb, var(--ground) 24%, transparent) 55%, var(--ground) 100%); }
+@media (max-width: 820px) { .pfBackdrop { left: -8px; right: -8px; } }
+
+.pfCountry { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 14px; font-weight: 600; }
+.pfCountry img { width: 22px; height: 15px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent); }
+.pfBio { margin: 6px 0 0; max-width: 62ch; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; white-space: pre-line; }

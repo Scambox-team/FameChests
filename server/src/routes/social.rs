@@ -678,7 +678,8 @@ pub async fn set_showcase(State(st): State<AppState>, Me(me): Me, JsonBody(mut r
     let cat = st.cat();
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
-    req.ids.truncate(g().showcase_size);
+    let extra = get_state(&mut tx, me.id).await?.get("showcase_extra").copied().unwrap_or(0).max(0) as usize;
+    req.ids.truncate(g().showcase_size + extra);
     if !req.ids.is_empty() && owned_rows(&mut tx, &cat, me.id, &req.ids).await?.is_none() {
         return bad("Nie masz tych kart");
     }
@@ -778,6 +779,9 @@ struct ProfileResponse {
     collection: Vec<CollectionEntry>,
     collected: Vec<(String, String)>,
     showcase: Vec<ItemJson>,
+    /// ile miejsc ma gablota gracza (podstawowe + kupione za euro)
+    #[serde(rename = "showcaseSlots")]
+    showcase_slots: usize,
     /// karty „Czysta kartka” gracza (każda ze swoim rysunkiem)
     drawings: Vec<ItemJson>,
     /// naklejki naklejone na karty z gabloty: numer karty -> położenia
@@ -785,6 +789,16 @@ struct ProfileResponse {
     /// level konta (EXP) i rok odznaki „za służbę” (level 100)
     #[serde(rename = "exp")]
     exp: Value,
+    /// kosmetyki profilu gracza: tło miniprofilu, obramówka, tło profilu, zdjęcie profilowe (puste = standardowy wygląd)
+    style: Value,
+    /// opis profilu i kraj (kod ISO; darmowe)
+    bio: String,
+    country: String,
+    /// czy mogę oglądać jego ekwipunek; `inventoryVisible` (friends / nobody) tylko na własnym profilu
+    #[serde(rename = "inventoryAllowed")]
+    inventory_allowed: bool,
+    #[serde(rename = "inventoryVisible")]
+    inventory_visible: Option<&'static str>,
 }
 
 pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<String>) -> Res {
@@ -811,6 +825,10 @@ pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<St
         showcase.extend(item_by_id(&mut c, id).await?.and_then(|r| item_json(&cat, &r)));
     }
     let relation = relation(&mut c, me.id, u.id).await?;
+    // kto widzi ekwipunek (ustawienie konta, domyślnie znajomi): bez zgody lista kart „teraz” jest pusta, klaser (co kiedykolwiek zdobył) zostaje
+    let style = crate::cosmetics::style_of(&mut c, u.id).await?;
+    let inv_ok = crate::cosmetics::inventory_allowed(style.inventory, relation, u.hidden_from_ranking());
+    let collection = if inv_ok { collection } else { vec![] };
     let collected = collected_list(&mut c, &cat, u.id).await?;
     let mut revealed = IndexMap::new();
     if relation == Relation::Friend {
@@ -841,11 +859,17 @@ pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<St
             super::stickers::placed_for(&mut c, &ids).await?
         },
         showcase,
+        showcase_slots: g().showcase_size + state.get("showcase_extra").copied().unwrap_or(0).max(0) as usize,
         drawings,
         exp: {
             let (level, badge) = crate::exp::levels_of(&mut c, &[u.id]).await?.get(&u.id).cloned().unwrap_or((1, None));
             json!({"level": level, "badge": badge})
         },
+        style: style.shown(),
+        bio: style.bio.clone(),
+        country: style.country.clone(),
+        inventory_allowed: inv_ok,
+        inventory_visible: (relation == Relation::Me).then(|| style.inventory.key()),
     })
 }
 

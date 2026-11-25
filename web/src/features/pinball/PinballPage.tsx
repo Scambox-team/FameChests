@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Box, Minus, Play, Plus, RotateCcw, Square } from 'lucide-react';
 import { api } from '../../api/client';
 import { startLive } from '../games/liveSeeds';
@@ -24,7 +24,7 @@ const bestOf = (n: number) => { try { return +(localStorage.getItem(n === 1 ? 'p
 const read3d = () => { try { return localStorage.getItem('pinball3d') !== 'off'; } catch { return true; } };
 
 type Tier = { score: number; rarity: string; name: string };
-type Rewards = { pointsPerGr: number; cardTiers: Tier[]; levelMults?: number[] };
+type Rewards = { pointsPerGr: number; cardTiers: Tier[]; levelMults?: number[]; levelTierMults?: number[] };
 type Won = { id: number; person: string; variant: string; name: string; rarity: string };
 type Result = { reward: number; reason: string; card: Won | null; score?: number };
 const WHY: Record<string, string> = {
@@ -35,11 +35,31 @@ const WHY: Record<string, string> = {
 };
 
 const levelMult = (r: Rewards, level: number) => r.levelMults?.[level - 1] ?? r.levelMults?.[r.levelMults.length - 1] ?? 1;
+/** Progi kart na poziomie: im wyższy poziom, tym niższe (wynik jest dzielony przez mnożnik, patrz PinballCfg::tier_score na serwerze) */
+const tierMult = (r: Rewards, level: number) => r.levelTierMults?.[level - 1] ?? r.levelTierMults?.[r.levelTierMults.length - 1] ?? 1;
 
 export function PinballPage() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const page = useRef<HTMLDivElement>(null);
   const game = useRef<PinballGame | null>(null);
+
+  // Na komputerze cała zakładka mieści się w oknie (bez przewijania strony): wysokość stołu = wolne miejsce pod nagłówkami, po bokach panel i ranking
+  // przewijany osobno. Na telefonie (<= 900 px) zostaje układ pionowy z przewijaniem.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = page.current;
+      if (!el) return;
+      if (matchMedia('(max-width: 900px)').matches) { el.style.removeProperty('--pb-avail'); return; }
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      el.style.setProperty('--pb-avail', `${Math.max(440, Math.floor(window.innerHeight - top - 48))}px`);
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    const ro = new ResizeObserver(fit);
+    ro.observe(document.body);
+    return () => { window.removeEventListener('resize', fit); ro.disconnect(); };
+  }, []);
   const [hud, setHud] = useState<PinHud | null>(null);
   const [tilt3d, setTilt3d] = useState(read3d);
   const [level, setLevel] = useState(readLevel);
@@ -69,9 +89,9 @@ export function PinballPage() {
           .then(r => {
             setRewards(r);
             setResult(r);
-            S.state = { ...S.state, balance: r.balance };
+            S.state = { ...S.state, balance: r.balance, euro: (S.state.euro ?? 0) + ((r as any).euro ?? 0) };
             touch();
-            if (r.reward > 0) toast(`Pinball: +${fmtGr(r.reward)}`);
+            if (r.reward > 0) toast(`Pinball: +${fmtGr(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`);
             if (r.card) { toast(`Pinball: karta ${r.card.name} w wariancie Synthwave`); syncInventory(null, true); }
           })
           .catch(() => {})
@@ -119,7 +139,7 @@ export function PinballPage() {
   };
 
   return (
-    <div className={`pb-page pb-sk-${baseTheme()}`}>
+    <div ref={page} className={`pb-page pb-sk-${baseTheme()}`}>
       <div ref={stage} className={`pb-stage${tilt3d ? ' is-3d' : ''}`}>
         <div className="pb-cabinet">
           <div className="pb-table">
@@ -134,7 +154,7 @@ export function PinballPage() {
         </div>
       </div>
 
-      <aside className="pb-side">
+      <div className="pb-left">
         <div className="pb-dmd" role="status" aria-live="polite">
           <span className="pb-dmd-label">{playing ? `Kulka ${hud!.ball} / ${hud!.balls}` : hud?.phase === 'over' ? 'Koniec gry' : 'Neon Drive'}</span>
           <b className="pb-dmd-score">{fmt(hud?.score ?? 0)}</b>
@@ -151,7 +171,7 @@ export function PinballPage() {
             <span>{`${fmtGr(1)} za każde ${rewards.pointsPerGr} pkt, bez limitu.`}</span>
             {levelMult(rewards, level) !== 1 && <span>{`Poziom ${level}: nagroda x${String(levelMult(rewards, level)).replace('.', ',')}, czyli ${fmtGr(1)} za każde ${Math.round(rewards.pointsPerGr / levelMult(rewards, level))} pkt.`}</span>}
             {rewards.cardTiers.length > 0 && (
-              <span>{`Karta Synthwave od ${fmtNum(rewards.cardTiers[0].score)} pkt (${rewards.cardTiers.map(t => `${fmtNum(t.score)}: ${t.name}`).join(', ')}), bez limitu.`}</span>
+              <span>{`Karta Synthwave od ${fmtNum(Math.ceil(rewards.cardTiers[0].score * tierMult(rewards, level)))} pkt (${rewards.cardTiers.map(t => `${fmtNum(Math.ceil(t.score * tierMult(rewards, level)))}: ${t.name}`).join(', ')}), bez limitu.`}</span>
             )}
             {result?.card && hud?.phase === 'over' && (
               <span className="pb-reward-card" onClick={() => openViewer(result.card!.person, result.card!.variant, result.card!.id)}>
@@ -164,7 +184,7 @@ export function PinballPage() {
             )}
             {result && hud?.phase === 'over' && (
               <span className={result.reward > 0 ? 'pb-reward-got' : 'pb-reward-none'}>
-                {result.reward > 0 ? `Zarobiono: +${fmtGr(result.reward)}` : WHY[result.reason] ?? 'Bez nagrody.'}
+                {result.reward > 0 ? `Zarobiono: +${fmtGr(result.reward)}${(result as any).euro ? ` i +${(result as any).euro} €` : ""}` : WHY[result.reason] ?? 'Bez nagrody.'}
               </span>
             )}
           </div>
@@ -179,7 +199,6 @@ export function PinballPage() {
             </button>
           ))}
         </div>
-        <GameRanking game="pinball" level={level} title={`Ranking: ${LEVELS[level - 1].name}`} refresh={result?.score} />
         <div className="pb-best"><span>Twój rekord</span><b>{fmt(hud?.best ?? 0)}</b></div>
         <div className="pb-actions">
           <Button kind="hue" onClick={() => { Sound.unlock(); game.current?.start(); canvas.current?.focus({ preventScroll: true }); stage.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }} disabled={playing}>
@@ -187,7 +206,8 @@ export function PinballPage() {
           </Button>
           <Button onClick={toggle3d} aria-pressed={tilt3d}>{tilt3d ? <Box size={16} aria-hidden="true" /> : <Square size={16} aria-hidden="true" />} {tilt3d ? 'Widok 3D' : 'Widok z góry'}</Button>
         </div>
-        <div className="pb-help">
+        <details className="pb-help">
+          <summary>Sterowanie i zasady</summary>
           <h3>Sterowanie</h3>
           <dl>
             <div><dt>Lewa łapa</dt><dd><kbd>Z</kbd> <kbd>←</kbd> <kbd>Shift</kbd></dd></div>
@@ -204,8 +224,12 @@ export function PinballPage() {
             <li>Przez pierwsze sekundy po wyrzucie kulka jest chroniona. Za mocne szturchanie to TILT.</li>
           </ul>
           <p className="muted small">Rekord zapisuje się tylko w tej przeglądarce. Nagrodę liczy serwer: gra musi trwać co najmniej 30 sekund i skończyć się wszystkimi kulkami.</p>
-        </div>
-      </aside>
+        </details>
+      </div>
+
+      <div className="pb-right">
+        <GameRanking game="pinball" level={level} title={`Ranking: ${LEVELS[level - 1].name}`} refresh={result?.score} />
+      </div>
     </div>
   );
 }

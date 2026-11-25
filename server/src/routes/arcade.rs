@@ -54,8 +54,8 @@ impl Arcade {
     /// (pole formularza, wartość domyślna, największa dozwolona); `unit` = za ile punktów płacimy `per` gr
     fn fields(self) -> [(&'static str, i64, i64); 3] {
         match self {
-            Arcade::Invaders => [("per", 10, 1000), ("unit", 100, 100_000), ("min", 200, 1_000_000)],
-            Arcade::Aimpulse => [("per", 3, 1000), ("unit", 1000, 1_000_000), ("min", 5000, 10_000_000)],
+            Arcade::Invaders => [("per", 45, 1000), ("unit", 100, 100_000), ("min", 200, 1_000_000)],
+            Arcade::Aimpulse => [("per", 6, 1000), ("unit", 1000, 1_000_000), ("min", 5000, 10_000_000)],
         }
     }
 
@@ -222,16 +222,18 @@ pub async fn arcade_finish(State(st): State<AppState>, Me(me): Me, Path(name): P
     let r = reward_cfg(&mut tx, game).await?;
     let earned = earned_today(&mut tx, me.id, game).await?;
     let reward = reward_for(&r, score);
+    let mut euro = 0;
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
+        euro = crate::game::pay_game_euro(&mut tx, me.id, reward).await?;
         set_state(&mut tx, me.id, &format!("{}_day", game.key()), today()).await?;
         set_state(&mut tx, me.id, &format!("{}_today", game.key()), earned + reward).await?;
     }
     super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
-    ok(json!({"score": score, "game": p.extra, "reward": reward, "today": earned + reward, "state": state}))
+    ok(json!({"score": score, "game": p.extra, "reward": reward, "euro": euro, "today": earned + reward, "state": state}))
 }
 
 /// Ustawienia nagrody dla panelu admina

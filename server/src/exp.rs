@@ -299,6 +299,7 @@ pub fn usable(cat: &Catalog, r: &Value) -> bool {
     match s("type") {
         "card" => cat.has(s("person")),
         "chest" => valid_chest_kind(cat, s("kind")),
+        "cosmetic" => crate::cosmetics::exists(s("id")),
         _ => true,
     }
 }
@@ -756,8 +757,10 @@ async fn give_badge(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
     .bind(uid)
     .bind(Local::now().year())
     .bind(now())
-    .execute(c)
+    .execute(&mut *c)
     .await?;
+    // kosmetyki profilu przypisane do odznaki służby
+    crate::cosmetics::grant_auto(c, uid, "service").await?;
     Ok(())
 }
 

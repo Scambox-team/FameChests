@@ -2,11 +2,13 @@ import s from './RewardsEditor.module.css';
 
 // Edytor nagród w formacie osiągnięć / kalendarza adwentowego / paszportu (server/src/events.rs `clean_reward`): jedna karta (dowolny wariant),
 // jedna skrzynka (z kartami albo z pieniędzmi) i grosze - można łączyć. Używany przez panel „EXP i levele”.
-export type Reward = { type: 'card' | 'chest' | 'money'; person?: string; variant?: string; kind?: string; count?: number; amount?: number };
+export type Reward = { type: 'card' | 'chest' | 'money' | 'cosmetic' | 'euro'; person?: string; variant?: string; kind?: string; count?: number; amount?: number; id?: string };
 export interface RewardOptions {
   variants: { key: string; name: string; enabled: boolean }[];
   cards: { id: string; name: string; rarity: string }[];
   chests: { kind: string; name: string }[];
+  /** kosmetyki profilu (src/cosmetics.rs): tła miniprofilu, obramówki, tła profilu */
+  cosmetics?: { id: string; name: string; kind: string; kindLabel: string }[];
 }
 
 /** Krótki opis nagród („10 000 gr, Skrzynka Polska ×2, Adam Małysz (Srebrna)”) */
@@ -14,6 +16,8 @@ export function rewardsText(list: Reward[], o: RewardOptions): string {
   if (!list.length) return '-';
   return list.map(r => {
     if (r.type === 'money') return `${(r.amount || 0).toLocaleString('pl-PL')} gr`;
+    if (r.type === 'euro') return `${(r.amount || 0).toLocaleString('pl-PL')} euro`;
+    if (r.type === 'cosmetic') return o.cosmetics?.find(c => c.id === r.id)?.name || r.id || 'kosmetyk';
     if (r.type === 'chest') return `${o.chests.find(c => c.kind === r.kind)?.name || r.kind}${(r.count || 1) > 1 ? ` ×${r.count}` : ''}`;
     const v = r.variant && r.variant !== 'normal' ? ` (${o.variants.find(x => x.key === r.variant)?.name || r.variant})` : '';
     return `${o.cards.find(c => c.id === r.person)?.name || r.person}${v}${(r.count || 1) > 1 ? ` ×${r.count}` : ''}`;
@@ -22,7 +26,7 @@ export function rewardsText(list: Reward[], o: RewardOptions): string {
 
 /** `listId` = id elementu <datalist> z kartami na stronie (jedna lista na całą stronę) */
 export function RewardsEditor({ value, onChange, options, listId, label }: { value: Reward[]; onChange: (v: Reward[]) => void; options: RewardOptions; listId: string; label: string }) {
-  const card = value.find(r => r.type === 'card'), chest = value.find(r => r.type === 'chest'), money = value.find(r => r.type === 'money');
+  const card = value.find(r => r.type === 'card'), chest = value.find(r => r.type === 'chest'), money = value.find(r => r.type === 'money'), cosm = value.find(r => r.type === 'cosmetic'), eur = value.find(r => r.type === 'euro');
   const set = (type: Reward['type'], r: Reward | null) => onChange([...value.filter(x => x.type !== type), ...(r ? [r] : [])]);
   const known = card?.person ? options.cards.find(c => c.id === card.person)?.name : undefined;
   return (
@@ -36,6 +40,9 @@ export function RewardsEditor({ value, onChange, options, listId, label }: { val
         <option value="">brak</option>{options.chests.map(c => <option key={c.kind} value={c.kind}>{c.name}</option>)}</select></label>
       <label>Ile skrzynek<input type="number" min={1} max={20} value={chest?.count || 1} disabled={!chest} onChange={e => set('chest', { ...chest!, count: Math.max(1, +e.target.value || 1) })} /></label>
       <label>Grosze<input type="number" min={0} step={100} value={money?.amount || ''} placeholder="0" onChange={e => set('money', +e.target.value > 0 ? { type: 'money', amount: +e.target.value } : null)} /></label>
+      <label>Euro<input type="number" min={0} step={10} value={eur?.amount || ''} placeholder="0" onChange={e => set('euro', +e.target.value > 0 ? { type: 'euro', amount: +e.target.value } : null)} /></label>
+      {!!options.cosmetics?.length && <label>Kosmetyk profilu<select value={cosm?.id || ''} onChange={e => set('cosmetic', e.target.value ? { type: 'cosmetic', id: e.target.value } : null)}>
+        <option value="">brak</option>{options.cosmetics.map(c => <option key={c.id} value={c.id}>{c.kindLabel}: {c.name}</option>)}</select></label>}
     </div>
   );
 }

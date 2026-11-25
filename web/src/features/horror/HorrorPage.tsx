@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CassetteTape, DoorOpen, Ear, Eye, Fan, FlaskConical, Flashlight, Footprints, Keyboard, Maximize, Play, Skull, Smartphone, TriangleAlert, Trophy } from 'lucide-react';
+import { api } from '../../api/client';
+import { applyState } from '../../game/session';
+import { fmt } from '../../lib/format';
 import { Sound } from '../../sound/sound';
+import { toast } from '../../ui/Toaster';
 import { hasWebGL, setUser3DOff, use3D } from '../../three/support';
 import type { Horror3D } from '../../three/horrorScene';
 import { Button } from '../../ui/Button';
@@ -13,7 +17,7 @@ import './hz3.css';
 // Strona przed grą pasuje do motywów; sama gra leży w kontenerze `.hz3` przeniesionym do <body> (portal) i po kliknięciu „Graj”
 // przechodzi w pełny ekran (Fullscreen API wymaga kliknięcia, więc scenę tworzymy synchronicznie w obsłudze kliknięcia -
 // moduł sceny wczytujemy wcześniej). Bez pełnego ekranu kontener i tak zakrywa całe okno. „Wyjdź z gry” wraca tutaj.
-// Bez nagród (grosze, karty, EXP): rekord tylko w localStorage (best.ts).
+// Nagroda za PRZEJŚCIE (wszystkie kasety + wyjście): stała, grosze i euro, liczy ją serwer (routes/scamrooms.rs: bilet z /start, najkrótszy czas, limit na dobę); rekord tylko w localStorage (best.ts).
 type SceneModule = typeof import('../../three/horrorScene');
 
 export function HorrorPage() {
@@ -55,6 +59,19 @@ export function HorrorPage() {
     setPlaying(false);
     setBest(readBest());
   };
+  // bilet na nagrodę za przejście: serwer liczy czas od startu gry; bez odpowiedzi gra się bez nagrody
+  const begin = () => { api('/api/games/scamrooms/start', {}).catch(() => {}); };
+  const end = (r: { escaped: boolean; tapes: number; seconds: number }) => {
+    if (!r.escaped) return;
+    api<{ reward: number; euro: number; reason: string; state?: any; daily?: number }>('/api/games/scamrooms/finish', { escaped: r.escaped, tapes: r.tapes })
+      .then(res => {
+        if (res.state) applyState(res.state);
+        if (res.reward > 0) { Sound.coin(1); toast(`ScamRooms ukończone: +${fmt(res.reward)} i +${res.euro} €`); }
+        else if (res.reason === 'daily_limit') toast(`Dzienny limit nagród w ScamRooms wyczerpany (${res.daily} na dobę)`);
+        else if (res.reason === 'too_fast') toast('Ta gra była za krótka, żeby dać nagrodę', true);
+      })
+      .catch(() => {});
+  };
   const play = () => {
     const el = shell.current, m = mod.current;
     if (!el || !m || game.current) return;
@@ -62,7 +79,7 @@ export function HorrorPage() {
     el.hidden = false;
     document.documentElement.classList.add('hz3-open');
     try {
-      game.current = m.createHorror3D(el, { volume: () => Sound.volume, soundOn: () => Sound.enabled, onExit: exit });
+      game.current = m.createHorror3D(el, { volume: () => Sound.volume, soundOn: () => Sound.enabled, onExit: exit, onStart: begin, onEnd: end });
       game.current.start();
       setPlaying(true);
     } catch {
@@ -95,7 +112,7 @@ export function HorrorPage() {
         <div className="hz-title">
           <p className="hz-kicker">Znaleziona taśma · Poziom 0</p>
           <div className="hz-name"><h2 data-text="ScamRooms">ScamRooms</h2><span className="hz-beta">Beta</span></div>
-          <p className="hz-betanote"><FlaskConical size={16} aria-hidden="true" /> Wersja beta: na razie w ScamRooms nie zarabiasz groszy i nie zdobywasz kart. Gra może się jeszcze zmieniać.</p>
+          <p className="hz-betanote"><FlaskConical size={16} aria-hidden="true" /> Wersja beta: gra może się jeszcze zmieniać. Za przejście (wszystkie kasety i wyjście z lasu) dostajesz 2000 gr i euro na kosmetyki, do kilku razy dziennie.</p>
           <p className="hz-lead">Opuszczony budynek bez końca, za każdym razem inny. Latarka i sześć kaset VHS. Zbierz je wszystkie i uciekaj drzwiami z napisem WYJŚCIE. Coś tam krąży.</p>
           <div className="hz-cta">
             <button type="button" className="hz-play" onClick={play} disabled={!ready || playing}>
@@ -137,7 +154,7 @@ export function HorrorPage() {
             <div><b>{best.tapes}<small> / 6</small></b><span>najwięcej kaset</span></div>
             <div><b>{best.escape != null ? clock(best.escape) : 'brak'}</b><span>najszybsza ucieczka</span></div>
           </div>
-          <p className="muted small">Rekord zapisuje się tylko w tej przeglądarce. ScamRooms jest w wersji beta: na razie nie daje groszy ani kart.</p>
+          <p className="muted small">Rekord zapisuje się tylko w tej przeglądarce. Nagroda za przejście gry jest stała i liczy się tylko, jeśli gra trwała dość długo.</p>
           <p className="hz-warn"><TriangleAlert size={16} aria-hidden="true" /> Gra zawiera nagłe straszne sceny i migające zakłócenia obrazu. Przy ograniczonym ruchu albo w trybie wydajności są łagodniejsze.</p>
         </section>
       </div>

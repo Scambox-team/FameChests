@@ -82,6 +82,7 @@ impl User {
             avatar_card: card.map(str::to_owned),
             avatar_rarity: card.map(|p| cat.people[p].rarity.clone()),
             avatar_variant: card.map(|_| self.avatar_variant().to_owned()),
+            avatar_img: crate::cosmetics::avatar_url(self.id),
         }
     }
 }
@@ -96,6 +97,8 @@ pub struct UserView {
     pub avatar_card: Option<String>,
     pub avatar_rarity: Option<String>,
     pub avatar_variant: Option<String>,
+    /// własne zdjęcie profilowe z kosmetyków (adres obrazka); zastępuje zdjęcie z karty
+    pub avatar_img: Option<String>,
 }
 
 pub async fn find_user(c: &mut crate::db::Conn, name: &str) -> sqlx::Result<Option<User>> {

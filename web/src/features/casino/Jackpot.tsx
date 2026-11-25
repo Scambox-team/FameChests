@@ -83,7 +83,7 @@ function Room({ L, call, reload }: { L: any; call: (path: string, body?: any, ok
     if (!u) return <div className="jp-seat empty"><div className="jp-seat-wait"><Clock size={16} aria-hidden="true" /> Czekamy na drugiego gracza</div><div className="muted small">{L.public ? 'Lobby jest publiczne, każdy może dołączyć.' : 'Lobby jest prywatne, dołączyć mogą tylko zaproszeni.'}</div></div>;
     return (
       <div className={`jp-seat jp-s${side}${side === me ? ' me' : ''}${ready[side] ? ' ready' : ''}`}>
-        <div className="jp-seat-head"><Avatar user={u} /><b>{u.username}{side === me ? ' (ty)' : ''}</b>
+        <div className="jp-seat-head"><Avatar user={u} /><b data-player={u.username} tabIndex={0}>{u.username}{side === me ? ' (ty)' : ''}</b>
           <span className="jp-ready-tag">{ready[side] ? 'Akceptuje' : 'Wybiera karty'}</span>
           {creator && side === 'b' && <Button onClick={() => { if (confirm('Wyprosić drugiego gracza z lobby?')) call(`/api/casino/jackpot/${L.id}/kick`, {}, 'Gracz wyproszony').then(() => touch()); }}>Wyproś</Button>}
         </div>

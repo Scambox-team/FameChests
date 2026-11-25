@@ -54,6 +54,11 @@ impl Online {
         self.seen.lock().insert(uid, crate::db::now());
     }
 
+    /// Czy gracz coś wysłał w ostatnich dwóch minutach
+    pub fn is_online(&self, uid: i64) -> bool {
+        self.seen.lock().get(&uid).is_some_and(|t| crate::db::now() - *t < Self::SECONDS)
+    }
+
     pub fn count(&self) -> i64 {
         let now = crate::db::now();
         let mut seen = self.seen.lock();

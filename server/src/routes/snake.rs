@@ -44,7 +44,7 @@ pub const SOUND_PREFIX: &str = "__snake_snd_";
 
 /// Nagroda: (klucz w `state`, pole formularza, wartość domyślna, największa dozwolona)
 const REWARD: &[(&str, &str, i64, i64)] = &[
-    ("snake_reward_per_apple", "perApple", 6, 1000),
+    ("snake_reward_per_apple", "perApple", 12, 1000),
     ("snake_reward_min_score", "minScore", 5, 400),
 ];
 /// Bilet gry: ziarna wydawane odcinkami (`live.rs`) i to, czy gra daje karty (zwykły Snake 2D; Snake 3D kartę RGB)
@@ -310,9 +310,11 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
     let reward = reward_for(&r, score);
+    let mut euro = 0;
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
+        euro = crate::game::pay_game_euro(&mut tx, me.id, reward).await?;
         set_state(&mut tx, me.id, "snake_day", today()).await?;
         set_state(&mut tx, me.id, "snake_today", earned + reward).await?;
     }
@@ -337,7 +339,7 @@ pub async fn snake_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req):
     tx.commit().await?;
     ok(json!({
         "score": score,
-        "reward": reward,
+        "reward": reward, "euro": euro,
         "today": earned + reward,
         "card": card,
         "state": state,

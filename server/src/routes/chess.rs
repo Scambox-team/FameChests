@@ -137,6 +137,7 @@ async fn finish(c: &mut Conn, x: &mut Game, winner: Option<Color>, reason: &str)
         add_chests(&mut *c, uid, "money_daily", 1).await?;
         let chest = if winner == Some(Color::White) { &cfg.crate_white } else { &cfg.crate_black };
         add_chests(&mut *c, uid, chest, 1).await?;
+        crate::game::add_euro(&mut *c, uid, g().euro.chess_win).await?;
         x.rewarded = 1;
     }
     // EXP tylko za dość długie partie (jak nagroda): z człowiekiem - obie strony za udział, zwycięzca więcej; trening z botem - mało

@@ -685,7 +685,7 @@ export function startPanel() {
           ${can("users") ? '<button class="btn tiny" data-uact="cards">Karty</button>' : ""}
           ${can("economy") ? '<button class="btn tiny" data-uact="chests">Skrzynki</button>' : ""}
           ${can("users") ? '<button class="btn tiny" data-uact="access">Dostęp</button>' : ""}
-          ${can("economy") ? '<button class="btn tiny" data-uact="money">Pieniądze</button>' : ""}
+          ${can("economy") ? '<button class="btn tiny" data-uact="money">Pieniądze</button><button class="btn tiny" data-uact="euro" title="Dodaj albo odejmij euro (waluta na kosmetyki; nie wyklucza z rankingu)">Euro</button>' : ""}
           ${can("accounts") ? `<button class="btn tiny" data-uact="resetLink" title="Wyślij mail z linkiem do ustawienia nowego hasła">Reset hasła</button>
           <button class="btn tiny" data-uact="setEmail" title="Zmień adres email gracza (albo dopisz, gdy go nie ma)">Zmień email</button>` : ""}
           ${can("users") ? `<button class="btn tiny" data-uact="ranking">${u.rankingHidden ? "Pokaż w rankingu" : "Ukryj w rankingu"}</button>` : ""}
@@ -961,6 +961,12 @@ export function startPanel() {
         if (!v) return;
         await api(`/api/admin/users/${id}/money`, { method: "POST", json: { amount: parseInt(v, 10) } });
         toast(`Zmieniono saldo gracza ${name}`);
+      }
+      if (act === "euro") {
+        const v = prompt(`Ile euro dodać graczowi ${name}? (ujemna kwota odejmuje; euro nie wyklucza z rankingu)`, "1000");
+        if (!v) return;
+        await api(`/api/admin/users/${id}/euro`, { method: "POST", json: { amount: parseInt(v, 10) } });
+        toast(`Zmieniono euro gracza ${name}`);
       }
       if (act === "resetLink") {
         const v = prompt(`Wysłać ${name} link do resetu hasła?\nAdres e-mail (puste = e-mail z konta gracza).
@@ -1510,7 +1516,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
         <span class="ach-ic">${esc(a.icon || "")}</span>
         <div class="ach-info"><b>${esc(a.name)}</b>${a.hidden ? ' <span class="chip">ukryte</span>' : ""}${a.enabled === false ? ' <span class="chip">wyłączone</span>' : ""}
           <div class="muted small">${a.criteria.map(aeCritLine).join("  +  ")}</div>
-          <div class="muted small">${a.rewards.map(r => r.type === "money" ? `${r.amount} gr` : r.type === "chest" ? `${r.count}× ${AE.meta.chests.concat(AE.meta.crates).find(x => x.id === r.kind)?.name || r.kind}` :
+          <div class="muted small">${a.rewards.map(r => r.type === "money" ? `${r.amount} gr` : r.type === "euro" ? `${r.amount} euro` : r.type === "chest" ? `${r.count}× ${AE.meta.chests.concat(AE.meta.crates).find(x => x.id === r.kind)?.name || r.kind}` : r.type === "cosmetic" ? `kosmetyk: ${(AE.meta.cosmetics || []).find(x => x.id === r.id)?.name || r.id}` :
             `${r.count}× ${AE.meta.people.find(p => p.id === r.person)?.name || "?"}`).join(", ") || "brak nagród"}</div></div>
         <span class="muted small">zdobyło: ${a.earned}</span>
         <button class="btn" data-ae="edit">Edytuj</button>
@@ -1552,6 +1558,8 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
   function aeRewardFields(r, i) {
     const at = k => `data-ae-path="rewards.${i}.${k}"`;
     if (r.type === "money") return `<label>Kwota (gr)<input type="number" min="1" ${at("amount")} value="${r.amount || ""}"></label>`;
+    if (r.type === "euro") return `<label>Kwota (euro)<input type="number" min="1" ${at("amount")} value="${r.amount || ""}"></label>`;
+    if (r.type === "cosmetic") return `<label>Kosmetyk profilu<select ${at("id")}>${aeOpt([{ id: "", name: "— wybierz —" }].concat((AE.meta.cosmetics || []).map(c => ({ id: c.id, name: `${c.kindLabel}: ${c.name}` }))), r.id || "")}</select></label>`;
     if (r.type === "chest") return `<label>Skrzynka<select ${at("kind")}>${aeOpt(AE.meta.crates.concat(AE.meta.chests), r.kind)}</select></label>
       <label>Ile<input type="number" min="1" ${at("count")} value="${r.count || 1}"></label>`;
     return `<label>Karta<select ${at("person")}>${aeOpt(aePeople(), r.person)}</select></label>
@@ -1600,7 +1608,7 @@ Gracz BEZ e-maila na koncie (np. zgubił hasło przed dodaniem e-maila): wpisz a
     if (path.endsWith(".type")) {   // zmiana rodzaju: czyste pola warunku / nagrody
       const holder = a[ks[0]][+ks[1]], t = holder.type;
       a[ks[0]][+ks[1]] = ks[0] === "criteria" ? { type: t, count: 1, ...(t === "drop_together" ? { persons: [] } : {}) }
-        : { type: t, ...(t === "money" ? { amount: 10000 } : { count: 1 }) };
+        : { type: t, ...(t === "money" ? { amount: 10000 } : t === "euro" ? { amount: 100 } : t === "cosmetic" ? { id: "" } : { count: 1 }) };
     }
   }
   

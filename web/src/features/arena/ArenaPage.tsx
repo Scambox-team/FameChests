@@ -211,7 +211,7 @@ function Lobby({ onOpen }: { onOpen: (id: string) => void }) {
               <h3>Wyzwania</h3>
               {box.incoming.map(c => (
                 <div key={c.id} className="ar-challenge">
-                  <span><b>{c.from.username}</b> <span className="ar-muted">({c.left} s)</span></span>
+                  <span><b data-player={c.from.username} tabIndex={0}>{c.from.username}</b> <span className="ar-muted">({c.left} s)</span></span>
                   <Button kind="hue" disabled={!ready} onClick={() => acceptChallenge(c.id, deck)}>Przyjmij</Button>
                   <Button kind="quiet" onClick={() => declineChallenge(c.id)}>Odrzuć</Button>
                 </div>
@@ -221,7 +221,7 @@ function Lobby({ onOpen }: { onOpen: (id: string) => void }) {
           {box?.outgoing && box.outgoing.status === 'pending' && (
             <section className="ar-panel">
               <h3>Twoje wyzwanie</h3>
-              <p>Czekasz na odpowiedź: <b>{box.outgoing.to.username}</b> ({box.outgoing.left} s)</p>
+              <p>Czekasz na odpowiedź: <b data-player={box.outgoing.to.username} tabIndex={0}>{box.outgoing.to.username}</b> ({box.outgoing.left} s)</p>
               <Button kind="quiet" onClick={() => declineChallenge(box.outgoing!.id)}>Wycofaj</Button>
             </section>
           )}
@@ -443,7 +443,7 @@ function Match({ id, onLeave, onOpen }: { id: string; onLeave: () => void; onOpe
             : <span>{(h.username || '?').slice(0, 1).toUpperCase()}</span>}
         </div>
         <div className="ar-plate-body">
-          <div className="ar-plate-name">{h.username}</div>
+          <div className="ar-plate-name" {...(h.bot ? {} : { "data-player": h.username })}>{h.username}</div>
           <div className="ar-plate-stats">
             <span className="ar-coin" title="Pieniądze w meczu"><Coins size={14} />{s.money}{moneyFl.map(f => <span key={f.id} className={`ar-float ${f.cls}`}>{f.text}</span>)}</span>
             <span title="Karty w ręce">{`ręka ${typeof s.hand === 'number' ? s.hand : s.hand.length}`}</span>

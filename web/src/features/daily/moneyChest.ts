@@ -128,6 +128,7 @@ export async function openMoneyChest(kind: string) {
   box.innerHTML = `
     <div class="ms-label">${f >= .85 ? 'Wielka wygrana' : f >= .6 ? 'Świetnie' : f >= .35 ? 'Nieźle' : 'Wygrywasz'}</div>
     <div class="ms-amount" style="--rc:${color}">+<span id="msCount">0</span> gr</div>
+    ${res.euro > 0 ? `<div class="ms-amount ms-euro" style="--rc:#7fd6ff">+${res.euro.toLocaleString("pl-PL")} €<small> euro na kosmetyki</small></div>` : ""}
     <div class="fa-result-btns">
       ${more ? `<button class="ms-btn hue" data-act="again">Otwórz kolejną (${more})</button>` : ''}
       <button class="ms-btn" data-act="ok">Odbierz</button>

@@ -46,7 +46,7 @@ export function InvadersPage() {
           const r = await api<{ score: number; reward: number; state: any }>('/api/games/arcade/invaders/finish', { log: rest, ticks: run.ticks });
           applyState(r.state);
           setWon({ reward: r.reward, score: r.score });
-          if (r.reward > 0) { Sound.coin(1); toast(`Obrona Orbity: +${fmt(r.reward)}`); }
+          if (r.reward > 0) { Sound.coin(1); toast(`Obrona Orbity: +${fmt(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`); }
           refetch();
         } catch (e: any) { toast(e.message, true); }
       },

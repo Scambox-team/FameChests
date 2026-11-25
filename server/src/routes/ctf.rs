@@ -952,6 +952,7 @@ pub async fn ctf_submit(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     add_state(&mut tx, cx.uid(), "balance", money).await?;
     achievements::count_quest(&mut tx, cx.uid()).await?;
     crate::exp::award(&mut tx, cx.uid(), "quest_ctf", 1).await?;
+    crate::cosmetics::grant_auto(&mut tx, cx.uid(), "quest_ctf").await?;
     tx.commit().await?;
     ok(json!({"ok": true, "person": pid, "money": money}))
 }

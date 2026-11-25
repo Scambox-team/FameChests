@@ -21,6 +21,7 @@ mod db;
 mod domain;
 mod error;
 mod events;
+mod cosmetics;
 mod exp;
 mod export;
 mod game;

@@ -94,6 +94,7 @@ fn usable(cat: &Catalog, r: &Value) -> bool {
     match s("type") {
         "card" => cat.has(s("person")),
         "chest" => valid_chest_kind(cat, s("kind")),
+        "cosmetic" => crate::cosmetics::exists(s("id")),
         _ => true,
     }
 }
@@ -309,7 +310,7 @@ pub async fn admin_passport(State(st): State<AppState>, Admin(_): Admin) -> Res 
         .collect();
     let counts = sqlx::query("SELECT country, COUNT(*) AS n FROM passport_stamps GROUP BY country").fetch_all(&mut *c).await?;
     let holders: serde_json::Map<String, Value> = counts.iter().map(|r| (r.get::<String, _>("country"), json!(r.get::<i64, _>("n")))).collect();
-    ok(json!({"settings": settings, "variants": variants, "cards": cards, "chests": chests, "holders": holders}))
+    ok(json!({"settings": settings, "variants": variants, "cards": cards, "chests": chests, "cosmetics": crate::cosmetics::options(), "holders": holders}))
 }
 
 #[derive(Deserialize, Default)]

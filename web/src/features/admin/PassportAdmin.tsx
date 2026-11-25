@@ -9,11 +9,11 @@ import s from './PassportAdmin.module.css';
 // Zakładka panelu admina „Paszport” (server/src/routes/passport.rs, tabela passport_settings): dla każdego stempla kolor, własna
 // ikona (jednokolorowy PNG na przezroczystym tle - kolor nadaje stempel) i nagroda za pierwsze zdobycie (karta w dowolnym wariancie,
 // skrzynka, grosze). Nagroda trafia do gracza tylko raz, w chwili zdobycia stempla; stemple zdobyte wcześniej nie dostają jej wstecz.
-type Reward = { type: 'card' | 'chest' | 'money'; person?: string; variant?: string; kind?: string; count?: number; amount?: number };
+type Reward = { type: 'card' | 'chest' | 'money' | 'cosmetic' | 'euro'; person?: string; variant?: string; kind?: string; count?: number; amount?: number; id?: string };
 interface Setting { color: string; rewards: Reward[]; icon: number | null; iconScale: number }
 interface Data {
   settings: Record<string, Setting>; holders: Record<string, number>;
-  variants: { key: string; name: string; enabled: boolean }[]; cards: { id: string; name: string; rarity: string }[]; chests: { kind: string; name: string }[];
+  variants: { key: string; name: string; enabled: boolean }[]; cards: { id: string; name: string; rarity: string }[]; chests: { kind: string; name: string }[]; cosmetics?: { id: string; name: string; kindLabel: string }[];
 }
 const CONTINENT: Record<string, string> = { eu: 'Europa', as: 'Azja', af: 'Afryka', na: 'Ameryka Północna', sa: 'Ameryka Południowa', oc: 'Australia i Oceania' };
 const EMPTY: Setting = { color: '', rewards: [], icon: null, iconScale: 100 };
@@ -61,6 +61,8 @@ export default function PassportAdmin() {
 
 function summary(r: Reward, cardName: Map<string, string>, data: Data) {
   if (r.type === 'money') return `${(r.amount || 0).toLocaleString('pl-PL')} gr`;
+  if (r.type === 'euro') return `${(r.amount || 0).toLocaleString('pl-PL')} euro`;
+  if (r.type === 'cosmetic') return data.cosmetics?.find(c => c.id === r.id)?.name || r.id || 'kosmetyk';
   if (r.type === 'chest') return `${r.count || 1}× ${data.chests.find(c => c.kind === r.kind)?.name || r.kind}`;
   const v = r.variant && r.variant !== 'normal' ? ` (${data.variants.find(x => x.key === r.variant)?.name || r.variant})` : '';
   return `${cardName.get(r.person || '') || r.person}${v}${(r.count || 1) > 1 ? ` ×${r.count}` : ''}`;
@@ -79,7 +81,7 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
   // podgląd stempla z tym, co jest w formularzu (kolor) i zapisaną ikoną
   const shown: Country = { ...country, col: color || country.col, icon: setting.icon ? `/passport/icon/${country.c}?v=${setting.icon}` : undefined, iconScale: scale };
 
-  const card = rewards.find(r => r.type === 'card'), chest = rewards.find(r => r.type === 'chest'), money = rewards.find(r => r.type === 'money');
+  const card = rewards.find(r => r.type === 'card'), chest = rewards.find(r => r.type === 'chest'), money = rewards.find(r => r.type === 'money'), cosm = rewards.find(r => r.type === 'cosmetic'), eur = rewards.find(r => r.type === 'euro');
   const set = (type: Reward['type'], r: Reward | null) => setRewards(list => [...list.filter(x => x.type !== type), ...(r ? [r] : [])]);
 
   const run = async (fn: () => Promise<unknown>, done: string) => {
@@ -152,6 +154,8 @@ function Row({ country, setting, holders, data, cardName, open, toggle, reload }
               <option value="">brak</option>{data.chests.map(c => <option key={c.kind} value={c.kind}>{c.name}</option>)}</select></label>
             <label>Ile skrzynek<input type="number" min={1} max={20} value={chest?.count || 1} disabled={!chest} onChange={e => set('chest', { ...chest!, count: Math.max(1, +e.target.value || 1) })} /></label>
             <label>Grosze<input type="number" min={0} step={100} value={money?.amount || ''} placeholder="0" onChange={e => set('money', +e.target.value > 0 ? { type: 'money', amount: +e.target.value } : null)} /></label>
+            <label>Euro<input type="number" min={0} step={10} value={eur?.amount || ''} placeholder="0" onChange={e => set('euro', +e.target.value > 0 ? { type: 'euro', amount: +e.target.value } : null)} /></label>
+            {!!data.cosmetics?.length && <label>Kosmetyk profilu<select value={cosm?.id || ''} onChange={e => set('cosmetic', e.target.value ? { type: 'cosmetic', id: e.target.value } : null)}><option value="">brak</option>{data.cosmetics.map(c => <option key={c.id} value={c.id}>{c.kindLabel}: {c.name}</option>)}</select></label>}
           </div>
           <p className="muted small">Skrzynka: skrzynki z kartami ze sklepu albo skrzynki z pieniędzmi (Codzienna, MEGA). Karty, skrzynki i grosze można łączyć.</p>
 

@@ -33,6 +33,11 @@ pub(super) fn reward_view(cat: &Catalog, r: &Value) -> Value {
                 .unwrap_or_else(|| kind.to_owned());
             json!({"type": "chest", "kind": kind, "count": n, "text": format!("{name}{times}")})
         }
+        "euro" => json!({"type": "euro", "amount": r["amount"], "text": format!("{} euro", r["amount"].as_i64().unwrap_or(0))}),
+        "cosmetic" => {
+            let text = crate::cosmetics::get(s("id")).map_or_else(|| "Kosmetyk profilu".to_owned(), |c| format!("{}: {}", c.kind.label(), c.name));
+            json!({"type": "cosmetic", "id": s("id"), "count": 1, "text": text})
+        }
         _ => {
             let pid = s("person");
             let v = s("variant");
@@ -157,6 +162,7 @@ pub async fn advent_claim(State(st): State<AppState>, Me(me): Me, Path(id): Path
         .filter(|r| match r.get("type").and_then(Value::as_str) {
             Some("card") => cat.has(r.get("person").and_then(Value::as_str).unwrap_or("")),
             Some("chest") => valid_chest_kind(&cat, r.get("kind").and_then(Value::as_str).unwrap_or("")),
+            Some("cosmetic") => crate::cosmetics::exists(r.get("id").and_then(Value::as_str).unwrap_or("")),
             _ => true,
         })
         .cloned()
@@ -210,7 +216,7 @@ pub async fn admin_events(State(st): State<AppState>, Admin(_): Admin) -> Res {
         sqlx::query_as("SELECT event_id, COUNT(*) FROM advent_claims GROUP BY event_id").fetch_all(&mut *c).await?;
     ok(json!({
         "events": cat.vs.game_events,
-        "variants": variants, "cards": cards, "chests": chests,
+        "variants": variants, "cards": cards, "chests": chests, "cosmetics": crate::cosmetics::options(),
         "claims": claims.into_iter().map(|(e, n)| (e, json!(n))).collect::<serde_json::Map<_, _>>(),
         "today": today().format("%Y-%m-%d").to_string(),
     }))

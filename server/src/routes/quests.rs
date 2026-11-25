@@ -332,6 +332,7 @@ pub async fn after_item(c: &mut Conn, cx: &Ctx, pid: &str, variant: &str, source
         add_state(c, cx.uid(), "balance", money).await?;
         achievements::count_quest(c, cx.uid()).await?;
         crate::exp::award(c, cx.uid(), "quest_wanted", 1).await?;
+        crate::cosmetics::grant_auto(c, cx.uid(), "quest_wanted").await?;
     }
     Ok(())
 }

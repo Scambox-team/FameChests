@@ -100,7 +100,7 @@ function SeatBox({ s, T, pos }: { s: any; T: any; pos: number }) {
           {T.dealer === s.seat && T.phase !== 'waiting' && <span className="pk-dealer" title="Rozdający">D</span>}
         </div>
         <div className="pk-who">
-          <b>{s.user.username}{me ? ' (ty)' : ''}</b>
+          <b data-player={s.user.username} tabIndex={0}>{s.user.username}{me ? ' (ty)' : ''}</b>
           <span>{s.left ? 'wstał' : `${fmt(s.stackValue)} · ${s.stackCount} ${plural(s.stackCount, 'karta', 'karty', 'kart')}`}</span>
         </div>
       </div>
@@ -135,7 +135,7 @@ function Felt({ T }: { T: any }) {
             </div>
             {winners.length > 0 && (
               <div className="pk-banner">
-                {winners.map(w => <div key={w.seat}><Crown size={16} /> <b>{w.user.username}</b> bierze {fmt(w.value)}{w.hand ? <em> · {w.hand}</em> : T.result.byFold ? <em> · reszta spasowała</em> : null}</div>)}
+                {winners.map(w => <div key={w.seat}><Crown size={16} /> <b data-player={w.user.username} tabIndex={0}>{w.user.username}</b> bierze {fmt(w.value)}{w.hand ? <em> · {w.hand}</em> : T.result.byFold ? <em> · reszta spasowała</em> : null}</div>)}
               </div>
             )}
           </div>

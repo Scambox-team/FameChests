@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use axum::extract::{Multipart, Path, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use image::{imageops, DynamicImage, ImageFormat};
@@ -246,6 +246,102 @@ fn rarity_options() -> Vec<Value> {
     g.rarity_order.iter().filter(|r| *r != "special").map(|r| json!({"key": r, "name": g.rarities[r].name})).collect()
 }
 
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct PlacedQuery {
+    /// numery kart po przecinku (najwyżej 100)
+    ids: String,
+}
+
+/// Położenia naklejek na dowolnych kartach (po numerach egzemplarzy): przeglądarka dociąga je dla kart, które widać na ekranie (rynek, ekwipunek
+/// znajomego, podglądy), więc naklejki są widoczne na karcie wszędzie, nie tylko u właściciela. To publiczne informacje o wyglądzie karty.
+pub async fn stickers_placed(State(st): State<AppState>, Me(_): Me, Query(q): Query<PlacedQuery>) -> Res {
+    let ids: Vec<i64> = q.ids.split(',').filter_map(|s| s.trim().parse::<i64>().ok()).filter(|i| *i > 0).take(100).collect();
+    let mut c = st.db.acquire().await?;
+    let placed = placed_for(&mut c, &ids).await?;
+    ok(json!({"placed": placed}))
+}
+
+/// Skrzynki z naklejkami dla panelu admina: wygląd i szanse (`crates_json`) + cena w euro i flaga „W sklepie”
+async fn admin_crates_json(c: &mut crate::db::Conn) -> sqlx::Result<Value> {
+    let shop: HashMap<String, (i64, i16)> = sqlx::query_as::<_, (String, i64, i16)>("SELECT id, price, in_shop FROM sticker_crates")
+        .fetch_all(&mut *c)
+        .await?
+        .into_iter()
+        .map(|(id, p, s)| (id, (p, s)))
+        .collect();
+    let mut list = crates_json();
+    for v in list.as_array_mut().into_iter().flatten() {
+        let (price, in_shop) = v.get("id").and_then(Value::as_str).and_then(|id| shop.get(id)).copied().unwrap_or((600, 1));
+        v["price"] = json!(price);
+        v["inShop"] = json!(in_shop != 0);
+    }
+    Ok(list)
+}
+
+/// Oferty pojedynczych naklejek w Sklepie (panel admina): naklejka, wariant, cena w euro, limit i ile sprzedano
+async fn offers_json(c: &mut crate::db::Conn) -> sqlx::Result<Value> {
+    let rows: Vec<(i64, String, String, i64, i16, Option<i32>, i32)> =
+        sqlx::query_as("SELECT id, sticker_id, variant, price, enabled, stock, sold FROM sticker_offers ORDER BY pos, id").fetch_all(c).await?;
+    Ok(Value::Array(
+        rows.into_iter()
+            .map(|(id, sticker, variant, price, enabled, stock, sold)| json!({"id": id, "sticker": sticker, "variant": variant, "price": price, "enabled": enabled != 0, "stock": stock, "sold": sold}))
+            .collect(),
+    ))
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct OffersSave {
+    offers: Vec<Value>,
+}
+
+/// Oferty pojedynczych naklejek (pełna lista z panelu). Istniejące oferty (z `id`) zachowują licznik sprzedanych sztuk, brakujące w liście znikają.
+pub async fn admin_sticker_offers(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<OffersSave>) -> Res {
+    if req.offers.len() > 200 {
+        return bad("Najwyżej 200 ofert");
+    }
+    let mut tx = st.db.begin().await?;
+    let known: std::collections::HashSet<String> = sqlx::query_scalar("SELECT id FROM stickers").fetch_all(&mut *tx).await?.into_iter().collect();
+    let mut keep: Vec<i64> = vec![];
+    for (i, o) in req.offers.iter().enumerate() {
+        let sticker = o.get("sticker").and_then(Value::as_str).unwrap_or("").to_owned();
+        let variant = o.get("variant").and_then(Value::as_str).unwrap_or("normal").to_owned();
+        if !known.contains(&sticker) {
+            return bad("Wybierz naklejkę z katalogu");
+        }
+        if !VARIANTS.iter().any(|(k, _)| *k == variant) {
+            return bad("Nieznany wariant naklejki");
+        }
+        let price = o.get("price").and_then(Value::as_i64).unwrap_or(0);
+        if !(1..=10_000_000).contains(&price) {
+            return bad("Cena oferty: od 1 do 10 000 000 euro");
+        }
+        let stock = o.get("stock").and_then(Value::as_i64).filter(|s| *s > 0).map(|s| s.min(10_000_000) as i32);
+        let enabled = i16::from(o.get("enabled").and_then(Value::as_bool).unwrap_or(true));
+        let id = match o.get("id").and_then(Value::as_i64).filter(|id| *id > 0) {
+            Some(id) => {
+                let n = sqlx::query("UPDATE sticker_offers SET sticker_id = $2, variant = $3, price = $4, enabled = $5, stock = $6, pos = $7 WHERE id = $1")
+                    .bind(id).bind(&sticker).bind(&variant).bind(price).bind(enabled).bind(stock).bind(i as i32)
+                    .execute(&mut *tx).await?.rows_affected();
+                if n == 0 {
+                    return bad("Oferta nie istnieje (odśwież panel)");
+                }
+                id
+            }
+            None => sqlx::query_scalar("INSERT INTO sticker_offers (sticker_id, variant, price, enabled, stock, pos) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id")
+                .bind(&sticker).bind(&variant).bind(price).bind(enabled).bind(stock).bind(i as i32)
+                .fetch_one(&mut *tx).await?,
+        };
+        keep.push(id);
+    }
+    sqlx::query("DELETE FROM sticker_offers WHERE NOT (id = ANY($1))").bind(&keep).execute(&mut *tx).await?;
+    log_admin(&mut tx, &me, "gsticker_offers", None, &format!("{} ofert", keep.len())).await?;
+    let offers = offers_json(&mut tx).await?;
+    tx.commit().await?;
+    ok(json!({"ok": true, "offers": offers}))
+}
+
 pub async fn admin_stickers(State(st): State<AppState>, Admin(_): Admin) -> Res {
     let mut c = st.db.acquire().await?;
     let rows: Vec<(String, String, String, i16, String, f64)> =
@@ -268,7 +364,7 @@ pub async fn admin_stickers(State(st): State<AppState>, Admin(_): Admin) -> Res 
         })
         .collect();
     ok(json!({
-        "stickers": list, "crates": crates_json(), "rarities": rarity_options(),
+        "stickers": list, "crates": admin_crates_json(&mut c).await?, "offers": offers_json(&mut c).await?, "rarities": rarity_options(),
         "variants": VARIANTS.iter().map(|(k, n)| json!({"key": k, "name": n})).collect::<Vec<_>>(),
         "secretOdds": g().secret_odds, "maxOnCard": MAX_ON_CARD,
     }))
@@ -418,10 +514,12 @@ pub async fn admin_sticker_crates(State(st): State<AppState>, Admin(me): Admin, 
         let w = stickers::clean_weights(c.get("weights").unwrap_or(&Value::Null));
         let sc = StickerCrate { id: id.clone(), name: name.clone(), emoji: clean(c.get("emoji").and_then(Value::as_str).unwrap_or(""), 8), color1: hex(&c["color1"], "#ffd23f"),
                                 color2: hex(&c["color2"], "#2a1f4d"), desc: clean(c.get("desc").and_then(Value::as_str).unwrap_or(""), 200), weights: w };
+        let price = c.get("price").and_then(Value::as_i64).unwrap_or(600).clamp(0, 10_000_000);
+        let in_shop = i16::from(c.get("inShop").and_then(Value::as_bool).unwrap_or(true));
         sqlx::query(
-            "INSERT INTO sticker_crates (id, name, emoji, color1, color2, descr, weights, pos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "INSERT INTO sticker_crates (id, name, emoji, color1, color2, descr, weights, pos, price, in_shop) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              ON CONFLICT (id) DO UPDATE SET name = excluded.name, emoji = excluded.emoji, color1 = excluded.color1, color2 = excluded.color2,
-                 descr = excluded.descr, weights = excluded.weights, pos = excluded.pos",
+                 descr = excluded.descr, weights = excluded.weights, pos = excluded.pos, price = excluded.price, in_shop = excluded.in_shop",
         )
         .bind(&sc.id)
         .bind(&sc.name)
@@ -431,6 +529,8 @@ pub async fn admin_sticker_crates(State(st): State<AppState>, Admin(me): Admin, 
         .bind(&sc.desc)
         .bind(sc.weights_json().to_string())
         .bind(i as i32)
+        .bind(price)
+        .bind(in_shop)
         .execute(&mut *tx)
         .await?;
         keep.push(id);
@@ -442,8 +542,9 @@ pub async fn admin_sticker_crates(State(st): State<AppState>, Admin(me): Admin, 
     }
     log_admin(&mut tx, &me, "gsticker_crates", None, &format!("skrzynki: {}", keep.join(", "))).await?;
     stickers::load(&mut tx).await?;
+    let crates = admin_crates_json(&mut tx).await?;
     tx.commit().await?;
-    ok(json!({"ok": true, "crates": crates_json()}))
+    ok(json!({"ok": true, "crates": crates}))
 }
 
 #[cfg(test)]

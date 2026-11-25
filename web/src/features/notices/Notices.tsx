@@ -104,8 +104,8 @@ function Referral({ list, onClose }: { list: any[]; onClose: () => void }) {
         <article key={`${n.role}:${n.referredId}`} className={styles.note}>
           <header><b><Gift size={16} aria-hidden="true" /> {n.role === 'referrer' ? 'Twój znajomy dołączył do gry' : 'Witamy z polecenia'}</b></header>
           <p>{n.other && <Avatar user={n.other} size={20} />} {n.role === 'referrer'
-            ? <>Gracz <b>{n.other?.username}</b> założył konto z twojego linku i zaczął grać. Dostajesz: <b>{n.reward}</b>.</>
-            : <>Twoje konto powstało z polecenia gracza <b>{n.other?.username}</b>. Dostajesz: <b>{n.reward}</b>.</>}</p>
+            ? <>Gracz <b data-player={n.other?.username} tabIndex={0}>{n.other?.username}</b> założył konto z twojego linku i zaczął grać. Dostajesz: <b>{n.reward}</b>.</>
+            : <>Twoje konto powstało z polecenia gracza <b data-player={n.other?.username} tabIndex={0}>{n.other?.username}</b>. Dostajesz: <b>{n.reward}</b>.</>}</p>
         </article>
       ))}
       <p className="muted small">Skrzynki czekają w ekwipunku.</p>

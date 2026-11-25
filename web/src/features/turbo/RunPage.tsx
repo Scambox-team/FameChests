@@ -67,7 +67,7 @@ export function RunPage() {
               const r = await api<{ reward: number; card: WonCard | null; state: any }>('/api/games/run/finish', { log: rest, ticks });   // serwer odtwarza bieg i sam liczy dystans
               applyState(r.state);
               setWon({ reward: r.reward, card: r.card });
-              if (r.reward > 0) { Sound.coin(1); toast(`Super Turbo Run: +${fmt(r.reward)}`); }
+              if (r.reward > 0) { Sound.coin(1); toast(`Super Turbo Run: +${fmt(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`); }
               if (r.card) { syncInventory(); toast(`Super Turbo: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
               refetchRef.current();
             } catch (e: any) { toast(e.message, true); }

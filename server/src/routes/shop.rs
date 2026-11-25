@@ -427,14 +427,16 @@ pub async fn open_money_chest(State(st): State<AppState>, Me(me): Me, JsonBody(r
         return bad("Nie masz takiej skrzynki");
     }
     let amount = roll_money(&req.kind);
+    let euro = crate::game::roll::roll_euro(&req.kind);   // tylko MEGA skrzynka daje euro (obok groszy)
     add_chests(&mut tx, me.id, &key, -1).await?;
     add_state(&mut tx, me.id, "balance", amount).await?;
+    crate::game::add_euro(&mut tx, me.id, euro).await?;
     add_state(&mut tx, me.id, "daily_total", amount).await?;
     crate::exp::award(&mut tx, me.id, "open_money", 1).await?;
     let state = get_state(&mut tx, me.id).await?;
     let chests = get_chests(&mut tx, &cat, me.id).await?;
     tx.commit().await?;
-    ok(json!({"amount": amount, "kind": req.kind, "state": state, "chests": chests}))
+    ok(json!({"amount": amount, "euro": euro, "kind": req.kind, "state": state, "chests": chests}))
 }
 
 // ---------------------------------------------------------------- sprzedaż i ulubione

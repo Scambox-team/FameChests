@@ -48,7 +48,7 @@ export function DailyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal title="Codzienna skrzynka" onClose={onClose}>
-      <p className="muted">Każdego dnia odbierz {D.name} z kasą: {range(D)}. Odbieraj ją {S.cfg.dailyStreak} dni z rzędu, a w {S.cfg.dailyStreak}. dniu dostaniesz {M.name}: {range(M)}. Pominięty dzień zaczyna serię od nowa.</p>
+      <p className="muted">Każdego dnia odbierz {D.name} z kasą: {range(D)}. Odbieraj ją {S.cfg.dailyStreak} dni z rzędu, a w {S.cfg.dailyStreak}. dniu dostaniesz {M.name}: {range(M)}{M.euroMax ? ` oraz ${M.euroMin}-${M.euroMax} euro (waluta na kosmetyki w Sklepie)` : ""}. Pominięty dzień zaczyna serię od nowa.</p>
       <div className={styles.week}>
         {d.days.map((w: any) => (
           <div key={w.day} className={`${styles.day}${w.today ? ` ${styles.today}` : ''}${w.claimed ? ` ${styles.done}` : ''}${w.kind === 'mega' ? ` ${styles.mega}` : ''}`}>

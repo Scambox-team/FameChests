@@ -7,11 +7,11 @@ import s from './EventsAdmin.module.css';
 
 // Zakładka panelu admina „Eventy” (server/src/events.rs, routes/events.rs): nazwa, opis, termin i zawartość eventu -
 // dropy wariantów ze wszystkich skrzynek w czasie eventu i kalendarz adwentowy (nagrody na kolejne dni).
-type Reward = { type: 'card' | 'chest' | 'money'; person?: string; variant?: string; kind?: string; count?: number; amount?: number };
+type Reward = { type: 'card' | 'chest' | 'money' | 'cosmetic' | 'euro'; person?: string; variant?: string; kind?: string; count?: number; amount?: number; id?: string };
 interface GameEvent { id: string; name: string; desc: string; start: string; end: string; enabled: boolean; drops: { variant: string; chance: number }[]; advent: Reward[][] | null }
 interface Meta {
   events: GameEvent[]; variants: { key: string; name: string; chance: number; enabled: boolean; special?: boolean }[];
-  cards: { id: string; name: string; rarity: string; special?: boolean; fixedVariant?: string | null }[]; chests: { kind: string; name: string }[]; claims: Record<string, number>; today: string;
+  cards: { id: string; name: string; rarity: string; special?: boolean; fixedVariant?: string | null }[]; chests: { kind: string; name: string }[]; cosmetics?: { id: string; name: string; kindLabel: string }[]; claims: Record<string, number>; today: string;
 }
 
 const pct = (x: number) => +(x * 100).toFixed(4);
@@ -146,7 +146,7 @@ export default function EventsAdmin() {
                     <datalist id="evCards">{meta.cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</datalist>
                     <div className={s.days}>
                       {e.advent.map((day, d) => {
-                        const card = day.find(r => r.type === 'card'), chest = day.find(r => r.type === 'chest'), money = day.find(r => r.type === 'money');
+                        const card = day.find(r => r.type === 'card'), chest = day.find(r => r.type === 'chest'), money = day.find(r => r.type === 'money'), cosm = day.find(r => r.type === 'cosmetic'), eur = day.find(r => r.type === 'euro');
                         const setDay = (type: Reward['type'], r: Reward | null) => edit(i, v => ({ ...v, advent: v.advent!.map((x, j) => j !== d ? x : [...x.filter(y => y.type !== type), ...(r ? [r] : [])]) }));
                         return (
                           <div key={d} className={s.day}>
@@ -159,6 +159,8 @@ export default function EventsAdmin() {
                               <option value="">brak</option>{meta.chests.map(c => <option key={c.kind} value={c.kind}>{c.name}</option>)}</select></label>
                             <label>Ile<input type="number" min={1} max={20} value={chest?.count || 1} disabled={!chest} onChange={x => setDay('chest', { ...chest!, count: Math.max(1, +x.target.value || 1) })} /></label>
                             <label>Grosze<input type="number" min={0} step={100} value={money?.amount || ''} placeholder="0" onChange={x => setDay('money', +x.target.value > 0 ? { type: 'money', amount: +x.target.value } : null)} /></label>
+                            <label>Euro<input type="number" min={0} step={10} value={eur?.amount || ''} placeholder="0" onChange={x => setDay('euro', +x.target.value > 0 ? { type: 'euro', amount: +x.target.value } : null)} /></label>
+                            {!!meta.cosmetics?.length && <label>Kosmetyk<select value={cosm?.id || ''} onChange={x => setDay('cosmetic', x.target.value ? { type: 'cosmetic', id: x.target.value } : null)}><option value="">brak</option>{meta.cosmetics.map(c => <option key={c.id} value={c.id}>{c.kindLabel}: {c.name}</option>)}</select></label>}
                           </div>
                         );
                       })}

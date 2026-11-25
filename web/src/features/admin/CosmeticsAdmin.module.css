@@ -1,0 +1,44 @@
+/* Panel admina „Kosmetyki profilu”. Klasy z prefiksem unikają słów łapanych przez motywy (_box_, _grid_, _tile_...). */
+.page { display: flex; flex-direction: column; gap: 14px; max-width: 1100px; }
+.page > p { margin: 0; line-height: 1.5; }
+.block { display: flex; flex-direction: column; gap: 12px; }
+.block h3 { margin: 0; font-size: 17px; }
+.block h4, .newBox h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; }
+.page input:not([type="checkbox"]):not([type="file"]), .page select { padding: 7px 9px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; font-size: 14px; min-width: 0; }
+.fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.fields label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 170px; max-width: 320px; min-width: 0; }
+.line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
+.bad { color: var(--bad); font-size: 13px; font-weight: 600; }
+.newBox { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-m); border: 1px dashed var(--control); }
+.upload { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--control); border-radius: 999px; font-size: 13px; cursor: pointer; overflow: hidden; }
+.upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.reqs { width: 100%; border-collapse: collapse; font-size: 14px; }
+.reqs th, .reqs td { padding: 6px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+.reqs th { color: var(--muted); font-weight: 600; }
+
+.row { display: flex; gap: 12px; padding: 10px; border-radius: var(--radius-m); background: color-mix(in srgb, var(--text) 5%, transparent); min-width: 0; }
+.off { opacity: .6; }
+.rowBody { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.thumb { flex: none; align-self: flex-start; width: 120px; padding: 0; border: 0; border-radius: var(--radius-s); background: var(--ground); overflow: hidden; cursor: zoom-in; }
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.k_mini { aspect-ratio: 3 / 2; }
+.k_frame { aspect-ratio: 1; }
+.k_frame img { object-fit: contain; }
+.k_bg { aspect-ratio: 16 / 9; }
+
+.pvFrame { position: relative; width: 144px; height: 144px; display: grid; place-items: center; background: var(--raised); border-radius: var(--radius-s); }
+.pvFrame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.pvLetter { display: inline-grid; place-items: center; flex: none; width: 72px; height: 72px; border-radius: 50%; background: var(--control); font: 700 30px/1 var(--display); }
+.pvProfile { position: relative; isolation: isolate; overflow: hidden; border-radius: var(--radius-m); min-height: 150px; display: grid; align-items: end; padding: 12px; background: var(--ground); }
+.pvImg { position: absolute; inset: 0; z-index: -2; background-size: cover; background-position: center top; }
+.pvShade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--ground) 6%, transparent), color-mix(in srgb, var(--ground) 24%, transparent) 60%, var(--ground)); }
+.pvPanel { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--surface); }
+
+@media (max-width: 700px) { .row { flex-direction: column; } .thumb { width: 100%; max-width: 240px; } .fields label { max-width: none; } }
+.tag { height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); font: 600 12px var(--body); cursor: pointer; }
+.tagOn { background: var(--hue); color: var(--on-hue); }
+.page input[type="datetime-local"] { padding: 6px 9px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; font-size: 14px; }
+.pvAvatar { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; background: var(--raised); }
+.pvAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.k_avatar { aspect-ratio: 1; max-width: 90px; border-radius: 50%; }

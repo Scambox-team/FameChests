@@ -66,6 +66,7 @@ fn slug(s: &str) -> String {
 }
 
 /// Nagroda jak w osiągnięciach: {"type": "money", "amount"} | {"type": "chest", "kind", "count"} | {"type": "card", "person", "variant", "count"}
+/// | {"type": "cosmetic", "id"} (kosmetyk profilu, `cosmetics.rs`)
 pub fn clean_reward(r: &Value) -> Option<Value> {
     let s = |k: &str| r.get(k).and_then(Value::as_str).unwrap_or("").trim().to_owned();
     let n = |k: &str, d: i64, max: i64| r.get(k).and_then(|v| v.as_i64().or_else(|| v.as_str()?.trim().parse().ok())).unwrap_or(d).clamp(0, max);
@@ -77,6 +78,8 @@ pub fn clean_reward(r: &Value) -> Option<Value> {
             let variant = if v.is_empty() || !g().variants.contains_key(&v) { "normal".to_owned() } else { v };
             Some(json!({"type": "card", "person": s("person"), "variant": variant, "count": n("count", 1, 10).max(1)}))
         }
+        "euro" => Some(json!({"type": "euro", "amount": n("amount", 0, 1_000_000)})).filter(|v| v["amount"].as_i64() > Some(0)),
+        "cosmetic" if crate::cosmetics::exists(&s("id")) => Some(json!({"type": "cosmetic", "id": s("id")})),
         _ => None,
     }
 }

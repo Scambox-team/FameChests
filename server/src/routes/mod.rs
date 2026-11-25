@@ -35,6 +35,10 @@ pub mod shop;
 pub mod christmas;
 pub mod events;
 pub mod stickers;
+pub mod cosmetics;
+pub mod mini;
+pub mod scamrooms;
+pub mod cshop;
 pub mod exp;
 pub mod snake;
 pub mod turbo_run;
@@ -133,6 +137,7 @@ pub fn router(st: AppState) -> Router {
         .route("/admin/events", get(admin_page))
         .route("/admin/passport", get(admin_page))
         .route("/admin/gstickers", get(admin_page))
+        .route("/admin/cosmetics", get(admin_page))
         .route("/admin/exp", get(admin_page))
         .route("/admin/arena", get(admin_page))
         .route("/admin/referrals", get(admin_page))
@@ -309,14 +314,35 @@ pub fn router(st: AppState) -> Router {
         .route("/api/games/ranking", get(game_rankings::game_ranking))
         .route("/api/stickers", get(stickers::stickers_me))
         .route("/api/stickers/open", post(stickers::stickers_open))
+        .route("/api/stickers/placed", get(stickers::stickers_placed))
         .route("/api/stickers/attach", post(stickers::sticker_attach))
         .route("/api/stickers/update", post(stickers::sticker_update))
         .route("/api/stickers/detach", post(stickers::sticker_detach))
         .route("/gsticker/{id}", get(stickers::sticker_image))
+        .route("/cosmetic/{id}", get(cosmetics::cosmetic_image))
+        .route("/api/cosmetics", get(cosmetics::my_cosmetics))
+        .route("/api/cosmetics/equip", post(cosmetics::equip))
+        .route("/api/profile/privacy", post(cosmetics::set_privacy))
+        .route("/api/profile/about", post(cosmetics::set_about))
+        .route("/api/shop/cosmetics", get(cshop::shop_cosmetics))
+        .route("/api/shop/cosmetics/buy", post(cshop::shop_cosmetic_buy))
+        .route("/api/shop/showcase/buy", post(cshop::shop_showcase_buy))
+        .route("/api/shop/sticker-crate/buy", post(cshop::shop_sticker_crate_buy))
+        .route("/api/shop/sticker/buy", post(cshop::shop_sticker_buy))
+        .route("/api/games/scamrooms/start", post(scamrooms::scamrooms_start))
+        .route("/api/games/scamrooms/finish", post(scamrooms::scamrooms_finish))
+        .route("/api/users/{name}/mini", get(mini::user_mini))
+        .route("/api/users/{name}/inventory", get(mini::user_inventory))
+        .route("/api/admin/cosmetics", get(cosmetics::admin_cosmetics))
+        .route("/api/admin/cosmetics/save", post(cosmetics::admin_cosmetic_save))
+        .route("/api/admin/cosmetics/order", post(cosmetics::admin_cosmetic_order))
+        .route("/api/admin/cosmetics/grant", post(cosmetics::admin_cosmetic_grant))
+        .route("/api/admin/cosmetics/{id}/delete", post(cosmetics::admin_cosmetic_delete))
         .route("/api/admin/gstickers", get(stickers::admin_stickers))
         .route("/api/admin/gstickers/save", post(stickers::admin_sticker_save))
         .route("/api/admin/gstickers/{id}/delete", post(stickers::admin_sticker_delete))
         .route("/api/admin/gstickers/crates", post(stickers::admin_sticker_crates))
+        .route("/api/admin/gstickers/offers", post(stickers::admin_sticker_offers))
         .route("/api/exp", get(exp::exp_page))
         .route("/api/exp/progress", get(exp::exp_progress))
         .route("/api/exp/pop", post(exp::exp_pop))
@@ -425,6 +451,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/users/{user_id}/access", post(admin_set_access))
         .route("/api/admin/users/{user_id}/chests", post(admin_give_chests))
         .route("/api/admin/users/{user_id}/money", post(admin_money))
+        .route("/api/admin/users/{user_id}/euro", post(admin_euro))
         .route("/api/admin/users/{user_id}/admin", post(admin_toggle))
         .route("/api/admin/users/{user_id}/reset-link", post(admin_reset_link))
         // osiągnięcia

@@ -1347,7 +1347,7 @@ mod tests {
 
     #[test]
     fn heads_up_hand() {
-        let user = |id: i64| UserView { id, username: format!("u{id}"), avatar: String::new(), is_admin: false, avatar_card: None, avatar_rarity: None, avatar_variant: None };
+        let user = |id: i64| UserView { id, username: format!("u{id}"), avatar: String::new(), is_admin: false, avatar_card: None, avatar_rarity: None, avatar_variant: None, avatar_img: None };
         let mut t = Table::new(1, "t".into(), 1, 0.0);
         t.seats[0] = Some(Seat::new(user(1), vec![chip(1, 10), chip(2, 100)], 0.0));
         t.seats[3] = Some(Seat::new(user(2), vec![chip(3, 20), chip(4, 100)], 0.0));

@@ -88,6 +88,7 @@ export function WantedTab({ m, f, set }: { m: MarketApi; f: Filters; set: (p: Pa
                   <div><b>{person(o.person).masked ? 'Tajna karta' : person(o.person).name}</b>{isSpecial(o.variant) ? ` · ${variantName(o.variant)}` : ''}</div>
                   <div>Płaci <b>{fmt(o.price)}</b> <span className="muted small">(wartość {fmt(o.value)})</span></div>
                   <div className={styles.seller}>{o.buyer && <UserLink user={o.buyer} />}<span className="muted small">{timeAgo(o.created)}</span></div>
+                  {o.target && <div className="muted small">{o.mine ? <>Kupno od znajomego: <UserLink user={o.target} />, widzi je tylko on</> : "Zlecenie kupna skierowane do ciebie"}</div>}
                   <div className={styles.acts}>
                     {o.mine ? <Button onClick={() => m.act(() => api(`/api/market/wanted/${o.id}/cancel`, {}), 'Zlecenie wycofane, pieniądze wróciły')}>Wycofaj</Button>
                       : mine ? <Button kind="hue" onClick={() => fill(o)}>Sprzedaj za {fmt(o.price)}</Button>

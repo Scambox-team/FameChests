@@ -1407,6 +1407,31 @@ pub async fn admin_money(
     ok(json!({"ok": true}))
 }
 
+/// Euro dla gracza (także dla samego siebie): dopisanie albo odjęcie. W odróżnieniu od groszy NIE wyklucza gracza z rankingu
+/// (euro jest tylko na kosmetyki i nie wpływa na ranking kolekcji). Ślad w dzienniku adminów.
+pub async fn admin_euro(
+    State(st): State<AppState>,
+    Admin(me): Admin,
+    Path(uid): Path<i64>,
+    JsonBody(req): JsonBody<MoneyRequest>,
+) -> Res {
+    let amount = req.amount.unwrap_or(0);
+    if !(-1_000_000..=1_000_000).contains(&amount) || amount == 0 {
+        return bad("Nieprawidłowa kwota euro");
+    }
+    let mut tx = st.db.begin().await?;
+    ensure_state(&mut tx, uid).await?;
+    crate::db::lock_me(&mut tx, uid).await?;
+    let have = crate::game::get_state(&mut tx, uid).await?.get("euro").copied().unwrap_or(0);
+    if have + amount < 0 {
+        return bad("Gracz ma za mało euro");
+    }
+    crate::game::add_euro(&mut tx, uid, amount).await?;
+    log_admin(&mut tx, &me, "euro", Some(uid), &format!("{amount:+} euro")).await?;
+    tx.commit().await?;
+    ok(json!({"ok": true, "euro": have + amount}))
+}
+
 pub async fn admin_toggle(State(st): State<AppState>, Admin(me): Admin, Path(uid): Path<i64>) -> Res {
     if uid == me.id {
         return bad("Nie możesz odebrać uprawnień samemu sobie");
@@ -1531,7 +1556,7 @@ pub async fn admin_delete_user(State(st): State<AppState>, Admin(me): Admin, Pat
     sqlx::query("DELETE FROM user_counters WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM passport_stamps WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM piggy_contrib WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;
-    for table in ["user_exp", "level_claims", "level_choices", "exp_daily", "exp_badges", "sticker_items"] {
+    for table in ["user_exp", "level_claims", "level_choices", "exp_daily", "exp_badges", "sticker_items", "user_cosmetics", "user_profile_style"] {
         sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table} WHERE user_id = $1"))).bind(uid).execute(&mut *tx).await?;
     }
     sqlx::query("DELETE FROM passport_last WHERE user_id = $1").bind(uid).execute(&mut *tx).await?;

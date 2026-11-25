@@ -10,8 +10,9 @@ import s from './StickersAdmin.module.css';
 // z naklejkami z szansami wariantów (zwykła / foliowana / holo / złota). To NIE są naklejki z zakładki „Naklejki na wariantach” - tamte
 // są wyglądem wariantu karty. Wersje foliowana, holo i złota powstają automatycznie jako filtry na wgranym PNG.
 interface Sticker { id: string; name: string; rarity: string; enabled: boolean; crates: string[]; v: number; owned: number; placed: number }
-interface Crate { id: string; name: string; emoji: string; color1: string; color2: string; desc: string; weights: Record<string, number> }
-interface Data { stickers: Sticker[]; crates: Crate[]; rarities: { key: string; name: string }[]; variants: { key: string; name: string }[]; secretOdds: number; maxOnCard: number }
+interface Crate { id: string; name: string; emoji: string; color1: string; color2: string; desc: string; weights: Record<string, number>; price?: number; inShop?: boolean }
+interface Offer { id?: number; sticker: string; variant: string; price: number; enabled: boolean; stock: number | null; sold?: number }
+interface Data { offers: Offer[]; stickers: Sticker[]; crates: Crate[]; rarities: { key: string; name: string }[]; variants: { key: string; name: string }[]; secretOdds: number; maxOnCard: number }
 
 const W_KEYS = ['normal', 'foil', 'holo', 'gold'] as const;
 const PRESETS: [string, Record<string, number>][] = [
@@ -53,6 +54,8 @@ export default function StickersAdmin() {
               <label>Kolor wieka<input type="color" value={c.color1} onChange={e => setCrate(i, { color1: e.target.value })} /></label>
               <label>Kolor korpusu<input type="color" value={c.color2} onChange={e => setCrate(i, { color2: e.target.value })} /></label>
               <label className={s.wide}>Opis<input value={c.desc} maxLength={200} onChange={e => setCrate(i, { desc: e.target.value })} /></label>
+              <label>Cena w Sklepie (euro)<input type="number" min={0} inputMode="numeric" value={c.price ?? 600} onChange={e => setCrate(i, { price: Math.max(0, +e.target.value || 0) })} /></label>
+              <label className={s.chk}><input type="checkbox" checked={c.inShop !== false} onChange={e => setCrate(i, { inShop: e.target.checked })} /> W sklepie (odznaczona: widzi ją tylko admin)</label>
             </div>
             <div className={s.weights}>
               <b>Szanse wariantów naklejki (wagi)</b>
@@ -66,11 +69,13 @@ export default function StickersAdmin() {
           </div>
         ))}
         <div className={s.line}>
-          <Button onClick={() => setCrates(l => [...l, { id: '', name: 'Nowa skrzynka z naklejkami', emoji: '🏷️', color1: '#ffd23f', color2: '#2a1f4d', desc: '', weights: { normal: 85, foil: 9, holo: 4, gold: 2 } }])}><Plus size={15} aria-hidden="true" /> Nowa skrzynka</Button>
+          <Button onClick={() => setCrates(l => [...l, { id: '', name: 'Nowa skrzynka z naklejkami', emoji: '🏷️', color1: '#ffd23f', color2: '#2a1f4d', desc: '', price: 600, inShop: true, weights: { normal: 85, foil: 9, holo: 4, gold: 2 } }])}><Plus size={15} aria-hidden="true" /> Nowa skrzynka</Button>
           <Button kind="hue" disabled={busy || !dirtyCrates} onClick={saveCrates}>Zapisz skrzynki</Button>
           {dirtyCrates && <span className={s.dirty}>Niezapisane zmiany</span>}
         </div>
       </div>
+
+      <Offers data={data} run={run} busy={busy} />
 
       <div className={`panel ${s.block}`}>
         <h3>Katalog naklejek ({data.stickers.length})</h3>
@@ -81,6 +86,39 @@ export default function StickersAdmin() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Pojedyncze naklejki w konkretnym wariancie wystawione w Sklepie za euro (skrzynki są w Sklepie domyślnie, ich cenę ustawiasz wyżej) */
+function Offers({ data, run, busy }: { data: Data; run: (fn: () => Promise<unknown>, done: string) => Promise<void>; busy: boolean }) {
+  const [list, setList] = useState<Offer[]>(data.offers);
+  useEffect(() => setList(data.offers), [data.offers]);
+  const dirty = JSON.stringify(list) !== JSON.stringify(data.offers);
+  const set = (i: number, d: Partial<Offer>) => setList(l => l.map((o, j) => (j === i ? { ...o, ...d } : o)));
+  const save = () => run(() => api('/api/admin/gstickers/offers', { offers: list }), 'Zapisano oferty naklejek w Sklepie');
+  return (
+    <div className={`panel ${s.block}`}>
+      <h3>Naklejki w Sklepie</h3>
+      <p className="muted small">Każda oferta to jedna naklejka w wybranym wariancie (zwykła / foliowana / holo / złota) za euro, z opcjonalnym limitem sztuk. Kupiona trafia do ekwipunku naklejek. Skrzynki z naklejkami są w Sklepie domyślnie (cenę ustawiasz wyżej).</p>
+      {list.map((o, i) => (
+        <div key={o.id ?? `n${i}`} className={s.fields}>
+          <label>Naklejka<select value={o.sticker} onChange={e => set(i, { sticker: e.target.value })}>
+            <option value="">wybierz</option>{data.stickers.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}</select></label>
+          <label>Wariant<select value={o.variant} onChange={e => set(i, { variant: e.target.value })}>{data.variants.map(v => <option key={v.key} value={v.key}>{v.name}</option>)}</select></label>
+          <label>Cena (euro)<input type="number" min={1} inputMode="numeric" value={o.price || ''} onChange={e => set(i, { price: Math.max(0, +e.target.value || 0) })} /></label>
+          <label>Limit sztuk (puste = bez limitu)<input type="number" min={1} inputMode="numeric" value={o.stock ?? ''} onChange={e => set(i, { stock: e.target.value ? Math.max(1, +e.target.value) : null })} /></label>
+          <label className={s.chk}><input type="checkbox" checked={o.enabled} onChange={e => set(i, { enabled: e.target.checked })} /> Włączona</label>
+          <span className="muted small">{o.id ? `sprzedano ${o.sold ?? 0}` : 'nowa'}</span>
+          <Button onClick={() => setList(l => l.filter((_, j) => j !== i))}><Trash2 size={15} aria-hidden="true" /> Usuń</Button>
+        </div>
+      ))}
+      {!list.length && <p className="muted small">Nie ma jeszcze żadnych ofert pojedynczych naklejek.</p>}
+      <div className={s.line}>
+        <Button onClick={() => setList(l => [...l, { sticker: data.stickers[0]?.id ?? '', variant: 'normal', price: 300, enabled: true, stock: null }])} disabled={!data.stickers.length}><Plus size={15} aria-hidden="true" /> Nowa oferta</Button>
+        <Button kind="hue" disabled={busy || !dirty} onClick={save}>Zapisz oferty</Button>
+        {dirty && <span className={s.dirty}>Niezapisane zmiany</span>}
+      </div>
+    </div>
   );
 }
 

@@ -21,3 +21,7 @@
   --display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
   --body: "Hanken Grotesk", system-ui, sans-serif;
 }
+
+/* Euro (waluta na kosmetyki) ma własny kolor wszędzie: wartość i znaczek € - niebieski, w jasnych motywach ciemniejszy, żeby był czytelny */
+:root { --euro: #4aa8ff; }
+:root:is([data-theme="warm"], [data-theme="aero"]) { --euro: #1d62c4; }

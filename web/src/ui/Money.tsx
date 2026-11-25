@@ -17,3 +17,13 @@ export function Money({ value }: { value: number }) {
     </span>
   );
 }
+
+/** Euro (druga waluta, tylko na kosmetyki): obok groszy na pasku u góry */
+export function Euro({ value }: { value: number }) {
+  return (
+    <span className={`${styles.money} ${styles.euro}`} aria-label={`${Math.round(value)} euro`} title="Euro: waluta na kosmetyki w Sklepie">
+      <Counter value={Math.round(value)} locale="pl-PL" intro={false} motionBlur={false} duration={0.55} fade={0} padding={PAD} fontSize="inherit" fontWeight="inherit" />
+      <small className={styles.unit}>€</small>
+    </span>
+  );
+}

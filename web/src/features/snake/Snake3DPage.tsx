@@ -62,7 +62,7 @@ export function Snake3DPage() {
             const r = await api<{ reward: number; card: WonCard | null; state: any }>('/api/games/snake/finish', { log: rest, steps: ticks });   // serwer odtwarza grę i sam liczy kule
             applyState(r.state);
             setWon({ reward: r.reward, card: r.card });
-            if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}`); }
+            if (r.reward > 0) { Sound.coin(1); toast(`Snake: +${fmt(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`); }
             if (r.card) { syncInventory(); toast(`Super Turbo: karta ${r.card.name} w wariancie ${variantName(r.card.variant)}`); }
             refetchRef.current();
           } catch (e: any) { toast(e.message, true); }

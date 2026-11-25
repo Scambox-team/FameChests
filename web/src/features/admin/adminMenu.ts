@@ -34,6 +34,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     P('questy', 'Questy', 'Codzienny cel: karta do zdobycia i zadanie CTF', 'content'),
     G('eventy', 'Eventy', 'Wydarzenia w grze', '/admin/events', 'content'),
     G('paszport', 'Paszport', 'Stemple państw: kolor, własna ikona i nagroda za zdobycie', '/admin/passport', 'content'),
+    G('kosmetyki', 'Kosmetyki profilu', 'Tła miniprofilu, obramówki zdjęcia i tła profilu: grafiki o sztywnych wymiarach, źródło odblokowania, kolejność, ręczne nadanie', '/admin/cosmetics', 'content'),
     P('easter', 'Easter egg', 'Obrazek przelatujący w bębnie skrzynki', 'content'),
     G('motywy', 'Motywy', 'Dostępność motywu Niepodległość: terminy, na stałe, wyłączony', '/admin/themes', 'content'),
     G('radio', 'Radio', 'Albumy i utwory do funkcji eksperymentalnej Radio: nazwy, źródła, kolejność', '/admin/radio', 'content'),

@@ -217,6 +217,7 @@ async fn arena_record(st: &AppState, b: &mut Battle) -> sqlx::Result<()> {
                     if money > 0 {
                         add_state(&mut tx, uid, "balance", money).await?;
                         add_state(&mut tx, uid, "earned", money).await?;
+                        crate::game::pay_game_euro(&mut tx, uid, money).await?;
                     }
                     r.money = money;
                     if mode == Mode::Pvp {

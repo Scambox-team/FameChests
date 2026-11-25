@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{ok, JsonBody};
-use crate::auth::{Me, UserView};
+use crate::auth::{find_user, Me, UserView};
 use crate::data::g;
 use crate::db::{lock_me, now, Conn};
 use crate::error::{bad, fail, AppError, Res};
@@ -106,6 +106,8 @@ struct WantedView {
     created: f64,
     buyer: Option<UserView>,
     mine: bool,
+    /// zlecenie skierowane do jednego znajomego (kupno z jego ekwipunku); None = publiczne
+    target: Option<UserView>,
 }
 
 #[derive(Serialize, Clone, Copy)]
@@ -214,6 +216,20 @@ pub async fn market(State(st): State<AppState>, Me(me): Me) -> Res {
     .into_iter()
     .filter(|r| known(&r.person_id))
     .collect();
+    // zlecenia skierowane do jednego znajomego (kupno z jego ekwipunku) widzą tylko kupujący i adresat
+    let aimed: HashMap<i64, i64> = {
+        let ids: Vec<i64> = wanted.iter().map(|w| w.id).collect();
+        sqlx::query_as::<_, (i64, i64)>("SELECT id, target_id FROM market_wanted WHERE id = ANY($1) AND target_id IS NOT NULL")
+            .bind(&ids)
+            .fetch_all(&mut *c)
+            .await?
+            .into_iter()
+            .collect()
+    };
+    let wanted: Vec<Wanted> = wanted
+        .into_iter()
+        .filter(|w| aimed.get(&w.id).is_none_or(|t| *t == me || w.buyer_id == me))
+        .collect();
     let filled: Vec<Wanted> = sqlx::query_as!(
         Wanted,
         r#"SELECT id, buyer_id, person_id, variant, price, status AS "status: WantedStatus", seller_id, created_at, updated_at
@@ -278,6 +294,7 @@ pub async fn market(State(st): State<AppState>, Me(me): Me) -> Res {
         .chain(tops.values().map(|b| Some(b.bidder_id)))
         .chain(offers.values().flatten().map(|o| Some(o.buyer_id)))
         .chain(wanted.iter().chain(&filled).map(|r| Some(r.buyer_id)))
+        .chain(aimed.values().map(|t| Some(*t)))
         .chain(filled.iter().map(|r| r.seller_id))
         .chain(my_offers.iter().map(|o| Some(o.seller_id)))
         .collect::<Vec<_>>();
@@ -333,6 +350,7 @@ pub async fn market(State(st): State<AppState>, Me(me): Me) -> Res {
                 created: r.created_at,
                 buyer: user(&users, Some(r.buyer_id)),
                 mine: r.buyer_id == me,
+                target: user(&users, aimed.get(&r.id).copied()),
             }
         })
         .collect();
@@ -791,9 +809,12 @@ pub struct WantedRequest {
     person: String,
     variant: String,
     price: Option<i64>,
+    /// nazwa znajomego, do którego kierujemy zlecenie (kupno z jego ekwipunku); puste = zwykłe, publiczne
+    target: String,
 }
 
-/// Zlecenie "Szukam": kupię tę kartę (w tym wariancie) za tyle - pieniądze są blokowane do realizacji / wycofania
+/// Zlecenie "Szukam": kupię tę kartę (w tym wariancie) za tyle - pieniądze są blokowane do realizacji / wycofania.
+/// Z polem `target` zlecenie widzi i może zrealizować tylko ten znajomy (kupno z jego ekwipunku) - pieniądze i tak są od razu zablokowane.
 pub async fn market_wanted_create(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<WantedRequest>) -> Res {
     if me.hidden_from_ranking() {
         return bad("Gracze poza rankingiem nie mogą handlować ani wymieniać kart");
@@ -820,18 +841,38 @@ pub async fn market_wanted_create(State(st): State<AppState>, Me(me): Me, JsonBo
     if active >= rules.max_wanted {
         return bad(format!("Możesz mieć najwyżej {} zleceń naraz", rules.max_wanted));
     }
+    let target = if req.target.trim().is_empty() {
+        None
+    } else {
+        // kupno z ekwipunku: tylko od znajomego, który tę kartę (w tym wariancie) naprawdę ma
+        let friends = friend_ids(&mut tx, cx.uid()).await?;
+        let Some(t) = find_user(&mut tx, &req.target).await?.filter(|t| friends.contains(&t.id) && !t.hidden_from_ranking()) else {
+            return bad("Kupować w ten sposób możesz tylko od znajomych");
+        };
+        let has = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM items WHERE user_id = $1 AND person_id = $2 AND variant = $3")
+            .bind(t.id)
+            .bind(&p.id)
+            .bind(variant)
+            .fetch_one(&mut *tx)
+            .await?;
+        if has == 0 {
+            return bad(format!("{} nie ma już tej karty", t.username));
+        }
+        Some(t.id)
+    };
     if balance(&mut tx, cx.uid()).await? < price {
         return bad("Za mało pieniędzy!");
     }
     add_state(&mut tx, cx.uid(), "balance", -price).await?;
-    sqlx::query!(
-        "INSERT INTO market_wanted (buyer_id, person_id, variant, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $5)",
-        cx.uid(),
-        p.id,
-        variant,
-        price,
-        now()
+    sqlx::query(
+        "INSERT INTO market_wanted (buyer_id, person_id, variant, price, created_at, updated_at, target_id) VALUES ($1, $2, $3, $4, $5, $5, $6)",
     )
+    .bind(cx.uid())
+    .bind(&p.id)
+    .bind(variant)
+    .bind(price)
+    .bind(now())
+    .bind(target)
     .execute(&mut *tx)
     .await?;
     let state = get_state(&mut tx, cx.uid()).await?;
@@ -891,6 +932,12 @@ pub async fn market_wanted_fill(
     let Some(w) = wanted.filter(|w| w.status == WantedStatus::Active) else { return bad(MARKET_GONE) };
     if w.buyer_id == cx.uid() {
         return bad("To twoje zlecenie");
+    }
+    // zlecenie skierowane do konkretnego znajomego realizuje tylko on
+    let aimed: Option<i64> =
+        sqlx::query_scalar("SELECT target_id FROM market_wanted WHERE id = $1").bind(wid).fetch_one(&mut *tx).await?;
+    if aimed.is_some_and(|t| t != cx.uid()) {
+        return bad(MARKET_GONE);
     }
     let rows = take_my_items(&mut tx, &cx.cat, cx.uid(), &[item_id], Use::Market).await?;
     if rows[0].person_id != w.person_id || rows[0].variant != w.variant {
@@ -965,6 +1012,17 @@ pub async fn market_forget_user(c: &mut Conn, uid: i64) -> sqlx::Result<()> {
     )
     .execute(&mut *c)
     .await?;
+    // zlecenia „Szukam” skierowane do niego (kupno z ekwipunku znajomego): kupujący dostają pieniądze z powrotem
+    let aimed: Vec<(i64, i64)> = sqlx::query_as(
+        "UPDATE market_wanted SET status = 'cancelled', updated_at = $1 WHERE target_id = $2 AND status = 'active' RETURNING buyer_id, price",
+    )
+    .bind(now)
+    .bind(uid)
+    .fetch_all(&mut *c)
+    .await?;
+    for (buyer, price) in aimed {
+        add_state(c, buyer, "balance", price).await?;
+    }
     // jego lobby jackpota: założone - zamykamy, w cudzym - zwalniamy miejsce; znika też z zaproszeń
     sqlx::query!(
         "UPDATE jackpots SET status = 'cancelled', finished_at = $1 WHERE creator_id = $2 AND status = 'open'",

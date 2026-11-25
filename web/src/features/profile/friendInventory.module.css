@@ -1,0 +1,9 @@
+.fiTools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fiTools > label { flex: 1 1 180px; }
+.fiGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; max-height: 46vh; overflow-y: auto; padding: 2px; }
+.fiBar { position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-m); background: var(--raised); box-shadow: inset 0 0 0 1px var(--hue); }
+.fiBarInfo { overflow-wrap: anywhere; }
+.fiBarActs { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.fiPrice { display: flex; flex-direction: column; gap: 3px; }
+.fiPrice input { width: 120px; height: 40px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-s); background: var(--ground); color: var(--text); font: inherit; }
+.fiBtns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }

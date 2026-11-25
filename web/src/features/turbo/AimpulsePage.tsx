@@ -59,7 +59,7 @@ export function AimpulsePage() {
               applyState(r.state);
               setWon({ reward: r.reward, score: r.score });
               refetchRef.current();
-              if (r.reward > 0) { Sound.coin(1); toast(`AIMPULSE: +${fmt(r.reward)}`); }
+              if (r.reward > 0) { Sound.coin(1); toast(`AIMPULSE: +${fmt(r.reward)}${(r as any).euro ? ` i +${(r as any).euro} €` : ""}`); }
               return r.reward > 0 ? `NAGRODA: +${fmt(r.reward)}` : 'ZA MAŁO PUNKTÓW NA NAGRODĘ';
             } catch (e: any) { toast(e.message, true); return undefined; }
           },

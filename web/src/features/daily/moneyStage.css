@@ -48,3 +48,5 @@
 .ms-amount { font-family: var(--display) !important; }
 .ms-btn { height: 44px; padding: 0 22px; border: 1px solid var(--control); border-radius: 999px; background: #0006; color: var(--text); font: 500 15px var(--body); }
 .ms-btn.hue { background: var(--hue); border-color: var(--hue); color: var(--on-hue); }
+.ms-euro { font-size: .55em !important; margin-top: -6px; }
+.ms-euro small { font-size: .5em; font-weight: 600; opacity: .8; letter-spacing: 0; }

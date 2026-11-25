@@ -96,6 +96,9 @@
 .bigAvatar { flex: none; width: 96px; height: 96px; padding: 0; border: 0; border-radius: var(--radius); background: var(--raised); overflow: hidden; display: grid; place-items: center; cursor: pointer; }
 .bigAvatar:disabled { cursor: default; opacity: 1; }
 .bigAvatar :global(.av-card), .bigAvatar :global(.av-card img) { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+.bigFramed { width: 120px; height: 120px; background: none; overflow: visible; border-radius: 0; }
+.bigFramed :global(.av-card) { border-radius: 50%; }
+.stack[data-pbg] > .panel { background: color-mix(in srgb, var(--surface) 62%, transparent); }
 .info { flex: 1; min-width: 240px; }
 .info h2 { font-size: 26px; line-height: 32px; }
 .stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

@@ -51,9 +51,13 @@ impl Ctx {
 
 /// patch_seen: ostatnia obejrzana lista zmian; market_seen: kiedy gracz ostatnio oglądał rynek;
 /// jackpot_seen: koniec (ms) ostatniej gry w jackpot, której wynik gracz już widział
-pub fn state_keys() -> [(&'static str, i64); 15] {
+pub fn state_keys() -> [(&'static str, i64); 17] {
     [
         ("balance", g().starting_balance),
+        // euro: druga waluta, tylko na kosmetyki (sklep z kosmetykami); `add_euro`, `euro_for_gr`
+        ("euro", 0),
+        // dodatkowe miejsca w gablocie kupione za euro (Sklep)
+        ("showcase_extra", 0),
         ("opened", 0),
         ("spent", 0),
         ("earned", 0),
@@ -119,6 +123,33 @@ pub async fn add_state(c: &mut Conn, uid: i64, key: &str, delta: i64) -> sqlx::R
     .execute(c)
     .await?;
     Ok(())
+}
+
+/// Euro za nagrodę w groszach z gry: `euro.ratio` euro za 1 gr (zawsze mniej niż groszy), najmniej 1 euro przy dodatniej nagrodzie
+pub fn euro_for_gr(gr: i64) -> i64 {
+    euro_from_ratio(gr, g().euro.ratio)
+}
+
+pub fn euro_from_ratio(gr: i64, ratio: f64) -> i64 {
+    if gr <= 0 {
+        return 0;
+    }
+    ((gr as f64 * ratio).round() as i64).max(1)
+}
+
+/// Dopisuje (albo odejmuje) euro; wołać w transakcji z `lock_me`
+pub async fn add_euro(c: &mut Conn, uid: i64, delta: i64) -> sqlx::Result<()> {
+    if delta != 0 {
+        add_state(c, uid, "euro", delta).await?;
+    }
+    Ok(())
+}
+
+/// Euro za grę, która właśnie zapłaciła `gr` groszy: dopisuje je graczowi i zwraca ile (do odpowiedzi dla przeglądarki)
+pub async fn pay_game_euro(c: &mut Conn, uid: i64, gr: i64) -> sqlx::Result<i64> {
+    let euro = euro_for_gr(gr);
+    add_euro(c, uid, euro).await?;
+    Ok(euro)
 }
 
 pub async fn set_state(c: &mut Conn, uid: i64, key: &str, value: i64) -> sqlx::Result<()> {

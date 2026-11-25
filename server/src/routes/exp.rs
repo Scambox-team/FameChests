@@ -217,7 +217,7 @@ pub async fn admin_exp(State(st): State<AppState>, Admin(_): Admin) -> Res {
         "decay": cfg.decay, "defaultDecay": DEFAULT_DECAY, "exclusiveChance": cfg.exclusive_chance,
         "exclusiveCards": cfg.excl_cards.iter().map(|(p, v)| json!({"person": p, "variant": v})).collect::<Vec<_>>(),
         "exclusiveChests": cfg.excl_chests, "badgeTiers": BADGE_TIERS,
-        "variants": variants, "cards": cards, "chests": chests,
+        "variants": variants, "cards": cards, "chests": chests, "cosmetics": crate::cosmetics::options(),
     }))
 }
 

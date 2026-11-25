@@ -29,7 +29,7 @@ use super::snake::CommitRequest;
 
 /// Nagroda: (klucz w `state`, pole formularza, wartość domyślna, największa dozwolona)
 pub const REWARD: &[(&str, &str, i64, i64)] = &[
-    ("run_reward_per_100m", "per100m", 12, 1000),
+    ("run_reward_per_100m", "per100m", 22, 1000),
     ("run_reward_min_dist", "minDist", 200, 100_000),
 ];
 /// Najszybszy możliwy bieg: prędkość tunelu rośnie do 46 m/s, z turbem x1,35 (około 62 m/s); zapas na skoki i start
@@ -154,9 +154,11 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     let r = reward_cfg(&mut tx).await?;
     let earned = earned_today(&mut tx, me.id).await?;
     let reward = reward_for(&r, distance);
+    let mut euro = 0;
     if reward > 0 {
         add_state(&mut tx, me.id, "balance", reward).await?;
         add_state(&mut tx, me.id, "earned", reward).await?;
+        euro = crate::game::pay_game_euro(&mut tx, me.id, reward).await?;
         set_state(&mut tx, me.id, "run_day", today()).await?;
         set_state(&mut tx, me.id, "run_today", earned + reward).await?;
     }
@@ -167,7 +169,7 @@ pub async fn run_finish(State(st): State<AppState>, Me(me): Me, JsonBody(req): J
     super::piggy::add(&mut tx, me.id, super::piggy::Ev::Game(reward)).await?;
     let state = get_state(&mut tx, me.id).await?;
     tx.commit().await?;
-    ok(json!({"distance": distance, "reward": reward, "today": earned + reward, "card": card, "state": state}))
+    ok(json!({"distance": distance, "reward": reward, "euro": euro, "today": earned + reward, "card": card, "state": state}))
 }
 
 /// Panel admina (JSON): pola nagrody (`per100m`, `minDist`); odpowiedź = aktualne ustawienia

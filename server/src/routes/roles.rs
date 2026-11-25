@@ -48,7 +48,7 @@ pub fn need(path: &str) -> Need {
         "log" => Need::Perm("log"),
         "reports" => Need::Perm("reports"),
         "crates" | "shop-size" | "cards" | "variants" | "variant-designs" | "stickers" | "gstickers" => Need::Perm("catalog"),
-        "messages" | "links" | "email-templates" | "achievements" | "quests" | "referrals" | "events" | "christmas" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
+        "messages" | "links" | "email-templates" | "cosmetics" | "achievements" | "quests" | "referrals" | "events" | "christmas" | "egg" | "ufo" | "radio" | "themes" | "passport" => {
             Need::Perm("content")
         }
         "horses" | "chess-skins" | "ctf" | "snake" | "run" | "arena" => Need::Perm("games"),
@@ -60,7 +60,7 @@ pub fn need(path: &str) -> Need {
             (2, _) => Need::Perm("accounts"),
             (_, Some("ban" | "ranking" | "access")) => Need::Perm("users"),
             (_, Some("cards")) if seg.len() == 3 => Need::Perm("users"),
-            (_, Some("cards" | "chests" | "money")) => Need::Perm("economy"),
+            (_, Some("cards" | "chests" | "money" | "euro")) => Need::Perm("economy"),
             (_, Some("reset-link" | "email")) => Need::Perm("accounts"),
             _ => Need::Owner, // m.in. /admin (daj/odbierz admina) i /role (ranga)
         },
@@ -289,6 +289,8 @@ mod tests {
         assert!(matches!(need("/api/arena/inbox"), Need::Any));
         assert!(matches!(need("/api/admin/role"), Need::Any));
         assert!(matches!(need("/api/admin/catalog"), Need::Any));
+        assert!(matches!(need("/api/admin/cosmetics"), Need::Perm("content")));
+        assert!(matches!(need("/api/admin/cosmetics/save"), Need::Perm("content")));
         assert!(matches!(need("/api/admin/roles"), Need::Owner));
         assert!(matches!(need("/api/admin/roles/3"), Need::Owner));
         assert!(matches!(need("/api/admin/nowe-cos"), Need::Owner), "nieopisana ścieżka = tylko właściciel");

@@ -39,7 +39,7 @@
   .title { font-size: 26px; line-height: 32px; overflow-wrap: anywhere; }
   .main { padding-block: 8px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .phoneTop { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 10px; height: 52px; background: color-mix(in srgb, var(--ground) 80%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
-  .phoneMoney { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font: 800 18px var(--display); }
+  .phoneMoney { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font: 800 16px var(--display); min-width: 0; }
   .phoneGift { position: relative; width: 40px; height: 40px; }
   .phoneGift .ready { position: absolute; top: 6px; right: 6px; }
   .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px); }
@@ -81,3 +81,8 @@
 @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } }
 @keyframes sheetLeft { from { transform: translateX(-40px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
+
+/* wąski telefon: nazwa gry znika z paska (zostaje znaczek), żeby zmieściły się grosze, euro, level i skrzynka dnia */
+@media (max-width: 440px) {
+  .phoneTop .brand { font-size: 0; gap: 0; padding: 0 6px; }
+}

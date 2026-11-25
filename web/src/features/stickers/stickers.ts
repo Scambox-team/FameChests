@@ -77,6 +77,47 @@ export function mergePlaced(placed: Record<string, StkPlacement[]> | undefined) 
   Object.assign((S.stk as StkData).placed, placed);
 }
 
+// Naklejki są widoczne na karcie WSZĘDZIE, nie tylko u właściciela: każda karta narysowana z numerem egzemplarza (.card[data-uid]) bez znanych położeń
+// dostaje je z serwera (/api/stickers/placed, partiami, raz na numer) i jest przerysowywana (refreshCard). Dotyczy rynku, podglądów, ekwipunku znajomego itd.
+const known = new Set<number>();
+const pending = new Set<number>();
+let timer = 0;
+let watching = false;
+
+function flushPlaced() {
+  timer = 0;
+  const ids = [...pending].slice(0, 100);
+  ids.forEach(i => pending.delete(i));
+  if (pending.size) timer = window.setTimeout(flushPlaced, 120);
+  if (!ids.length) return;
+  api<{ placed: Record<string, StkPlacement[]> }>(`/api/stickers/placed?ids=${ids.join(',')}`).then(r => {
+    mergePlaced(r.placed);
+    ids.forEach(refreshCard);
+  }).catch(() => ids.forEach(i => known.delete(i)));
+}
+
+function scanCards(root: ParentNode) {
+  if (!S.stk) return;
+  root.querySelectorAll<HTMLElement>('.card[data-uid]').forEach(el => {
+    const uid = Number(el.dataset.uid);
+    if (!(uid > 0) || known.has(uid)) return;
+    known.add(uid);
+    if ((S.stk as StkData).placed[uid]) return;   // własne karty: położenia są już w S.stk
+    pending.add(uid);
+  });
+  if (pending.size && !timer) timer = window.setTimeout(flushPlaced, 120);
+}
+
+/** Raz w AppShell: obserwuje DOM i dociąga naklejki kart widocznych na ekranie */
+export function watchStickerCards() {
+  if (watching) return;
+  watching = true;
+  new MutationObserver(muts => {
+    for (const m of muts) m.addedNodes.forEach(n => { if (n instanceof Element) scanCards(n.matches('.card[data-uid]') ? (n.parentElement ?? document) : n); });
+  }).observe(document.body, { childList: true, subtree: true });
+  scanCards(document);
+}
+
 // ---------------------------------------------------------------- okna (renderują je komponenty-hosty w App)
 
 /** Edytor naklejania: `card` = numer karty (inaczej najpierw wybór karty), `sticker` = naklejka z ekwipunku do naklejenia od razu */

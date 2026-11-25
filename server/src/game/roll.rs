@@ -186,6 +186,16 @@ pub fn roll_money(kind: &str) -> i64 {
     ((amount / 100.0).round_ties_even() as i64) * 100
 }
 
+/// Euro ze skrzynki z pieniędzmi (0, gdy skrzynka ich nie daje): euro_min + (euro_max - euro_min) * los^curve, zaokrąglone do 10
+pub fn roll_euro(kind: &str) -> i64 {
+    let c = &g().money_chests[kind];
+    if c.euro_max <= 0 {
+        return 0;
+    }
+    let amount = c.euro_min as f64 + (c.euro_max - c.euro_min).max(0) as f64 * random().powf(c.curve);
+    (((amount / 10.0).round_ties_even() as i64) * 10).clamp(c.euro_min, c.euro_max)
+}
+
 /// Wygrana w kartach o łącznej wartości value: losowe karty ze skrzynek w sklepie (bez tajnych) w wariantach
 /// z CASINO_VARIANTS - za każdym razem jedna z najdroższych, które się mieszczą (CASINO_TOP).
 /// Zwraca ([(karta, wariant)], reszta w pieniądzach).
@@ -259,6 +269,24 @@ mod tests {
             let m = roll_money("daily");
             assert!((5_000..=20_000).contains(&m) && m % 100 == 0);
         }
+        // euro: tylko MEGA skrzynka (250-1000), codzienna ich nie daje
+        for _ in 0..200 {
+            let e = roll_euro("mega");
+            assert!((250..=1000).contains(&e) && e % 10 == 0, "{e}");
+            assert_eq!(roll_euro("daily"), 0);
+        }
+    }
+
+    #[test]
+    fn euro_is_worth_more_than_gr() {
+        use crate::game::{euro_for_gr, euro_from_ratio};
+        assert_eq!(euro_from_ratio(0, 0.02), 0);
+        assert_eq!(euro_from_ratio(10, 0.02), 1, "najmniej 1 euro przy dodatniej nagrodzie");
+        assert_eq!(euro_from_ratio(500, 0.02), 10);
+        for gr in [1, 50, 300, 2_000, 100_000] {
+            assert!(euro_for_gr(gr) < gr || gr == 1, "z tego samego miejsca euro jest mniej niż groszy: {gr}");
+        }
+        assert!(g().euro.ratio > 0.0 && g().euro.ratio < 0.5);
     }
 
     /// "always" bez warstwy (chesswhite/chessblack) nie może zapętlać rozkładu ani losowania; rozkład sumuje się do 1
