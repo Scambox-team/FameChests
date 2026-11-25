@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EyeOff, Pin, ShoppingBag } from 'lucide-react';
+import { Eye, EyeOff, Pin, ShoppingBag } from 'lucide-react';
 import { api } from '../../api/client';
 import { applyState } from '../../game/session';
 import { S, useGame } from '../../game/store';
@@ -12,6 +12,7 @@ import { FramedAvatar } from '../../ui/FramedAvatar';
 import { PageHero } from '../../ui/PageHero';
 import { toast } from '../../ui/Toaster';
 import { useCosmeticSrc, type CosmeticView } from '../profile/cosmetics';
+import { CosmeticPreview } from '../profile/CosmeticPreview';
 import { loadStickers, stickerTileHTML, VARIANT_NAME } from '../stickers/stickers';
 import pf from '../profile/playerCard.module.css';
 import s from './shop.module.css';
@@ -64,13 +65,14 @@ function Preview({ it }: { it: Item }) {
 /** Jedna pozycja Sklepu: kosmetyk, miejsce w gablocie, skrzynka z naklejkami albo naklejka - wszystko w jednej siatce i z tymi samymi filtrami */
 interface Entry {
   key: string; type: string; typeLabel: string; name: string; price: number; tags: string[]; owned: boolean; hidden: boolean; hiddenNote?: string;
-  preview: ReactNode; notes: string[]; limit?: string; canBuy: boolean; problem: string | null; buyLabel: string; buy: () => Promise<void>; ownedLabel?: string;
+  preview: ReactNode; onPreview?: () => void; notes: string[]; limit?: string; canBuy: boolean; problem: string | null; buyLabel: string; buy: () => Promise<void>; ownedLabel?: string;
 }
 
 function Tile({ e, admin, busy }: { e: Entry; admin: boolean; busy: boolean }) {
   return (
     <article className={`${s.shItem}${e.hidden ? ` ${s.shHidden}` : ''}`}>
       {e.preview}
+      {e.onPreview && <button type="button" className={s.shTry} onClick={e.onPreview}><Eye size={14} aria-hidden="true" /> Podgląd na moim profilu</button>}
       <div className={s.shBody}>
         <b className={s.shName}>{e.name}</b>
         <span className="muted small">{e.typeLabel}</span>
@@ -111,6 +113,7 @@ export function ShopPage() {
   const [sort, setSort] = useState('price');
   const [hideOwned, setHideOwned] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [tryOn, setTryOn] = useState<Item | null>(null);
   useEffect(() => { document.title = 'Sklep · ScamBox'; }, []);
 
   /** Kupno jednej pozycji: potwierdzenie, zapytanie, stan z odpowiedzi, odświeżenie sklepu */
@@ -141,7 +144,7 @@ export function ShopPage() {
       const notes = [AVAIL_NOTE[it.avail]].filter((n): n is string => !!n && !hidden);
       out.push({
         key: `c:${it.id}`, type: it.kind, typeLabel: kindLabel, name: it.name, price: it.price, tags: it.tags, owned: it.owned, hidden, hiddenNote: AVAIL_NOTE[it.avail],
-        preview: <Preview it={it} />, notes,
+        preview: <Preview it={it} />, onPreview: () => setTryOn(it), notes,
         limit: it.left !== null && it.avail === 'open' ? `Zostało ${it.left} z ${it.stock}` : it.saleTo && it.avail === 'open' ? `Do ${when(it.saleTo)}` : it.saleFrom && it.avail === 'soon' ? `Od ${when(it.saleFrom)}` : undefined,
         canBuy: it.canBuy, problem: it.problem, buyLabel: 'Kup',
         buy: purchase(`Kupić „${it.name}” za ${fmtNum(it.price)} euro?`, '/api/shop/cosmetics/buy', { id: it.id }, `Kupiono: ${it.name}. Założysz to w profilu, w „Wygląd profilu”.`),
@@ -223,6 +226,7 @@ export function ShopPage() {
         ))}
         {colors.length > 0 && <button type="button" className={s.shClear} onClick={() => setColors([])}>Wyczyść kolory</button>}
       </div>
+      {tryOn && <CosmeticPreview item={tryOn} onClose={() => setTryOn(null)} />}
       <div className={s.shGrid}>
         {list.map(e => <Tile key={e.key} e={e} admin={data.admin} busy={busy} />)}
         {!list.length && <p className="muted">{entries.length ? 'Nic nie pasuje do filtrów.' : 'Sklep jest jeszcze pusty.'}</p>}

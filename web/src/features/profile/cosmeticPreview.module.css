@@ -1,0 +1,24 @@
+/* Podgląd kosmetyku ze Sklepu na własnym profilu. Prefiks cp - motywy łapią m.in. _bar_, _box_, _tile_, _grid_, _name_. */
+.cpGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.cpScene { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; padding: 10px; border-radius: var(--radius-m); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.cpScene figcaption { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.cpHot { box-shadow: inset 0 0 0 2px var(--hue); }
+
+.cpProfile { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; min-height: 230px; padding: 12px; border-radius: var(--radius-s); background: var(--ground); }
+.cpImg { position: absolute; inset: 0; z-index: -2; background-size: cover; background-position: center top; }
+.cpShade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--ground) 6%, transparent) 0%, color-mix(in srgb, var(--ground) 24%, transparent) 55%, var(--ground) 100%); }
+.cpHead { display: flex; align-items: center; gap: 12px; margin-top: auto; }
+.cpPanel { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--surface) 72%, transparent); min-width: 0; }
+.cpPanel b { font: 800 18px/22px var(--display); overflow-wrap: anywhere; }
+.cpBars { display: flex; flex-direction: column; gap: 4px; }
+.cpBars i { display: block; height: 6px; width: 120px; border-radius: 3px; background: color-mix(in srgb, var(--text) 18%, transparent); }
+.cpBars i + i { width: 80px; }
+.cpTiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cpTiles i { display: block; height: 34px; border-radius: var(--radius-s); background: var(--surface); }
+
+.cpMini { width: 100%; }
+.cpList { display: flex; flex-direction: column; gap: 4px; }
+.cpRow { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--radius-s); background: var(--surface); }
+.cpRow b { font-weight: 700; }
+.cpRow i { margin-left: auto; width: 60px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text) 15%, transparent); }
+.cpPos { width: 18px; text-align: right; color: var(--muted); font-weight: 700; font-size: 13px; }

@@ -22,6 +22,9 @@
 .shBgLabel { padding: 3px 10px; border-radius: var(--radius-s); background: var(--surface); font-weight: 700; font-size: 13px; }
 .shMini { align-items: end; justify-items: start; padding: 10px; }
 .shMiniName { padding: 3px 10px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--surface) 70%, transparent); font-weight: 700; font-size: 14px; }
+.shTry { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); font: 600 13px var(--body); cursor: pointer; }
+.shTry:hover { background: color-mix(in srgb, var(--text) 14%, transparent); }
+.shTry:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
 .shBody { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .shName { font: 700 16px/22px var(--display); overflow-wrap: anywhere; }
 .shTags { display: inline-flex; gap: 4px; }

@@ -3156,4 +3156,13 @@ export const EN: Record<string, string> = {
   "Tej naklejki nie ma w sklepie": "This sticker is not in the shop",
   "Tej oferty już nie ma": "This offer is gone",
   "Sklep jest jeszcze pusty.": "The shop is empty.",
+  // podgląd kosmetyku w Sklepie
+  "Podgląd na moim profilu": "Preview on my profile",
+  "Strona profilu": "Profile page",
+  "Miniprofil (po najechaniu na nazwę)": "Mini-profile (on hovering a name)",
+  "Twój miniprofil": "Your mini-profile",
+  "Ranking i listy": "Ranking and lists",
+  "Tak wyglądałby twój miniprofil z tą pozycją. Reszta wyglądu to to, co masz teraz założone. Nic nie jest kupowane ani zapisywane.": "This is how your mini-profile would look with this item. The rest of your look is what you wear now. Nothing is bought or saved.",
+  "Tak wyglądałaby twoja ikona z tą pozycją. Reszta wyglądu to to, co masz teraz założone. Nic nie jest kupowane ani zapisywane.": "This is how your icon would look with this item. The rest of your look is what you wear now. Nothing is bought or saved.",
+  "Tak wyglądałaby twoja strona profilu z tą pozycją. Reszta wyglądu to to, co masz teraz założone. Nic nie jest kupowane ani zapisywane.": "This is how your profile page would look with this item. The rest of your look is what you wear now. Nothing is bought or saved.",
 };
