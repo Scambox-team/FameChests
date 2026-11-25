@@ -337,6 +337,8 @@ pub fn router(st: AppState) -> Router {
         .route("/api/admin/cosmetics/save", post(cosmetics::admin_cosmetic_save))
         .route("/api/admin/cosmetics/order", post(cosmetics::admin_cosmetic_order))
         .route("/api/admin/cosmetics/grant", post(cosmetics::admin_cosmetic_grant))
+        .route("/api/admin/cosmetics/showcase", post(cshop::admin_showcase_save))
+        .route("/api/admin/cosmetics/showcase/reset", post(cshop::admin_showcase_reset))
         .route("/api/admin/cosmetics/{id}/delete", post(cosmetics::admin_cosmetic_delete))
         .route("/api/admin/gstickers", get(stickers::admin_stickers))
         .route("/api/admin/gstickers/save", post(stickers::admin_sticker_save))

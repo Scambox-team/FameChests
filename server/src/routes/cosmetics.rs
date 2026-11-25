@@ -201,7 +201,7 @@ pub async fn admin_cosmetics(State(st): State<AppState>, Admin(_): Admin) -> Res
             })
         })
         .collect();
-    ok(json!({"list": list, "kinds": kinds_json(), "auto": auto_json(), "max": MAX_COSMETICS, "colors": colors_json()}))
+    ok(json!({"list": list, "kinds": kinds_json(), "auto": auto_json(), "max": MAX_COSMETICS, "colors": colors_json(), "showcase": super::cshop::showcase_json(None)}))
 }
 
 pub fn colors_json() -> Value {

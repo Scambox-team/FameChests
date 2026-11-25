@@ -63,10 +63,123 @@ pub async fn shop_cosmetics(State(st): State<AppState>, Me(me): Me) -> Res {
         .collect();
     let (stcrates, stickers) = sticker_listing(&mut c, admin).await?;
     let extra = get_state(&mut c, me.id).await?.get("showcase_extra").copied().unwrap_or(0);
-    let cfg = &crate::data::g().euro;
-    let showcase = json!({"base": crate::data::g().showcase_size, "extra": extra, "max": cfg.showcase_max_extra, "price": cfg.showcase_price(extra)});
+    let cfg = showcase_cfg();
+    let showcase = json!({"base": crate::data::g().showcase_size, "extra": extra, "max": cfg.max, "price": cfg.price_for(extra)});
     ok(json!({"euro": euro, "admin": admin, "items": items, "colors": super::cosmetics::colors_json(), "kinds": kinds(), "showcase": showcase,
         "stickerCrates": stcrates, "stickers": stickers}))
+}
+
+// ---------------------------------------------------------------- ceny dodatkowych miejsc w gablocie (panel admina)
+
+/// Ustawienia cen miejsc w gablocie: pierwsze kosztuje `price`, każde następne o `step` więcej, najwyżej `max` dodatkowych.
+/// Domyślne z game.json (`euro`), nadpisane w tabeli `state` (klucze `showcase_slot_*`), trzymane w pamięci procesu jak `exp::config()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ShowcaseCfg {
+    pub price: i64,
+    pub step: i64,
+    pub max: i64,
+}
+
+pub const SHOWCASE_PRICE_MAX: i64 = 1_000_000;
+pub const SHOWCASE_STEP_MAX: i64 = 1_000_000;
+pub const SHOWCASE_MAX_LIMIT: i64 = 100;
+const SHOWCASE_KEYS: [&str; 3] = ["showcase_slot_price", "showcase_slot_step", "showcase_slot_max"];
+
+impl ShowcaseCfg {
+    /// Cena następnego miejsca przy `extra` już kupionych (None = kupiono maksimum)
+    pub fn price_for(&self, extra: i64) -> Option<i64> {
+        (extra >= 0 && extra < self.max).then(|| self.price + self.step * extra)
+    }
+
+    /// Cena każdego z kolejnych miejsc (1., 2., ... do `max`) - podgląd w panelu
+    pub fn table(&self) -> Vec<i64> {
+        (0..self.max).filter_map(|i| self.price_for(i)).collect()
+    }
+
+    pub fn check(&self) -> Result<(), crate::error::AppError> {
+        use crate::error::AppError;
+        if !(0..=SHOWCASE_PRICE_MAX).contains(&self.price) {
+            return Err(AppError::bad(format!("Cena pierwszego miejsca: od 0 do {SHOWCASE_PRICE_MAX} euro")));
+        }
+        if !(0..=SHOWCASE_STEP_MAX).contains(&self.step) {
+            return Err(AppError::bad(format!("Podwyżka za kolejne miejsce: od 0 do {SHOWCASE_STEP_MAX} euro")));
+        }
+        if !(0..=SHOWCASE_MAX_LIMIT).contains(&self.max) {
+            return Err(AppError::bad(format!("Najwyżej dodatkowych miejsc: od 0 do {SHOWCASE_MAX_LIMIT}")));
+        }
+        Ok(())
+    }
+}
+
+fn showcase_default() -> ShowcaseCfg {
+    let e = &crate::data::g().euro;
+    ShowcaseCfg { price: e.showcase_slot_price, step: e.showcase_slot_step, max: e.showcase_max_extra }
+}
+
+static SHOWCASE: std::sync::LazyLock<parking_lot::RwLock<ShowcaseCfg>> = std::sync::LazyLock::new(|| parking_lot::RwLock::new(showcase_default()));
+
+/// Aktualne ustawienia (domyślne z game.json albo zapisane w panelu)
+pub fn showcase_cfg() -> ShowcaseCfg {
+    *SHOWCASE.read()
+}
+
+/// Wczytuje ustawienia z bazy do pamięci procesu (start serwera, zapis z panelu); pole bez wiersza = wartość domyślna
+pub async fn load_showcase(c: &mut crate::db::Conn) -> sqlx::Result<ShowcaseCfg> {
+    let rows: Vec<(String, i64)> = sqlx::query_as("SELECT key, value FROM state WHERE key = ANY($1)").bind(&SHOWCASE_KEYS[..]).fetch_all(&mut *c).await?;
+    let get = |k: &str| rows.iter().find(|(key, _)| key == k).map(|(_, v)| *v);
+    let d = showcase_default();
+    let cfg = ShowcaseCfg {
+        price: get(SHOWCASE_KEYS[0]).unwrap_or(d.price),
+        step: get(SHOWCASE_KEYS[1]).unwrap_or(d.step),
+        max: get(SHOWCASE_KEYS[2]).unwrap_or(d.max),
+    };
+    // wiersz spoza zakresu (ręczna zmiana bazy) nie może zepsuć sklepu
+    let cfg = if cfg.check().is_ok() { cfg } else { d };
+    *SHOWCASE.write() = cfg;
+    Ok(cfg)
+}
+
+pub fn showcase_json(extra: Option<i64>) -> Value {
+    let cfg = showcase_cfg();
+    let d = showcase_default();
+    let mut v = json!({"price": cfg.price, "step": cfg.step, "max": cfg.max, "table": cfg.table(),
+                       "default": {"price": d.price, "step": d.step, "max": d.max}, "custom": cfg != d});
+    if let Some(e) = extra {
+        v["next"] = json!(cfg.price_for(e));
+    }
+    v
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct ShowcaseRequest {
+    price: i64,
+    step: i64,
+    max: i64,
+}
+
+/// Panel admina: ustawia ceny dodatkowych miejsc w gablocie (pierwsze, podwyżka za każde kolejne, maksimum)
+pub async fn admin_showcase_save(State(st): State<AppState>, crate::auth::Admin(me): crate::auth::Admin, JsonBody(req): JsonBody<ShowcaseRequest>) -> Res {
+    let cfg = ShowcaseCfg { price: req.price, step: req.step, max: req.max };
+    cfg.check()?;
+    let mut tx = st.db.begin().await?;
+    for (k, v) in SHOWCASE_KEYS.iter().zip([cfg.price, cfg.step, cfg.max]) {
+        sqlx::query("INSERT INTO state (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value").bind(k).bind(v).execute(&mut *tx).await?;
+    }
+    crate::game::log_admin(&mut tx, &me, "showcase_prices", None, &format!("pierwsze {} euro, +{} za każde następne, najwyżej {}", cfg.price, cfg.step, cfg.max)).await?;
+    tx.commit().await?;
+    load_showcase(&mut *st.db.acquire().await?).await?;
+    ok(json!({"ok": true, "showcase": showcase_json(None)}))
+}
+
+/// Przywraca ceny z game.json (usuwa wiersze z `state`)
+pub async fn admin_showcase_reset(State(st): State<AppState>, crate::auth::Admin(me): crate::auth::Admin) -> Res {
+    let mut tx = st.db.begin().await?;
+    sqlx::query("DELETE FROM state WHERE key = ANY($1)").bind(&SHOWCASE_KEYS[..]).execute(&mut *tx).await?;
+    crate::game::log_admin(&mut tx, &me, "showcase_prices", None, "przywrócono domyślne").await?;
+    tx.commit().await?;
+    load_showcase(&mut *st.db.acquire().await?).await?;
+    ok(json!({"ok": true, "showcase": showcase_json(None)}))
 }
 
 /// Naklejki w Sklepie: skrzynki z naklejkami (cena i flaga „W sklepie” w `sticker_crates`) i pojedyncze naklejki w wybranym wariancie
@@ -149,13 +262,13 @@ pub async fn shop_cosmetic_buy(State(st): State<AppState>, Me(me): Me, JsonBody(
     ok(json!({"ok": true, "id": item.id, "name": item.name, "state": state}))
 }
 
-/// Dodatkowe miejsce w gablocie za euro (cena rośnie z każdym kupionym: `EuroCfg::showcase_price`, najwyżej `showcase_max_extra`)
+/// Dodatkowe miejsce w gablocie za euro (cena rośnie z każdym kupionym: `ShowcaseCfg::price_for`, ustawienia z panelu admina albo game.json)
 pub async fn shop_showcase_buy(State(st): State<AppState>, Me(me): Me) -> Res {
     let mut tx = st.db.begin().await?;
     lock_me(&mut tx, me.id).await?;
     let state = get_state(&mut tx, me.id).await?;
     let extra = state.get("showcase_extra").copied().unwrap_or(0);
-    let Some(price) = crate::data::g().euro.showcase_price(extra) else { return bad("Masz już wszystkie dodatkowe miejsca w gablocie") };
+    let Some(price) = showcase_cfg().price_for(extra) else { return bad("Masz już wszystkie dodatkowe miejsca w gablocie") };
     if euro_of(&state) < price {
         return bad("Za mało euro");
     }
@@ -178,6 +291,31 @@ mod tests {
         assert!(c.showcase_price(c.showcase_max_extra - 1).is_some());
         assert_eq!(c.showcase_price(c.showcase_max_extra), None);
         assert_eq!(c.showcase_price(-1), None);
+    }
+
+    #[test]
+    fn overridden_showcase_prices_follow_the_settings() {
+        let c = super::ShowcaseCfg { price: 100, step: 40, max: 3 };
+        assert_eq!(c.table(), vec![100, 140, 180]);
+        assert_eq!(c.price_for(2), Some(180));
+        assert_eq!(c.price_for(3), None);
+        assert_eq!(c.price_for(-1), None);
+        assert_eq!(super::ShowcaseCfg { price: 50, step: 0, max: 2 }.table(), vec![50, 50]);
+        assert!(super::ShowcaseCfg { price: 0, step: 0, max: 0 }.table().is_empty());
+        assert!(c.check().is_ok());
+        assert!(super::ShowcaseCfg { price: -1, ..c }.check().is_err());
+        assert!(super::ShowcaseCfg { step: -5, ..c }.check().is_err());
+        assert!(super::ShowcaseCfg { max: super::SHOWCASE_MAX_LIMIT + 1, ..c }.check().is_err());
+        assert!(super::ShowcaseCfg { price: super::SHOWCASE_PRICE_MAX + 1, ..c }.check().is_err());
+    }
+
+    #[test]
+    fn default_settings_match_game_json() {
+        let d = super::showcase_default();
+        let e = &g().euro;
+        assert_eq!(d.price_for(1), e.showcase_price(1));
+        assert!(d.check().is_ok());
+        assert!(d.step > 0, "każde kolejne miejsce ma być droższe");
     }
 }
 

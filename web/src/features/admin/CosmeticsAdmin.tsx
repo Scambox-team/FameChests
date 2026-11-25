@@ -12,7 +12,7 @@ import s from './CosmeticsAdmin.module.css';
 type Kind = 'mini' | 'frame' | 'bg' | 'avatar';
 interface Item { price: number; inShop: boolean; tags: string[]; stock: number | null; sold: number; saleFrom: number | null; saleTo: number | null; id: string; kind: Kind; name: string; source: string; auto: string; enabled: boolean; hideLocked: boolean; url: string; animated: boolean; w: number; h: number; owners: number; worn: number }
 interface KindInfo { key: Kind; label: string; w: number; h: number; maxKb: number; requirements: string }
-interface Data { list: Item[]; kinds: KindInfo[]; auto: { key: string; name: string }[]; max: number; colors: { key: string; name: string }[] }
+interface Data { showcase: ShowcaseCfg; list: Item[]; kinds: KindInfo[]; auto: { key: string; name: string }[]; max: number; colors: { key: string; name: string }[] }
 
 /** datetime-local <-> sekundy unixowe (puste = bez ograniczenia) */
 const toLocal = (t: number | null) => t ? new Date(t * 1000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
@@ -220,6 +220,43 @@ function Grant({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, do
   );
 }
 
+interface ShowcaseCfg { price: number; step: number; max: number; table: number[]; default: { price: number; step: number; max: number }; custom: boolean }
+
+/** Ceny dodatkowych miejsc w gablocie (kupowanych w Sklepie za euro): pierwsze, podwyżka za każde następne, maksimum + podgląd tabeli cen */
+function Showcase({ cfg, run, busy }: { cfg: ShowcaseCfg; run: (fn: () => Promise<unknown>, done: string) => Promise<void>; busy: boolean }) {
+  const [v, setV] = useState({ price: cfg.price, step: cfg.step, max: cfg.max });
+  useEffect(() => setV({ price: cfg.price, step: cfg.step, max: cfg.max }), [cfg.price, cfg.step, cfg.max]);
+  const dirty = v.price !== cfg.price || v.step !== cfg.step || v.max !== cfg.max;
+  const num = (x: string, hi: number) => Math.min(hi, Math.max(0, Math.floor(+x || 0)));
+  const table = Array.from({ length: Math.min(v.max, 100) }, (_, i) => v.price + v.step * i);
+  const total = table.reduce((a, b) => a + b, 0);
+  return (
+    <div className={`panel ${s.block}`}>
+      <h3>Dodatkowe miejsca w gablocie</h3>
+      <p className="muted small">Gracz kupuje je w Sklepie za euro, jedno po drugim. Pierwsze kosztuje tyle, ile wpiszesz, każde następne o podwyżkę więcej. Zmiana działa od razu i nie zwraca euro za miejsca już kupione.</p>
+      <div className={s.fields}>
+        <label>Cena pierwszego miejsca (euro)<input type="number" min={0} max={1000000} inputMode="numeric" value={v.price} onChange={e => setV({ ...v, price: num(e.target.value, 1000000) })} /></label>
+        <label>Podwyżka za każde następne (euro)<input type="number" min={0} max={1000000} inputMode="numeric" value={v.step} onChange={e => setV({ ...v, step: num(e.target.value, 1000000) })} /></label>
+        <label>Najwyżej dodatkowych miejsc (0-100)<input type="number" min={0} max={100} inputMode="numeric" value={v.max} onChange={e => setV({ ...v, max: num(e.target.value, 100) })} /></label>
+      </div>
+      {v.step === 0 && v.max > 1 && <p className={s.bad}>Podwyżka wynosi 0, więc wszystkie miejsca będą kosztować tyle samo ({v.price} euro).</p>}
+      <div>
+        <h4>Podgląd cen</h4>
+        {table.length ? (
+          <ol className={s.slotPrices}>{table.map((p, i) => <li key={i}><span className="muted">{i + 1}. miejsce</span> <b>{p}</b> euro</li>)}</ol>
+        ) : <p className="muted small">Przy tym ustawieniu gracze nie kupią żadnego dodatkowego miejsca.</p>}
+        {table.length > 0 && <p className="muted small">Wszystkie {table.length} razem: {total} euro.</p>}
+      </div>
+      <div className={s.line}>
+        <Button kind="hue" disabled={busy || !dirty} onClick={() => run(() => api('/api/admin/cosmetics/showcase', v), 'Zapisano ceny miejsc w gablocie')}>Zapisz ceny</Button>
+        <Button disabled={busy || !cfg.custom} onClick={() => confirm(`Przywrócić domyślne ceny (pierwsze ${cfg.default.price} euro, +${cfg.default.step}, najwyżej ${cfg.default.max})?`) && run(() => api('/api/admin/cosmetics/showcase/reset', {}), 'Przywrócono domyślne ceny')}>Przywróć domyślne</Button>
+        {dirty && <span className="muted small">Niezapisane zmiany</span>}
+        {!cfg.custom && <span className="muted small">Obowiązują ceny domyślne</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function CosmeticsAdmin() {
   const [data, setData] = useState<Data | null>(null);
   const [busy, setBusy] = useState(false);
@@ -244,6 +281,7 @@ export default function CosmeticsAdmin() {
       <p className="muted">Kosmetyki to tła miniprofilu, obramówki zdjęcia profilowego i tła całej strony profilu. Gracz domyślnie nie ma żadnego: odblokowuje je nagrodami
         (w edytorach nagród osiągnięć, kalendarza adwentowego, Paszportu i leveli EXP jest pozycja „Kosmetyk profilu”), samym zdarzeniem (quest Wanted / CTF, odznaka służby) albo
         dostaje je od admina. Na grafice zawsze leży warstwa w kolorach motywu, więc nawet jaskrawy obrazek nie psuje czytelności ani wyglądu motywu.</p>
+      <Showcase cfg={data.showcase} run={run} busy={busy} />
       <div className={`panel ${s.block}`}><h3>Wymagania wobec grafik</h3><Kinds data={data} /></div>
       <div className={`panel ${s.block}`}><NewForm data={data} run={run} /></div>
       {data.kinds.map(k => {

@@ -153,6 +153,8 @@ pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Cat
     tx.commit().await?;
     // katalog kosmetyków profilu (rejestr w pamięci; przed EXP - walidacja nagród leveli zna id kosmetyków)
     crate::cosmetics::init(&mut *pool.acquire().await?).await?;
+    // ceny dodatkowych miejsc w gablocie (panel admina) do pamięci procesu
+    crate::routes::cshop::load_showcase(&mut *pool.acquire().await?).await?;
     // ustawienia EXP i leveli (panel admina) do pamięci procesu, stare dzienne limity EXP do kosza
     let mut tx = pool.begin().await?;
     crate::exp::init(&mut tx, &cat).await?;

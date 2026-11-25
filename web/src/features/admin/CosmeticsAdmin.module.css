@@ -10,6 +10,8 @@
 .line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
 .bad { color: var(--bad); font-size: 13px; font-weight: 600; }
+.slotPrices { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 6px 0 0; padding: 0; list-style: none; max-height: 220px; overflow-y: auto; }
+.slotPrices li { padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--text) 7%, transparent); font-size: 13px; }
 .newBox { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-m); border: 1px dashed var(--control); }
 .upload { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--control); border-radius: 999px; font-size: 13px; cursor: pointer; overflow: hidden; }
 .upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
