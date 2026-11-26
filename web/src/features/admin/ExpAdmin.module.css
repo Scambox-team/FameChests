@@ -51,3 +51,13 @@
 .x:hover { background: var(--bad); color: #fff; }
 .chk { flex-direction: row; display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .bad { color: var(--bad); }
+
+/* zaległe nagrody za levele */
+.arrGrid { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(240px, 2fr); gap: 16px; }
+.arrGrid h4 { margin: 0 0 6px; font-size: 14px; color: var(--muted); }
+.arrList { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.arrList li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 3px 8px; border-radius: var(--radius-s); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.arrChips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; }
+.arrProg { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); overflow: hidden; }
+.arrProg i { display: block; height: 100%; background: var(--hue); transition: width .4s; }
+@media (max-width: 700px) { .arrGrid { grid-template-columns: 1fr; } }

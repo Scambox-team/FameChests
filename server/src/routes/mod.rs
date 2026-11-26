@@ -352,6 +352,7 @@ pub fn router(st: AppState) -> Router {
         .route("/api/exp/choose", post(exp::exp_choose))
         .route("/api/admin/exp", get(exp::admin_exp).post(exp::admin_exp_save))
         .route("/api/admin/exp/grant", post(exp::admin_exp_grant))
+        .route("/api/admin/exp/arrears", get(exp::admin_arrears).post(exp::admin_arrears_pay))
         .route("/api/passport", get(passport::passport))
         .route("/api/passport/locate", post(passport::locate))
         .route("/api/passport/{code}", get(passport::stamp_holders))

@@ -180,6 +180,8 @@ pub struct ExpConfig {
     pub excl_chests: Vec<String>,
     /// levele z nagrodami zmienionymi w panelu (reszta = domyślne)
     pub rewards: BTreeMap<i64, LevelRewards>,
+    /// zaległe nagrody za levele (patrz [`pay_arrears`]) wypłacane samoczynnie przy następnej wizycie gracza
+    pub auto_arrears: bool,
     /// thr[l] = łączny EXP potrzebny do levelu l (thr[1] = 0)
     thr: Vec<i64>,
 }
@@ -199,6 +201,7 @@ impl Default for ExpConfig {
             // domyślnie w puli „ekskluzywne z leveli” jest skrzynka z naklejkami (jeśli istnieje - `usable` pilnuje)
             excl_chests: vec![format!("{}{}", crate::stickers::KIND_PREFIX, crate::stickers::DEFAULT_CRATE)],
             rewards: BTreeMap::new(),
+            auto_arrears: false,
             thr: vec![],
         }
         .finish()
@@ -270,6 +273,7 @@ impl ExpConfig {
             "exclusiveChance": self.exclusive_chance,
             "exclusiveCards": self.excl_cards.iter().map(|(p, v)| json!({"person": p, "variant": v})).collect::<Vec<_>>(),
             "exclusiveChests": self.excl_chests,
+            "autoArrears": self.auto_arrears,
         })
     }
 }
@@ -343,6 +347,9 @@ pub fn clean_config(raw: &Value, rewards: Option<&Value>, cat: &Catalog) -> ExpC
     if let Some(d) = num(raw.get("decay")) {
         c.decay = d.clamp(0.5, 8.0);
     }
+    if let Some(a) = raw.get("autoArrears").and_then(Value::as_bool) {
+        c.auto_arrears = a;
+    }
     if let Some(e) = num(raw.get("exclusiveChance")) {
         c.exclusive_chance = e.clamp(0.0, 1.0);
     }
@@ -391,6 +398,8 @@ pub fn config() -> Arc<ExpConfig> {
 
 pub fn set_config(c: ExpConfig) {
     *CONFIG.write() = Arc::new(c);
+    // zmiana ustawień (np. włączenie samoczynnej wypłaty zaległości) - sprawdzamy graczy od nowa
+    ARREARS_CLEAN.lock().clear();
 }
 
 /// Wczytuje ustawienia z bazy do pamięci procesu (start serwera, zapis z panelu)
@@ -558,6 +567,12 @@ async fn add_exp(c: &mut Conn, uid: i64, amount: i64) -> sqlx::Result<()> {
     Ok(())
 }
 
+/// Do którego levelu zaliczamy BEZ nagrody przy przeliczeniu starego konta: tyle, ile daje samo EXP z historii (`hist`); EXP zdobyty
+/// już po aktualizacji (`exp` to suma) liczy się normalnie, więc jego levele dostają nagrody.
+pub fn history_levels(cfg: &ExpConfig, hist: i64, exp: i64) -> i64 {
+    cfg.level_for(hist).min(cfg.level_for(exp)).max(1)
+}
+
 /// Poziomy do rozliczenia: od następnego po `settled` do `level` włącznie
 pub fn new_levels(settled: i64, level: i64) -> std::ops::RangeInclusive<i64> {
     (settled.max(1) + 1)..=level.min(MAX_LEVEL)
@@ -661,6 +676,18 @@ async fn row(c: &mut Conn, uid: i64) -> sqlx::Result<Option<Row>> {
 /// z historii (bez nagród za przeskoczone levele). Tanie, gdy nic się nie zmieniło (jedno zapytanie). Zwraca true, gdy przyznano
 /// nagrody za nowe levele.
 pub async fn settle(st: &AppState, user: &User) -> anyhow::Result<bool> {
+    let paid = settle_levels(st, user).await?;
+    let cfg = config();
+    if cfg.auto_arrears && !ARREARS_CLEAN.lock().contains(&user.id) {
+        // zaległe nagrody (patrz `pay_arrears`): sprawdzane raz na gracza i uruchomienie procesu (potem znacznik w pamięci)
+        let n = pay_arrears(st, user).await?;
+        ARREARS_CLEAN.lock().insert(user.id);
+        return Ok(paid || n > 0);
+    }
+    Ok(paid)
+}
+
+async fn settle_levels(st: &AppState, user: &User) -> anyhow::Result<bool> {
     let cfg = config();
     if let Some(r) = row(&mut *st.db.acquire().await?, user.id).await? {
         if r.bf && r.settled >= cfg.level_for(r.exp) {
@@ -675,20 +702,23 @@ pub async fn settle(st: &AppState, user: &User) -> anyhow::Result<bool> {
     if !r.bf {
         let hist = backfill(&mut tx, &cfg, user.id).await?;
         r.exp += hist;
-        // przeskoczone levele zapisujemy jako odebrane BEZ nagrody
+        // levele, które samo EXP z historii daje, zapisujemy jako odebrane BEZ nagrody (do wypłaty później: `pay_arrears`);
+        // EXP zdobyty już po aktualizacji (zanim to rozliczenie się wykonało) liczy się normalnie i jego levele dostają nagrody niżej
         let level = cfg.level_for(r.exp);
-        mark_skipped(&mut tx, user.id, r.cycle, 2, level).await?;
+        let skipped = history_levels(&cfg, hist, r.exp);
+        mark_skipped(&mut tx, user.id, r.cycle, 2, skipped, 0).await?;
         sqlx::query(
-            "INSERT INTO user_exp (user_id, exp, level, settled, bf) VALUES ($1, $2, $3, $3, 1)
-             ON CONFLICT (user_id) DO UPDATE SET exp = $2, level = $3, settled = $3, bf = 1",
+            "INSERT INTO user_exp (user_id, exp, level, settled, bf) VALUES ($1, $2, $3, $4, 1)
+             ON CONFLICT (user_id) DO UPDATE SET exp = $2, level = $3, settled = $4, bf = 1",
         )
         .bind(user.id)
         .bind(r.exp)
         .bind(level as i32)
+        .bind(skipped as i32)
         .execute(&mut *tx)
         .await?;
-        tx.commit().await?;
-        return Ok(false);
+        r.settled = skipped;
+        r.bf = true;
     }
     let level = cfg.level_for(r.exp);
     let mut finished = false;
@@ -730,19 +760,21 @@ pub async fn settle(st: &AppState, user: &User) -> anyhow::Result<bool> {
 }
 
 /// Levele `from..=to` bieżącego cyklu jako odebrane bez nagrody (stare konta, ręczne ustawienie levelu przez admina); już odebrane zostają
-async fn mark_skipped(c: &mut Conn, uid: i64, cycle: i64, from: i64, to: i64) -> sqlx::Result<()> {
+/// `paid`: 0 = przeliczenie starego konta (zaległość do wypłaty), 2 = admin ustawił level i świadomie nie chciał nagród
+async fn mark_skipped(c: &mut Conn, uid: i64, cycle: i64, from: i64, to: i64, paid: i16) -> sqlx::Result<()> {
     if to < from {
         return Ok(());
     }
     sqlx::query(
         "INSERT INTO level_claims (user_id, cycle, level, claimed_at, seen, paid)
-         SELECT $1, $5, g, $4, 1, 0 FROM generate_series($2::int, $3::int) AS g ON CONFLICT DO NOTHING",
+         SELECT $1, $5, g, $4, 1, $6::smallint FROM generate_series($2::int, $3::int) AS g ON CONFLICT DO NOTHING",
     )
     .bind(uid)
     .bind(from as i32)
     .bind(to as i32)
     .bind(now())
     .bind(cycle as i32)
+    .bind(paid)
     .execute(c)
     .await?;
     Ok(())
@@ -791,9 +823,207 @@ pub async fn admin_change(c: &mut Conn, uid: i64, mode: &str, value: i64) -> sql
     .execute(&mut *c)
     .await?;
     if level_mode {
-        mark_skipped(c, uid, cycle, 2, level).await?;
+        mark_skipped(c, uid, cycle, 2, level, 2).await?;
     }
     Ok((exp, level))
+}
+
+// ---------------------------------------------------------------- zaległe nagrody za levele
+
+/// Gracze, których zaległości już sprawdzono w tym uruchomieniu serwera (samoczynna wypłata nie pyta bazy przy każdym zapytaniu);
+/// czyszczone przy zapisie ustawień.
+static ARREARS_CLEAN: LazyLock<parking_lot::Mutex<HashSet<i64>>> = LazyLock::new(|| parking_lot::Mutex::new(HashSet::new()));
+
+/// Część zapytania: levele 2..=99 już rozliczone gracza (`bf = 1`, niezablokowanego) w bieżącym cyklu, za które nie ma wypłaconej nagrody
+/// (brak wpisu w `level_claims` albo `paid = 0`: przeliczenie starego konta). `paid = 2` to świadomy brak nagrody (admin ustawił level).
+macro_rules! arrears_from {
+    () => {
+        "user_exp e, LATERAL generate_series(2, LEAST(e.settled, e.level, 99)) g
+         WHERE e.bf = 1 AND e.user_id > 0
+           AND NOT EXISTS (SELECT 1 FROM users b WHERE b.id = e.user_id AND b.banned <> 0)
+           AND NOT EXISTS (SELECT 1 FROM level_claims q WHERE q.user_id = e.user_id AND q.cycle = e.cycle AND q.level = g AND q.paid <> 0)"
+    };
+}
+
+/// Zaległe levele jednego gracza (rosnąco)
+pub async fn arrears_levels(c: &mut Conn, uid: i64) -> sqlx::Result<Vec<i64>> {
+    let v: Vec<i32> = sqlx::query_scalar(concat!("SELECT g FROM ", arrears_from!(), " AND e.user_id = $1 ORDER BY g")).bind(uid).fetch_all(c).await?;
+    Ok(v.into_iter().map(i64::from).collect())
+}
+
+/// Wypłaca graczowi zaległe nagrody za levele (mała + specjalna wg bieżących ustawień, a na levelach z dużą nagrodą tworzy wybór 2 z 4,
+/// który gracz zobaczy przy następnym wejściu). Jedna transakcja z `lock_me`; idempotentne: level z `paid = 1` nie jest wypłacany drugi raz
+/// (wpis `level_claims` zmienia się z `paid = 0` na 1 albo powstaje tylko raz - unikalny indeks user + cykl + level), więc podwójne kliknięcie
+/// i równoległe wywołania niczego nie dublują. Okienko „Nowy level” pokaże wypłacone levele jednym zbiorczym oknem (`seen = 0`).
+/// Zwraca liczbę wypłaconych leveli.
+pub async fn pay_arrears(st: &AppState, user: &User) -> anyhow::Result<usize> {
+    let cfg = config();
+    let cx = Ctx::new(st.clone(), user.clone());
+    let mut tx = st.db.begin().await?;
+    lock_me(&mut tx, user.id).await?;
+    let levels = arrears_levels(&mut tx, user.id).await?;
+    if levels.is_empty() {
+        return Ok(0);
+    }
+    let cycle = row(&mut tx, user.id).await?.map_or(0, |r| r.cycle);
+    let mut n = 0;
+    for l in levels {
+        let fresh = sqlx::query(
+            "INSERT INTO level_claims (user_id, cycle, level, claimed_at, seen, paid) VALUES ($1, $2, $3, $4, 0, 1)
+             ON CONFLICT (user_id, cycle, level) DO UPDATE SET paid = 1, seen = 0, claimed_at = excluded.claimed_at WHERE level_claims.paid = 0",
+        )
+        .bind(user.id)
+        .bind(cycle as i32)
+        .bind(l as i32)
+        .bind(now())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+        if fresh == 0 {
+            continue;
+        }
+        let rw = cfg.rewards_for(l);
+        let list: Vec<Value> = rw.small.iter().chain(&rw.special).filter(|r| usable(&cx.cat, r)).cloned().collect();
+        crate::achievements::grant_rewards(&mut tx, &cx, &list, "level").await?;
+        if cfg.choice_levels.contains(&l) {
+            create_choice(&mut tx, &cx.cat, &cfg, user.id, cycle, l).await?;
+        }
+        n += 1;
+    }
+    tx.commit().await?;
+    Ok(n)
+}
+
+/// Podgląd zaległości wszystkich graczy (bez wypłaty): liczba graczy i leveli, ile graczy na którym levelu, suma nagród i najwięksi dłużnicy.
+/// `notSettled` = gracze bez przeliczonego konta (jeszcze nie weszli od aktualizacji) - ich zaległości powstaną przy wypłacie.
+pub async fn arrears_preview(c: &mut Conn) -> sqlx::Result<Value> {
+    let cfg = config();
+    let per_level: Vec<(i32, i64)> =
+        sqlx::query_as(concat!("SELECT g, COUNT(*)::BIGINT FROM ", arrears_from!(), " GROUP BY g ORDER BY g")).fetch_all(&mut *c).await?;
+    let top: Vec<(i64, String, i64)> = sqlx::query_as(concat!(
+        "SELECT e.user_id, (SELECT username FROM users WHERE id = e.user_id), COUNT(*)::BIGINT AS n FROM ",
+        arrears_from!(),
+        " GROUP BY e.user_id ORDER BY n DESC, e.user_id LIMIT 15"
+    ))
+    .fetch_all(&mut *c)
+    .await?;
+    let players: i64 = sqlx::query_scalar(concat!("SELECT COUNT(DISTINCT e.user_id)::BIGINT FROM ", arrears_from!())).fetch_one(&mut *c).await?;
+    let not_settled: i64 = sqlx::query_scalar(
+        "SELECT (SELECT COUNT(*) FROM users WHERE id > 0 AND banned = 0) - (SELECT COUNT(*) FROM user_exp x JOIN users u ON u.id = x.user_id WHERE x.bf = 1 AND u.banned = 0)",
+    )
+    .fetch_one(&mut *c)
+    .await?;
+    let (mut levels, mut money, mut euro, mut cards, mut choices, mut cosmetics) = (0_i64, 0_i64, 0_i64, 0_i64, 0_i64, 0_i64);
+    let mut chests: BTreeMap<String, i64> = BTreeMap::new();
+    for (l, n) in &per_level {
+        let l = i64::from(*l);
+        levels += n;
+        let rw = cfg.rewards_for(l);
+        for r in rw.small.iter().chain(&rw.special) {
+            let cnt = r.get("count").and_then(Value::as_i64).unwrap_or(1) * n;
+            let amount = r.get("amount").and_then(Value::as_i64).unwrap_or(0) * n;
+            match r.get("type").and_then(Value::as_str).unwrap_or("") {
+                "money" => money += amount,
+                "euro" => euro += amount,
+                "card" => cards += cnt,
+                "chest" => *chests.entry(r.get("kind").and_then(Value::as_str).unwrap_or("").to_owned()).or_default() += cnt,
+                "cosmetic" => cosmetics += n,
+                _ => {}
+            }
+        }
+        if cfg.choice_levels.contains(&l) {
+            choices += n;
+        }
+    }
+    Ok(json!({
+        "players": players, "levels": levels, "notSettled": not_settled.max(0),
+        "perLevel": per_level.iter().map(|(l, n)| json!({"level": l, "players": n})).collect::<Vec<_>>(),
+        "top": top.iter().map(|(id, name, n)| json!({"id": id, "name": name, "levels": n})).collect::<Vec<_>>(),
+        "totals": {"money": money, "euro": euro, "cards": cards, "cosmetics": cosmetics, "choices": choices, "chests": chests},
+        "auto": cfg.auto_arrears,
+    }))
+}
+
+/// Postęp wypłaty zaległości w tle (jedna naraz)
+#[derive(Clone, Default)]
+pub struct ArrearsRun {
+    pub running: bool,
+    pub total: usize,
+    pub done: usize,
+    pub players: usize,
+    pub levels: usize,
+    pub errors: usize,
+    pub started_at: f64,
+    pub finished_at: f64,
+    pub by: String,
+}
+
+static ARREARS_RUN: LazyLock<parking_lot::Mutex<ArrearsRun>> = LazyLock::new(|| parking_lot::Mutex::new(ArrearsRun::default()));
+
+pub fn arrears_status() -> Value {
+    let r = ARREARS_RUN.lock().clone();
+    json!({"running": r.running, "total": r.total, "done": r.done, "players": r.players, "levels": r.levels, "errors": r.errors,
+           "startedAt": r.started_at, "finishedAt": r.finished_at, "by": r.by})
+}
+
+/// Rusza wypłata zaległości WSZYSTKIM graczom w tle: każdy gracz osobną transakcją (stare konta najpierw przechodzą zwykłe rozliczenie
+/// z doliczeniem historii), z krótką przerwą między graczami, więc baza nie dostaje jednego wielkiego zapytania. false = już trwa.
+pub fn start_arrears(st: AppState, admin: User) -> bool {
+    {
+        let mut r = ARREARS_RUN.lock();
+        if r.running {
+            return false;
+        }
+        *r = ArrearsRun { running: true, started_at: now(), by: admin.username.clone(), ..Default::default() };
+    }
+    tokio::spawn(async move {
+        let res: anyhow::Result<()> = async {
+            let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM users WHERE id > 0 AND banned = 0 ORDER BY id").fetch_all(&st.db).await?;
+            ARREARS_RUN.lock().total = ids.len();
+            for id in ids {
+                let step: anyhow::Result<usize> = async {
+                    let Some(u) = crate::auth::user_by_id(&mut *st.db.acquire().await?, id).await? else { return Ok(0) };
+                    settle_levels(&st, &u).await?;
+                    pay_arrears(&st, &u).await
+                }
+                .await;
+                {
+                    let mut r = ARREARS_RUN.lock();
+                    r.done += 1;
+                    match step {
+                        Ok(n) if n > 0 => {
+                            r.players += 1;
+                            r.levels += n;
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            r.errors += 1;
+                            tracing::error!("zaległe nagrody za levele (gracz {id}): {e:#}");
+                        }
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(15)).await;
+            }
+            Ok(())
+        }
+        .await;
+        if let Err(e) = res {
+            tracing::error!("zaległe nagrody za levele: {e:#}");
+            ARREARS_RUN.lock().errors += 1;
+        }
+        let r = {
+            let mut r = ARREARS_RUN.lock();
+            r.running = false;
+            r.finished_at = now();
+            r.clone()
+        };
+        ARREARS_CLEAN.lock().clear();
+        let detail = format!("wypłacono zaległe nagrody za levele: {} graczy, {} leveli, błędów: {}", r.players, r.levels, r.errors);
+        if let Ok(mut c) = st.db.acquire().await {
+            let _ = crate::game::log_admin(&mut c, &admin, "exp_arrears", None, &detail).await;
+        }
+    });
+    true
 }
 
 // ---------------------------------------------------------------- stare konta
@@ -1039,6 +1269,39 @@ mod tests {
         assert_eq!(clean_config(&json!({}), None, &cat).choice_levels.len(), 10);
         let again = clean_config(&c.to_json(), None, &cat);
         assert_eq!(again.choice_levels, c.choice_levels);
+    }
+
+    #[test]
+    fn history_skips_only_levels_the_history_gives() {
+        let cfg = ExpConfig::default();
+        // stare konto: historia daje level 12, a po aktualizacji gracz zdobył jeszcze EXP na level 15
+        let hist = cfg.total_for(12);
+        let exp = cfg.total_for(15);
+        assert_eq!(history_levels(&cfg, hist, exp), 12);
+        assert_eq!(new_levels(12, cfg.level_for(exp)).collect::<Vec<_>>(), vec![13, 14, 15]);
+        // bez historii nic nie jest pomijane (nowe konto, które awansowało zanim zdążyło się rozliczyć)
+        assert_eq!(history_levels(&cfg, 0, cfg.total_for(3)), 1);
+        assert_eq!(new_levels(1, 3).collect::<Vec<_>>(), vec![2, 3]);
+        // historia nigdy nie przeskoczy levelu całości
+        assert_eq!(history_levels(&cfg, cfg.total_for(30), cfg.total_for(20)), 20);
+    }
+
+    #[test]
+    fn auto_arrears_setting_survives_saving() {
+        let cat = crate::catalog::build(&[], &[]);
+        assert!(!ExpConfig::default().auto_arrears);
+        let on = clean_config(&json!({"autoArrears": true}), None, &cat);
+        assert!(on.auto_arrears);
+        let back = clean_config(&on.to_json(), None, &cat);
+        assert!(back.auto_arrears);
+        assert!(!clean_config(&json!({"autoArrears": "tak"}), None, &cat).auto_arrears);
+    }
+
+    #[test]
+    fn arrears_sql_fragment_is_one_query_part() {
+        // wspólny fragment zapytań o zaległości: tylko rozliczone konta, bez zablokowanych, `paid = 2` (świadomy brak nagrody) nie jest zaległością
+        let q = arrears_from!();
+        assert!(q.contains("e.bf = 1") && q.contains("b.banned <> 0") && q.contains("q.paid <> 0"));
     }
 
     #[test]

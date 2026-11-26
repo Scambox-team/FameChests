@@ -707,6 +707,9 @@ pub async fn upgrade(State(st): State<AppState>, Me(me): Me, JsonBody(req): Json
     };
     add_state(&mut tx, cx.uid(), if win { "upgrades_won" } else { "upgrades_lost" }, 1).await?;
     crate::exp::award(&mut tx, cx.uid(), "upgrade", 1).await?;
+    // ulepszacz to gra kasyna dla Skarbonki: wkład = wartość postawionych kart, wygrana = udane ulepszenie. Celowo NIE przez `count_casino`:
+    // to dałoby drugi raz EXP (`casino_win` obok `upgrade`) i zmieniło liczniki osiągnięć kasyna oraz serie wygranych
+    crate::routes::piggy::add(&mut tx, cx.uid(), crate::routes::piggy::Ev::Casino { stake, won: win }).await?;
     let state = get_state(&mut tx, cx.uid()).await?;
     tx.commit().await?;
     metrics::counter!("scambox_forge_total", "kind" => if win { "upgrade_won" } else { "upgrade_lost" }).increment(1);

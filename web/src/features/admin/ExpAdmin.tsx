@@ -15,10 +15,10 @@ interface Curve { base: number; scale: number; power: number }
 interface Data extends RewardOptions {
   mult: number; backfillPct: number; curve: Curve; defaultCurve: Curve; sources: SourceRow[]; levels: LevelRow[];
   players: number; withExp: number; badges: number; maxLevel: number; backfillMaxLevel: number;
-  decay: number; defaultDecay: number; exclusiveChance: number; exclusiveCards: ExclCard[]; exclusiveChests: string[]; badgeTiers: string[];
+  decay: number; defaultDecay: number; exclusiveChance: number; exclusiveCards: ExclCard[]; exclusiveChests: string[]; badgeTiers: string[]; autoArrears: boolean;
 }
 interface Draft {
-  mult: string; backfill: string; decay: string; chance: string; choice: number[]; exCards: ExclCard[]; exChests: string[]; curve: { base: string; scale: string; power: string };
+  autoArrears: boolean; mult: string; backfill: string; decay: string; chance: string; choice: number[]; exCards: ExclCard[]; exChests: string[]; curve: { base: string; scale: string; power: string };
   sources: Record<string, { exp: string; cap: string }>;
   needs: Record<number, string>;
   rewards: Record<number, { small: Reward[]; special: Reward[] }>;
@@ -31,7 +31,7 @@ const num = (v: string, d: number) => { const x = parseFloat(v.replace(',', '.')
 
 function toDraft(d: Data): Draft {
   return {
-    mult: String(d.mult), backfill: String(d.backfillPct), decay: String(d.decay), chance: String(Math.round(d.exclusiveChance * 100)),
+    autoArrears: d.autoArrears, mult: String(d.mult), backfill: String(d.backfillPct), decay: String(d.decay), chance: String(Math.round(d.exclusiveChance * 100)),
     choice: d.levels.filter(l => l.choice).map(l => l.level), exCards: d.exclusiveCards, exChests: d.exclusiveChests,
     curve: { base: String(d.curve.base), scale: String(d.curve.scale), power: String(d.curve.power) },
     sources: Object.fromEntries(d.sources.map(x => [x.key, { exp: String(x.exp), cap: String(x.cap) }])),
@@ -94,7 +94,7 @@ export default function ExpAdmin() {
   const save = () => run(() => api('/api/admin/exp', {
     mult: num(draft.mult, 1), backfillPct: num(draft.backfill, 50), decay: num(draft.decay, 2),
     choiceLevels: draft.choice, exclusiveChance: Math.min(100, Math.max(0, num(draft.chance, 20))) / 100,
-    exclusiveCards: draft.exCards, exclusiveChests: draft.exChests,
+    exclusiveCards: draft.exCards, exclusiveChests: draft.exChests, autoArrears: draft.autoArrears,
     curve: { base: curve.base, scale: curve.scale, power: curve.power },
     needs: Object.fromEntries(Object.entries(draft.needs).filter(([, v]) => parseInt(v, 10) > 0)),
     sources: Object.fromEntries(Object.entries(draft.sources).map(([k, v]) => [k, { exp: num(v.exp, 0), cap: num(v.cap, 0) }])),
@@ -118,7 +118,7 @@ export default function ExpAdmin() {
         <div className={s.fields}>
           <label>Globalny mnożnik EXP<input inputMode="decimal" value={draft.mult} onChange={e => upd({ mult: e.target.value })} /><small className="muted">1 = bez zmian, 2 = podwójny EXP (np. na event). 0 wyłącza zdobywanie EXP.</small></label>
           <label>EXP z historii starych kont (%)<input inputMode="numeric" value={draft.backfill} onChange={e => upd({ backfill: e.target.value })} /><small className="muted">Przy pierwszym wejściu stare konto dostaje ten procent EXP za to, co już zrobiło (skrzynki, osiągnięcia, kontrakty, szachy...), najwyżej do levelu {data.backfillMaxLevel}.
-            Przeskoczone levele zaliczają się BEZ nagród.</small></label>
+            Przeskoczone levele zaliczają się BEZ nagród - brakujące nagrody można wypłacić w sekcji „Zaległe nagrody za levele” niżej.</small></label>
           <label>Szybkość spadku EXP po progu<input inputMode="decimal" value={draft.decay} onChange={e => upd({ decay: e.target.value })} /><small className="muted">Po przekroczeniu dziennego progu źródła EXP za zdarzenie = EXP × (próg / zdobyte dziś)<sup>wykładnik</sup>, nie mniej niż 1. Domyślnie {data.defaultDecay}; większy wykładnik = szybszy spadek.</small></label>
         </div>
       </div>
@@ -168,6 +168,8 @@ export default function ExpAdmin() {
         </div>
         <div className={s.axis}><span>1</span><span>25</span><span>50</span><span>75</span><span>{data.maxLevel}</span></div>
       </div>
+
+      <Arrears data={data} draft={draft} upd={upd} onDone={load} />
 
       <Big data={data} draft={draft} upd={upd} />
 
@@ -225,6 +227,72 @@ export default function ExpAdmin() {
         {dirty && <span className={s.dirty}>Niezapisane zmiany</span>}
       </div>
     </section>
+  );
+}
+
+interface ArrearsData {
+  players: number; levels: number; notSettled: number; auto: boolean;
+  perLevel: { level: number; players: number }[]; top: { id: number; name: string; levels: number }[];
+  totals: { money: number; euro: number; cards: number; cosmetics: number; choices: number; chests: Record<string, number> };
+  run: { running: boolean; total: number; done: number; players: number; levels: number; errors: number; startedAt: number; finishedAt: number; by: string };
+}
+
+/** Zaległe nagrody za levele (src/exp.rs `pay_arrears`): podgląd (kto, ile leveli, suma nagród), wypłata wszystkim w tle i samoczynna wypłata przy wizycie gracza */
+function Arrears({ data, draft, upd, onDone }: { data: Data; draft: Draft; upd: (p: Partial<Draft>) => void; onDone: () => void }) {
+  const [a, setA] = useState<ArrearsData | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api<ArrearsData>('/api/admin/exp/arrears').then(setA).catch(e => toast(e.message, true));
+  useEffect(() => { load(); }, []);
+  const running = a?.run.running;
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(load, 1500);
+    return () => clearInterval(t);
+  }, [running]);
+  useEffect(() => { if (a && !running && a.run.finishedAt) onDone(); }, [running]);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (!a) return null;
+  const n = (x: number) => x.toLocaleString('pl-PL');
+  const chests = Object.entries(a.totals.chests).map(([k, c]) => `${data.chests.find(x => x.kind === k)?.name || k} ×${n(c)}`);
+  const summary = [a.totals.money ? `${n(a.totals.money)} gr` : '', a.totals.euro ? `${n(a.totals.euro)} euro` : '', a.totals.cards ? `${n(a.totals.cards)} kart` : '', ...chests, a.totals.cosmetics ? `${n(a.totals.cosmetics)} kosmetyków` : ''].filter(Boolean).join(', ') || 'brak';
+  const pay = async () => {
+    if (!confirm(`Wypłacić zaległe nagrody za levele? Dostanie je ${n(a.players)} graczy (${n(a.levels)} leveli): ${summary}. Na levelach z dużą nagrodą (${n(a.totals.choices)}) gracze dostaną do wyboru 2 z 4. Wypłata idzie w tle i jest bezpieczna do powtórzenia (nikt nie dostanie nagrody za ten sam level drugi raz), ale wypłaconych nagród nie da się cofnąć.`)) return;
+    setBusy(true);
+    try { await api('/api/admin/exp/arrears', { confirm: true }); toast('Wypłata zaległych nagród ruszyła'); await load(); } catch (e: any) { toast(e.message, true); }
+    setBusy(false);
+  };
+  const r = a.run;
+  const pct = r.total ? Math.round(r.done / r.total * 100) : 0;
+  return (
+    <div className={`panel ${s.block}`}>
+      <h3>Zaległe nagrody za levele</h3>
+      <p className="muted small">Gracze, którym nagród za levele nie wypłacono: konta przeliczone z historii (levele zaliczone bez nagród przy pierwszym wejściu po wprowadzeniu EXP) i levele bez wpisu. Wypłata daje za każdy brakujący level
+        2-99 bieżącego cyklu nagrodę standardową i specjalną wg tabeli niżej (a na levelach z dużą nagrodą - wybór 2 z 4, który gracz zobaczy przy następnym wejściu), a graczowi pokaże się jedno zbiorcze okno „Nowy level”.
+        Levele ustawione ręcznie przez admina („Ustaw level”) są świadomie bez nagród i nie wchodzą w zaległości. Konta, które jeszcze nie weszły od aktualizacji ({n(a.notSettled)}), zostaną przeliczone przy wypłacie.</p>
+      {a.levels === 0 ? <p>Brak zaległości do wypłaty.</p> : <>
+        <p><b>{n(a.players)}</b> graczy, <b>{n(a.levels)}</b> leveli do wypłaty. Suma nagród: {summary}.{a.totals.choices ? ` Duże nagrody do wyboru: ${n(a.totals.choices)}.` : ''}</p>
+        <div className={s.arrGrid}>
+          <div>
+            <h4>Najwięcej zaległości</h4>
+            <ol className={s.arrList}>{a.top.map(t => <li key={t.id}><span>{t.name}</span><b>{t.levels}</b></li>)}</ol>
+          </div>
+          <div>
+            <h4>Graczy z zaległością na levelu</h4>
+            <div className={s.arrChips}>{a.perLevel.map(l => <span key={l.level} className={s.chip} title={`Level ${l.level}: ${l.players} graczy`}>{l.level}: {n(l.players)}</span>)}</div>
+          </div>
+        </div>
+      </>}
+      {(r.running || r.finishedAt > 0) && (
+        <div role="status">
+          <div className={s.arrProg}><i style={{ width: `${r.running ? pct : 100}%` }} /></div>
+          <p className="muted small">{r.running ? `Wypłata w toku (${r.by}): ${n(r.done)} / ${n(r.total)} graczy (${pct}%)` : `Ostatnia wypłata (${r.by}) zakończona`}; wypłacono ${n(r.levels)} leveli ${n(r.players)} graczom{r.errors ? `, błędów: ${r.errors} (szczegóły w logu serwera, wypłatę można powtórzyć)` : ''}.</p>
+        </div>
+      )}
+      <label className={s.chk}><input type="checkbox" checked={draft.autoArrears} onChange={e => upd({ autoArrears: e.target.checked })} /> Wypłacaj zaległe nagrody samoczynnie przy następnej wizycie gracza (zapisuje się przyciskiem „Zapisz ustawienia” na dole; teraz: {a.auto ? 'włączone' : 'wyłączone'})</label>
+      <div className={s.btns}>
+        <Button kind="hue" disabled={busy || running || a.levels === 0} onClick={pay}>Wypłać zaległe nagrody</Button>
+        <Button disabled={busy} onClick={load}>Odśwież podgląd</Button>
+      </div>
+    </div>
   );
 }
 

@@ -33,7 +33,7 @@ pub async fn exp_page(State(st): State<AppState>, Me(me): Me) -> Res {
         .fetch_all(&mut *c)
         .await?
         .into_iter()
-        .map(|(l, p)| (i64::from(l), p != 0))
+        .map(|(l, p)| (i64::from(l), p == 1))
         .collect();
     let levels: Vec<Value> = (1..=MAX_LEVEL)
         .map(|l| {
@@ -161,9 +161,9 @@ pub async fn exp_pop(State(st): State<AppState>, Me(me): Me) -> Res {
             let l = i64::from(*l);
             let r = cfg.rewards_for(l);
             json!({
-                "level": l, "paid": *paid != 0, "badge": l >= MAX_LEVEL, "choice": cfg.choice_levels.contains(&l),
-                "small": if *paid != 0 { views(&cat, &r.small) } else { vec![] },
-                "special": if *paid != 0 { views(&cat, &r.special) } else { vec![] },
+                "level": l, "paid": *paid == 1, "badge": l >= MAX_LEVEL, "choice": cfg.choice_levels.contains(&l),
+                "small": if *paid == 1 { views(&cat, &r.small) } else { vec![] },
+                "special": if *paid == 1 { views(&cat, &r.special) } else { vec![] },
             })
         })
         .collect();
@@ -216,7 +216,7 @@ pub async fn admin_exp(State(st): State<AppState>, Admin(_): Admin) -> Res {
         "maxLevel": MAX_LEVEL, "backfillMaxLevel": exp::BACKFILL_MAX_LEVEL,
         "decay": cfg.decay, "defaultDecay": DEFAULT_DECAY, "exclusiveChance": cfg.exclusive_chance,
         "exclusiveCards": cfg.excl_cards.iter().map(|(p, v)| json!({"person": p, "variant": v})).collect::<Vec<_>>(),
-        "exclusiveChests": cfg.excl_chests, "badgeTiers": BADGE_TIERS,
+        "exclusiveChests": cfg.excl_chests, "badgeTiers": BADGE_TIERS, "autoArrears": cfg.auto_arrears,
         "variants": variants, "cards": cards, "chests": chests, "cosmetics": crate::cosmetics::options(),
     }))
 }
@@ -240,6 +240,8 @@ pub struct ExpSave {
     exclusive_cards: Value,
     #[serde(rename = "exclusiveChests")]
     exclusive_chests: Value,
+    #[serde(rename = "autoArrears")]
+    auto_arrears: Value,
     /// true = wróć do ustawień domyślnych
     reset: bool,
 }
@@ -253,7 +255,7 @@ pub async fn admin_exp_save(State(st): State<AppState>, Admin(me): Admin, JsonBo
     } else {
         let raw = json!({"mult": req.mult, "backfillPct": req.backfill_pct, "curve": req.curve, "needs": req.needs, "sources": req.sources,
                          "decay": req.decay, "choiceLevels": req.choice_levels, "exclusiveChance": req.exclusive_chance,
-                         "exclusiveCards": req.exclusive_cards, "exclusiveChests": req.exclusive_chests});
+                         "exclusiveCards": req.exclusive_cards, "exclusiveChests": req.exclusive_chests, "autoArrears": req.auto_arrears});
         let cfg = clean_config(&raw, Some(&req.rewards), &cat);
         exp::save(&mut tx, &cfg).await?;
         let d = format!(
@@ -267,6 +269,35 @@ pub async fn admin_exp_save(State(st): State<AppState>, Admin(me): Admin, JsonBo
     tx.commit().await?;
     exp::set_config(cfg);
     ok(json!({"ok": true}))
+}
+
+/// Podgląd zaległych nagród za levele wszystkich graczy (bez wypłaty) i stan wypłaty w tle
+pub async fn admin_arrears(State(st): State<AppState>, Admin(_): Admin) -> Res {
+    let mut c = st.db.acquire().await?;
+    let mut v = exp::arrears_preview(&mut c).await?;
+    v["run"] = exp::arrears_status();
+    ok(v)
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct ArrearsRequest {
+    /// przycisk musi potwierdzić świadomie (okno z podsumowaniem)
+    confirm: bool,
+}
+
+/// Rusza wypłatę zaległych nagród za levele wszystkim graczom w tle (dziennik admina `exp_arrears`); idempotentne, jedna wypłata naraz
+pub async fn admin_arrears_pay(State(st): State<AppState>, Admin(me): Admin, JsonBody(req): JsonBody<ArrearsRequest>) -> Res {
+    if !req.confirm {
+        return bad("Potwierdź wypłatę zaległych nagród");
+    }
+    if !exp::start_arrears(st.clone(), me.clone()) {
+        return bad("Wypłata zaległych nagród już trwa");
+    }
+    let mut tx = st.db.begin().await?;
+    log_admin(&mut tx, &me, "exp_arrears_start", None, "rozpoczęto wypłatę zaległych nagród za levele wszystkim graczom").await?;
+    tx.commit().await?;
+    ok(json!({"ok": true, "run": exp::arrears_status()}))
 }
 
 #[derive(Deserialize, Default)]
