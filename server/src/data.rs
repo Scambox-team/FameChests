@@ -763,7 +763,8 @@ impl VariantTables {
         let special_variants = variants.iter().filter(|(_, x)| x.special).map(|(k, _)| k.clone()).collect();
         let casino_variants = variant_order
             .iter()
-            .filter(|v| *v == "normal" || (variants[*v].chance > 0.0 && !variants[*v].exclusive))
+            // bez wariantów przypiętych do kart ("cards", także z panelu): te wypadają tylko swoim kartom (`Catalog::house_extra`)
+            .filter(|v| *v == "normal" || (variants[*v].chance > 0.0 && !variants[*v].exclusive && variants[*v].cards.is_empty()))
             .cloned()
             .collect();
         let sticker_variants = variants

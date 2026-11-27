@@ -3,6 +3,7 @@ import { rand } from '../../game/rules';
 import './variant-mockups-3d';
 import './variant-mockups.css';
 import { RARE_PROPOSALS } from './variant-mockups-rare';   // eslint-disable-line @typescript-eslint/no-unused-vars
+import { GLOBAL_PROPOSALS } from './variant-mockups-global';
 
 // Propozycje nowych wariantów (strona /variants, zakładka „Propozycje”) - makiety do wyboru, jeszcze NIE w grze.
 // Każda makieta = zwykła karta + klasy vm-<wariant> vm-<wariant>-<nr> (variant-mockups.css) i ozdoby:
@@ -40,6 +41,9 @@ export const VARIANT_PROPOSALS = [
 // Lonsdaleit jest już w grze; jego makiety (RARE_PROPOSALS i ARCHIVED_LOOKS) zostają w variant-mockups-rare.ts jako archiwum i NIE są rejestrowane tutaj.
 // Żeby je znów pokazać w Propozycjach: odkomentuj linię poniżej.
 // VARIANT_PROPOSALS.push(...RARE_PROPOSALS);
+
+// Globalny (organizacje międzynarodowe): cztery makiety w variant-mockups-global.ts (klasy gbl-)
+VARIANT_PROPOSALS.push(...GLOBAL_PROPOSALS);
 
 // ---- Czarna dziura: wspólne gwiazdy i sześć propozycji wyglądu
 const bhStars = (n = 26) => vmScatter(n, "bh-star", () => `width:${vmN(.5, 1.6, 1)}px;height:${vmN(.5, 1.6, 1)}px;opacity:${vmN(.3, 1, 2)}`);

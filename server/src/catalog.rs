@@ -1056,7 +1056,11 @@ impl Catalog {
     /// Warianty tej karty (ekskluzywne dla niej), które dają też kuźnia i kasyno: włączone, bez ograniczenia do skrzynki,
     /// nie wyjątkowe, nie zablokowane przez admina
     pub fn house_extra(&self, p: &Person) -> Vec<String> {
-        let g = g();
+        self.house_extra_in(&g(), p)
+    }
+
+    /// To samo na jawnie podanych danych gry
+    pub fn house_extra_in(&self, g: &crate::data::GameData, p: &Person) -> Vec<String> {
         g.card_variants(&p.id)
             .into_iter()
             .filter(|v| !g.variants[v].exclusive && !g.variants[v].crate_only && self.vs.enabled(v) && self.variant_house_ok(v))

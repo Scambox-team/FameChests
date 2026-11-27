@@ -201,14 +201,24 @@ pub fn roll_euro(kind: &str) -> i64 {
 /// Zwraca ([(karta, wariant)], reszta w pieniądzach).
 pub fn house_cards(cat: &Catalog, value: i64) -> (Vec<(Arc<Person>, String)>, i64) {
     let g = g();
+    let pool = house_pool(cat, &g);
+    house_pick(&g, pool, value)
+}
+
+/// Pula kasyna: (wartość, karta, wariant) dla kart z kuźni w wariantach z CASINO_VARIANTS i w wariantach przypiętych do tej karty; od najdroższych.
+/// Dane gry podane jawnie (test nie zależy od globalnego stanu, który zmieniają inne testy).
+pub fn house_pool<'a>(cat: &'a Catalog, g: &crate::data::GameData) -> Vec<(i64, &'a Arc<Person>, String)> {
     // CASINO_VARIANTS: zwykła i warianty włączone (albo z "extraSource": "casino", np. Zdrapka - wypada z kasyna także
     // wyłączona, gdy jej wartość pasuje do puli), nie zablokowane przez admina w kasynie
     let casino: Vec<String> = g
         .casino_variants
         .iter()
         .filter(|v| {
+            // warianty przypięte do kart ("cards", także z panelu) są tylko dla swoich kart: dokłada je `house_extra` (jak w base_variants)
             *v == "normal"
-                || ((cat.variant_enabled(v) || g.variant(v).extra_source.as_deref() == Some("casino")) && cat.variant_house_ok(v))
+                || (g.variant(v).cards.is_empty()
+                    && (cat.variant_enabled(v) || g.variant(v).extra_source.as_deref() == Some("casino"))
+                    && cat.variant_house_ok(v))
         })
         .cloned()
         .collect();
@@ -216,9 +226,13 @@ pub fn house_cards(cat: &Catalog, value: i64) -> (Vec<(Arc<Person>, String)>, i6
         .people
         .values()
         .filter(|p| p.forge && !p.is_secret())
-        .flat_map(|p| casino.iter().cloned().chain(cat.house_extra(p)).map(move |v| (p.value(&v), p, v)))
+        .flat_map(|p| casino.iter().cloned().chain(cat.house_extra_in(g, p)).map(move |v| (p.value(&v), p, v)))
         .collect();
     pool.sort_by_key(|x| -x.0); // stabilne, jak sorted()
+    pool
+}
+
+fn house_pick(g: &crate::data::GameData, pool: Vec<(i64, &Arc<Person>, String)>, value: i64) -> (Vec<(Arc<Person>, String)>, i64) {
     let (mut out, mut left) = (vec![], value);
     let mut rng = rand::thread_rng();
     while out.len() < g.roulette.max_payout_cards {
@@ -309,5 +323,60 @@ mod tests {
         hw.extend(cat.base_variants());
         let sum: f64 = variant_dist(&hw, &none, 1.0).iter().map(|(_, q)| q).sum();
         assert!((sum - 1.0).abs() < 1e-9, "halloween: suma {sum}");
+    }
+
+    /// Ustawienia z panelu (jak na stronie /variants: `cards`, `crateOnly`, włączony) nałożone na dane gry - jawnie, bez ruszania globalnego stanu
+    fn panel_game(variant: &str, cards: &[&str], crate_only: bool) -> (Catalog, crate::data::GameData) {
+        let row = (variant.to_owned(), serde_json::json!({"settings": {"enabled": true, "cards": cards, "crateOnly": crate_only}}).as_object().cloned().unwrap());
+        let rows = [row];
+        let cat = crate::catalog::build_with_variants(&[], &[], &rows);
+        let vs = crate::variants::VariantState::read(&rows, Default::default());
+        (cat, crate::data::base_game().with_catalog_variants(&vs.custom, &vs.cfg))
+    }
+
+    /// Wariant z listą kart (ekskluzywny dla karty) wypada TYLKO tym kartom, także w kasynie, kontrakcie i ulepszaczu.
+    /// Błąd: `casino_variants` brał każdy wariant z szansą > 0, także przypięty do karty w panelu, a `house_cards` dawał go WSZYSTKIM kartom
+    /// (pula kasyna nie filtrowała po liście kart; kontrakt i ulepszacz były bezpieczne, bo biorą `base_variants` + `house_extra(karta)`).
+    #[test]
+    fn card_bound_variant_never_drops_for_other_cards() {
+        let probe = crate::catalog::build(&[], &[]);
+        let mut forge: Vec<String> = probe.people.values().filter(|p| p.forge && !p.is_secret() && !p.is_special()).map(|p| p.id.clone()).collect();
+        forge.sort();
+        let (a, b) = (forge[0].clone(), forge[1].clone());
+        for variant in ["gold", "silver", "holo"] {
+            for crate_only in [false, true] {
+                let (cat, gd) = panel_game(variant, &[a.as_str()], crate_only);
+                let x = gd.variant(variant);
+                assert_eq!(x.cards, vec![a.clone()], "ustawienie z panelu trafia do danych gry");
+                assert!(x.chance > 0.0 && !x.exclusive, "{variant}: wariant z szansą i nie wyjątkowy - dokładnie ten przypadek");
+                // dane gry: wariant przypięty do karty nie jest wariantem kasyna
+                assert!(!gd.casino_variants.iter().any(|v| v == variant), "{variant}: casino_variants");
+                assert!(gd.casino_variants.iter().any(|v| v == "normal"));
+                // pula kasyna: wariant tylko przy własnej karcie (i tylko bez crateOnly)
+                let pool = house_pool(&cat, &gd);
+                for (_, p, v) in &pool {
+                    if v.split('+').any(|x| x == variant) {
+                        assert_eq!(p.id, a, "{variant} (crateOnly={crate_only}) w puli kasyna przy karcie {}", p.id);
+                    }
+                }
+                let own = pool.iter().any(|(_, p, v)| p.id == a && v == variant);
+                assert_eq!(own, !crate_only, "{variant}: własna karta w kasynie (crateOnly={crate_only})");
+                assert!(pool.iter().any(|(_, p, v)| p.id == b && v == "normal"), "inne karty nadal są w kasynie w zwykłym wariancie");
+                // wypłata: wielokrotnie, różne wartości
+                for value in [200, 5_000, 100_000, 3_000_000] {
+                    for _ in 0..40 {
+                        let (drawn, _) = house_pick(&gd, house_pool(&cat, &gd), value);
+                        for (p, v) in drawn {
+                            assert!(!(v == variant && p.id != a), "{variant} wypadł w kasynie karcie {}", p.id);
+                        }
+                    }
+                }
+                // kontrakt i ulepszacz: base_variants (bez wariantów z listą kart) + house_extra tej karty
+                assert!(!gd.card_variants(&b).iter().any(|v| v == variant) && gd.card_variants(&a).iter().any(|v| v == variant));
+                assert!(!cat.house_extra_in(&gd, cat.person(&b).unwrap()).iter().any(|v| v == variant), "{variant}: house_extra({b})");
+                assert_eq!(cat.house_extra_in(&gd, cat.person(&a).unwrap()).iter().any(|v| v == variant), !crate_only, "{variant}: house_extra({a})");
+            }
+        }
+        crate::catalog::build(&[], &[]);   // przywraca domyślne dane gry
     }
 }

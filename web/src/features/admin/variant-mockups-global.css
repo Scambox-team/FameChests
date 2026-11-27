@@ -1,0 +1,155 @@
+/* Makiety wariantu „Globalny” (variant-mockups-global.ts), jeszcze nie w grze. Klasy gbl- (gl- to Witrażowa). Karta dostaje klasy vm vm-global vm-global-<nr>.
+   Wyłącznie odcienie niebieskiego. Jednostki cqw = 1% szerokości karty (karta jest kontenerem). Animacje tylko transform / opacity / translate. */
+
+/* ---- wspólne: napisy i panele w jasnym błękicie na granacie ---- */
+.card:is(.vm-global-1, .vm-global-2, .vm-global-3, .vm-global-4, .vm-global-5, .vm-global-6, .vm-global-7, .vm-global-8) .card-inner { color: #e8f0ff; }
+.card:is(.vm-global-1, .vm-global-2, .vm-global-3, .vm-global-4, .vm-global-5, .vm-global-6, .vm-global-7, .vm-global-8) :is(.card-sub, .card-stats, :where(.card-stats b), .card-foot, .atk-name, .atk-dmg, .card-hp) { color: #e8f0ff; text-shadow: none; }
+.card:is(.vm-global-1, .vm-global-2, .vm-global-3, .vm-global-4, .vm-global-5, .vm-global-6, .vm-global-7, .vm-global-8) .card-name { color: #fff; text-shadow: 0 0 1.4cqw #6fb4ff; }
+.card:is(.vm-global-1, .vm-global-2, .vm-global-3, .vm-global-4, .vm-global-5, .vm-global-6, .vm-global-7, .vm-global-8) .card-photo { position: relative; overflow: hidden; border-image: none; border-radius: .4cqw; }
+.card-photo > :is(.gbl1-scan, .gbl3-scan, .gbl3-gridlines, .gbl3-brk, .gbl5-sweep, .gbl5-blip, .gbl6-scanl, .gbl6-ruler, .gbl7-pulse, .gbl8-ruler) { position: absolute; display: block; pointer-events: none; }
+
+/* ================================================================ 1. HOLOGRAM W SALI (gbl1-) */
+.card.vm-global-1 { --frame: linear-gradient(135deg, #e6eefa, #7ea6d8 28%, #1b3f7a 55%, #c9d6e8 80%, #8fb3e0); box-shadow: 0 6px 18px #000c, 0 0 2.4cqw #4b92db55; }
+.card.vm-global-1 .card-inner { background: radial-gradient(120% 70% at 50% 0, #1d4a8c, #0a1e43 55%, #050d22); }
+.card.vm-global-1 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #0a1e43aa; border: .25cqw solid #8cc4ff44; border-radius: .6cqw; }
+.card.vm-global-1 .card-photo { border: .5cqw solid #c9d6e8aa; box-shadow: 0 0 2.4cqw #4b92db88; }
+.gbl1-seats { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .6; }
+.gbl1-beam { left: 8%; top: -10%; width: 42%; height: 72%; background: linear-gradient(180deg, #9fd0ff77, transparent); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); transform-origin: 50% 0; transform: rotate(-5deg); animation: gbl1Sway 9s ease-in-out infinite; }
+.gbl1-beam.b { left: 50%; animation-delay: -4.5s; }
+@keyframes gbl1Sway { 50% { transform: rotate(5deg); } }
+.gbl1-dust { border-radius: 50%; background: #cfe6ff; opacity: .2; animation: gbl1Dust 7s ease-in-out infinite; }
+@keyframes gbl1Dust { 50% { opacity: .9; transform: translateY(-1.6cqw); } }
+.vm-photo.gbl1-photo { z-index: 1; inset: 0; background: linear-gradient(180deg, #3a82e638, #08183a66 100%); }
+.gbl1-holo { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; translate: -50% -50%; z-index: 2; opacity: .4; mix-blend-mode: screen; pointer-events: none; }
+.gbl1-holosvg { width: 100%; height: 100%; display: block; }
+.gbl1-scan { z-index: 3; left: 0; right: 0; top: 0; height: 28%; background: linear-gradient(180deg, transparent, #8cc4ff44 70%, #dff0ffcc); transform: translateY(-100%); animation: gbl1Scan 5.5s ease-in-out infinite; }
+@keyframes gbl1Scan { 0% { transform: translateY(-100%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(360%); opacity: 0; } }
+.gbl1-deco .gbl1-rim { inset: 1cqw; border: .25cqw solid #dfe9f777; border-radius: 3.5% / 2.5%; }
+.gbl1-stars { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .9; }
+
+/* ================================================================ 2. ORBITA (gbl2-) */
+.card.vm-global-2 { --frame: linear-gradient(135deg, #bfe0ff, #2a6ac8 35%, #0a1e43 60%, #7fb8f0); box-shadow: 0 6px 18px #000c, 0 0 3cqw #2a6ac888; }
+.card.vm-global-2 .card-inner { background: radial-gradient(100% 60% at 50% 40%, #0f3c80, #061530 70%, #030a1a); }
+.card.vm-global-2 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #061530b8; border: .25cqw solid #6fb4ff44; border-radius: .6cqw; }
+.card.vm-global-2 .card-photo { border: .5cqw solid #bfe0ff99; box-shadow: 0 0 2.4cqw #3a82e6; }
+.gbl2-star { border-radius: 50%; background: #fff; opacity: .3; animation: gbl2Tw 5s ease-in-out infinite; }
+@keyframes gbl2Tw { 50% { opacity: .95; } }
+.gbl2-glow { left: -10%; top: -12%; width: 120%; aspect-ratio: 1; background: radial-gradient(circle, #3a82e655, transparent 62%); animation: gbl2Glow 6s ease-in-out infinite; }
+@keyframes gbl2Glow { 50% { opacity: .55; } }
+.gbl2-planet { position: absolute; left: -30%; top: 50%; width: 160%; aspect-ratio: 1; opacity: .95; }
+.gbl2-svg { width: 100%; height: 100%; display: block; }
+.vm-photo.gbl2-photo { z-index: 1; inset: 0; background: linear-gradient(135deg, #3a82e63a, transparent 42%, #0a1e4370); }
+.gbl2-ring { position: absolute; left: 0; top: 1.7%; width: 100%; aspect-ratio: 1; animation: vmSpin 120s linear infinite; }
+.gbl2-ring.r2 { animation-duration: 180s; animation-direction: reverse; opacity: .9; }
+
+/* ================================================================ 3. SIATKA (gbl3-) */
+.card.vm-global-3 { --frame: linear-gradient(135deg, #8cc4ff, #1d4a8c 40%, #061530 60%, #6fb4ff); box-shadow: 0 6px 18px #000c, 0 0 2.6cqw #1d5fc066; }
+.card.vm-global-3 .card-inner { background: linear-gradient(180deg, #0b2a66, #061530 55%, #030a1a); }
+.card.vm-global-3 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #04112a99; border: .25cqw solid #6fb4ff55; border-radius: .3cqw; }
+.card.vm-global-3 .card-photo { border: .45cqw solid #6fb4ff; box-shadow: 0 0 2.2cqw #3a82e6aa, inset 0 0 0 .2cqw #061530; border-radius: .2cqw; }
+.gbl3-wire { position: absolute; left: -20%; top: -4%; width: 140%; aspect-ratio: 1; opacity: .8; }
+.gbl3-svg { width: 100%; height: 100%; display: block; }
+.gbl3-seats { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .75; }
+.gbl3-sweep { left: calc(31.5 / 63 * 100% - 46cqw); top: calc(74 / 88 * 100% - 46cqw); width: 92cqw; height: 92cqw; border-radius: 50%; animation: vmSpin 9s linear infinite;
+  background: conic-gradient(from 0deg, #6fb4ff00 0deg 296deg, #6fb4ff44 340deg, #cfe6ffcc 360deg); }
+.gbl3-blip { border-radius: 50%; background: #e8f0ff; box-shadow: 0 0 1.2cqw #8cc4ff; animation: gbl3Blip 3.4s ease-in-out infinite; }
+@keyframes gbl3Blip { 0%, 100% { opacity: .1; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+.vm-photo.gbl3-photo { z-index: 1; inset: 0; background: linear-gradient(180deg, #1d5fc030, #04112a66); }
+.gbl3-gridlines { z-index: 2; inset: 0; background-image: linear-gradient(#8cc4ff30 1px, transparent 1px), linear-gradient(90deg, #8cc4ff30 1px, transparent 1px); background-size: 7cqw 7cqw; }
+.gbl3-brk { z-index: 3; width: 5cqw; height: 5cqw; border: 0 solid #bfe0ff; }
+.gbl3-brk.a { left: 1cqw; top: 1cqw; border-left-width: .4cqw; border-top-width: .4cqw; }
+.gbl3-brk.b { right: 1cqw; top: 1cqw; border-right-width: .4cqw; border-top-width: .4cqw; }
+.gbl3-brk.c { left: 1cqw; bottom: 1cqw; border-left-width: .4cqw; border-bottom-width: .4cqw; }
+.gbl3-brk.d { right: 1cqw; bottom: 1cqw; border-right-width: .4cqw; border-bottom-width: .4cqw; }
+.gbl3-scan { z-index: 3; top: 0; bottom: 0; left: 0; width: 12%; background: linear-gradient(90deg, transparent, #6fb4ff55, #e8f0ffcc, #6fb4ff55, transparent); transform: translateX(-100%); animation: gbl3Scan 6s linear infinite; }
+@keyframes gbl3Scan { to { transform: translateX(840%); } }
+.gbl3-deco .gbl3-rim { inset: 1cqw; border: .22cqw solid #6fb4ff88; border-radius: .8cqw; }
+.gbl3-notch { top: 50%; width: 1.4cqw; height: 8cqw; margin-top: -4cqw; border-radius: 1cqw; background: #6fb4ff; box-shadow: 0 0 1cqw #6fb4ff; }
+.gbl3-notch.l { left: .3cqw; } .gbl3-notch.r { right: .3cqw; }
+
+/* ================================================================ 4. KOPUŁA (gbl4-) */
+.card.vm-global-4 { --frame: linear-gradient(135deg, #e8f0ff, #8cc4ff 30%, #1d4a8c 55%, #bfe0ff 80%, #6fb4ff); box-shadow: 0 6px 18px #000c, 0 0 2.6cqw #6fb4ff55; }
+.card.vm-global-4 .card-inner { background: radial-gradient(130% 80% at 50% 0, #1b4f9c, #0a2250 50%, #040e26); }
+.card.vm-global-4 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #071a40bb; border: .25cqw solid #bfe0ff44; border-radius: .6cqw; }
+.card.vm-global-4 .card-photo { border: .5cqw solid #bcd6f5aa; box-shadow: 0 0 2.4cqw #6fb4ff88; }
+.gbl4-ribs { left: 50%; top: -84%; width: 220%; aspect-ratio: 1; translate: -50% 0; background: repeating-conic-gradient(from 0deg at 50% 50%, #bfe0ff2e 0 2.5deg, transparent 2.5deg 11deg);
+  -webkit-mask: radial-gradient(circle, #000 0 36%, transparent 56%); mask: radial-gradient(circle, #000 0 36%, transparent 56%); }
+.gbl4-glow { left: -10%; top: 6%; width: 120%; aspect-ratio: 1; background: radial-gradient(circle, #6fb4ff44, transparent 60%); animation: gbl4Glow 6s ease-in-out infinite; }
+@keyframes gbl4Glow { 50% { opacity: .5; } }
+.gbl4-globe { position: absolute; left: 50%; top: 38%; width: 124%; aspect-ratio: 1; translate: -50% -50%; opacity: .32; }
+.gbl4-svg { width: 100%; height: 100%; display: block; }
+.gbl4-dust { border-radius: 50%; background: #dff0ff; opacity: .25; animation: gbl4Dust 7s ease-in-out infinite; }
+@keyframes gbl4Dust { 50% { opacity: .9; transform: translateY(-1.4cqw); } }
+.vm-photo.gbl4-photo { z-index: 1; inset: 0; background: linear-gradient(180deg, #6fb4ff2a, transparent 45%, #04112a55); }
+.gbl4-wreath { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .95; filter: drop-shadow(0 0 .8cqw #6fb4ff88); }
+
+/* ================================================================ 5. RADAR (gbl5-) */
+.card.vm-global-5 { --frame: linear-gradient(135deg, #bfe0ff, #1d4a8c 35%, #061530 60%, #8cc4ff); box-shadow: 0 6px 18px #000c, 0 0 2.6cqw #2a6ac877; }
+.card.vm-global-5 .card-inner { background: radial-gradient(100% 70% at 50% 35%, #0c2f6e, #050f2a 70%, #02081a); }
+.card.vm-global-5 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #04112aa6; border: .25cqw solid #6fb4ff55; border-radius: .3cqw; }
+.card.vm-global-5 .card-photo { border: .45cqw solid #6fb4ff; box-shadow: 0 0 2.4cqw #3a82e6aa; border-radius: .2cqw; }
+.gbl5-vig { inset: 0; background: radial-gradient(circle at 50% 38%, #1d5fc033, transparent 60%); }
+.gbl5-dot { border-radius: 50%; background: #bfe0ff; opacity: .25; animation: gbl5Tw 5s ease-in-out infinite; }
+@keyframes gbl5Tw { 50% { opacity: .85; } }
+.vm-photo.gbl5-photo { z-index: 1; inset: 0; background: linear-gradient(180deg, #1d5fc03a, #04112a77); }
+.card-photo > svg.gbl5-radar { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.gbl5-sweep { z-index: 3; left: 50%; top: 50%; width: 140%; aspect-ratio: 1; margin: -70% 0 0 -70%; border-radius: 50%; animation: vmSpin 7s linear infinite;
+  background: conic-gradient(from 0deg, #8cc4ff00 0deg 300deg, #8cc4ff33 338deg, #dff0ffbb 360deg); }
+.gbl5-blip { z-index: 3; width: 1.6cqw; height: 1.6cqw; border-radius: 50%; background: #e8f0ff; box-shadow: 0 0 1.4cqw #8cc4ff; animation: gbl3Blip 3.8s ease-in-out infinite; }
+.gbl5-deco .gbl5-rim { inset: 1cqw; border: .2cqw solid #6fb4ff77; border-radius: .8cqw; }
+.gbl5-cut { width: 7cqw; height: 7cqw; background: #050f2a; }
+.gbl5-cut.a { left: .4cqw; top: .4cqw; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.gbl5-cut.b { right: .4cqw; bottom: .4cqw; clip-path: polygon(100% 100%, 0 100%, 100% 0); }
+
+/* ================================================================ 6. HORYZONT (gbl6-) */
+.card.vm-global-6 { --frame: linear-gradient(135deg, #e8f0ff, #6fb4ff 30%, #1d4a8c 55%, #8cc4ff); box-shadow: 0 6px 18px #000c, 0 0 2.6cqw #6fb4ff66; }
+.card.vm-global-6 .card-inner { background: #040e26; }
+.card.vm-global-6 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #04112a88; border: .25cqw solid #8cc4ff44; border-radius: .5cqw; }
+.card.vm-global-6 .card-photo { border: .45cqw solid #8cc4ffcc; box-shadow: 0 0 2.2cqw #3a82e6aa; }
+.gbl6-sky { inset: 0 0 45% 0; background: linear-gradient(180deg, #040e26, #0f3c80 85%, #3a82e6); }
+.gbl6-sun { left: 10%; right: 10%; top: 48%; height: 5%; background: radial-gradient(ellipse at 50% 100%, #dff0ffcc, #6fb4ff66 40%, transparent 70%); }
+.gbl6-floor { position: absolute; left: -60%; right: -60%; top: 55%; bottom: -30%; overflow: hidden; transform-origin: 50% 0; transform: perspective(70cqw) rotateX(66deg); }
+.gbl6-lines { position: absolute; display: block; left: 0; right: 0; top: -7cqw; height: calc(100% + 7cqw); background-image: linear-gradient(#8cc4ffaa 1px, transparent 1px), linear-gradient(90deg, #8cc4ff88 1px, transparent 1px); background-size: 7cqw 7cqw; animation: gbl6Run 3.2s linear infinite; }
+@keyframes gbl6Run { to { transform: translateY(7cqw); } }
+.gbl6-star { border-radius: 50%; background: #fff; opacity: .35; animation: gbl2Tw 5s ease-in-out infinite; }
+.vm-photo.gbl6-photo { z-index: 1; inset: 0; background: linear-gradient(180deg, #3a82e630, #04112a66); }
+.gbl6-scanl { z-index: 2; inset: 0; background: repeating-linear-gradient(180deg, #8cc4ff22 0 1px, transparent 1px 3px); }
+.gbl6-ruler { z-index: 3; background-repeat: no-repeat; }
+.gbl6-ruler.l { left: 0; top: 0; bottom: 0; width: 3cqw; background-image: repeating-linear-gradient(180deg, #bfe0ffcc 0 1px, transparent 1px 2.4cqw), repeating-linear-gradient(180deg, #bfe0ff88 0 1px, transparent 1px 1.2cqw); background-size: 100% 100%, 50% 100%; }
+.gbl6-ruler.t { top: 0; left: 0; right: 0; height: 3cqw; background-image: repeating-linear-gradient(90deg, #bfe0ffcc 0 1px, transparent 1px 2.4cqw), repeating-linear-gradient(90deg, #bfe0ff88 0 1px, transparent 1px 1.2cqw); background-size: 100% 100%, 100% 50%; }
+.gbl6-deco .gbl6-rim { inset: 1cqw; border: .22cqw solid #8cc4ff77; border-radius: .6cqw; }
+
+/* ================================================================ 7. SIEĆ (gbl7-) */
+.card.vm-global-7 { --frame: linear-gradient(135deg, #bfe0ff, #2a6ac8 40%, #0a1e43 60%, #6fb4ff); box-shadow: 0 6px 18px #000c, 0 0 2.8cqw #3a82e677; }
+.card.vm-global-7 .card-inner { background: radial-gradient(120% 70% at 50% 30%, #0e3a80, #061530 65%, #030a1a); }
+.card.vm-global-7 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #061530aa; border: .25cqw solid #6fb4ff44; border-radius: .6cqw; }
+.card.vm-global-7 .card-photo { border: .45cqw solid #8cc4ffbb; box-shadow: 0 0 2.4cqw #3a82e6; }
+.gbl7-wire { position: absolute; left: -20%; top: -2%; width: 140%; aspect-ratio: 1; opacity: .8; }
+.gbl7-svg, .gbl7-net { width: 100%; height: 100%; display: block; }
+.gbl7-net { position: absolute; inset: 0; }
+.vm-photo.gbl7-photo { z-index: 1; inset: 0; background: linear-gradient(135deg, #3a82e638, transparent 50%, #04112a66); }
+.card-photo > svg.gbl7-photonet { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.gbl7-pulse { z-index: 3; width: 2.2cqw; height: 2.2cqw; margin: -1.1cqw 0 0 -1.1cqw; border-radius: 50%; border: .3cqw solid #cfe6ff; animation: gbl7Pulse 3s ease-out infinite; }
+@keyframes gbl7Pulse { from { transform: scale(.4); opacity: 1; } to { transform: scale(3); opacity: 0; } }
+.gbl7-deco .gbl7-rim { inset: 1cqw; border: .2cqw solid #8cc4ff66; border-radius: 3.5% / 2.5%; }
+
+/* ================================================================ 8. PLAN (gbl8-) */
+.card.vm-global-8 { --frame: linear-gradient(135deg, #e8f0ff, #8cc4ff 35%, #1d5fc0 60%, #bfe0ff); box-shadow: 0 6px 16px #000b, 0 0 2.4cqw #3a82e655; }
+.card.vm-global-8 .card-inner { background: linear-gradient(180deg, #0f4296, #0b3478); }
+.card.vm-global-8 :is(.card-sub, .card-attack, .card-stats, .card-foot) { background: #0a2d6a99; border: .25cqw solid #bfe0ff66; border-radius: .2cqw; }
+.card.vm-global-8 .card-photo { border: .4cqw solid #e8f0ff; box-shadow: 0 0 0 .3cqw #1d5fc0; border-radius: .1cqw; }
+.card.vm-global-8 .card-photo > img { filter: grayscale(1) contrast(1.12) brightness(1.05); }
+.gbl8-fine { inset: 0; background-image: linear-gradient(#bfe0ff22 1px, transparent 1px), linear-gradient(90deg, #bfe0ff22 1px, transparent 1px); background-size: 3cqw 3cqw; }
+.gbl8-bold { inset: 0; background-image: linear-gradient(#bfe0ff44 1px, transparent 1px), linear-gradient(90deg, #bfe0ff44 1px, transparent 1px); background-size: 15cqw 15cqw; }
+.vm-photo.gbl8-photo { z-index: 1; inset: 0; background: #2a6ac8; mix-blend-mode: color; opacity: .9; }
+.gbl8-ruler { z-index: 3; background-color: #0b3478cc; }
+.gbl8-ruler.l { left: 0; top: 0; bottom: 0; width: 2.4cqw; background-image: repeating-linear-gradient(180deg, #e8f0ff 0 1px, transparent 1px 2cqw); }
+.gbl8-ruler.b { left: 0; right: 0; bottom: 0; height: 2.4cqw; background-image: repeating-linear-gradient(90deg, #e8f0ff 0 1px, transparent 1px 2cqw); }
+.card-photo > svg.gbl8-compass { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.gbl8-deco .gbl8-rim { inset: 1cqw; border: .2cqw dashed #e8f0ff88; border-radius: .4cqw; }
+.gbl8-dim { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gbl1-beam, .gbl1-dust, .gbl1-scan, .gbl2-star, .gbl2-glow, .gbl2-ring, .gbl3-scan, .gbl3-sweep, .gbl3-blip, .gbl4-glow, .gbl4-dust,
+  .gbl5-sweep, .gbl5-blip, .gbl5-dot, .gbl6-lines, .gbl6-star, .gbl7-pulse { animation: none; }
+}
