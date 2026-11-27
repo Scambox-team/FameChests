@@ -8,6 +8,7 @@ import { S, touch, useGame } from '../../game/store';
 import { fmtNum } from '../../lib/format';
 import { Sound } from '../../sound/sound';
 import { Button } from '../../ui/Button';
+import { Select, Tabs } from '../../ui/Field';
 import { Modal } from '../../ui/Modal';
 import { PageHero } from '../../ui/PageHero';
 import { UserLink, type UserRef } from '../../ui/UserLink';
@@ -58,6 +59,10 @@ export function PassportPage() {
   const [note, setNote] = useState<Note | null>(null);
   const [fresh, setFresh] = useState<string | null>(null);
   const [open, setOpen] = useState<Country | null>(null);
+  // widok: moje stemple albo zbiorczo stemple wszystkich graczy (ile osób zdobyło każde państwo; bez graczy poza rankingiem)
+  const [view, setView] = useState<'mine' | 'all'>('mine');
+  const [scope, setScope] = useState<'any' | 'taken' | 'none'>('any');
+  const [sortBy, setSortBy] = useState<'name' | 'players'>('name');
   const game = useGame();
   // zwykli gracze przy każdym wejściu dostają informację, że Paszport jest eksperymentalny (admini go testują, więc ich nie pytamy)
   const [notice, setNotice] = useState(true);
@@ -74,9 +79,11 @@ export function PassportPage() {
   const sorted = useMemo(() => {
     const by = new Map<string, Country[]>();
     for (const c of countries) by.set(c.k, [...(by.get(c.k) ?? []), c]);
-    for (const list of by.values()) list.sort((a, b) => countryName(a).localeCompare(countryName(b), lang));
+    for (const list of by.values()) list.sort((a, b) => (view === 'all' && sortBy === 'players' ? (data?.holders[b.c] ?? 0) - (data?.holders[a.c] ?? 0) : 0) || countryName(a).localeCompare(countryName(b), lang));
     return by;
-  }, [countries]);
+  }, [countries, view, sortBy, data]);
+  // zbiorczo: ile państw ma choć jednego gracza ze stemplem
+  const takenCount = useMemo(() => countries.filter(c => (data?.holders[c.c] ?? 0) > 0).length, [countries, data]);
 
   const locate = useCallback(async () => {
     setBusy(true);
@@ -130,9 +137,25 @@ export function PassportPage() {
     <div className={`${s.page} ${s.ink}`}>
       <StampDefs />
       <PageHero icon={StampIcon} title="Paszport" lead="Zbieraj stemple państw, w których grasz w ScamBoxa. Jest ich tyle, ile państw uznaje Polska: członkowie ONZ, Kosowo, Palestyna i Watykan."
-        stats={[['Stemple', `${data.stamps.length} z ${total}`], ['Państw łącznie', String(total)], ...(lastCode ? [['Ostatni stempel', countryName(BY_CODE[lastCode])] as [string, string]] : [])]} />
+        stats={[['Stemple', `${data.stamps.length} z ${total}`], ['Państw łącznie', String(total)], ['Zdobyte przez kogokolwiek', `${takenCount} z ${total}`], ...(lastCode ? [['Ostatni stempel', countryName(BY_CODE[lastCode])] as [string, string]] : [])]} />
 
-      <section className={s.gps} aria-labelledby="psp-gps">
+      <div className={s.viewBar}>
+        <Tabs label="Widok Paszportu" value={view} onChange={v => { setView(v); Sound.click(); }} items={[{ id: 'mine', label: 'Moje', count: data.stamps.length }, { id: 'all', label: 'Wszystkich graczy', count: takenCount }]} />
+        {view === 'all' && <>
+          <Select value={scope} onChange={e => setScope(e.target.value as 'any' | 'taken' | 'none')} aria-label="Które państwa pokazać">
+            <option value="any">Wszystkie państwa</option>
+            <option value="taken">Zdobyte przez kogokolwiek</option>
+            <option value="none">Zdobyte przez nikogo</option>
+          </Select>
+          <Select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'players')} aria-label="Sortowanie państw">
+            <option value="name">Alfabetycznie</option>
+            <option value="players">Najwięcej graczy</option>
+          </Select>
+        </>}
+      </div>
+      {view === 'all' && <p className="muted small">Zbiorczo: przy każdym państwie liczba graczy, którzy zdobyli jego stempel (bez graczy ukrytych z rankingu). Kliknij państwo, żeby zobaczyć, kto go ma. Twoje stemple są oznaczone znaczkiem „Masz”.</p>}
+
+      {view === 'mine' && <section className={s.gps} aria-labelledby="psp-gps">
         <div className={s.gpsText}>
           <h2 id="psp-gps"><MapPin size={20} aria-hidden="true" /> Zaznacz swoją lokalizację <span className={s.badge}>Opcjonalne</span></h2>
           <p><b>Żeby zdobywać stemple, musisz mieć włączony GPS</b> i zgodzić się na udostępnienie lokalizacji. Najlepiej działa na telefonie; na komputerze pozycja bywa przybliżona (z Wi-Fi albo adresu IP) i może nie wystarczyć.</p>
@@ -143,26 +166,29 @@ export function PassportPage() {
           <Button kind="hue" big disabled={busy} onClick={locate}><MapPin size={18} aria-hidden="true" /> {busy ? 'Ustalam lokalizację' : 'Zaznacz moją lokalizację'}</Button>
           {note && <p className={`${s.note} ${s[note.kind]}`} role="status">{note.text}</p>}
         </div>
-      </section>
+      </section>}
 
       {CONTINENTS.map(([k, label]) => {
-        const list = sorted.get(k) ?? [];
-        const got = list.filter(c => mine.has(c.c)).length;
+        const full = sorted.get(k) ?? [];
+        const taken = (c: Country) => (data.holders[c.c] ?? 0) > 0;
+        const list = view === 'all' ? full.filter(c => scope === 'any' || (scope === 'taken') === taken(c)) : full;
+        const got = view === 'all' ? full.filter(taken).length : full.filter(c => mine.has(c.c)).length;
+        if (view === 'all' && !list.length) return null;
         return (
           <section key={k} className={s.cont} aria-labelledby={`psp-${k}`}>
             <header className={s.contHead}>
               <h2 id={`psp-${k}`}>{label}</h2>
-              <span className={s.count}>{got} / {list.length}</span>
-              <span className={s.bar} aria-hidden="true"><i style={{ width: `${(got / Math.max(1, list.length)) * 100}%` }} /></span>
+              <span className={s.count}>{got} / {full.length}</span>
+              <span className={s.bar} aria-hidden="true"><i style={{ width: `${(got / Math.max(1, full.length)) * 100}%` }} /></span>
             </header>
             <div className={s.grid}>
               {list.map(c => {
-                const has = mine.has(c.c), n = data.holders[c.c] ?? 0;
+                const n = data.holders[c.c] ?? 0, own = mine.has(c.c), has = view === 'all' ? n > 0 : own;
                 return (
                   <button key={c.c} ref={el => { cells.current[c.c] = el; }} type="button" className={`${s.cell}${has ? ` ${s.got}` : ''}${fresh === c.c ? ` ${s.fresh}` : ''}`}
-                    onClick={() => setOpen(c)} aria-label={`${countryName(c)}: ${has ? 'stempel zdobyty' : 'stempel niezdobyty'}`}>
+                    onClick={() => setOpen(c)} aria-label={view === 'all' ? `${countryName(c)}: ${n} graczy ze stemplem${own ? ', w tym ty' : ''}` : `${countryName(c)}: ${has ? 'stempel zdobyty' : 'stempel niezdobyty'}`}>
                     <Stamp country={c} earned={has} className={s.stamp} />
-                    <span className={s.meta}>{has ? <time dateTime={new Date(mine.get(c.c)! * 1000).toISOString()}>{when(mine.get(c.c)!)}</time> : <span>Niezdobyty</span>}</span>
+                    <span className={s.meta}>{view === 'all' ? (own ? <span className={s.mineTag}>Masz</span> : <span>{n ? 'Zdobyty przez graczy' : 'Nikt go nie ma'}</span>) : has ? <time dateTime={new Date(mine.get(c.c)! * 1000).toISOString()}>{when(mine.get(c.c)!)}</time> : <span>Niezdobyty</span>}</span>
                     <span className={s.who}><Users size={12} aria-hidden="true" /> {fmtNum(n)}</span>
                   </button>
                 );

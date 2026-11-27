@@ -666,6 +666,10 @@ ALTER TABLE cosmetics ADD COLUMN IF NOT EXISTS stock INTEGER;
 ALTER TABLE cosmetics ADD COLUMN IF NOT EXISTS sold INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE cosmetics ADD COLUMN IF NOT EXISTS sale_from DOUBLE PRECISION;
 ALTER TABLE cosmetics ADD COLUMN IF NOT EXISTS sale_to DOUBLE PRECISION;
+-- rozdzielczość grafiki: mnożnik wymiarów standardowych (1 = standardowa, 2 = wysoka, 3 = bardzo wysoka; stare pozycje = 1)
+ALTER TABLE cosmetics ADD COLUMN IF NOT EXISTS res SMALLINT NOT NULL DEFAULT 1;
+-- prywatność ekwipunku: 'public' (domyślnie, każdy zalogowany) | 'friends' (tylko znajomi) | 'nobody' (prywatny; admin i tak widzi)
+ALTER TABLE user_profile_style ALTER COLUMN inventory_visible SET DEFAULT 'public';
 
 -- Zdjęcie profilowe jako kosmetyk (`avatar`, własne grafiki ze sklepu; zdjęcie z karty zostaje darmowe), opis profilu i kraj (darmowe, domyślne)
 ALTER TABLE user_profile_style ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT '';

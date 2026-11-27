@@ -191,17 +191,18 @@ async fn sticker_listing(c: &mut crate::db::Conn, admin: bool) -> sqlx::Result<(
         .into_iter()
         .map(|(id, p, s)| (id, (p, s)))
         .collect();
-    let crates: Vec<Value> = crate::stickers::crates()
-        .iter()
-        .filter_map(|cr| {
-            let (price, in_shop) = shop.get(&cr.id).copied().unwrap_or((600, 1));
-            let hidden = in_shop == 0;
-            (!hidden || admin).then(|| {
-                json!({"id": cr.id, "kind": cr.kind(), "name": cr.name, "emoji": cr.emoji, "color1": cr.color1, "color2": cr.color2, "desc": cr.desc,
-                       "price": price, "avail": if hidden { "hidden" } else { "open" }, "canBuy": price > 0, "weights": cr.weights_json()})
-            })
-        })
-        .collect();
+    let mut crates: Vec<Value> = vec![];
+    for cr in crate::stickers::crates().iter() {
+        let (price, in_shop) = shop.get(&cr.id).copied().unwrap_or((600, 1));
+        let hidden = in_shop == 0;
+        if hidden && !admin {
+            continue;
+        }
+        // `contents`: naklejki w skrzynce z szansą wypadnięcia (podgląd „Co jest w środku” w sklepie); `weights`: szanse wariantów naklejki
+        let contents = crate::stickers::contents(&mut *c, &cr.id).await?;
+        crates.push(json!({"id": cr.id, "kind": cr.kind(), "name": cr.name, "emoji": cr.emoji, "color1": cr.color1, "color2": cr.color2, "desc": cr.desc,
+                           "price": price, "avail": if hidden { "hidden" } else { "open" }, "canBuy": price > 0, "weights": cr.weights_json(), "contents": contents}));
+    }
     type Row = (i64, String, String, i64, i16, Option<i32>, i32, String, String, i16, f64);
     let rows: Vec<Row> = sqlx::query_as(
         "SELECT o.id, o.sticker_id, o.variant, o.price, o.enabled, o.stock, o.sold, s.name, s.rarity, s.enabled, s.img_at \

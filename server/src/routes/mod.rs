@@ -116,6 +116,7 @@ pub fn router(st: AppState) -> Router {
         .route("/snake/{slot}", get(snake::snake_image))
         .route("/snake/sound/{id}", get(snake::snake_sound))
         .route("/player/{name}", get(index))
+        .route("/player/{name}/inventory", get(index))
         .route("/render/card", get(index))
         .route("/link/{token}", get(index))
         .route("/mockups", get(index))

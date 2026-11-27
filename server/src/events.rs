@@ -80,6 +80,12 @@ pub fn clean_reward(r: &Value) -> Option<Value> {
         }
         "euro" => Some(json!({"type": "euro", "amount": n("amount", 0, 1_000_000)})).filter(|v| v["amount"].as_i64() > Some(0)),
         "cosmetic" if crate::cosmetics::exists(&s("id")) => Some(json!({"type": "cosmetic", "id": s("id")})),
+        // naklejka dla graczy (`stickers.rs`) w wybranym wariancie (normal / foil / holo / gold): z dużej nagrody za level
+        "sticker" if !s("sticker").is_empty() => {
+            let v = s("variant");
+            let variant = if crate::stickers::VARIANTS.iter().any(|x| x.0 == v) { v } else { "normal".to_owned() };
+            Some(json!({"type": "sticker", "sticker": s("sticker"), "variant": variant, "count": n("count", 1, 10).max(1)}))
+        }
         _ => None,
     }
 }

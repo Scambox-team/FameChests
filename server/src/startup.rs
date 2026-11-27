@@ -68,6 +68,14 @@ pub async fn init_db(pool: &PgPool, cfg: &Config) -> anyhow::Result<catalog::Cat
     db::init_schema(pool).await?;
     tracing::info!("granice Paszportu: {} państw", crate::borders::load());
     drop_removed_variants(pool).await?;
+    // prywatność ekwipunku: domyślny stał się „publiczny”. Stary domyślny („tylko znajomi”) nie da się odróżnić od świadomego wyboru
+    // (wiersz powstawał przy pierwszym założeniu kosmetyku), więc RAZ zamieniamy wszystkie na publiczny; później wybór gracza jest szanowany
+    let migrated: Option<i64> = sqlx::query_scalar("SELECT value FROM state WHERE key = 'inventory_public_v1'").fetch_optional(pool).await?;
+    if migrated.is_none() {
+        let n = sqlx::query("UPDATE user_profile_style SET inventory_visible = 'public' WHERE inventory_visible = 'friends'").execute(pool).await?.rows_affected();
+        sqlx::query("INSERT INTO state (key, value) VALUES ('inventory_public_v1', 1) ON CONFLICT (key) DO NOTHING").execute(pool).await?;
+        tracing::info!("prywatność ekwipunku: {n} kont przestawiono z „znajomi” na „publiczny” (nowy domyślny)");
+    }
     // pierwsze konto nie dostaje już admina samo: właściciele z OWNER_IDS są adminami (inaczej na świeżej bazie nie byłoby
     // kto ma nadać pierwszego admina), reszta - jak dotąd - z panelu
     sqlx::query("UPDATE users SET is_admin = 1 WHERE is_admin = 0 AND id = ANY($1)").bind(&cfg.owner_ids).execute(pool).await?;

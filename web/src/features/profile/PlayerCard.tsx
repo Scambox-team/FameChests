@@ -13,7 +13,6 @@ import { ServiceBadge } from '../exp/LevelPage';
 import { TradeBuilder } from '../social/TradeBuilder';
 import { countryName, flagUrl } from './countries';
 import { useCosmeticSrc, type ProfileStyle } from './cosmetics';
-import { FriendInventory } from './FriendInventory';
 import s from './playerCard.module.css';
 
 // Miniprofil gracza (jak na Steamie): jeden komponent i jeden mechanizm dla CAŁEJ gry. `PlayerCardHost` stoi raz w AppShell i nasłuchuje na
@@ -137,9 +136,10 @@ function Card({ mini, anchor, onClose, openTrade, openInv, reload, via }: {
 
 /** Raz w AppShell: nasłuch na dokumencie, karta i okna wywoływane z karty (wymiana, ekwipunek znajomego) */
 export function PlayerCardHost() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState<{ name: string; anchor: HTMLElement; via: 'pointer' | 'key' | 'tap' } | null>(null);
   const [mini, setMini] = useState<Mini | null>(null);
-  const [dialog, setDialog] = useState<null | { kind: 'trade' | 'inv'; name: string }>(null);
+  const [dialog, setDialog] = useState<null | { kind: 'trade'; name: string }>(null);
   const openRef = useRef(open);
   openRef.current = open;
   const timers = useRef<{ open?: number; close?: number }>({});
@@ -251,10 +251,9 @@ export function PlayerCardHost() {
     <>
       {open && mini && mini.user.username.toLowerCase() === open.name.toLowerCase() && open.anchor.isConnected && (
         <Card mini={mini} anchor={open.anchor} via={open.via} onClose={() => close(true)} reload={reload}
-          openTrade={() => setDialog({ kind: 'trade', name: mini.user.username })} openInv={() => setDialog({ kind: 'inv', name: mini.user.username })} />
+          openTrade={() => setDialog({ kind: 'trade', name: mini.user.username })} openInv={() => navigate(`/player/${encodeURIComponent(mini.user.username)}/inventory`)} />
       )}
       {dialog?.kind === 'trade' && <TradeBuilder username={dialog.name} onClose={() => setDialog(null)} onSent={() => {}} />}
-      {dialog?.kind === 'inv' && <FriendInventory username={dialog.name} onClose={() => setDialog(null)} />}
     </>
   );
 }

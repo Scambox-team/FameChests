@@ -14,7 +14,7 @@ import { VARIANT_NAME, applyLayers, refreshCard, stickerTileHTML, type StkData, 
 import s from './Stickers.module.css';
 
 // Naklejanie naklejek na kartę: podgląd karty z naklejkami, które się chwyta i przeciąga (nad zdjęciem albo nad całą kartą), suwaki rozmiaru i obrotu,
-// naklejki z ekwipunku do dołożenia (najwyżej 5 na kartę). Dokładanie i zdejmowanie zapisuje się od razu, położenie po „Zapisz”.
+// naklejki z ekwipunku do dołożenia (najwyżej 10 na kartę). Dokładanie i zdejmowanie zapisuje się od razu, położenie po „Zapisz”.
 // Serwer przyjmuje tylko liczby w granicach (server/src/routes/stickers.rs `clean_place`).
 
 /** Okno edytora; otwiera je `openStickerEditor` (stickers.ts) */
@@ -37,7 +37,8 @@ function PickCard({ onClose, onPick }: { onClose: () => void; onPick: (id: numbe
   const g = useGame();
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(40);
-  const list = useMemo(() => g.items.filter(i => cardMatches(i, q)), [g.items, q]);
+  // karty w wariancie Hologramowy nie przyjmują naklejek (serwer też to sprawdza: `stickers::allows_stickers`)
+  const list = useMemo(() => g.items.filter(i => !i.variant.split('+').includes('hologram') && cardMatches(i, q)), [g.items, q]);
   return (
     <Modal title="Wybierz kartę, na którą chcesz nakleić naklejkę" onClose={onClose} huge>
       <SearchField value={q} onChange={e => { setQ(e.target.value); setLimit(40); }} placeholder="Szukaj: nazwa, wariant, rzadkość" aria-label="Szukaj kart" />

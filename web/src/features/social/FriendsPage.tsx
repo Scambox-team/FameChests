@@ -14,10 +14,9 @@ import { Button } from '../../ui/Button';
 import { toast } from '../../ui/Toaster';
 import { Avatar, UserLink } from '../../ui/UserLink';
 import { TradeBuilder } from './TradeBuilder';
-import { FriendInventory } from '../profile/FriendInventory';
 import { TradesPanel } from './Trades';
 import { ReferralPanel } from './ReferralPanel';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
 import s from './social.module.css';
@@ -55,11 +54,11 @@ function FeedItem({ f, seen }: { f: any; seen: number }) {
 }
 
 export function FriendsPage() {
+  const navigate = useNavigate();
   const game = useGame();
   const [name, setName] = useState('');
   const [hints, setHints] = useState<string[]>([]);
   const [trade, setTrade] = useState<string | null>(null);
-  const [inv, setInv] = useState<string | null>(null);
   const firstSeen = useRef<number | null>(null);
   const { data, error, refetch } = useQuery({
     queryKey: ['friends'],
@@ -132,7 +131,7 @@ export function FriendsPage() {
           <div className={s.section}><h3>Twoi znajomi ({fr.friends.length})</h3>
             {fr.friends.length ? fr.friends.map((u: any) => row(u, <>
               <Button onClick={() => setTrade(u.username)}>Wymiana</Button>
-              <Button onClick={() => setInv(u.username)}>Ekwipunek</Button>
+              <Button onClick={() => navigate(`/player/${encodeURIComponent(u.username)}/inventory`)}>Ekwipunek</Button>
               <Link className={s.linkBtn} to={`/player/${encodeURIComponent(u.username)}`}>Klaser</Link>
               <Button onClick={() => remove(u.username)}>Usuń</Button>
             </>)) : <p className="muted small">Nie masz jeszcze znajomych. Zaproś kogoś po nazwie albo z rankingu.</p>}
@@ -149,7 +148,6 @@ export function FriendsPage() {
         </div>
       </section>
       {trade && <TradeBuilder username={trade} onClose={() => setTrade(null)} onSent={refetch} />}
-      {inv && <FriendInventory username={inv} onClose={() => setInv(null)} />}
     </div>
     </>
   );

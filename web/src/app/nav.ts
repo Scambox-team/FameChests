@@ -66,6 +66,7 @@ export function navFor(c: NavContext) {
 
 /** Tytuł ekranu dla adresu */
 export function titleFor(pathname: string) {
+  if (/^\/player\/[^/]+\/inventory\/?$/.test(pathname)) return 'Ekwipunek gracza';
   if (pathname.startsWith('/player/')) return 'Profil';
   if (pathname.startsWith('/ustawienia')) return 'Ustawienia';
   if (pathname.startsWith('/level')) return 'Poziom';   // nie ma go w menu: wchodzi się z paska EXP albo z profilu

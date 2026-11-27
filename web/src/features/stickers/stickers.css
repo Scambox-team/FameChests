@@ -38,3 +38,15 @@
 .gst-edit .gst-layer { pointer-events: none; }
 .gst-edit .gst.sel::after { content: ""; position: absolute; inset: -5px; border: 2px dashed var(--hue, #fff); border-radius: 6px; pointer-events: none; }
 .gst-edit.dragging .gst { cursor: grabbing; }
+
+/* podgląd naklejki (stickerViewer.ts): sama naklejka (bez karty i tła), przechył za kursorem jak w podglądzie karty */
+.stkv-viewer { z-index: 320; }
+.stkv-stage { width: min(460px, 86vw, calc((100vh - 60px) * .9)); aspect-ratio: 1; cursor: default; }
+.stkv-slab { position: relative; width: 100%; height: 100%; display: grid; place-items: center; --rx: 0deg; --ry: 0deg;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)); transition: transform .2s ease-out; will-change: transform; }
+.stkv-slab.tilting { transition: none; }
+.stkv-art { width: 88%; display: block; filter: drop-shadow(0 0 22px color-mix(in srgb, var(--rc) 70%, transparent)) drop-shadow(0 14px 18px #000a); }
+.stkv-art .gst.gst-tile { width: 100%; }
+.stkv-variants { display: flex; flex-wrap: wrap; gap: 8px; }
+.viewer-info .stkv-variants .btn { height: 34px; padding: 0 14px; }
+@media (prefers-reduced-motion: reduce) { .stkv-slab { transition: none; } }

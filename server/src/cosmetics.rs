@@ -70,29 +70,47 @@ impl Kind {
         }
     }
 
-    /// Wymagane wymiary obrazka (szerokość, wysokość) w pikselach
+    /// Wymagane wymiary obrazka standardowej rozdzielczości (szerokość, wysokość) w pikselach
     pub fn size(self) -> (u32, u32) {
-        match self {
+        self.size_at(1)
+    }
+
+    /// Wymiary dla wybranej rozdzielczości (mnożnik z [`RESOLUTIONS`]): te same proporcje, boki × mnożnik
+    pub fn size_at(self, res: i32) -> (u32, u32) {
+        let m = res.clamp(1, MAX_RES) as u32;
+        let (w, h) = match self {
             Kind::Mini => (600, 400),
             Kind::Frame => (256, 256),
             Kind::Bg => (1600, 900),
             Kind::Avatar => (256, 256),
-        }
+        };
+        (w * m, h * m)
     }
 
-    /// Największy plik (bajty) - dotyczy też animacji, które zostają bez zmian
+    /// Największy plik (bajty) standardowej rozdzielczości - dotyczy też animacji, które zostają bez zmian
     pub fn max_bytes(self) -> usize {
-        match self {
+        self.max_bytes_at(1)
+    }
+
+    /// Największy plik dla wybranej rozdzielczości: limit rośnie z mnożnikiem, ale najwyżej do `MAX_FILE_BYTES` (całe żądanie ma limit 20 MB)
+    pub fn max_bytes_at(self, res: i32) -> usize {
+        let base = match self {
             Kind::Mini => 3 * 1024 * 1024,
             Kind::Frame => 1536 * 1024,
             Kind::Bg => 6 * 1024 * 1024,
             Kind::Avatar => 1536 * 1024,
-        }
+        };
+        (base * res.clamp(1, MAX_RES) as usize).min(MAX_FILE_BYTES)
     }
 
-    /// Opis wymagań dla admina (panel pokazuje to przy wgrywaniu)
+    /// Opis wymagań dla admina (panel pokazuje to przy wgrywaniu) - standardowa rozdzielczość
     pub fn requirements(self) -> String {
-        let (w, h) = self.size();
+        self.requirements_at(1)
+    }
+
+    /// Opis wymagań dla wybranej rozdzielczości
+    pub fn requirements_at(self, res: i32) -> String {
+        let (w, h) = self.size_at(res);
         let extra = match self {
             Kind::Mini => "Proporcje 3:2. Pod tekstem leży przyciemniająca warstwa w kolorach motywu, więc obrazek może być jaskrawy.",
             Kind::Frame => "Kwadrat; środek (około 40% szerokości) MUSI być przezroczysty - tam widać zdjęcie gracza. Ozdoba leży na brzegach.",
@@ -101,14 +119,34 @@ impl Kind {
         };
         format!(
             "{w} × {h} px (dokładnie), PNG / WebP / GIF / JPEG, najwyżej {} KB. {extra} Animowany GIF lub WebP jest dozwolony (w trybie wydajności gracz widzi pierwszą klatkę).",
-            self.max_bytes() / 1024
+            self.max_bytes_at(res) / 1024
         )
     }
+}
+
+/// Rozdzielczości, w jakich admin może wgrać grafikę kosmetyku: (mnożnik, nazwa). Proporcje zostają te same (np. tło miniprofilu 3:2),
+/// zmienia się liczba pikseli; gracz zawsze widzi obraz dopasowany do kontenera (`object-fit` / `background-size`), więc układ się nie zmienia.
+/// Pozycje dodane przed wprowadzeniem wyboru mają mnożnik 1 („Standardowa”).
+pub const RESOLUTIONS: &[(i32, &str)] = &[(1, "Standardowa"), (2, "Wysoka (×2)"), (3, "Bardzo wysoka (×3)")];
+/// Największy mnożnik rozdzielczości
+pub const MAX_RES: i32 = 3;
+/// Największy plik kosmetyku w bajtach niezależnie od rozdzielczości (cały formularz ma limit 20 MB)
+pub const MAX_FILE_BYTES: usize = 10 * 1024 * 1024;
+
+/// Mnożnik z formularza; puste = standardowa, nieznany = błąd
+pub fn parse_res(raw: &str) -> Result<i32, &'static str> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Ok(1);
+    }
+    raw.parse::<i32>().ok().filter(|r| RESOLUTIONS.iter().any(|x| x.0 == *r)).ok_or("Nieznana rozdzielczość")
 }
 
 /// Pozycja katalogu (bez obrazka)
 #[derive(Clone, Debug)]
 pub struct Cosmetic {
+    /// mnożnik rozdzielczości grafiki (1 = standardowa, patrz [`RESOLUTIONS`])
+    pub res: i32,
     pub id: String,
     pub kind: Kind,
     pub name: String,
@@ -335,7 +373,7 @@ pub fn exists(id: &str) -> bool {
 pub async fn reload(c: &mut Conn) -> sqlx::Result<()> {
     use sqlx::Row;
     let rows = sqlx::query(
-        "SELECT id, kind, name, source, auto, enabled, hide_locked, pos, mime, w, h, animated, img_at, price, in_shop, tags, stock, sale_from, sale_to \
+        "SELECT id, kind, name, source, auto, enabled, hide_locked, pos, mime, w, h, animated, img_at, price, in_shop, tags, stock, sale_from, sale_to, res \
          FROM cosmetics ORDER BY pos, name, id",
     )
     .fetch_all(&mut *c)
@@ -344,6 +382,7 @@ pub async fn reload(c: &mut Conn) -> sqlx::Result<()> {
         .iter()
         .filter_map(|r| {
             Some(Cosmetic {
+                res: i32::from(r.get::<i16, _>("res")).clamp(1, MAX_RES),
                 id: r.get("id"),
                 kind: Kind::from_key(&r.get::<String, _>("kind"))?,
                 name: r.get("name"),
@@ -431,7 +470,7 @@ impl Default for Style {
     fn default() -> Style {
         Style {
             mini: String::new(), frame: String::new(), bg: String::new(), avatar: String::new(),
-            inventory: Visibility::Friends, bio: String::new(), country: String::new(),
+            inventory: Visibility::Public, bio: String::new(), country: String::new(),
         }
     }
 }
@@ -475,31 +514,47 @@ pub async fn style_of(c: &mut Conn, uid: i64) -> sqlx::Result<Style> {
 /// Kto może oglądać ekwipunek gracza
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Visibility {
+    /// każdy zalogowany gracz (domyślnie)
+    Public,
+    /// tylko znajomi
     Friends,
+    /// prywatny: nikt oprócz właściciela i adminów
     Nobody,
 }
 
 impl Visibility {
-    /// Nieznana wartość = domyślne `Friends`
+    /// Nieznana wartość = domyślne `Public`
     pub fn parse(s: &str) -> Visibility {
-        if s == "nobody" { Visibility::Nobody } else { Visibility::Friends }
+        match s {
+            "nobody" => Visibility::Nobody,
+            "friends" => Visibility::Friends,
+            _ => Visibility::Public,
+        }
     }
 
     pub fn key(self) -> &'static str {
         match self {
+            Visibility::Public => "public",
             Visibility::Friends => "friends",
             Visibility::Nobody => "nobody",
         }
     }
 }
 
-/// Czy oglądający może zobaczyć ekwipunek gracza: sam właściciel zawsze, znajomy - gdy właściciel pozwala (domyślnie tak). Gracze poza rankingiem
-/// (zablokowani, ukryci, z pieniędzmi od admina) nie pokazują ekwipunku nikomu poza sobą, żeby nie wyciekali.
-pub fn inventory_allowed(setting: Visibility, relation: Relation, target_hidden: bool) -> bool {
-    match relation {
-        Relation::Me => true,
-        Relation::Friend => setting == Visibility::Friends && !target_hidden,
-        _ => false,
+/// Czy oglądający może zobaczyć ekwipunek gracza. Właściciel zawsze; admin ZAWSZE (także prywatny i gracza poza rankingiem). Pozostali: ekwipunek
+/// publiczny (domyślnie) widzi każdy zalogowany, „tylko znajomi” - znajomi, prywatny - nikt. Gracze poza rankingiem (zablokowani, ukryci, z pieniędzmi
+/// od admina) nie pokazują ekwipunku nikomu poza sobą i adminami, żeby nie wyciekali.
+pub fn inventory_allowed(setting: Visibility, relation: Relation, target_hidden: bool, viewer_admin: bool) -> bool {
+    if relation == Relation::Me || viewer_admin {
+        return true;
+    }
+    if target_hidden {
+        return false;
+    }
+    match setting {
+        Visibility::Public => true,
+        Visibility::Friends => relation == Relation::Friend,
+        Visibility::Nobody => false,
     }
 }
 
@@ -591,11 +646,16 @@ fn frame_center_clear(im: &image::RgbaImage) -> Result<(), String> {
 /// Sprawdza wgrany plik dla rodzaju kosmetyku: rozmiar pliku, format (po nagłówku, nie po nazwie), DOKŁADNE wymiary, a dla obramówki
 /// przezroczysty środek. Statyczne obrazki zamienia na WebP, animacje zostawia bez zmian.
 pub fn process_image(kind: Kind, blob: &[u8]) -> Result<Processed, String> {
+    process_image_at(kind, 1, blob)
+}
+
+/// To samo dla wybranej rozdzielczości (mnożnik z [`RESOLUTIONS`]): wymiary i limit pliku liczone względem wyboru
+pub fn process_image_at(kind: Kind, res: i32, blob: &[u8]) -> Result<Processed, String> {
     if blob.is_empty() {
         return Err("Wybierz plik z grafiką".into());
     }
-    if blob.len() > kind.max_bytes() {
-        return Err(format!("Plik jest za duży (najwyżej {} KB)", kind.max_bytes() / 1024));
+    if blob.len() > kind.max_bytes_at(res) {
+        return Err(format!("Plik jest za duży (najwyżej {} KB)", kind.max_bytes_at(res) / 1024));
     }
     let fmt = sniff(blob).ok_or("To nie jest obrazek PNG, WebP, GIF ani JPEG")?;
     let (w, h) = ImageReader::new(Cursor::new(blob))
@@ -603,7 +663,7 @@ pub fn process_image(kind: Kind, blob: &[u8]) -> Result<Processed, String> {
         .map_err(|_| "Nie udało się odczytać obrazka".to_owned())?
         .into_dimensions()
         .map_err(|_| "Nie udało się odczytać obrazka".to_owned())?;
-    let (need_w, need_h) = kind.size();
+    let (need_w, need_h) = kind.size_at(res);
     if (w, h) != (need_w, need_h) {
         return Err(format!("{}: wymagane dokładnie {need_w} × {need_h} px, a plik ma {w} × {h} px", kind.label()));
     }
@@ -622,7 +682,8 @@ pub fn process_image(kind: Kind, blob: &[u8]) -> Result<Processed, String> {
         frame_center_clear(&im.to_rgba8())?;
     }
     let colors = detect_colors(&im.to_rgba8());
-    let bytes = crate::images::to_webp(blob)?;
+    // bez zmniejszania: wymiary już sprawdzone, a wyższa rozdzielczość ma zostać (domyślny limit 1600 px zepsułby ×2 i ×3)
+    let bytes = crate::images::to_webp_max(blob, w.max(h))?;
     Ok(Processed { bytes, mime: "image/webp", w, h, animated: false, colors })
 }
 
@@ -652,8 +713,37 @@ mod tests {
         Cosmetic {
             id: id.into(), kind, name: id.into(), source: String::new(), auto: String::new(), enabled, hide_locked: false, pos: 0,
             mime: "image/webp".into(), w: 1, h: 1, animated: false, img_at: 1.0, price: 100, in_shop: true, tags: vec![], stock: None,
-            sale_from: None, sale_to: None,
+            sale_from: None, sale_to: None, res: 1,
         }
+    }
+
+    #[test]
+    fn resolutions_scale_the_required_size_and_keep_the_standard_one() {
+        let solid = |_: u32, _: u32| Rgba([200, 30, 30, 255]);
+        // standardowa = jak dotąd (stare pozycje i stary wybór zostają bez zmian)
+        assert_eq!(Kind::Mini.size_at(1), Kind::Mini.size());
+        assert_eq!(Kind::Mini.size_at(2), (1200, 800));
+        assert_eq!(Kind::Bg.size_at(3), (4800, 2700));
+        assert_eq!(Kind::Frame.size_at(2), (512, 512));
+        assert_eq!(Kind::Mini.max_bytes_at(1), Kind::Mini.max_bytes());
+        assert!(Kind::Bg.max_bytes_at(3) <= MAX_FILE_BYTES && Kind::Mini.max_bytes_at(2) > Kind::Mini.max_bytes());
+        assert!(Kind::Mini.requirements_at(2).contains("1200 × 800"));
+        assert_eq!(Kind::Mini.requirements(), Kind::Mini.requirements_at(1));
+        // wybór z formularza
+        assert_eq!(parse_res(""), Ok(1));
+        assert_eq!(parse_res("2"), Ok(2));
+        assert!(parse_res("4").is_err() && parse_res("0").is_err() && parse_res("x").is_err());
+        // walidacja liczy się względem wyboru: 600 x 400 jest dobre tylko dla ×1, 1200 x 800 tylko dla ×2
+        assert!(process_image_at(Kind::Mini, 1, &png(600, 400, solid)).is_ok());
+        assert!(process_image_at(Kind::Mini, 2, &png(600, 400, solid)).unwrap_err().contains("1200 × 800"));
+        assert!(process_image_at(Kind::Mini, 1, &png(1200, 800, solid)).unwrap_err().contains("600 × 400"));
+        let big = process_image_at(Kind::Mini, 2, &png(1200, 800, solid)).unwrap();
+        assert_eq!((big.w, big.h), (1200, 800));
+        // wyższa rozdzielczość nie jest po cichu zmniejszana do 1600 px (tło ×2 ma 3200 px szerokości)
+        let bg = process_image_at(Kind::Bg, 2, &png(3200, 1800, solid)).unwrap();
+        let back = image::load_from_memory(&bg.bytes).unwrap();
+        assert_eq!((back.width(), back.height()), (3200, 1800));
+        assert_eq!(process_image(Kind::Bg, &png(1600, 900, solid)).unwrap().w, 1600);
     }
 
     #[test]
@@ -741,14 +831,39 @@ mod tests {
     #[test]
     fn inventory_privacy() {
         use Visibility::*;
-        assert!(inventory_allowed(Friends, Relation::Friend, false), "domyślnie znajomi widzą");
-        assert!(!inventory_allowed(Nobody, Relation::Friend, false), "ukryty przed znajomymi");
-        assert!(!inventory_allowed(Friends, Relation::None, false), "obcy nie widzi");
-        assert!(!inventory_allowed(Friends, Relation::Incoming, false) && !inventory_allowed(Friends, Relation::Outgoing, false));
-        assert!(inventory_allowed(Nobody, Relation::Me, false), "swój zawsze");
-        assert!(!inventory_allowed(Friends, Relation::Friend, true), "gracz poza rankingiem nie wycieka");
-        assert_eq!(Visibility::parse("cokolwiek"), Friends);
+        let all = [Relation::Me, Relation::Friend, Relation::None, Relation::Incoming, Relation::Outgoing];
+        // domyślnie publiczny: widzi każdy zalogowany, także obcy i z oczekującym zaproszeniem
+        assert_eq!(Style::default().inventory, Public);
+        for r in all {
+            assert!(inventory_allowed(Public, r, false, false), "publiczny widzi każdy ({r:?})");
+        }
+        // „tylko znajomi”
+        assert!(inventory_allowed(Friends, Relation::Friend, false, false));
+        assert!(!inventory_allowed(Friends, Relation::None, false, false), "obcy nie widzi");
+        assert!(!inventory_allowed(Friends, Relation::Incoming, false, false) && !inventory_allowed(Friends, Relation::Outgoing, false, false));
+        // prywatny: nikt oprócz właściciela
+        for r in [Relation::Friend, Relation::None, Relation::Incoming, Relation::Outgoing] {
+            assert!(!inventory_allowed(Nobody, r, false, false), "prywatny ukryty przed {r:?}");
+        }
+        assert!(inventory_allowed(Nobody, Relation::Me, false, false), "swój zawsze");
+        // admin widzi wszystko: prywatny, „tylko znajomi” i gracza poza rankingiem
+        for s in [Public, Friends, Nobody] {
+            for r in all {
+                assert!(inventory_allowed(s, r, false, true) && inventory_allowed(s, r, true, true), "admin ({s:?}, {r:?})");
+            }
+        }
+        // gracz poza rankingiem nie wycieka zwykłym graczom, nawet gdy jest publiczny i oglądający jest znajomym
+        for s in [Public, Friends] {
+            assert!(!inventory_allowed(s, Relation::Friend, true, false) && !inventory_allowed(s, Relation::None, true, false));
+        }
+        assert!(inventory_allowed(Nobody, Relation::Me, true, false));
+        assert_eq!(Visibility::parse("cokolwiek"), Public);
+        assert_eq!(Visibility::parse(""), Public);
+        assert_eq!(Visibility::parse("friends"), Friends);
         assert_eq!(Visibility::parse("nobody"), Nobody);
+        for v in [Public, Friends, Nobody] {
+            assert_eq!(Visibility::parse(v.key()), v);
+        }
     }
 
     fn solid(w: u32, h: u32, c: [u8; 4]) -> RgbaImage {

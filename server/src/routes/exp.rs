@@ -218,7 +218,31 @@ pub async fn admin_exp(State(st): State<AppState>, Admin(_): Admin) -> Res {
         "exclusiveCards": cfg.excl_cards.iter().map(|(p, v)| json!({"person": p, "variant": v})).collect::<Vec<_>>(),
         "exclusiveChests": cfg.excl_chests, "badgeTiers": BADGE_TIERS, "autoArrears": cfg.auto_arrears,
         "variants": variants, "cards": cards, "chests": chests, "cosmetics": crate::cosmetics::options(),
+        // pula opcji dużej nagrody: skrzynki (z pieniędzmi i z naklejkami) i naklejki, które admin może wykluczyć; `off` = wykluczona teraz
+        "optionChests": option_chests(&cfg),
+        "optionStickers": option_stickers(&cfg),
+        "stickerChance": cfg.sticker_chance,
+        "defaultEuroTotal": exp::default_euro_total(),
     }))
+}
+
+fn option_chests(cfg: &ExpConfig) -> Vec<Value> {
+    let g = crate::data::g();
+    g.money_chests
+        .iter()
+        .map(|(k, c)| (format!("money_{k}"), c.name.clone(), "money", c.event_only))
+        .chain(crate::stickers::crates().iter().map(|c| (c.kind(), c.name.clone(), "sticker", false)))
+        .map(|(kind, name, group, event)| json!({"kind": kind, "name": name, "group": group, "eventOnly": event, "off": cfg.chest_off(&kind)}))
+        .collect()
+}
+
+fn option_stickers(cfg: &ExpConfig) -> Vec<Value> {
+    let mut v: Vec<(String, crate::stickers::StickerInfo)> = crate::stickers::reward_pool(&Default::default())
+        .into_iter()
+        .filter_map(|(id, _)| crate::stickers::info(&id).map(|i| (id, i)))
+        .collect();
+    v.sort_by(|a, b| a.1.name.cmp(&b.1.name));
+    v.into_iter().map(|(id, i)| json!({"id": id, "name": i.name, "rarity": i.rarity, "off": cfg.off_stickers.contains(&id)})).collect()
 }
 
 #[derive(Deserialize, Default)]
@@ -242,6 +266,12 @@ pub struct ExpSave {
     exclusive_chests: Value,
     #[serde(rename = "autoArrears")]
     auto_arrears: Value,
+    #[serde(rename = "offChests")]
+    off_chests: Value,
+    #[serde(rename = "offStickers")]
+    off_stickers: Value,
+    #[serde(rename = "stickerChance")]
+    sticker_chance: Value,
     /// true = wróć do ustawień domyślnych
     reset: bool,
 }
@@ -255,7 +285,8 @@ pub async fn admin_exp_save(State(st): State<AppState>, Admin(me): Admin, JsonBo
     } else {
         let raw = json!({"mult": req.mult, "backfillPct": req.backfill_pct, "curve": req.curve, "needs": req.needs, "sources": req.sources,
                          "decay": req.decay, "choiceLevels": req.choice_levels, "exclusiveChance": req.exclusive_chance,
-                         "exclusiveCards": req.exclusive_cards, "exclusiveChests": req.exclusive_chests, "autoArrears": req.auto_arrears});
+                         "exclusiveCards": req.exclusive_cards, "exclusiveChests": req.exclusive_chests, "autoArrears": req.auto_arrears,
+                         "offChests": req.off_chests, "offStickers": req.off_stickers, "stickerChance": req.sticker_chance});
         let cfg = clean_config(&raw, Some(&req.rewards), &cat);
         exp::save(&mut tx, &cfg).await?;
         let d = format!(

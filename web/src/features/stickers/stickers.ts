@@ -4,6 +4,7 @@
 import { api } from '../../api/client';
 import { S, touch } from '../../game/store';
 import { esc } from '../../lib/format';
+import { playStickerOpening, type PoolItem } from './stickerOpening';
 import './stickers.css';
 
 export interface StkPlacement { id: number; item: number; sticker: string; variant: string; x: number; y: number; w: number; rot: number; flip: boolean; photo: boolean }
@@ -130,9 +131,13 @@ export interface StkDrop { id: number; sticker: string; variant: string; name: s
 
 /** Otwiera skrzynki z naklejkami z ekwipunku i pokazuje, co wypadło */
 export async function openStickerCrate(crateId: string, count = 1) {
-  const d = await api<{ drops: StkDrop[]; chests: Record<string, number> }>('/api/stickers/open', { crate: crateId, count });
+  const d = await api<{ drops: StkDrop[]; chests: Record<string, number>; pool: PoolItem[] }>('/api/stickers/open', { crate: crateId, count });
   S.chests = d.chests;
-  S.animHold = (S.animHold || 0) + 1;   // wynik gry nie może wyprzedzić ekranu z wynikiem (EXP, osiągnięcia)
+  S.animHold = (S.animHold || 0) + 1;   // wynik gry nie może wyprzedzić ekranu z wynikiem (EXP, osiągnięcia): trzyma się przez bębny i okno z wynikiem
+  try {
+    const cr = S.cfg.stickerCrates?.find((c: any) => c.id === crateId);
+    await playStickerOpening({ id: crateId, name: cr?.name ?? 'Skrzynka z naklejkami', emoji: cr?.emoji ?? '', color1: cr?.color1 ?? '#8a8a99', color2: cr?.color2 ?? '#3a3a44' }, d.drops, d.pool ?? []);
+  } catch { /* animacja to dodatek: wynik i tak pokazujemy */ }
   S.stickerReveal = d.drops;
   await loadStickers();
 }

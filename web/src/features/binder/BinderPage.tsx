@@ -14,7 +14,8 @@ import { OwnedCardDialog } from '../inventory/OwnedCardDialog';
 import { openViewer } from '../../fx/effects';
 import './binder.css';
 
-export interface BinderOwned { best: string; count: number }
+/** `unknown`: ekwipunek gracza jest ukryty, więc nie wiadomo, czy ma kartę teraz - karta z jego klasera (kiedyś zdobyta) wygląda wtedy jak posiadana, nie jak „utracona” */
+export interface BinderOwned { best: string; count: number; unknown?: boolean }
 
 // karty, które gracz kiedyś miał: zostają w klaserze jako przygaszone (count 0)
 export function collectedOwned(pairs: string[][]) {
@@ -39,7 +40,7 @@ export function Pocket({ id, crateId, owned, onOpen, reveal }: { id: string | nu
     );
   }
   return (
-    <button className={`pocket owned${o.count ? '' : ' gone'}${p.rarity === 'secret' ? ' secret-pocket' : ''}`} type="button" onClick={() => onOpen(id, o)} aria-label={p.name} title={o.count ? undefined : 'Ta karta jest w kolekcji, ale już jej nie masz'}>
+    <button className={`pocket owned${o.count || o.unknown ? '' : ' gone'}${p.rarity === 'secret' ? ' secret-pocket' : ''}`} type="button" onClick={() => onOpen(id, o)} aria-label={p.name} title={o.count || o.unknown ? undefined : 'Ta karta jest w kolekcji, ale już jej nie masz'}>
       <Card person={id} variant={o.best} tilt={false} reveal={reveal} />
       {o.count > 1 && <span className="count">×{o.count}</span>}
     </button>

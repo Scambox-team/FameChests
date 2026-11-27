@@ -22,7 +22,12 @@ use serde_json::{json, Value};
 use crate::db::{now, Conn};
 
 /// Najwięcej naklejek na jednej karcie
-pub const MAX_ON_CARD: i64 = 5;
+pub const MAX_ON_CARD: i64 = 10;
+/// Na kartę w tym wariancie (także w połączeniu, np. `flag+hologram`) NIE da się naklejać naklejek: hologram to osobna scena, nie zwykła karta
+pub fn allows_stickers(variant: &str) -> bool {
+    !variant.split('+').any(|p| p == "hologram")
+}
+
 /// Prefiks rodzaju skrzynki w ekwipunku
 pub const KIND_PREFIX: &str = "sticker_";
 /// Skrzynka z przykładowymi naklejkami (tworzona raz, przy pierwszym starcie) - domyślnie w puli „ekskluzywne z leveli”
@@ -84,7 +89,35 @@ pub fn crate_of_kind(kind: &str) -> Option<StickerCrate> {
     crates().iter().find(|c| c.id == id).cloned()
 }
 
+/// Katalog naklejek w pamięci (id -> nazwa, rzadkość, włączona): potrzebny tam, gdzie nie ma dostępu do bazy (opis nagrody, pula nagród leveli)
+#[derive(Clone, Debug)]
+pub struct StickerInfo {
+    pub name: String,
+    pub rarity: String,
+    pub enabled: bool,
+}
+
+static STICKERS: LazyLock<RwLock<Arc<HashMap<String, StickerInfo>>>> = LazyLock::new(|| RwLock::new(Arc::new(HashMap::new())));
+
+pub fn info(id: &str) -> Option<StickerInfo> {
+    STICKERS.read().get(id).cloned()
+}
+
+/// Pula naklejek do nagród (duża nagroda za level): włączone, bez Specjalnej i bez wykluczonych w panelu EXP
+pub fn reward_pool(excluded: &std::collections::BTreeSet<String>) -> Vec<(String, String)> {
+    let mut v: Vec<(String, String)> = STICKERS
+        .read()
+        .iter()
+        .filter(|(id, i)| i.enabled && i.rarity != "special" && !excluded.contains(*id))
+        .map(|(id, i)| (id.clone(), i.rarity.clone()))
+        .collect();
+    v.sort();
+    v
+}
+
 pub async fn load(c: &mut Conn) -> sqlx::Result<()> {
+    let st: Vec<(String, String, String, i16)> = sqlx::query_as("SELECT id, name, rarity, enabled FROM stickers").fetch_all(&mut *c).await?;
+    *STICKERS.write() = Arc::new(st.into_iter().map(|(id, name, rarity, en)| (id, StickerInfo { name, rarity, enabled: en == 1 })).collect());
     let rows: Vec<(String, String, String, String, String, String, String)> =
         sqlx::query_as("SELECT id, name, emoji, color1, color2, descr, weights FROM sticker_crates ORDER BY pos, id").fetch_all(c).await?;
     let list = rows
@@ -153,6 +186,43 @@ pub async fn pool(c: &mut Conn, crate_id: &str) -> sqlx::Result<Vec<(String, Str
         .filter(|(_, r, cr)| r != "special" && serde_json::from_str::<Vec<String>>(cr).unwrap_or_default().iter().any(|x| x == crate_id))
         .map(|(id, r, _)| (id, r))
         .collect())
+}
+
+/// Zawartość skrzynki dla gracza (podgląd w sklepie i bębny przy otwieraniu): naklejki z puli z nazwą, rzadkością, wersją obrazka i szansą
+/// wypadnięcia przy jednym losowaniu (0-1: waga rzadkości jak w [`roll_one`], dzielona po równo między naklejki tej rzadkości), od najrzadszych
+pub async fn contents(c: &mut Conn, crate_id: &str) -> sqlx::Result<Vec<Value>> {
+    let rows: Vec<(String, String, String, f64, String)> =
+        sqlx::query_as("SELECT id, name, rarity, img_at, crates FROM stickers WHERE enabled = 1 ORDER BY pos, id").fetch_all(c).await?;
+    let list: Vec<(String, String, String, f64)> = rows
+        .into_iter()
+        .filter(|(_, _, r, _, cr)| r != "special" && serde_json::from_str::<Vec<String>>(cr).unwrap_or_default().iter().any(|x| x == crate_id))
+        .map(|(id, n, r, at, _)| (id, n, r, at))
+        .collect();
+    Ok(contents_view(&list))
+}
+
+/// Czysta część [`contents`]: szanse z listy (id, nazwa, rzadkość, wersja obrazka)
+pub fn contents_view(list: &[(String, String, String, f64)]) -> Vec<Value> {
+    let mut present: Vec<String> = vec![];
+    for (_, _, r, _) in list {
+        if !present.contains(r) {
+            present.push(r.clone());
+        }
+    }
+    let ws = rarity_weights(&present);
+    let total: f64 = ws.iter().map(|x| x.1).sum();
+    let g = crate::data::g();
+    let mut out: Vec<(usize, Value)> = list
+        .iter()
+        .map(|(id, name, rarity, at)| {
+            let n = list.iter().filter(|x| &x.2 == rarity).count().max(1) as f64;
+            let w = ws.iter().find(|x| &x.0 == rarity).map_or(0.0, |x| x.1);
+            let chance = if total > 0.0 { w / total / n } else { 0.0 };
+            (g.rarity_idx(rarity), json!({"sticker": id, "name": name, "rarity": rarity, "v": *at as i64, "chance": chance}))
+        })
+        .collect();
+    out.sort_by(|a, b| b.0.cmp(&a.0));
+    out.into_iter().map(|x| x.1).collect()
 }
 
 /// Dodaje naklejki do ekwipunku gracza; zwraca ich numery
@@ -334,6 +404,13 @@ pub async fn catalog(c: &mut Conn) -> sqlx::Result<HashMap<String, (String, Stri
     Ok(rows.into_iter().map(|(id, n, r, at)| (id, (n, r, at as i64))).collect())
 }
 
+/// Test: podmienia katalog naklejek i skrzynek w pamięci (ustawienia globalne - testy, które z tego korzystają, nie mogą zakładać pustego rejestru)
+#[cfg(test)]
+pub fn set_test_registry(stickers: &[(&str, &str, bool)], crates: Vec<StickerCrate>) {
+    *STICKERS.write() = Arc::new(stickers.iter().map(|(id, r, en)| ((*id).to_owned(), StickerInfo { name: (*id).to_owned(), rarity: (*r).to_owned(), enabled: *en })).collect());
+    *CRATES.write() = Arc::new(crates);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -361,6 +438,25 @@ mod tests {
     }
 
     #[test]
+    fn contents_show_chances_that_sum_to_one() {
+        let list = vec![
+            ("a".to_owned(), "A".to_owned(), "green".to_owned(), 1.0),
+            ("b".to_owned(), "B".to_owned(), "green".to_owned(), 2.0),
+            ("c".to_owned(), "C".to_owned(), "blue".to_owned(), 3.0),
+            ("d".to_owned(), "D".to_owned(), "secret".to_owned(), 4.0),
+        ];
+        let v = contents_view(&list);
+        assert_eq!(v.len(), 4);
+        let sum: f64 = v.iter().map(|x| x["chance"].as_f64().unwrap()).sum();
+        assert!((sum - 1.0).abs() < 1e-9, "szanse sumują się do 1: {sum}");
+        assert_eq!(v[0]["sticker"], "d", "od najrzadszych");
+        let chance = |id: &str| v.iter().find(|x| x["sticker"] == id).unwrap()["chance"].as_f64().unwrap();
+        assert!((chance("a") - chance("b")).abs() < 1e-12, "ta sama rzadkość = ta sama szansa");
+        assert!(chance("a") < chance("c") * 2.0 && chance("d") < chance("c"));
+        assert!(contents_view(&[]).is_empty());
+    }
+
+    #[test]
     fn crate_can_force_a_variant() {
         let pool = vec![("a".to_owned(), "green".to_owned()), ("b".to_owned(), "blue".to_owned())];
         for _ in 0..200 {
@@ -383,6 +479,13 @@ mod tests {
             assert_eq!(img.get_pixel(0, 0)[3], 0, "{k}: róg przezroczysty");
             assert!(img.get_pixel(128, 128)[3] > 250, "{k}: środek kolorowy");
         }
+    }
+
+    #[test]
+    fn hologram_cards_take_no_stickers() {
+        assert!(!allows_stickers("hologram"));
+        assert!(!allows_stickers("flag+hologram"));
+        assert!(allows_stickers("normal") && allows_stickers("gold") && allows_stickers("flag+gold"));
     }
 
     #[test]

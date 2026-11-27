@@ -721,13 +721,17 @@ fn crop_gif(blob: &[u8], crop: Crop) -> Result<Vec<u8>, String> {
 
 /// Kadr -> zmniejszenie do MAX_SIDE -> WebP
 fn process(blob: &[u8], crop: Option<Crop>) -> Result<Vec<u8>, String> {
+    process_max(blob, crop, MAX_SIDE)
+}
+
+fn process_max(blob: &[u8], crop: Option<Crop>, max_side: u32) -> Result<Vec<u8>, String> {
     let mut im = decode(blob)?;
     if let Some(c) = crop {
         let (x, y, w, h) = c.pixels(im.width(), im.height())?;
         im = im.crop_imm(x, y, w, h);
     }
-    if im.width().max(im.height()) > MAX_SIDE {
-        im = im.resize(MAX_SIDE, MAX_SIDE, image::imageops::FilterType::Lanczos3);
+    if im.width().max(im.height()) > max_side {
+        im = im.resize(max_side, max_side, image::imageops::FilterType::Lanczos3);
     }
     let alpha = im.color().has_alpha();
     let im = if alpha { DynamicImage::ImageRgba8(im.to_rgba8()) } else { DynamicImage::ImageRgb8(im.to_rgb8()) };
@@ -738,6 +742,11 @@ fn process(blob: &[u8], crop: Option<Crop>) -> Result<Vec<u8>, String> {
 /// Jedyna droga zapisu zdjęcia rastrowego: dowolny obrazek -> WebP (q 85, z alfą q 92), dłuższy bok najwyżej 1600 px
 pub fn to_webp(blob: &[u8]) -> Result<Vec<u8>, String> {
     process(blob, None)
+}
+
+/// To samo, ale z innym limitem dłuższego boku: kosmetyki profilu w wyższej rozdzielczości (do 3 x standardowej) nie mogą być zmniejszane
+pub fn to_webp_max(blob: &[u8], max_side: u32) -> Result<Vec<u8>, String> {
+    process_max(blob, None, max_side)
 }
 
 /// Przy starcie: stare .jpg/.png/.gif/.bmp w image_cache -> .webp obok (oryginał znika po udanym zapisie).

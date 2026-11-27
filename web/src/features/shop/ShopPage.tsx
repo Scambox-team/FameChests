@@ -14,6 +14,8 @@ import { toast } from '../../ui/Toaster';
 import { useCosmeticSrc, type CosmeticView } from '../profile/cosmetics';
 import { CosmeticPreview } from '../profile/CosmeticPreview';
 import { loadStickers, stickerTileHTML, VARIANT_NAME } from '../stickers/stickers';
+import { openStickerViewer } from '../stickers/stickerViewer';
+import { StickerCrateDialog, StickerCrateIcon, type StickerCrateInfo } from '../stickers/StickerCrateDialog';
 import pf from '../profile/playerCard.module.css';
 import s from './shop.module.css';
 
@@ -26,7 +28,7 @@ interface Item extends CosmeticView {
   stock: number | null; left: number | null; saleFrom: number | null; saleTo: number | null; canBuy: boolean; problem: string | null;
 }
 interface Showcase { base: number; extra: number; max: number; price: number | null }
-interface StCrate { id: string; kind: string; name: string; emoji: string; color1: string; color2: string; desc: string; price: number; avail: 'open' | 'hidden'; canBuy: boolean }
+interface StCrate extends StickerCrateInfo { kind: string; avail: 'open' | 'hidden' }
 interface StOffer { id: number; sticker: string; variant: string; price: number; name: string; rarity: string; v: number; stock: number | null; left: number | null; avail: 'open' | 'hidden' | 'soldout'; canBuy: boolean }
 interface Data { stickerCrates?: StCrate[]; stickers?: StOffer[]; showcase?: Showcase; euro: number; admin: boolean; items: Item[]; colors: { key: string; name: string }[]; kinds: { key: Kind; label: string }[] }
 
@@ -65,14 +67,14 @@ function Preview({ it }: { it: Item }) {
 /** Jedna pozycja Sklepu: kosmetyk, miejsce w gablocie, skrzynka z naklejkami albo naklejka - wszystko w jednej siatce i z tymi samymi filtrami */
 interface Entry {
   key: string; type: string; typeLabel: string; name: string; price: number; tags: string[]; owned: boolean; hidden: boolean; hiddenNote?: string;
-  preview: ReactNode; onPreview?: () => void; notes: string[]; limit?: string; canBuy: boolean; problem: string | null; buyLabel: string; buy: () => Promise<void>; ownedLabel?: string;
+  preview: ReactNode; onPreview?: () => void; previewLabel?: string; notes: string[]; limit?: string; canBuy: boolean; problem: string | null; buyLabel: string; buy: () => Promise<void>; ownedLabel?: string;
 }
 
 function Tile({ e, admin, busy }: { e: Entry; admin: boolean; busy: boolean }) {
   return (
     <article className={`${s.shItem}${e.hidden ? ` ${s.shHidden}` : ''}`}>
       {e.preview}
-      {e.onPreview && <button type="button" className={s.shTry} onClick={e.onPreview}><Eye size={14} aria-hidden="true" /> Podgląd na moim profilu</button>}
+      {e.onPreview && <button type="button" className={s.shTry} onClick={e.onPreview}><Eye size={14} aria-hidden="true" /> {e.previewLabel ?? 'Podgląd na moim profilu'}</button>}
       <div className={s.shBody}>
         <b className={s.shName}>{e.name}</b>
         <span className="muted small">{e.typeLabel}</span>
@@ -91,15 +93,6 @@ function Tile({ e, admin, busy }: { e: Entry; admin: boolean; busy: boolean }) {
   );
 }
 
-/** Podgląd skrzynki z naklejkami: kolory wieka i korpusu skrzynki + emblemat */
-function CratePreview({ c }: { c: StCrate }) {
-  return (
-    <div className={`${s.shPrev} ${s.shStCrate}`} style={{ background: `linear-gradient(160deg, ${c.color1}, ${c.color2})` }}>
-      <span className={s.shEmoji} aria-hidden="true">{c.emoji || '🏷️'}</span>
-    </div>
-  );
-}
-
 
 export function ShopPage() {
   const game = useGame();
@@ -114,6 +107,7 @@ export function ShopPage() {
   const [hideOwned, setHideOwned] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tryOn, setTryOn] = useState<Item | null>(null);
+  const [crateView, setCrateView] = useState<StCrate | null>(null);   // okno skrzynki z naklejkami: model 3D i zawartość
   useEffect(() => { document.title = 'Sklep · ScamBox'; }, []);
 
   /** Kupno jednej pozycji: potwierdzenie, zapytanie, stan z odpowiedzi, odświeżenie sklepu */
@@ -166,7 +160,8 @@ export function ShopPage() {
       const hidden = c.avail === 'hidden';
       out.push({
         key: `sc:${c.id}`, type: 'stcrate', typeLabel: 'Skrzynka z naklejkami', name: c.name, price: c.price, tags: [], owned: false, hidden, hiddenNote: 'Ukryta: nie ma jej w sklepie',
-        preview: <CratePreview c={c} />, notes: [c.desc || 'Po zakupie skrzynka trafia do ekwipunku, otwierasz ją stamtąd.'],
+        preview: <button type="button" className={`${s.shPrev} ${s.shStCrate}`} style={{ cursor: 'zoom-in', border: 0 }} title="Co jest w środku" onClick={() => setCrateView(c)}><StickerCrateIcon crate={c} className={s.shCrateImg} /></button>,
+        onPreview: () => setCrateView(c), previewLabel: 'Co jest w środku', notes: [c.desc || 'Po zakupie skrzynka trafia do ekwipunku, otwierasz ją stamtąd.'],
         canBuy: c.canBuy && euro >= c.price, problem: !c.canBuy ? 'Ta skrzynka nie ma jeszcze ceny' : euro < c.price ? 'Za mało euro' : null, buyLabel: 'Kup',
         buy: purchase(`Kupić skrzynkę „${c.name}” za ${fmtNum(c.price)} euro? Trafi do ekwipunku.`, '/api/shop/sticker-crate/buy', { id: c.id, count: 1 }, `Kupiono skrzynkę: ${c.name}. Otworzysz ją w ekwipunku.`),
       });
@@ -176,7 +171,7 @@ export function ShopPage() {
       const rar = S.cfg.rarities[o.rarity];
       out.push({
         key: `st:${o.id}`, type: 'sticker', typeLabel: `Naklejka · ${VARIANT_NAME[o.variant] ?? o.variant}`, name: o.name, price: o.price, tags: [], owned: false, hidden, hiddenNote: 'Ukryta: wyłączona',
-        preview: <div className={`${s.shPrev} ${s.shStk}`} dangerouslySetInnerHTML={{ __html: stickerTileHTML(o.sticker, o.variant, o.v) }} />,
+        preview: <div className={`${s.shPrev} ${s.shStk}`} style={{ cursor: 'zoom-in' }} title="Kliknij, żeby obejrzeć naklejkę" onClick={e => { e.stopPropagation(); openStickerViewer({ sticker: o.sticker, variant: o.variant, name: o.name, rarity: o.rarity, v: o.v }); }} dangerouslySetInnerHTML={{ __html: stickerTileHTML(o.sticker, o.variant, o.v) }} />,
         notes: [rar ? `Rzadkość: ${rar.name}` : '', o.avail === 'soldout' ? 'Wyprzedana' : ''].filter(Boolean),
         limit: o.left !== null && o.avail === 'open' ? `Zostało ${o.left} z ${o.stock}` : undefined,
         canBuy: o.canBuy && euro >= o.price, problem: !o.canBuy ? 'Ta naklejka jest wyprzedana' : euro < o.price ? 'Za mało euro' : null, buyLabel: 'Kup',
@@ -227,6 +222,8 @@ export function ShopPage() {
         {colors.length > 0 && <button type="button" className={s.shClear} onClick={() => setColors([])}>Wyczyść kolory</button>}
       </div>
       {tryOn && <CosmeticPreview item={tryOn} onClose={() => setTryOn(null)} />}
+      {crateView && <StickerCrateDialog crate={crateView} euro={game.state.euro} onClose={() => setCrateView(null)}
+        onBuy={purchase(`Kupić skrzynkę „${crateView.name}” za ${fmtNum(crateView.price)} euro? Trafi do ekwipunku.`, '/api/shop/sticker-crate/buy', { id: crateView.id, count: 1 }, `Kupiono skrzynkę: ${crateView.name}. Otworzysz ją w ekwipunku.`, () => setCrateView(null))} />}
       <div className={s.shGrid}>
         {list.map(e => <Tile key={e.key} e={e} admin={data.admin} busy={busy} />)}
         {!list.length && <p className="muted">{entries.length ? 'Nic nie pasuje do filtrów.' : 'Sklep jest jeszcze pusty.'}</p>}

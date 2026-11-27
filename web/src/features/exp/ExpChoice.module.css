@@ -11,3 +11,8 @@
 .tick { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--hue); color: var(--on-hue); }
 .btns { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 @media (prefers-reduced-motion: reduce) { .opt { transition: none; } }
+.cell { position: relative; display: flex; }
+.cell .opt { flex: 1; min-width: 0; }
+.stk { display: block; width: 96px; }
+.zoom { position: absolute; bottom: 8px; right: 8px; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--text) 14%, transparent); color: var(--text); cursor: zoom-in; }
+.zoom:hover, .zoom:focus-visible { background: var(--hue); color: var(--on-hue); }

@@ -22,6 +22,7 @@ import { ForgePage } from '../features/forge/ForgePage';
 import { MarketPage } from '../features/market/MarketPage';
 import { noteMarketBonus } from '../features/market/bonus';
 import { InventoryPage } from '../features/inventory/InventoryPage';
+import { OtherInventoryPage } from '../features/inventory/OtherInventory';
 import { noteUfo } from '../features/inventory/ufo';
 import { LoginPage } from '../features/auth/LoginPage';
 import { EmailChangePage } from '../features/auth/EmailChangePage';
@@ -118,6 +119,7 @@ function Game() {
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/ranking/:tab" element={<RankingPage />} />
           <Route path="/player/:name" element={<ProfilePage />} />
+          <Route path="/player/:name/inventory" element={<OtherInventoryPage />} />
           <Route path="/ustawienia" element={<SettingsPage />} />
           <Route path="/link/:token" element={<LinkClaim />} />
           <Route path="*" element={<Navigate to="/" replace />} />

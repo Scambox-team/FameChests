@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { Maximize2, Star } from 'lucide-react';
+import { Maximize2, Repeat, ShoppingCart, Star } from 'lucide-react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Backpack } from 'lucide-react';
 import { PageHero } from '../../ui/PageHero';
@@ -7,6 +7,7 @@ import { PageHero } from '../../ui/PageHero';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
 import { dupesOf, ownedMap, sellIds, setFavorite } from '../../game/actions';
+import { withReveal } from '../../game/reveal';
 import { cardMatches, filterVariants, isSpecial, person, plural, rarityIdx, seenCrateList, sellableCard, sortCards, varRank } from '../../game/rules';
 import { S, touch, useGame } from '../../game/store';
 import type { Item } from '../../game/types';
@@ -29,8 +30,8 @@ interface Filters { crate: string; rarity: string; variant: VariantValue; sort: 
 const savedSort = () => { try { const s = localStorage.getItem('invSort'); return SORTS.some(x => x[0] === s) ? s! : 'new'; } catch { return 'new'; } };
 const filters: Filters = { crate: 'all', rarity: '', variant: { base: 'all', layer: null }, sort: savedSort(), q: '' };   // zostają po wyjściu z ekranu
 
-function filtered(f: Filters) {
-  const list = S.items.filter(i => {
+function filtered(f: Filters, items: Item[] = S.items) {
+  const list = items.filter(i => {
     const p = person(i.person);
     return (f.crate === 'all' || (p.crates || [p.crate]).includes(f.crate)) && (!f.rarity || p.rarity === f.rarity) && cardMatches(i, f.q) &&
       (f.variant.base === 'fav' ? i.fav : f.variant.base === 'special' ? isSpecial(i.variant) : variantMatches(i.variant, f.variant));
@@ -66,8 +67,8 @@ const Tile = memo(function Tile({ item, selected, fav: isFav, onToggle }: { item
   );
 }, (a, b) => a.selected === b.selected && a.fav === b.fav && a.item.id === b.item.id);
 
-function RarityCounts({ value, onChange }: { value: string; onChange: (r: string) => void }) {
-  const { cfg, items } = useGame();
+function RarityCounts({ value, onChange, items }: { value: string; onChange: (r: string) => void; items: Item[] }) {
+  const { cfg } = useGame();
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     items.forEach(i => { const r = person(i.person)?.rarity; c[r] = (c[r] || 0) + 1; });
@@ -113,32 +114,53 @@ function SellBar({ selected, shown, clear, all }: { selected: Set<number>; shown
   );
 }
 
-function MyCards() {
+/** Karta cudzego gracza w trybie „cudzy ekwipunek”: te same kafelki co we własnym, ale bez zaznaczania, ulubionych i sprzedaży; zamiast tego podgląd i wymiana */
+export interface OtherMode {
+  reveal: { map?: Record<string, any>; imgq?: string };
+  canTrade: boolean;
+  onTrade: (item: Item) => void;
+  onBuy?: (item: Item) => void;
+}
+
+const OtherTile = memo(function OtherTile({ item, other }: { item: Item; other: OtherMode }) {
+  const zoom = () => withReveal(other.reveal, () => openViewer(item.person, item.variant));
+  return (
+    <div className={styles.tile} role="button" tabIndex={0} onClick={zoom} onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); zoom(); } }}>
+      <Card person={item.person} variant={item.variant} reveal={other.reveal} />
+      <button className={`${styles.pin} ${styles.zoom}`} type="button" onClick={e => { e.stopPropagation(); zoom(); }} aria-label="Podgląd karty" title="Podgląd karty"><Maximize2 size={15} /></button>
+      {other.canTrade && <button className={`${styles.pin} ${styles.trade}`} type="button" onClick={e => { e.stopPropagation(); other.onTrade(item); }} aria-label="Zaproponuj wymianę za tę kartę" title="Zaproponuj wymianę za tę kartę"><Repeat size={15} /></button>}
+      {other.canTrade && other.onBuy && <button className={`${styles.pin} ${styles.buy}`} type="button" onClick={e => { e.stopPropagation(); other.onBuy!(item); }} aria-label="Kup tę kartę" title="Zlecenie kupna tej karty"><ShoppingCart size={15} /></button>}
+    </div>
+  );
+}, (a, b) => a.item.id === b.item.id && a.other === b.other);
+
+/** Karty (własne albo, z `other`, cudzego gracza): chmura rzadkości, wyszukiwarka, filtry, sortowanie i siatka - jeden komponent dla obu trybów */
+export function CardsView({ items, other }: { items: Item[]; other?: OtherMode }) {
   const game = useGame();
   const [, redraw] = useState(0);
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const set = (patch: Partial<Filters>) => { Object.assign(filters, patch); setLimit(PAGE); redraw(n => n + 1); };
-  const list = useMemo(() => filtered(filters), [game.items, filters.crate, filters.rarity, filters.variant.base, filters.variant.layer, filters.sort, filters.q]);
+  const list = useMemo(() => withReveal(other?.reveal, () => filtered(filters, items)), [items, other, filters.crate, filters.rarity, filters.variant.base, filters.variant.layer, filters.sort, filters.q]);
   const total = useMemo(() => list.reduce((a, i) => a + i.value, 0), [list]);
-  const inCrate = (id: string) => game.items.filter(i => { const p = person(i.person); return (p.crates || [p.crate]).includes(id); }).length;
+  const inCrate = (id: string) => items.filter(i => { const p = person(i.person); return (p.crates || [p.crate]).includes(id); }).length;
   const toggle = (id: number) => {
     Sound.click();
     setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
-  const ufo = game.ufo?.shown && !game.ufo.abducting ? person(game.ufo.pid) : null;
+  const ufo = !other && game.ufo?.shown && !game.ufo.abducting ? person(game.ufo.pid) : null;
 
   return (
     <>
-      <ChestShelf />
-      <RarityCounts value={filters.rarity} onChange={r => set({ rarity: r })} />
+      {!other && <ChestShelf />}
+      <RarityCounts value={filters.rarity} onChange={r => set({ rarity: r })} items={items} />
       <div className={styles.tools}>
         <SearchField value={filters.q} onChange={e => set({ q: e.target.value })} placeholder="Szukaj: nazwa, wariant, rzadkość" aria-label="Szukaj kart" />
         <Select value={filters.crate} onChange={e => set({ crate: e.target.value })} aria-label="Skrzynka">
-          <option value="all">Wszystkie skrzynki ({game.items.length})</option>
+          <option value="all">Wszystkie skrzynki ({items.length})</option>
           {seenCrateList().map(c => <option key={c.id} value={c.id}>{c.short} ({inCrate(c.id)})</option>)}
         </Select>
-        <VariantPicker value={filters.variant} onChange={v => set({ variant: v })} variants={filterVariants()} extra={[['fav', 'Tylko ulubione'], ['special', 'Tylko specjalne']]} />
+        <VariantPicker value={filters.variant} onChange={v => set({ variant: v })} variants={filterVariants(items)} extra={other ? [['special', 'Tylko specjalne']] : [['fav', 'Tylko ulubione'], ['special', 'Tylko specjalne']]} />
         <Select className={styles.sort} value={filters.sort} aria-label="Sortowanie" onChange={e => {
           set({ sort: e.target.value });
           try { localStorage.setItem('invSort', e.target.value); } catch { /* bez zapamiętania */ }
@@ -146,16 +168,21 @@ function MyCards() {
           {SORTS.map(([v, n]) => <option key={v} value={v}>{n}</option>)}
         </Select>
       </div>
-      <p className="muted">Kart: <b>{list.length.toLocaleString('pl-PL')}</b>, wartość: <b>{fmt(total)}</b>{list.length !== game.items.length ? ` (wszystkich: ${game.items.length.toLocaleString('pl-PL')})` : ''}</p>
+      <p className="muted">Kart: <b>{list.length.toLocaleString('pl-PL')}</b>, wartość: <b>{fmt(total)}</b>{list.length !== items.length ? ` (wszystkich: ${items.length.toLocaleString('pl-PL')})` : ''}</p>
       <section className={styles.grid} aria-label="Karty">
         {ufo && <div className={`${styles.tile} ufo-item`} role="button" tabIndex={0} onClick={e => ufoAbduct(e.currentTarget)}><Card person={ufo.id} variant={ufo.fixedVariant || 'ufo'} /></div>}
-        {list.slice(0, limit).map(i => <Tile key={i.id} item={i} selected={selected.has(i.id)} fav={i.fav} onToggle={toggle} />)}
-        {!list.length && <p className={styles.empty}>{game.items.length ? 'Brak kart pasujących do filtrów.' : 'Ekwipunek jest pusty. Otwórz jakąś skrzynkę.'}</p>}
+        {list.slice(0, limit).map(i => other ? <OtherTile key={i.id} item={i} other={other} /> : <Tile key={i.id} item={i} selected={selected.has(i.id)} fav={i.fav} onToggle={toggle} />)}
+        {!list.length && <p className={styles.empty}>{items.length ? 'Brak kart pasujących do filtrów.' : other ? 'Ten gracz nie ma żadnych kart.' : 'Ekwipunek jest pusty. Otwórz jakąś skrzynkę.'}</p>}
       </section>
       {list.length > limit && <div className={styles.more}><Button onClick={() => setLimit(l => l + PAGE)}>Pokaż więcej ({(list.length - limit).toLocaleString('pl-PL')})</Button></div>}
-      {game.items.length > 0 && <SellBar selected={selected} shown={list} clear={() => setSelected(new Set())} all={() => setSelected(new Set(list.map(i => i.id)))} />}
+      {!other && game.items.length > 0 && <SellBar selected={selected} shown={list} clear={() => setSelected(new Set())} all={() => setSelected(new Set(list.map(i => i.id)))} />}
     </>
   );
+}
+
+function MyCards() {
+  const game = useGame();
+  return <CardsView items={game.items} />;
 }
 
 // wybrana zakładka zostaje po wyjściu z ekranu

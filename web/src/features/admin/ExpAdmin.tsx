@@ -16,9 +16,12 @@ interface Data extends RewardOptions {
   mult: number; backfillPct: number; curve: Curve; defaultCurve: Curve; sources: SourceRow[]; levels: LevelRow[];
   players: number; withExp: number; badges: number; maxLevel: number; backfillMaxLevel: number;
   decay: number; defaultDecay: number; exclusiveChance: number; exclusiveCards: ExclCard[]; exclusiveChests: string[]; badgeTiers: string[]; autoArrears: boolean;
+  optionChests: OptionChest[]; optionStickers: OptionSticker[]; stickerChance: number; defaultEuroTotal: number;
 }
+interface OptionChest { kind: string; name: string; group: 'money' | 'sticker'; eventOnly: boolean; off: boolean }
+interface OptionSticker { id: string; name: string; rarity: string; off: boolean }
 interface Draft {
-  autoArrears: boolean; mult: string; backfill: string; decay: string; chance: string; choice: number[]; exCards: ExclCard[]; exChests: string[]; curve: { base: string; scale: string; power: string };
+  autoArrears: boolean; mult: string; backfill: string; decay: string; chance: string; stickerChance: string; offChests: string[]; offStickers: string[]; choice: number[]; exCards: ExclCard[]; exChests: string[]; curve: { base: string; scale: string; power: string };
   sources: Record<string, { exp: string; cap: string }>;
   needs: Record<number, string>;
   rewards: Record<number, { small: Reward[]; special: Reward[] }>;
@@ -31,7 +34,8 @@ const num = (v: string, d: number) => { const x = parseFloat(v.replace(',', '.')
 
 function toDraft(d: Data): Draft {
   return {
-    autoArrears: d.autoArrears, mult: String(d.mult), backfill: String(d.backfillPct), decay: String(d.decay), chance: String(Math.round(d.exclusiveChance * 100)),
+    autoArrears: d.autoArrears, mult: String(d.mult), backfill: String(d.backfillPct), decay: String(d.decay), chance: String(Math.round(d.exclusiveChance * 100)), stickerChance: String(Math.round(d.stickerChance * 100)),
+    offChests: d.optionChests.filter(c => c.off).map(c => c.kind), offStickers: d.optionStickers.filter(x => x.off).map(x => x.id),
     choice: d.levels.filter(l => l.choice).map(l => l.level), exCards: d.exclusiveCards, exChests: d.exclusiveChests,
     curve: { base: String(d.curve.base), scale: String(d.curve.scale), power: String(d.curve.power) },
     sources: Object.fromEntries(d.sources.map(x => [x.key, { exp: String(x.exp), cap: String(x.cap) }])),
@@ -95,6 +99,7 @@ export default function ExpAdmin() {
     mult: num(draft.mult, 1), backfillPct: num(draft.backfill, 50), decay: num(draft.decay, 2),
     choiceLevels: draft.choice, exclusiveChance: Math.min(100, Math.max(0, num(draft.chance, 20))) / 100,
     exclusiveCards: draft.exCards, exclusiveChests: draft.exChests, autoArrears: draft.autoArrears,
+    offChests: draft.offChests, offStickers: draft.offStickers, stickerChance: Math.min(100, Math.max(0, num(draft.stickerChance, 35))) / 100,
     curve: { base: curve.base, scale: curve.scale, power: curve.power },
     needs: Object.fromEntries(Object.entries(draft.needs).filter(([, v]) => parseInt(v, 10) > 0)),
     sources: Object.fromEntries(Object.entries(draft.sources).map(([k, v]) => [k, { exp: num(v.exp, 0), cap: num(v.cap, 0) }])),
@@ -175,6 +180,7 @@ export default function ExpAdmin() {
 
       <div className={`panel ${s.block}`}>
         <h3>Levele i nagrody</h3>
+        <p className="muted small">Domyślna mała nagroda za każdy level (2-100) to grosze (500 + 50 × level) i trochę euro: 1 € na levelach 2-39, 2 € od 40, 3 € od 80, a co 10. level dodatkowo +5 € (razem {data.defaultEuroTotal} € za cały cykl); co 5. level doliczają się też skrzynki Polska. Nagrody levelu, których nie ruszałeś, zawsze idą za domyślnymi, a euro zmienisz jak każdą inną pozycję (nagroda „Euro”). Nowe domyślne euro dostają tylko gracze, którzy wbiją dany level po wdrożeniu albo gdy użyjesz „Wypłać zaległe”; levele już wypłacone nigdy nie są wypłacane drugi raz.</p>
         <div className={s.tools}>
           {([['all', 'Wszystkie'], ['changed', 'Zmienione'], ['big', 'Duże nagrody'], ['special', 'Ze specjalną']] as [Filter, string][]).map(([id, label]) =>
             <button key={id} type="button" className={`${s.tab}${filter === id ? ` ${s.active}` : ''}`} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}
@@ -350,13 +356,34 @@ function Big({ data, draft, upd }: { data: Data; draft: Draft; upd: (p: Partial<
   return (
     <div className={`panel ${s.block}`}>
       <h3>Duże nagrody (wybór 2 z 4) i pula „ekskluzywne z leveli”</h3>
-      <p className="muted small">Na każdym levelu zaznaczonym jako „duża nagroda” (domyślnie co 10.) gracz dostaje do wyboru 4 opcje i bierze 2, reszta przepada: (1) losowa skrzynka z pieniędzmi - spośród WSZYSTKICH skrzynek z pieniędzmi w grze,
-        więc nowe skrzynki dołączą same, (2) i (3) losowe karty Mityczna lub wyższej, też w wariantach (bez kart ekskluzywnych w jakiejkolwiek skrzynce, bez kart specjalnych i tajnych i bez wariantów ekskluzywnych),
-        (4) slot dodatkowy: z szansą poniżej coś z puli ekskluzywnej z leveli (karta albo skrzynka), a najczęściej po prostu kolejna losowa karta Mityczna+. Karty z puli nie wypadają w slotach 2-4 jako zwykłe karty.
+      <p className="muted small">Na każdym levelu zaznaczonym jako „duża nagroda” (domyślnie co 10.) gracz dostaje do wyboru 4 opcje i bierze 2, reszta przepada: (1) losowa skrzynka z pieniędzmi - spośród skrzynek z pieniędzmi w grze poza wykluczonymi niżej (domyślnie eventowe, np. Świąteczna),
+        więc nowe zwykłe skrzynki dołączą same, (2) i (3) losowe karty Mityczna lub wyższej, też w wariantach (bez kart ekskluzywnych w jakiejkolwiek skrzynce, bez kart specjalnych i tajnych i bez wariantów ekskluzywnych),
+        (4) slot dodatkowy: z szansą poniżej coś z puli ekskluzywnej z leveli (karta albo skrzynka), z osobną szansą naklejka na karty (skrzynka z naklejkami albo pojedyncza naklejka w wariancie foliowanym / holo / złotym), a najczęściej po prostu kolejna losowa karta Mityczna+. Karty z puli nie wypadają w slotach 2-4 jako zwykłe karty.
         Żeby karta była naprawdę „tylko z leveli”, nie przypinaj jej do skrzynek ze sklepu (np. dodaj ją bez skrzynki).</p>
       <div className={s.fields}>
         <label>Szansa na slot ekskluzywny (%)<input inputMode="numeric" value={draft.chance} onChange={e => upd({ chance: e.target.value.replace(/\D/g, '') })} /><small className="muted">Działa tylko, gdy pula niżej nie jest pusta. Domyślnie 20.</small></label>
       </div>
+      <h4>Skrzynki i naklejki w losowaniu opcji</h4>
+      <p className="muted small">Odznaczona skrzynka nie trafia do losowania opcji (slot 1 i slot z naklejkami). Skrzynki oznaczone „event” są domyślnie wyłączone (np. Świąteczna) - po pierwszym zapisie lista jest już Twoja i możesz je włączyć z powrotem.</p>
+      <div className={s.fields}>
+        <label>Szansa na naklejkę w slocie dodatkowym (%)<input inputMode="numeric" value={draft.stickerChance} onChange={e => upd({ stickerChance: e.target.value.replace(/D/g, '') })} /><small className="muted">Skrzynka z naklejkami albo naklejka w wariancie foliowanym, holo lub złotym. Domyślnie 35, 0 = bez naklejek. Slot ekskluzywny ma pierwszeństwo.</small></label>
+      </div>
+      <div className={s.pool}>
+        {data.optionChests.map(c => {
+          const on = !draft.offChests.includes(c.kind);
+          return <label key={c.kind} className={s.chip}><input type="checkbox" checked={on} onChange={() => upd({ offChests: on ? [...draft.offChests, c.kind] : draft.offChests.filter(k => k !== c.kind) })} /> {c.name}{c.group === 'sticker' ? ' (naklejki)' : ''}{c.eventOnly ? ' (event)' : ''}</label>;
+        })}
+      </div>
+      <details>
+        <summary>Naklejki w losowaniu ({data.optionStickers.length - draft.offStickers.length} z {data.optionStickers.length})</summary>
+        <div className={s.pool}>
+          {data.optionStickers.map(x => {
+            const on = !draft.offStickers.includes(x.id);
+            return <label key={x.id} className={s.chip}><input type="checkbox" checked={on} onChange={() => upd({ offStickers: on ? [...draft.offStickers, x.id] : draft.offStickers.filter(k => k !== x.id) })} /> {x.name}</label>;
+          })}
+          {!data.optionStickers.length && <span className="muted small">Brak włączonych naklejek w katalogu.</span>}
+        </div>
+      </details>
       <h4>Ekskluzywne karty z leveli</h4>
       <div className={s.pool}>
         {draft.exCards.map((c, i) => (

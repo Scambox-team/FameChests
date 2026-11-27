@@ -791,6 +791,15 @@ pub async fn grant_rewards(c: &mut Conn, cx: &Ctx, list: &[Value], source: &str)
             "cosmetic" => {
                 crate::cosmetics::unlock(c, cx.uid(), s(r, "id"), source).await?;
             }
+            // naklejka dla graczy: do ekwipunku (naklejka usunięta z katalogu w międzyczasie = nic)
+            "sticker" if crate::stickers::info(s(r, "sticker")).is_some() => {
+                let v = s(r, "variant");
+                let variant = if crate::stickers::VARIANTS.iter().any(|x| x.0 == v) { v } else { "normal" };
+                let list: Vec<crate::stickers::Rolled> = (0..n.clamp(1, 10))
+                    .map(|_| crate::stickers::Rolled { sticker: s(r, "sticker").to_owned(), rarity: String::new(), variant: variant.to_owned() })
+                    .collect();
+                crate::stickers::give(c, cx.uid(), &list).await?;
+            }
             "card" if cx.cat.has(s(r, "person")) => {
                 let v = s(r, "variant");
                 let variant = if g().variants.contains_key(v) { v } else { "normal" };

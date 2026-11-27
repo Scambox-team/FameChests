@@ -2,6 +2,7 @@ import { closeStickerReveal, openStickerEditor, stickerTileHTML, VARIANT_NAME, t
 import { useGame } from '../../game/store';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
+import { openStickerViewer } from './stickerViewer';
 import s from './Stickers.module.css';
 
 /** Wynik otwarcia skrzynek z naklejkami (renderowany w App; otwiera go `openStickerCrate`) */
@@ -16,7 +17,7 @@ export function StickerRevealHost() {
         {drops.map((d, i) => (
           <div key={d.id} className={s.drop} style={{ '--i': i, '--rc': color(d.rarity) } as React.CSSProperties}>
             {d.variant !== 'normal' && <span className={s.varTag}>{VARIANT_NAME[d.variant]}</span>}
-            <span className={s.art} dangerouslySetInnerHTML={{ __html: stickerTileHTML(d.sticker, d.variant, d.v) }} />
+            <button type="button" className={`${s.art} ${s.artBtn}`} aria-label={`Podgląd: ${d.name}`} title="Kliknij, żeby obejrzeć naklejkę" onClick={() => openStickerViewer({ sticker: d.sticker, variant: d.variant, name: d.name, rarity: d.rarity, v: d.v })} dangerouslySetInnerHTML={{ __html: stickerTileHTML(d.sticker, d.variant, d.v) }} />
             <b>{d.name}</b>
             <span className={s.rar}>{g.cfg.rarities[d.rarity]?.name ?? d.rarity}</span>
           </div>

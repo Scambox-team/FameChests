@@ -30,6 +30,9 @@
 .fav { top: -6px; right: -6px; }
 .fav.on { color: var(--warn); }
 .zoom { top: -6px; left: -6px; }
+/* cudzy ekwipunek: wymiana (prawy górny róg, tam gdzie ulubione we własnym) i kupno pod nią */
+.trade { top: -6px; right: -6px; }
+.buy { top: 28px; right: -6px; }
 @media (hover: none) { .pin { opacity: 1; } }
 .empty { grid-column: 1 / -1; padding: 40px 0; text-align: center; color: var(--muted); }
 .more { display: flex; justify-content: center; }
@@ -46,4 +49,6 @@
   .pin svg { width: 12px; height: 12px; }
   .fav { top: -4px; right: -4px; }
   .zoom { top: -4px; left: -4px; }
+  .trade { top: -4px; right: -4px; }
+  .buy { top: 24px; right: -4px; }
 }

@@ -40,7 +40,15 @@ fn kinds_json() -> Value {
             .iter()
             .map(|k| {
                 let (w, h) = k.size();
-                json!({"key": k.key(), "label": k.label(), "w": w, "h": h, "maxKb": k.max_bytes() / 1024, "requirements": k.requirements()})
+                // wybór rozdzielczości przy wgrywaniu: wymiary, limit pliku i opis wymagań dla każdego mnożnika (1 = standardowa)
+                let resolutions: Vec<Value> = cosmetics::RESOLUTIONS
+                    .iter()
+                    .map(|(m, name)| {
+                        let (rw, rh) = k.size_at(*m);
+                        json!({"res": m, "name": name, "w": rw, "h": rh, "maxKb": k.max_bytes_at(*m) / 1024, "requirements": k.requirements_at(*m)})
+                    })
+                    .collect();
+                json!({"key": k.key(), "label": k.label(), "w": w, "h": h, "maxKb": k.max_bytes() / 1024, "requirements": k.requirements(), "resolutions": resolutions})
             })
             .collect(),
     )
@@ -139,13 +147,13 @@ pub async fn set_about(State(st): State<AppState>, Me(me): Me, JsonBody(req): Js
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct PrivacyRequest {
-    /// `friends` (domyślnie) albo `nobody`
+    /// `public` (domyślnie, każdy zalogowany), `friends` (tylko znajomi) albo `nobody` (prywatny; admin i tak widzi)
     inventory: String,
 }
 
-/// Ustawienie konta: kto może oglądać mój ekwipunek (znajomi / nikt)
+/// Ustawienie konta: kto może oglądać mój ekwipunek (wszyscy / znajomi / nikt)
 pub async fn set_privacy(State(st): State<AppState>, Me(me): Me, JsonBody(req): JsonBody<PrivacyRequest>) -> Res {
-    if !matches!(req.inventory.as_str(), "friends" | "nobody") {
+    if !matches!(req.inventory.as_str(), "public" | "friends" | "nobody") {
         return bad("Nieprawidłowe ustawienie");
     }
     let v = Visibility::parse(&req.inventory);
@@ -194,7 +202,7 @@ pub async fn admin_cosmetics(State(st): State<AppState>, Admin(_): Admin) -> Res
         .map(|x| {
             json!({
                 "id": x.id, "kind": x.kind.key(), "name": x.name, "source": x.source, "auto": x.auto, "enabled": x.enabled,
-                "hideLocked": x.hide_locked, "url": x.url(), "animated": x.animated, "w": x.w, "h": x.h, "mime": x.mime,
+                "hideLocked": x.hide_locked, "url": x.url(), "animated": x.animated, "w": x.w, "h": x.h, "mime": x.mime, "res": x.res,
                 "owners": owned.get(&x.id).copied().unwrap_or(0), "worn": worn.get(&x.id).copied().unwrap_or(0),
                 "price": x.price, "inShop": x.in_shop, "tags": x.tags, "stock": x.stock, "sold": sold.get(&x.id).copied().unwrap_or(0),
                 "saleFrom": x.sale_from, "saleTo": x.sale_to,
@@ -273,7 +281,9 @@ pub async fn admin_cosmetic_save(State(st): State<AppState>, Admin(me): Admin, m
             return bad(format!("Najwyżej {MAX_COSMETICS} kosmetyków"));
         }
         let Some(blob) = form.upload("image") else { return bad("Wybierz plik z grafiką") };
-        let img = cosmetics::process_image(kind, blob).map_err(crate::error::AppError::bad)?;
+        // rozdzielczość wybrana przy wgrywaniu (puste = standardowa); wymiary pliku liczą się względem wyboru
+        let res = cosmetics::parse_res(&field("res")).map_err(crate::error::AppError::bad)?;
+        let img = cosmetics::process_image_at(kind, res, blob).map_err(crate::error::AppError::bad)?;
         let base = super::admin::slug(&name);
         let base = if base.is_empty() { kind.key().to_owned() } else { base };
         let mut id = base.clone();
@@ -284,8 +294,8 @@ pub async fn admin_cosmetic_save(State(st): State<AppState>, Admin(me): Admin, m
         }
         sqlx::query(
             "INSERT INTO cosmetics (id, kind, name, source, auto, enabled, hide_locked, pos, img, mime, w, h, animated, img_at, created_at,
-                                    price, in_shop, tags, stock, sale_from, sale_to)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14, $15, $16, $17, $18, $19, $20)",
+                                    price, in_shop, tags, stock, sale_from, sale_to, res)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14, $15, $16, $17, $18, $19, $20, $21)",
         )
         .bind(&id)
         .bind(kind.key())
@@ -307,6 +317,7 @@ pub async fn admin_cosmetic_save(State(st): State<AppState>, Admin(me): Admin, m
         .bind(shop.stock)
         .bind(shop.sale_from)
         .bind(shop.sale_to)
+        .bind(res as i16)
         .execute(&mut *tx)
         .await?;
         id
@@ -334,8 +345,14 @@ pub async fn admin_cosmetic_save(State(st): State<AppState>, Admin(me): Admin, m
             sqlx::query("UPDATE cosmetics SET tags = $2 WHERE id = $1").bind(&id).bind(tags).execute(&mut *tx).await?;
         }
         if let Some(blob) = form.upload("image") {
-            let img = cosmetics::process_image(kind, blob).map_err(crate::error::AppError::bad)?;
-            sqlx::query("UPDATE cosmetics SET img = $2, mime = $3, w = $4, h = $5, animated = $6, img_at = $7 WHERE id = $1")
+            // nowa grafika może mieć inną rozdzielczość (pole `res`); bez pola zostaje dotychczasowa pozycji
+            let res = if form.fields.contains_key("res") {
+                cosmetics::parse_res(&field("res")).map_err(crate::error::AppError::bad)?
+            } else {
+                cosmetics::get(&id).map_or(1, |c| c.res)
+            };
+            let img = cosmetics::process_image_at(kind, res, blob).map_err(crate::error::AppError::bad)?;
+            sqlx::query("UPDATE cosmetics SET img = $2, mime = $3, w = $4, h = $5, animated = $6, img_at = $7, res = $8 WHERE id = $1")
                 .bind(&id)
                 .bind(&img.bytes)
                 .bind(img.mime)
@@ -343,6 +360,7 @@ pub async fn admin_cosmetic_save(State(st): State<AppState>, Admin(me): Admin, m
                 .bind(img.h as i32)
                 .bind(i16::from(img.animated))
                 .bind(now())
+                .bind(res as i16)
                 .execute(&mut *tx)
                 .await?;
             // nowa grafika = nowe kolory, chyba że admin ręcznie poprawił tagi w tym samym zapisie

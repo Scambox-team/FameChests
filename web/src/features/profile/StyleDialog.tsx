@@ -19,7 +19,7 @@ type Kind = 'mini' | 'frame' | 'bg' | 'avatar';
 interface Item extends CosmeticView { unlocked: boolean; source: string }
 interface Data {
   kinds: { key: Kind; label: string; w: number; h: number }[]; items: Item[];
-  equipped: Record<Kind, string>; inventoryVisible: 'friends' | 'nobody';
+  equipped: Record<Kind, string>; inventoryVisible: 'public' | 'friends' | 'nobody';
   about: { bio: string; country: string; bioMax: number };
 }
 
@@ -124,8 +124,8 @@ export function StyleDialog({ onClose, onChanged }: { onClose: () => void; onCha
     } catch (e: any) { Sound.error(); toast(e.message, true); }
     setBusy(false);
   };
-  const privacy = async (v: 'friends' | 'nobody') => {
-    try { await api('/api/profile/privacy', { inventory: v }); Sound.click(); toast(v === 'friends' ? 'Ekwipunek widzą znajomi' : 'Ekwipunek jest ukryty'); refetch(); qc.invalidateQueries({ queryKey: ['user'] }); }
+  const privacy = async (v: 'public' | 'friends' | 'nobody') => {
+    try { await api('/api/profile/privacy', { inventory: v }); Sound.click(); toast(v === 'public' ? 'Ekwipunek widzą wszyscy gracze' : v === 'friends' ? 'Ekwipunek widzą tylko znajomi' : 'Ekwipunek jest prywatny'); refetch(); qc.invalidateQueries({ queryKey: ['user'] }); }
     catch (e: any) { Sound.error(); toast(e.message, true); }
   };
 
@@ -148,10 +148,11 @@ export function StyleDialog({ onClose, onChanged }: { onClose: () => void; onCha
       <About about={data.about} onSaved={() => { refetch(); qc.invalidateQueries({ queryKey: ['user'] }); onChanged(); }} />
       <section className={s.sdPrivacy} aria-label="Prywatność ekwipunku">
         <h3>Kto widzi mój ekwipunek</h3>
-        <p className="muted small">Znajomi mogą przeglądać wszystkie twoje karty i proponować z nich wymianę albo kupno. Możesz to wyłączyć.</p>
+        <p className="muted small">Każdy gracz może przeglądać twoje karty (tak samo jak swój ekwipunek) i oglądać je w podglądzie; wymianę możesz dostać tylko od znajomych. Możesz to ograniczyć do znajomych albo całkiem ukryć. Administratorzy mogą zajrzeć do każdego ekwipunku, także prywatnego.</p>
         <div role="radiogroup" aria-label="Kto widzi ekwipunek" className={s.sdRadios}>
-          <label><input type="radio" name="inv" checked={data.inventoryVisible === 'friends'} onChange={() => privacy('friends')} /> Znajomi (domyślnie)</label>
-          <label><input type="radio" name="inv" checked={data.inventoryVisible === 'nobody'} onChange={() => privacy('nobody')} /> Nikt</label>
+          <label><input type="radio" name="inv" checked={data.inventoryVisible === 'public'} onChange={() => privacy('public')} /> Publiczny: widzi każdy gracz (domyślnie)</label>
+          <label><input type="radio" name="inv" checked={data.inventoryVisible === 'friends'} onChange={() => privacy('friends')} /> Tylko znajomi</label>
+          <label><input type="radio" name="inv" checked={data.inventoryVisible === 'nobody'} onChange={() => privacy('nobody')} /> Prywatny: nikt (poza administratorami)</label>
         </div>
       </section>
     </Modal>

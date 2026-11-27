@@ -38,6 +38,12 @@ pub(super) fn reward_view(cat: &Catalog, r: &Value) -> Value {
             let text = crate::cosmetics::get(s("id")).map_or_else(|| "Kosmetyk profilu".to_owned(), |c| format!("{}: {}", c.kind.label(), c.name));
             json!({"type": "cosmetic", "id": s("id"), "count": 1, "text": text})
         }
+        "sticker" => {
+            let name = crate::stickers::info(s("sticker")).map_or_else(|| "Naklejka".to_owned(), |i| i.name);
+            let v = s("variant");
+            let vname = if v.is_empty() || v == "normal" { String::new() } else { format!(" ({})", crate::stickers::variant_name(v)) };
+            json!({"type": "sticker", "sticker": s("sticker"), "variant": v, "count": n, "text": format!("Naklejka: {name}{vname}{times}")})
+        }
         _ => {
             let pid = s("person");
             let v = s("variant");

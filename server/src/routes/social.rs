@@ -827,7 +827,7 @@ pub async fn profile(State(st): State<AppState>, Me(me): Me, Path(name): Path<St
     let relation = relation(&mut c, me.id, u.id).await?;
     // kto widzi ekwipunek (ustawienie konta, domyślnie znajomi): bez zgody lista kart „teraz” jest pusta, klaser (co kiedykolwiek zdobył) zostaje
     let style = crate::cosmetics::style_of(&mut c, u.id).await?;
-    let inv_ok = crate::cosmetics::inventory_allowed(style.inventory, relation, u.hidden_from_ranking());
+    let inv_ok = crate::cosmetics::inventory_allowed(style.inventory, relation, u.hidden_from_ranking(), me.admin());
     let collection = if inv_ok { collection } else { vec![] };
     let collected = collected_list(&mut c, &cat, u.id).await?;
     let mut revealed = IndexMap::new();

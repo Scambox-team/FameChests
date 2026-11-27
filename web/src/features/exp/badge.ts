@@ -1,9 +1,10 @@
 // Odznaka „za służbę w roku RRRR” (level 100): medal z ząbkowanym brzegiem, wstążki w kolorze skrzynki (--hue), gwiazda i rok.
-// Poziom odznaki (1-12) rośnie z liczbą dojść do levelu 100 w tym samym roku: zwykła, brązowa, srebrna, złota, platynowa, szmaragdowa,
-// ametystowa, rubinowa, szafirowa, diamentowa, czarny diament i papieska (klucze i szkło jak w wariantach kart; papieska to nawiązanie do
+// Poziom odznaki (1-13) rośnie z liczbą dojść do levelu 100 w tym samym roku: zwykła, brązowa, srebrna, złota, platynowa, szmaragdowa,
+// ametystowa, rubinowa, szafirowa, diamentowa, czarny diament, lonsdaleit i papieska (klucze i szkło jak w wariantach kart; lonsdaleit jak wariant karty `lonsdaleite`: złoty heks,
+// ciemny bursztyn i siatka sześciokątów; papieska to nawiązanie do
 // tajnej karty Jana Pawła II: biało-złota, ze skrzyżowanymi kluczami i krzyżem). Rysowana jako SVG w kodzie (bez obrazków i emotek);
 // napis na łuku to textPath. Każdy egzemplarz ma własne id gradientów.
-export const BADGE_NAMES = ['Zwykła', 'Brązowa', 'Srebrna', 'Złota', 'Platynowa', 'Szmaragdowa', 'Ametystowa', 'Rubinowa', 'Szafirowa', 'Diamentowa', 'Czarny diament', 'Papieska'];
+export const BADGE_NAMES = ['Zwykła', 'Brązowa', 'Srebrna', 'Złota', 'Platynowa', 'Szmaragdowa', 'Ametystowa', 'Rubinowa', 'Szafirowa', 'Diamentowa', 'Czarny diament', 'Lonsdaleit', 'Papieska'];
 
 // [jasny, średni, ciemny] odcień medalu, kolor napisów, [jasny, ciemny] odcień obrzeża
 const PALETTE: { face: [string, string, string]; ink: string; rim: [string, string, string] }[] = [
@@ -18,6 +19,8 @@ const PALETTE: { face: [string, string, string]; ink: string; rim: [string, stri
   { face: ['#c4d8ff', '#3a6bf0', '#122f8f'], ink: '#0a1a52', rim: ['#d6e4ff', '#2f5ce0', '#0e2578'] },
   { face: ['#ffffff', '#bff3ff', '#6fd0ee'], ink: '#0b4a63', rim: ['#ffffff', '#9fe8fb', '#4bb9dc'] },
   { face: ['#6b6f78', '#23252b', '#050507'], ink: '#eef1f8', rim: ['#9aa0ac', '#3a3d46', '#0a0a0d'] },
+  // lonsdaleit: kolory wariantu karty (#fff6c8, #ffc43d, #d98a00, ciemny bursztyn #6b4000)
+  { face: ['#fff6c8', '#ffc43d', '#b87400'], ink: '#3a2000', rim: ['#fff6c8', '#ffc43d', '#6b4000'] },
   { face: ['#ffffff', '#fff3c4', '#e9c46a'], ink: '#6b4d00', rim: ['#ffffff', '#f4d77a', '#b8860b'] },
 ];
 
@@ -41,9 +44,22 @@ function star(cx: number, cy: number, r: number) {
   return pts.join(' ');
 }
 
-/** Godło środka: gwiazda (poziomy 1-11, diamentowa i czarny diament z iskrami), papieska: skrzyżowane klucze i krzyż */
+function hex(cx: number, cy: number, r: number) {
+  const pts: string[] = [];
+  for (let i = 0; i < 6; i++) { const a = (Math.PI / 3) * i + Math.PI / 6; pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`); }
+  return pts.join(' ');
+}
+
+/** Godło środka: gwiazda (poziomy 1-11, diamentowa i czarny diament z iskrami), lonsdaleit: plaster sześciokątów, papieska: skrzyżowane klucze i krzyż */
 function emblem(tier: number, ink: string) {
   if (tier === 12) {
+    // siedem sześciokątów jak komórki siatki lonsdaleitu: środkowy złoty, sześć wokół w różnej jasności
+    const r = 7.6, d = r * Math.sqrt(3), fills = ['#fff6c8', '#ffd25a', '#8a5200', '#ffe9a8', '#b87400', '#fff2b0'];
+    const ring = fills.map((f, i) => { const a = (Math.PI / 3) * i; return `<polygon points="${hex(60 + d * Math.cos(a), 50 + d * Math.sin(a), r)}" fill="${f}" fill-opacity=".9" stroke="#3a2000" stroke-opacity=".55" stroke-width=".9" stroke-linejoin="round"/>`; }).join('');
+    return `${ring}<polygon points="${hex(60, 50, r)}" fill="#ffc43d" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>`
+      + `<path d="M36 40 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z M84 62 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" fill="${ink}" opacity=".55"/>`;
+  }
+  if (tier === 13) {
     return `<g stroke="#8a6508" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
 <path d="M47 68 L73 41" stroke="#c9981a" stroke-width="3.6"/><circle cx="73.5" cy="40.5" r="4.4" fill="none" stroke="#c9981a" stroke-width="2.4"/><path d="M50 65 l-3.5 3.5 M54 61 l-3.5 3.5" stroke="#c9981a" stroke-width="2.6"/>
 <path d="M73 68 L47 41" stroke="#aeb6c2" stroke-width="3.6"/><circle cx="46.5" cy="40.5" r="4.4" fill="none" stroke="#aeb6c2" stroke-width="2.4"/><path d="M70 65 l3.5 3.5 M66 61 l3.5 3.5" stroke="#aeb6c2" stroke-width="2.6"/>
@@ -57,10 +73,10 @@ function emblem(tier: number, ink: string) {
 }
 
 export function serviceBadgeSvg(year: number, tier = 1): string {
-  const t = Math.min(Math.max(Math.round(tier), 1), 12);
+  const t = Math.min(Math.max(Math.round(tier), 1), 13);
   const p = PALETTE[t - 1];
   const id = `svb${++counter}`;
-  const papal = t === 12;
+  const papal = t === 13;
   const ribbon = papal
     ? `<stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9dfae"/>`
     : `<stop offset="0" stop-color="var(--hue, #e0264a)"/><stop offset="1" stop-color="color-mix(in srgb, var(--hue, #e0264a) 50%, #000)"/>`;

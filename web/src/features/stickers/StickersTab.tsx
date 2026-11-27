@@ -3,6 +3,7 @@ import { Button } from '../../ui/Button';
 import { SearchField, Select } from '../../ui/Field';
 import { useGame } from '../../game/store';
 import { openStickerEditor, stickerTileHTML, VARIANT_NAME, type StkData } from './stickers';
+import { openStickerViewer } from './stickerViewer';
 import s from './Stickers.module.css';
 
 /** Zakładka „Naklejki” w ekwipunku: naklejki, które jeszcze nie leżą na kartach (skrzynki z naklejkami są na półce skrzynek) */
@@ -47,7 +48,7 @@ export function StickersTab() {
           return (
             <div key={i.id} className={s.item} style={{ '--rc': color(c.rarity) } as React.CSSProperties}>
               {i.variant !== 'normal' && <span className={s.varTag}>{VARIANT_NAME[i.variant]}</span>}
-              <span className={s.art} dangerouslySetInnerHTML={{ __html: stickerTileHTML(i.sticker, i.variant, c.v) }} />
+              <button type="button" className={`${s.art} ${s.artBtn}`} aria-label={`Podgląd: ${c.name}`} title="Kliknij, żeby obejrzeć naklejkę" onClick={() => openStickerViewer({ sticker: i.sticker, variant: i.variant, name: c.name, rarity: c.rarity, v: c.v, item: i.id })} dangerouslySetInnerHTML={{ __html: stickerTileHTML(i.sticker, i.variant, c.v) }} />
               <b>{c.name}</b>
               <span className={s.rar}>{g.cfg.rarities[c.rarity]?.name ?? c.rarity}</span>
               <Button onClick={() => openStickerEditor(null, i.id)}>Naklej</Button>

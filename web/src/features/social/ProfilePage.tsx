@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Crown, HelpCircle, ImagePlus, Pin, Trophy, UserCheck } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Card } from '../../cards/Card';
 import { openViewer } from '../../fx/effects';
@@ -17,7 +17,6 @@ import { toast } from '../../ui/Toaster';
 import { FramedAvatar } from '../../ui/FramedAvatar';
 import { countryName, flagUrl } from '../profile/countries';
 import { useCosmeticSrc } from '../profile/cosmetics';
-import { FriendInventory } from '../profile/FriendInventory';
 import { StyleDialog } from '../profile/StyleDialog';
 import { ServiceBadge } from '../exp/LevelPage';
 import { mergePlaced } from '../stickers/stickers';
@@ -64,6 +63,7 @@ function Achievements({ username, mine }: { username: string; mine: boolean }) {
 }
 
 export function ProfilePage() {
+  const navigate = useNavigate();
   const game = useGame();
   const { name } = useParams();
   const username = name || game.me!.username;
@@ -77,11 +77,21 @@ export function ProfilePage() {
   const reveal = useMemo(() => d ? { map: d.reveal, imgq: `owner=${encodeURIComponent(d.user.username)}` } : undefined, [d]);
   const owned = useMemo(() => {
     const out: Record<string, BinderOwned> = collectedOwned(d?.collected || []);   // karty, które gracz kiedyś miał, zostają w klaserze
-    for (const c of d?.collection ?? []) {
-      const o = out[c.person]?.count ? out[c.person] : (out[c.person] = { best: c.variant, count: 0 });
-      o.count += c.count;
+    // Gdy ekwipunek gracza jest dla mnie ukryty, serwer nie wysyła jego kart „teraz” (`collection` puste): wtedy każda karta z klasera
+    // wyglądałaby jak utracona (przygaszona), choć gracz może ją mieć. Takie karty pokazujemy normalnie (`unknown`), bez liczby egzemplarzy.
+    const hidden = !!d && d.inventoryAllowed === false;
+    if (hidden) Object.values(out).forEach(o => { o.unknown = true; });
+    const have = (c: { person: string; variant: string }, n: number) => {
+      if (!S.cfg.people[c.person]) return;
+      const old = out[c.person];
+      const o = old?.count ? old : (out[c.person] = { best: c.variant, count: 0 });
+      o.unknown = false;
+      o.count += n;
       if (varRank(c.variant) > varRank(o.best)) o.best = c.variant;
-    }
+    };
+    for (const c of d?.collection ?? []) have(c, c.count);
+    // gablota jest widoczna zawsze, więc to, co w niej leży, gracz na pewno ma (także przy ukrytym ekwipunku)
+    if (hidden) for (const it of d.showcase ?? []) if (!out[it.person]?.count) have(it, 1);
     return out;
   }, [d]);
 
@@ -135,7 +145,8 @@ export function ProfilePage() {
           {d.relation === 'none' && <Button kind="hue" onClick={() => act(() => api('/api/friends/request', { username: u.username }), 'Wysłano zaproszenie')}>Zaproś do znajomych</Button>}
           {d.relation === 'outgoing' && <><span className={s.tag}><Clock size={15} aria-hidden="true" /> Zaproszenie wysłane</span><Button onClick={remove}>Anuluj</Button></>}
           {d.relation === 'incoming' && <Button kind="hue" onClick={() => act(() => api('/api/friends/respond', { username: u.username, accept: true }), 'Nowy znajomy')}>Przyjmij zaproszenie</Button>}
-          {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button>{d.inventoryAllowed && <Button onClick={() => setDialog('inventory')}>Ekwipunek</Button>}<Button onClick={remove}>Usuń ze znajomych</Button></>}
+          {d.relation === 'friend' && <><span className={s.tag}><UserCheck size={15} aria-hidden="true" /> Znajomi</span><Button kind="hue" onClick={() => setDialog('trade')}>Zaproponuj wymianę</Button><Button onClick={remove}>Usuń ze znajomych</Button></>}
+          {!mine && d.inventoryAllowed && <Button onClick={() => navigate(`/player/${encodeURIComponent(u.username)}/inventory`)}>Ekwipunek</Button>}
           {!mine && S.cfg.arena && (S.cfg.arena.public || u.isAdmin) && <Button onClick={() => import('../arena/arena').then(m => m.arChallenge(u.username))}>Wyzwij na pojedynek</Button>}
         </div>
       </section>
@@ -171,7 +182,6 @@ export function ProfilePage() {
       {dialog === 'password' && <PasswordDialog onClose={() => setDialog(null)} />}
       {dialog === 'email' && <EmailDialog onClose={() => setDialog(null)} />}
       {dialog === 'style' && <StyleDialog onClose={() => setDialog(null)} onChanged={refetch} />}
-      {dialog === 'inventory' && <FriendInventory username={u.username} onClose={() => setDialog(null)} />}
       {dialog === 'trade' && <TradeBuilder username={u.username} onClose={() => setDialog(null)} onSent={() => {}} />}
       {dialog && typeof dialog === 'object' && <PatchNotes notes={dialog.notes} onClose={() => setDialog(null)} />}
     </div>

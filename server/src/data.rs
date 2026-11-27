@@ -103,6 +103,9 @@ pub struct MoneyChest {
     pub euro_min: i64,
     #[serde(default, rename = "euroMax")]
     pub euro_max: i64,
+    /// skrzynka tylko na event (świąteczna itp.): domyślnie NIE trafia do puli opcji dużej nagrody za level (admin zmienia to w panelu EXP)
+    #[serde(default, rename = "eventOnly")]
+    pub event_only: bool,
 }
 
 /// Euro: druga waluta, tylko na kosmetyki (sklep z kosmetykami). Z gier leci jej mniej niż groszy.

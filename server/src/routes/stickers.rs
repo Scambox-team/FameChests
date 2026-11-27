@@ -116,6 +116,8 @@ pub async fn stickers_open(State(st): State<AppState>, Me(me): Me, JsonBody(req)
     crate::exp::award(&mut tx, me.id, "open_stickers", count).await?;
     let catalog = stickers::catalog(&mut tx).await?;
     let chests = get_chests(&mut tx, &cat, me.id).await?;
+    // zawartość skrzynki: z niej przeglądarka układa paski bębnów (animacja losowania)
+    let pool_view = stickers::contents(&mut tx, &cr.id).await?;
     tx.commit().await?;
     let drops: Vec<Value> = rolled
         .iter()
@@ -125,7 +127,7 @@ pub async fn stickers_open(State(st): State<AppState>, Me(me): Me, JsonBody(req)
             json!({"id": id, "sticker": r.sticker, "variant": r.variant, "name": name, "rarity": r.rarity, "v": v})
         })
         .collect();
-    ok(json!({"drops": drops, "chests": chests, "crate": cr.id}))
+    ok(json!({"drops": drops, "chests": chests, "crate": cr.id, "pool": pool_view}))
 }
 
 // ---------------------------------------------------------------- naklejanie
@@ -159,9 +161,10 @@ pub async fn sticker_attach(State(st): State<AppState>, Me(me): Me, JsonBody(req
     let owned: Option<(String, String)> =
         sqlx::query_as("SELECT sticker_id, variant FROM sticker_items WHERE id = $1 AND user_id = $2").bind(req.id).bind(me.id).fetch_optional(&mut *tx).await?;
     let Some((sticker, variant)) = owned else { return bad("Nie masz takiej naklejki") };
-    let mine: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM items WHERE id = $1 AND user_id = $2)").bind(req.card).bind(me.id).fetch_one(&mut *tx).await?;
-    if !mine {
-        return bad("Nie masz takiej karty");
+    let card_variant: Option<String> = sqlx::query_scalar("SELECT variant FROM items WHERE id = $1 AND user_id = $2").bind(req.card).bind(me.id).fetch_optional(&mut *tx).await?;
+    let Some(card_variant) = card_variant else { return bad("Nie masz takiej karty") };
+    if !stickers::allows_stickers(&card_variant) {
+        return bad("Na kartę w wariancie Hologramowy nie da się naklejać naklejek");
     }
     let on: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM card_stickers WHERE item_id = $1").bind(req.card).fetch_one(&mut *tx).await?;
     if on >= MAX_ON_CARD {
@@ -457,6 +460,7 @@ pub async fn admin_sticker_save(State(st): State<AppState>, Admin(me): Admin, mp
     };
     log_admin(&mut tx, &me, "gsticker_save", None, &format!("{name} ({id}, {rarity})")).await?;
     tx.commit().await?;
+    stickers::load(&mut *st.db.acquire().await?).await?;
     ok(json!({"ok": true, "id": id}))
 }
 
@@ -471,6 +475,7 @@ pub async fn admin_sticker_delete(State(st): State<AppState>, Admin(me): Admin, 
     }
     log_admin(&mut tx, &me, "gsticker_delete", None, &id).await?;
     tx.commit().await?;
+    stickers::load(&mut *st.db.acquire().await?).await?;
     ok(json!({"ok": true}))
 }
 

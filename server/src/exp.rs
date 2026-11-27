@@ -49,7 +49,7 @@ pub const CHOICE_PICKS: usize = 2;
 /// Domyślna szybkość spadku EXP po przekroczeniu dziennego progu (wykładnik: EXP × (próg / zdobyte dziś)^wykładnik)
 pub const DEFAULT_DECAY: f64 = 2.0;
 /// Poziomy odznaki za służbę: 1 dojście do levelu 100 w roku = zwykła, kolejne podnoszą poziom
-pub const BADGE_TIERS: &[&str] = &["Zwykła", "Brązowa", "Srebrna", "Złota", "Platynowa", "Szmaragdowa", "Ametystowa", "Rubinowa", "Szafirowa", "Diamentowa", "Czarny diament", "Papieska"];
+pub const BADGE_TIERS: &[&str] = &["Zwykła", "Brązowa", "Srebrna", "Złota", "Platynowa", "Szmaragdowa", "Ametystowa", "Rubinowa", "Szafirowa", "Diamentowa", "Czarny diament", "Lonsdaleit", "Papieska"];
 /// Ile razy w roku trzeba dojść do 100, żeby mieć odznakę poziomu `tier` (1-based)
 pub fn badge_tier(count: i64) -> usize {
     (count.max(1) as usize).min(BADGE_TIERS.len())
@@ -141,19 +141,31 @@ pub struct LevelRewards {
     pub special: Vec<Value>,
 }
 
-/// Domyślne nagrody levelu: level 1 = start (bez nagrody); mała = grosze rosnące z levelem, co 5. level dodatkowo skrzynki.
-/// Specjalnych domyślnie nie ma. Duże nagrody (wybór 2 z 4) to osobny mechanizm: [`ExpConfig::choice_levels`].
+/// Euro za level w domyślnej małej nagrodzie: 1 € na levelach 2-39, 2 € od 40, 3 € od 80; co 10. level dodatkowo +5 €
+/// (razem za levele 2-100: [`default_euro_total`])
+pub fn default_euro(level: i64) -> i64 {
+    1 + level / 40 + if level % 10 == 0 { 5 } else { 0 }
+}
+
+/// Domyślne nagrody levelu: level 1 = start (bez nagrody); mała = grosze rosnące z levelem + trochę euro ([`default_euro`]), co 5. level
+/// dodatkowo skrzynki. Specjalnych domyślnie nie ma. Duże nagrody (wybór 2 z 4) to osobny mechanizm: [`ExpConfig::choice_levels`].
 pub fn default_rewards(level: i64) -> LevelRewards {
     if !(2..=MAX_LEVEL).contains(&level) {
         return LevelRewards::default();
     }
     let money = |a: i64| json!({"type": "money", "amount": a});
+    let euro = |a: i64| json!({"type": "euro", "amount": a});
     let chest = |k: &str, n: i64| json!({"type": "chest", "kind": k, "count": n});
-    let mut small = vec![money(500 + 50 * level)];
+    let mut small = vec![money(500 + 50 * level), euro(default_euro(level))];
     if level % 5 == 0 {
         small.push(chest("pl", 2 + level / 30));
     }
     LevelRewards { small, special: vec![] }
+}
+
+/// Suma domyślnych euro za levele 2-100 jednego cyklu
+pub fn default_euro_total() -> i64 {
+    (2..=MAX_LEVEL).map(default_euro).sum()
 }
 
 // ---------------------------------------------------------------- konfiguracja
@@ -178,6 +190,13 @@ pub struct ExpConfig {
     pub excl_cards: Vec<(String, String)>,
     /// pula ekskluzywnych skrzynek z leveli (rodzaj skrzynki)
     pub excl_chests: Vec<String>,
+    /// skrzynki (rodzaje: `money_<rodzaj>` albo `sticker_<id>`) wykluczone z losowania opcji dużej nagrody. None = domyślnie: skrzynki
+    /// z pieniędzmi oznaczone w game.json jako `eventOnly` (świąteczna); Some = lista z panelu (też pusta, wtedy nic nie jest wykluczone)
+    pub off_chests: Option<BTreeSet<String>>,
+    /// naklejki (id) wykluczone z losowania opcji dużej nagrody
+    pub off_stickers: BTreeSet<String>,
+    /// szansa, że slot dodatkowy dużej nagrody to naklejka (skrzynka z naklejkami albo naklejka w wariancie foliowanym / holo / złotym)
+    pub sticker_chance: f64,
     /// levele z nagrodami zmienionymi w panelu (reszta = domyślne)
     pub rewards: BTreeMap<i64, LevelRewards>,
     /// zaległe nagrody za levele (patrz [`pay_arrears`]) wypłacane samoczynnie przy następnej wizycie gracza
@@ -200,6 +219,9 @@ impl Default for ExpConfig {
             excl_cards: vec![],
             // domyślnie w puli „ekskluzywne z leveli” jest skrzynka z naklejkami (jeśli istnieje - `usable` pilnuje)
             excl_chests: vec![format!("{}{}", crate::stickers::KIND_PREFIX, crate::stickers::DEFAULT_CRATE)],
+            off_chests: None,
+            off_stickers: BTreeSet::new(),
+            sticker_chance: 0.35,
             rewards: BTreeMap::new(),
             auto_arrears: false,
             thr: vec![],
@@ -273,8 +295,22 @@ impl ExpConfig {
             "exclusiveChance": self.exclusive_chance,
             "exclusiveCards": self.excl_cards.iter().map(|(p, v)| json!({"person": p, "variant": v})).collect::<Vec<_>>(),
             "exclusiveChests": self.excl_chests,
+            "offChests": self.off_chests.as_ref().map(|s| s.iter().collect::<Vec<_>>()),
+            "offStickers": self.off_stickers.iter().collect::<Vec<_>>(),
+            "stickerChance": self.sticker_chance,
             "autoArrears": self.auto_arrears,
         })
+    }
+
+    /// Czy skrzynka (rodzaj `money_<rodzaj>` albo `sticker_<id>`) jest wykluczona z losowania opcji dużej nagrody
+    pub fn chest_off(&self, kind: &str) -> bool {
+        match &self.off_chests {
+            Some(s) => s.contains(kind),
+            None => {
+                let g = crate::data::g();
+                g.money_kind(kind).and_then(|m| g.money_chests.get(m)).is_some_and(|c| c.event_only)
+            }
+        }
     }
 }
 
@@ -304,6 +340,7 @@ pub fn usable(cat: &Catalog, r: &Value) -> bool {
         "card" => cat.has(s("person")),
         "chest" => valid_chest_kind(cat, s("kind")),
         "cosmetic" => crate::cosmetics::exists(s("id")),
+        "sticker" => crate::stickers::info(s("sticker")).is_some(),
         _ => true,
     }
 }
@@ -352,6 +389,15 @@ pub fn clean_config(raw: &Value, rewards: Option<&Value>, cat: &Catalog) -> ExpC
     }
     if let Some(e) = num(raw.get("exclusiveChance")) {
         c.exclusive_chance = e.clamp(0.0, 1.0);
+    }
+    if let Some(e) = num(raw.get("stickerChance")) {
+        c.sticker_chance = e.clamp(0.0, 1.0);
+    }
+    if let Some(l) = raw.get("offChests").and_then(Value::as_array) {
+        c.off_chests = Some(l.iter().filter_map(Value::as_str).filter(|k| valid_chest_kind(cat, k)).map(str::to_owned).take(MAX_EXCLUSIVE).collect());
+    }
+    if let Some(l) = raw.get("offStickers").and_then(Value::as_array) {
+        c.off_stickers = l.iter().filter_map(Value::as_str).map(str::to_owned).take(200).collect();
     }
     if let Some(l) = raw.get("choiceLevels").and_then(Value::as_array) {
         c.choice_levels = l.iter().filter_map(|v| int(Some(v))).filter(|l| (2..=MAX_LEVEL).contains(l)).collect();
@@ -609,26 +655,47 @@ pub fn generate_options(cat: &Catalog, cfg: &ExpConfig) -> Vec<Value> {
             None => json!({"type": "money", "amount": 50_000 + rng.gen_range(0..10_000)}),
         }
     };
-    let kinds: Vec<&String> = g.money_chests.keys().collect();
+    // skrzynka z pieniędzmi: losowa spośród tych, które nie są wykluczone (domyślnie bez skrzynek eventowych, np. świątecznej)
+    let kinds: Vec<&String> = g.money_chests.keys().filter(|k| !cfg.chest_off(&format!("money_{k}"))).collect();
     let chest = match kinds.choose(&mut rng) {
         Some(k) => json!({"type": "chest", "kind": format!("money_{k}"), "count": 1}),
         None => json!({"type": "money", "amount": 20_000}),
     };
     let (c1, c2) = (card(&mut rng), card(&mut rng));
+    // naklejka: skrzynka z naklejkami (nie wykluczona) albo pojedyncza naklejka w wariancie foliowanym / holo / złotym
+    let sticker = |rng: &mut rand::rngs::ThreadRng| -> Option<Value> {
+        let crates: Vec<crate::stickers::StickerCrate> = crate::stickers::crates().iter().filter(|c| !cfg.chest_off(&c.kind())).cloned().collect();
+        let pool = crate::stickers::reward_pool(&cfg.off_stickers);
+        let as_crate = !crates.is_empty() && (pool.is_empty() || rng.gen_bool(0.5));
+        if as_crate {
+            let c = crates.choose(rng)?;
+            return Some(json!({"type": "chest", "kind": c.kind(), "count": 1}));
+        }
+        let (id, _) = pool.choose(rng)?;
+        let variant = ["foil", "holo", "gold"][crate::game::roll::choose_weighted(&[60.0, 30.0, 10.0]).unwrap_or(0)];
+        Some(json!({"type": "sticker", "sticker": id, "variant": variant, "count": 1}))
+    };
     let extras: Vec<Value> = cfg
         .excl_cards
         .iter()
         .map(|(p, v)| json!({"type": "card", "person": p, "variant": v, "count": 1}))
         .chain(cfg.excl_chests.iter().map(|k| json!({"type": "chest", "kind": k, "count": 1})))
         .filter(|r| usable(cat, r))
+        .filter(|r| r.get("kind").and_then(Value::as_str).map_or(true, |k| !cfg.chest_off(k)))
         .collect();
-    let exclusive = !extras.is_empty() && rng.gen::<f64>() < cfg.exclusive_chance;
-    let bonus = if exclusive { extras.choose(&mut rng).cloned().unwrap_or_else(|| card(&mut rng)) } else { card(&mut rng) };
+    let exclusive =!extras.is_empty() && rng.gen::<f64>() < cfg.exclusive_chance;
+    let stick = if exclusive || rng.gen::<f64>() >= cfg.sticker_chance { None } else { sticker(&mut rng) };
+    let slot = if exclusive { "exclusive" } else if stick.is_some() { "sticker" } else { "card" };
+    let bonus = if exclusive {
+        extras.choose(&mut rng).cloned().unwrap_or_else(|| card(&mut rng))
+    } else {
+        stick.unwrap_or_else(|| card(&mut rng))
+    };
     vec![
         json!({"slot": "chest", "exclusive": false, "reward": chest}),
         json!({"slot": "card", "exclusive": false, "reward": c1}),
         json!({"slot": "card", "exclusive": false, "reward": c2}),
-        json!({"slot": if exclusive { "exclusive" } else { "card" }, "exclusive": exclusive, "reward": bonus}),
+        json!({"slot": slot, "exclusive": exclusive, "reward": bonus}),
     ]
 }
 
@@ -1209,22 +1276,107 @@ mod tests {
 
     #[test]
     fn badge_tiers_rise_with_repeats_in_a_year() {
-        assert_eq!(BADGE_TIERS.len(), 12);
+        assert_eq!(BADGE_TIERS.len(), 13);
         assert_eq!(BADGE_TIERS[0], "Zwykła");
-        assert_eq!(BADGE_TIERS[11], "Papieska");
+        assert_eq!(BADGE_TIERS[10], "Czarny diament");
+        assert_eq!(BADGE_TIERS[11], "Lonsdaleit", "między czarnym diamentem a papieską");
+        assert_eq!(BADGE_TIERS[12], "Papieska");
         assert_eq!(badge_tier(0), 1);
         assert_eq!(badge_tier(1), 1);
         assert_eq!(badge_tier(2), 2);
+        assert_eq!(badge_tier(11), 11);
         assert_eq!(badge_tier(12), 12);
-        assert_eq!(badge_tier(40), 12);
+        assert_eq!(badge_tier(13), 13);
+        assert_eq!(badge_tier(40), 13);
         assert_eq!(badge_json(2026, 3)["name"], "Srebrna");
+        assert_eq!(badge_json(2026, 12)["name"], "Lonsdaleit");
+        assert_eq!(badge_json(2026, 13)["name"], "Papieska");
+    }
+
+    #[test]
+    fn default_rewards_include_a_little_euro() {
+        assert!(default_rewards(1).small.is_empty(), "level 1 = start");
+        for l in 2..=MAX_LEVEL {
+            let small = default_rewards(l).small;
+            let euro: Vec<&Value> = small.iter().filter(|r| r["type"] == "euro").collect();
+            assert_eq!(euro.len(), 1, "level {l}: jedna pozycja euro");
+            assert_eq!(euro[0]["amount"], default_euro(l), "level {l}");
+            assert!(clean_reward(euro[0]).is_some(), "level {l}: format nagrody jest poprawny");
+        }
+        assert_eq!((default_euro(2), default_euro(39), default_euro(41), default_euro(81)), (1, 1, 2, 3));
+        assert_eq!((default_euro(10), default_euro(50), default_euro(100)), (6, 7, 8), "co 10. level +5 €");
+        assert_eq!(default_euro_total(), 231, "razem za levele 2-100");
+    }
+
+    #[test]
+    fn event_money_chests_are_left_out_of_level_options() {
+        let cat = crate::catalog::build(&[], &[]);
+        let cfg = ExpConfig { sticker_chance: 0.0, ..ExpConfig::default() };
+        assert!(cfg.chest_off("money_swiateczna"), "świąteczna jest eventowa (game.json: eventOnly)");
+        assert!(!cfg.chest_off("money_daily") && !cfg.chest_off("money_mega"));
+        for _ in 0..300 {
+            let o = generate_options(&cat, &cfg);
+            assert_ne!(o[0]["reward"]["kind"], "money_swiateczna");
+        }
+        // admin może wykluczyć też inne albo przywrócić świąteczną (lista z panelu zastępuje domyślną)
+        let only_mega = clean_config(&json!({"offChests": ["money_daily"]}), None, &cat);
+        assert!(only_mega.chest_off("money_daily") && !only_mega.chest_off("money_swiateczna"));
+        for _ in 0..300 {
+            assert_ne!(generate_options(&cat, &ExpConfig { sticker_chance: 0.0, ..only_mega.clone() })[0]["reward"]["kind"], "money_daily");
+        }
+        // wszystkie wykluczone: awaryjnie pieniądze, nigdy skrzynka z listy
+        let none = clean_config(&json!({"offChests": ["money_daily", "money_mega", "money_swiateczna"]}), None, &cat);
+        assert_eq!(generate_options(&cat, &ExpConfig { sticker_chance: 0.0, ..none })[0]["reward"]["type"], "money");
+    }
+
+    #[test]
+    fn sticker_options_respect_exclusions() {
+        let cat = crate::catalog::build(&[], &[]);
+        let crates = vec![
+            crate::stickers::StickerCrate { id: "a".into(), name: "A".into(), emoji: "".into(), color1: "".into(), color2: "".into(), desc: "".into(), weights: [1.0, 0.0, 0.0, 0.0] },
+            crate::stickers::StickerCrate { id: "b".into(), name: "B".into(), emoji: "".into(), color1: "".into(), color2: "".into(), desc: "".into(), weights: [1.0, 0.0, 0.0, 0.0] },
+        ];
+        crate::stickers::set_test_registry(&[("s1", "blue", true), ("s2", "red", true), ("s3", "blue", false), ("s4", "special", true)], crates);
+        let mut cfg = ExpConfig { sticker_chance: 1.0, exclusive_chance: 0.0, ..ExpConfig::default() };
+        cfg.off_stickers.insert("s2".to_owned());
+        cfg.off_chests = Some(["sticker_b".to_owned()].into_iter().collect());
+        let (mut crates_seen, mut singles_seen) = (0, 0);
+        for _ in 0..400 {
+            let o = generate_options(&cat, &cfg);
+            assert_eq!(o.len(), CHOICE_OPTIONS);
+            assert_eq!(o[3]["slot"], "sticker");
+            let r = &o[3]["reward"];
+            assert!(usable(&cat, r), "{r}");
+            match r["type"].as_str().unwrap() {
+                "chest" => {
+                    crates_seen += 1;
+                    assert_eq!(r["kind"], "sticker_a", "skrzynka b jest wykluczona");
+                }
+                "sticker" => {
+                    singles_seen += 1;
+                    assert_eq!(r["sticker"], "s1", "s2 wykluczona, s3 wyłączona, s4 specjalna");
+                    assert!(["foil", "holo", "gold"].contains(&r["variant"].as_str().unwrap()));
+                }
+                t => panic!("nieoczekiwany typ {t}"),
+            }
+            assert_eq!(o[0]["reward"]["type"], "chest", "pozostałe opcje bez zmian");
+        }
+        assert!(crates_seen > 50 && singles_seen > 50, "obie odmiany wypadają: {crates_seen} / {singles_seen}");
+        // szansa 0: slot dodatkowy to zwykła karta
+        let none = ExpConfig { sticker_chance: 0.0, exclusive_chance: 0.0, ..cfg.clone() };
+        assert_eq!(generate_options(&cat, &none)[3]["slot"], "card");
+        // opis nagrody i format
+        let r = clean_reward(&json!({"type": "sticker", "sticker": "s1", "variant": "bad"})).unwrap();
+        assert_eq!(r["variant"], "normal");
+        assert_eq!(clean_reward(&json!({"type": "sticker", "sticker": "s1", "variant": "gold", "count": 99})).unwrap()["count"], 10);
+        crate::stickers::set_test_registry(&[], vec![]);
     }
 
     #[test]
     fn choice_options_follow_the_rules() {
         let cat = crate::catalog::build(&[], &[]);
         let g = crate::data::g();
-        let cfg = ExpConfig::default();
+        let cfg = ExpConfig { sticker_chance: 0.0, ..ExpConfig::default() };
         for _ in 0..40 {
             let o = generate_options(&cat, &cfg);
             assert_eq!(o.len(), CHOICE_OPTIONS);

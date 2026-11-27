@@ -10,8 +10,10 @@ import s from './CosmeticsAdmin.module.css';
 // jeden katalog dla wszystkich trzech rodzajów. Wymiary są sztywne (serwer odrzuca inne), źródło odblokowania to nagroda (osiągnięcia, eventy,
 // levele, Paszport), automat (questy, odznaka służby) albo ręczne nadanie z tego panelu.
 type Kind = 'mini' | 'frame' | 'bg' | 'avatar';
-interface Item { price: number; inShop: boolean; tags: string[]; stock: number | null; sold: number; saleFrom: number | null; saleTo: number | null; id: string; kind: Kind; name: string; source: string; auto: string; enabled: boolean; hideLocked: boolean; url: string; animated: boolean; w: number; h: number; owners: number; worn: number }
-interface KindInfo { key: Kind; label: string; w: number; h: number; maxKb: number; requirements: string }
+interface Item { price: number; inShop: boolean; tags: string[]; stock: number | null; sold: number; saleFrom: number | null; saleTo: number | null; id: string; kind: Kind; name: string; source: string; auto: string; enabled: boolean; hideLocked: boolean; url: string; animated: boolean; w: number; h: number; res: number; owners: number; worn: number }
+interface Resolution { res: number; name: string; w: number; h: number; maxKb: number; requirements: string }
+interface KindInfo { key: Kind; label: string; w: number; h: number; maxKb: number; requirements: string; resolutions: Resolution[] }
+const resOf = (k: KindInfo, res: number): Resolution => k.resolutions.find(r => r.res === res) ?? k.resolutions[0];
 interface Data { showcase: ShowcaseCfg; list: Item[]; kinds: KindInfo[]; auto: { key: string; name: string }[]; max: number; colors: { key: string; name: string }[] }
 
 /** datetime-local <-> sekundy unixowe (puste = bez ograniczenia) */
@@ -69,8 +71,8 @@ function Preview({ kind, src }: { kind: Kind; src: string }) {
 function Kinds({ data }: { data: Data }) {
   return (
     <table className={s.reqs}>
-      <thead><tr><th>Rodzaj</th><th>Wymiary</th><th>Wymagania</th></tr></thead>
-      <tbody>{data.kinds.map(k => <tr key={k.key}><td><b>{k.label}</b></td><td>{k.w} × {k.h} px</td><td>{k.requirements}</td></tr>)}</tbody>
+      <thead><tr><th>Rodzaj</th><th>Rozdzielczość i wymiary (dokładnie)</th><th>Wymagania</th></tr></thead>
+      <tbody>{data.kinds.map(k => <tr key={k.key}><td><b>{k.label}</b></td><td>{k.resolutions.map(r => <div key={r.res}>{r.name}: {r.w} × {r.h} px (do {r.maxKb} KB)</div>)}</td><td>{k.requirements}<div className="muted small">Te same proporcje w każdej rozdzielczości; gracz widzi obraz dopasowany do tego samego kontenera, więc wyższa rozdzielczość tylko wyostrza grafikę. Dotychczasowe pozycje są „Standardowe”.</div></td></tr>)}</tbody>
     </table>
   );
 }
@@ -107,6 +109,7 @@ function NewForm({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, 
   const [shop, setShop] = useState<Shop>({ price: '500', inShop: true, stock: '', from: '', to: '', tags: [] });
   const [manualTags, setManualTags] = useState(false);
   const [kind, setKind] = useState<Kind>('mini');
+  const [res, setRes] = useState(1);
   const [name, setName] = useState('');
   const [source, setSource] = useState('');
   const [auto, setAuto] = useState('');
@@ -114,7 +117,7 @@ function NewForm({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, 
   const [file, setFile] = useState<File | null>(null);
   const [pre, setPre] = useState<{ w: number; h: number; url: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const info = data.kinds.find(k => k.key === kind)!;
+  const info = resOf(data.kinds.find(k => k.key === kind)!, res);   // wymiary i wymagania dla wybranej rozdzielczości
   const wrong = pre && (pre.w !== info.w || pre.h !== info.h);
 
   const pick = async (f: File | undefined) => {
@@ -125,7 +128,7 @@ function NewForm({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, 
   const submit = () => {
     if (!file) return toast('Wybierz plik z grafiką', true);
     const f = new FormData();
-    f.set('kind', kind); f.set('name', name); f.set('source', source); f.set('auto', auto); f.set('enabled', '1'); f.set('hideLocked', hide ? '1' : '0'); f.set('image', file); putShop(f, shop, manualTags);
+    f.set('kind', kind); f.set('res', String(res)); f.set('name', name); f.set('source', source); f.set('auto', auto); f.set('enabled', '1'); f.set('hideLocked', hide ? '1' : '0'); f.set('image', file); putShop(f, shop, manualTags);
     run(async () => { await send(f); setName(''); setSource(''); setFile(null); setPre(null); if (input.current) input.current.value = ''; }, 'Dodano kosmetyk');
   };
 
@@ -134,6 +137,7 @@ function NewForm({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, 
       <h4>Nowy kosmetyk</h4>
       <div className={s.fields}>
         <label>Rodzaj<select value={kind} onChange={e => { setKind(e.target.value as Kind); pick(undefined); if (input.current) input.current.value = ''; }}>{data.kinds.map(k => <option key={k.key} value={k.key}>{k.label}</option>)}</select></label>
+        <label>Rozdzielczość<select value={res} onChange={e => { setRes(+e.target.value); pick(undefined); if (input.current) input.current.value = ''; }}>{data.kinds.find(k => k.key === kind)!.resolutions.map(r => <option key={r.res} value={r.res}>{r.name} ({r.w} × {r.h})</option>)}</select></label>
         <label>Nazwa<input value={name} maxLength={40} onChange={e => setName(e.target.value)} placeholder="np. Złota korona" /></label>
         <label>Jak zdobyć (widzi gracz)<input value={source} maxLength={120} onChange={e => setSource(e.target.value)} placeholder="np. Nagroda za 7. dzień kalendarza" /></label>
         <label>Odblokowanie samym zdarzeniem<select value={auto} onChange={e => setAuto(e.target.value)}>{data.auto.map(a => <option key={a.key} value={a.key}>{a.name}</option>)}</select></label>
@@ -152,7 +156,9 @@ function NewForm({ data, run }: { data: Data; run: (fn: () => Promise<unknown>, 
 }
 
 function Row({ it, data, first, last, move, run }: { it: Item; data: Data; first: boolean; last: boolean; move: (d: -1 | 1) => void; run: (fn: () => Promise<unknown>, done: string) => Promise<void> }) {
-  const info = data.kinds.find(k => k.key === it.kind)!;
+  const kindInfo = data.kinds.find(k => k.key === it.kind)!;
+  const [newRes, setNewRes] = useState(it.res || 1);   // rozdzielczość grafiki, którą wymieniam
+  const info = resOf(kindInfo, newRes);
   const [f, setF] = useState({ name: it.name, source: it.source, auto: it.auto, enabled: it.enabled, hideLocked: it.hideLocked });
   const [open, setOpen] = useState(false);
   const [sh, setSh] = useState<Shop>(shopOf(it));
@@ -162,7 +168,7 @@ function Row({ it, data, first, last, move, run }: { it: Item; data: Data; first
     const fd = new FormData();
     fd.set('id', it.id); fd.set('name', f.name); fd.set('source', f.source); fd.set('auto', f.auto); fd.set('enabled', f.enabled ? '1' : '0'); fd.set('hideLocked', f.hideLocked ? '1' : '0');
     putShop(fd, sh, true);
-    if (img) { fd.set('image', img); if (retag) fd.set('retag', '1'); }
+    if (img) { fd.set('image', img); fd.set('res', String(newRes)); if (retag) fd.set('retag', '1'); }
     return fd;
   };
   const swap = async (file: File | undefined) => {
@@ -184,11 +190,12 @@ function Row({ it, data, first, last, move, run }: { it: Item; data: Data; first
         <div className={s.line}>
           <label className={s.chk}><input type="checkbox" checked={f.enabled} onChange={e => setF({ ...f, enabled: e.target.checked })} /> Włączony</label>
           <label className={s.chk}><input type="checkbox" checked={f.hideLocked} onChange={e => setF({ ...f, hideLocked: e.target.checked })} /> Ukryty, gdy gracz go nie ma</label>
-          <span className="muted small">{it.w} × {it.h}{it.animated ? ' · animowany' : ''} · ma {it.owners} · założony u {it.worn} · sprzedano {it.sold}{it.stock != null ? ` / ${it.stock}` : ''} · id: {it.id}</span>
+          <span className="muted small">{it.w} × {it.h} ({resOf(kindInfo, it.res || 1).name.toLowerCase()}){it.animated ? ' · animowany' : ''} · ma {it.owners} · założony u {it.worn} · sprzedano {it.sold}{it.stock != null ? ` / ${it.stock}` : ''} · id: {it.id}</span>
         </div>
         <div className={s.line}>
           <Button kind="hue" disabled={!dirty || !f.name.trim()} onClick={() => run(() => send(form()), 'Zapisano')}>Zapisz</Button>
           <label className={s.chk}><input type="checkbox" checked={retag} onChange={e => setRetag(e.target.checked)} /> Po wymianie wykryj kolory od nowa</label>
+          <label>Rozdzielczość nowej grafiki<select value={newRes} onChange={e => setNewRes(+e.target.value)}>{kindInfo.resolutions.map(r => <option key={r.res} value={r.res}>{r.name} ({r.w} × {r.h})</option>)}</select></label>
           <label className={s.upload}><Upload size={15} aria-hidden="true" /> Wymień grafikę<input type="file" accept="image/png,image/webp,image/gif,image/jpeg" onChange={e => { swap(e.target.files?.[0]); e.target.value = ''; }} /></label>
           <Button aria-label="Wyżej w katalogu" disabled={first} onClick={() => move(-1)}><ArrowUp size={15} aria-hidden="true" /></Button>
           <Button aria-label="Niżej w katalogu" disabled={last} onClick={() => move(1)}><ArrowDown size={15} aria-hidden="true" /></Button>

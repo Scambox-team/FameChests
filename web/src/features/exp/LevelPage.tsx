@@ -18,7 +18,7 @@ interface LevelRow { level: number; need: number; total: number; small: Reward[]
 interface Source { key: string; group: string; name: string; exp: number; cap: number }
 type Filter = 'all' | 'big' | 'special';
 
-/** Odznaka jako SVG z kodu (badge.ts); `tier` 1-12 */
+/** Odznaka jako SVG z kodu (badge.ts); `tier` 1-13 */
 export function ServiceBadge({ year, tier = 1, className }: { year: number; tier?: number; className?: string }) {
   const html = useMemo(() => serviceBadgeSvg(year, tier), [year, tier]);
   return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
@@ -119,7 +119,7 @@ export function LevelPage() {
               <div className={s.rewards}>
                 {l.small.map((r, i) => <span key={`s${i}`} className={s.chip}><Gift size={12} aria-hidden="true" /> {r.text}</span>)}
                 {l.special.map((r, i) => <span key={`p${i}`} className={`${s.chip} ${s.special}`}><Sparkles size={12} aria-hidden="true" /> Specjalna: {r.text}</span>)}
-                {l.big && l.level > 1 && <span className={`${s.chip} ${s.special}`}><Package size={12} aria-hidden="true" /> Do wyboru 2 z 4: skrzynka z pieniędzmi, karty Mityczne lub lepsze</span>}
+                {l.big && l.level > 1 && <span className={`${s.chip} ${s.special}`}><Package size={12} aria-hidden="true" /> Do wyboru 2 z 4: skrzynka z pieniędzmi, karty Mityczne lub lepsze, a czasem naklejki na karty</span>}
                 {l.level === 100 && <span className={`${s.chip} ${s.special}`}><Award size={12} aria-hidden="true" /> Odznaka za służbę i nowy cykl</span>}
                 {l.level === 1 && <span className="muted small">bez nagrody - tu zaczynasz</span>}
               </div>

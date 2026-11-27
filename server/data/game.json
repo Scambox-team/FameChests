@@ -1080,6 +1080,7 @@
    "min": 50000,
    "max": 100000,
    "curve": 1.3,
+   "eventOnly": true,
    "color1": "#e0283a",
    "color2": "#0f5a32"
   }
@@ -4099,6 +4100,20 @@
   "expireHours": 24
  },
  "patchNotes": [
+  {
+   "v": 38,
+   "date": "2026-11-27",
+   "title": "Ekwipunek każdego gracza, euro za levele, naklejki",
+   "items": [
+    "<b>Ekwipunek każdego gracza</b>: możesz obejrzeć karty dowolnego gracza (z jego profilu, miniprofilu albo listy znajomych) na tym samym ekranie co swój ekwipunek: z filtrami, sortowaniem i podglądem karty. Wymianę zaproponujesz tylko znajomemu. W „Wygląd profilu” ustawisz swój ekwipunek jako <b>publiczny</b> (domyślnie), <b>tylko dla znajomych</b> albo <b>prywatny</b>; administratorzy mogą zajrzeć do każdego.",
+    "<b>Klaser innego gracza</b> nie wygląda już tak, jakby gracz nie miał kart, gdy ukrył ekwipunek: karty z jego klasera są wtedy pokazane normalnie, a to, co leży w gablocie, zawsze jest policzone jako posiadane.",
+    "<b>Euro za levele</b>: każdy nowy level daje teraz trochę euro (1 € na początku, 2 € od levelu 40, 3 € od 80, co 10. level dodatkowo +5 €).",
+    "<b>Duża nagroda za level</b> (co 10.): wśród czterech opcji pojawiają się czasem <b>naklejki na karty</b> (skrzynka z naklejkami albo naklejka foliowana, holo lub złota), a skrzynki z pieniędzmi tylko na event (np. świąteczna) już się w niej nie trafiają.",
+    "<b>Odznaka za służbę „Lonsdaleit”</b> pojawiła się między czarnym diamentem a papieską.",
+    "<b>Naklejki</b>: kliknij naklejkę (w ekwipunku, po otwarciu skrzynki, w Sklepie albo w wyborze nagrody), żeby obejrzeć ją tak jak kartę: z przechylaniem za kursorem i efektami wariantów. Na jednej karcie może być teraz do <b>10 naklejek</b>.",
+    "<b>Paszport</b>: nowy widok „Wszystkich graczy” pokazuje, które państwa zdobył ktokolwiek i ile osób ma każdy stempel."
+   ]
+  },
   {
    "v": 37,
    "date": "2026-11-25",
